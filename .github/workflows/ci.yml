@@ -21,7 +21,7 @@ jobs:
       - name: Registry build is committed
         run: |
           pnpm registry:build
-          git diff --exit-code apps/www/public/r
+          git diff --exit-code apps/www/public/r apps/www/public/llms.txt apps/www/public/llms-full.txt
       - run: pnpm --filter www build
       - name: E2E (OAuth flow, axe a11y in both themes, theme and pending contracts)
         run: |

@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation'
 import { CodeBlock } from '@/components/site/code-block'
 import { ComponentDemo } from '@/components/site/demos'
 import { InstallCommand } from '@/components/site/install-command'
+import { OpenInV0 } from '@/components/site/open-in-v0'
 import { type ApiTable, apiTables, libUsage } from '@/components/site/props-tables'
 import { getRegistryItem, installCommandFor, registryItems } from '@/components/site/registry'
 
@@ -103,7 +104,12 @@ export default async function ComponentPage({ params }: PageProps) {
 
       <section className="flex flex-col gap-3">
         <h2 className="font-medium text-sm">Install</h2>
-        <InstallCommand command={installCommandFor(item.name)} className="max-w-xl" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <InstallCommand command={installCommandFor(item.name)} className="w-full max-w-xl" />
+          {/* v0 imports a registry item by URL, so an item with no files —
+              status-tokens is cssVars only — has nothing to hand it. */}
+          {files.length > 0 && <OpenInV0 name={item.name} title={item.title} />}
+        </div>
       </section>
 
       {isLib && usage ? (

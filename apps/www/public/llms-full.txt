@@ -1,0 +1,344 @@
+# cantera — full reference
+
+> cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, plus an end-to-end Autodesk (APS / ACC) sign-in block. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
+
+Site: https://canteraui.xyz
+Installation guide: https://canteraui.xyz/installation
+
+## Setup
+
+Add the namespace to components.json once:
+
+```json
+{
+  "registries": {
+    "@cantera": "https://canteraui.xyz/r/{name}.json"
+  }
+}
+```
+
+Then install by name, e.g. `npx shadcn@latest add @cantera/connection-card`. The CLI resolves shadcn primitives from the consumer's own base and style, and cantera dependencies from this registry. The installed code belongs to the consumer — it is copied in, not linked.
+
+## Design contracts
+
+These are the semantics behind the props. A component that is wired against them behaves the way the rest of the registry does.
+
+### Status vocabulary
+
+Every status renders from the `@cantera/status-tokens` CSS variables: `--status-success`,
+`--status-warning`, `--status-danger`, `--status-neutral`, each with a `-foreground` companion
+(ink on the solid fill) and a `-surface` companion (soft background, which always carries
+`text-status-*` ink, never the `-foreground` ink). One color, one meaning: success is healthy,
+warning is recoverable and needs attention, danger is a failure the user must act on, neutral is
+absence. Recoverable states — expired, expiring soon — are warning, not danger. Never substitute a
+generic badge variant for a status: `secondary` reads as gray nothing, and `destructive` collapses
+"expired" and "broken" into one color. Status uses solid fills, not low-alpha tints.
+
+### Async-pending contract
+
+Every component with an async callback exposes a pending state, and pending means
+disabled-with-spinner-while-keeping-the-label — never a label swapped for "Loading…", never a
+collapsed control. A pressed control is never unmounted and never changes element type mid-action.
+Pending is both a prop the consumer drives (`loading`, `disconnectPending`, `reconnectPending`,
+`loadingProvider` — for server actions, where no promise comes back) and an internal state: a
+callback that returns a promise drives it automatically. Disabled controls render `aria-disabled`,
+not the native attribute, so they stay focusable and a screen reader user can still find them.
+
+### Field density and a11y
+
+This UI is used with gloves, on a tablet, on site. Primary actions carry a 44px minimum touch
+target; comfortable density is the default and compact is opt-in. 12px is the text floor — there is
+no `text-[10px]` anywhere in the registry. Focus indicators are 3:1 against their surroundings
+(`focus-visible:border-ring` plus a full-alpha ring). Every block ships a real heading, every
+description is wired with `aria-describedby`, and `Intl` formatting is locale-neutral
+(`Intl.RelativeTimeFormat(undefined, ...)`, with an optional `locale` prop).
+
+## Items
+
+### OAuth Types (`@cantera/oauth-types`)
+
+Type: lib
+Install: npx shadcn@latest add @cantera/oauth-types
+Docs: https://canteraui.xyz/components/oauth-types
+Item: https://canteraui.xyz/r/oauth-types.json
+
+Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.
+
+The lingua franca every cantera component speaks. Components take these shapes as props and never fetch data themselves — adapters translate provider payloads into them, so Autodesk, Procore, or your own provider all render with the same components.
+
+```tsx
+import type { OAuthConnection, OAuthProvider } from '@/lib/oauth-types'
+
+const fieldlink: OAuthProvider = {
+  id: 'fieldlink',
+  name: 'FieldLink',
+}
+
+const connection: OAuthConnection = {
+  provider: fieldlink,
+  status: 'connected',
+  account: { name: 'Dana Alvarez', email: 'dana@ridgelinebuilders.com' },
+  scopes: ['rfis:read', 'submittals:read'],
+  expiresAt: Date.now() + 55 * 60_000,
+}
+```
+
+Files written into the consumer project:
+
+- lib/oauth-types.ts
+
+#### Exports
+
+- `OAuthProvider` (`interface`) — A provider identity: id, name, optional icon and docsUrl. Marks carry their own default size, so one renders correctly wherever it is dropped; a [&_svg]:size-* wrapper still wins.
+- `OAuthScope` (`interface`) — One grantable scope: id (the literal scope string), label, description, required.
+- `OAuthScopePreset` (`interface`) — A named bundle of scope ids for a common task, e.g. "Viewer".
+- `OAuthConnectionStatus` (`type`) — 'connected' | 'expired' | 'error' | 'disconnected'.
+- `OAuthAccount` (`interface`) — The human behind a grant: name, email, avatarUrl — all optional.
+- `OAuthConnection` (`interface`) — A provider grant: provider, status, and optional account, scopes, expiresAt, error.
+- `connectionExpiry` (`(connection: OAuthConnection) => Date | null`) — Normalizes expiresAt (Date, string, or number) into a Date, or null when absent.
+- `isExpiringSoon` (`(connection: OAuthConnection, withinMs?: number) => boolean`) — True when the connection expires within withinMs — five minutes by default.
+- `accountInitials` (`(account?: OAuthAccount) => string`) — Initials for avatar fallbacks: "Dana Alvarez" becomes "DA".
+
+### APS OAuth Preset (`@cantera/aps-oauth-preset`)
+
+Type: lib
+Install: npx shadcn@latest add @cantera/aps-oauth-preset
+Docs: https://canteraui.xyz/components/aps-oauth-preset
+Item: https://canteraui.xyz/r/aps-oauth-preset.json
+Registry dependencies: @cantera/oauth-types
+
+Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.
+
+Everything Autodesk-specific in one data-only item: provider metadata, the APS scope catalog with human explanations, the scope bundles aec-auth uses, and an adapter from the APS userinfo payload. Drop it into any component that takes oauth types — no client, no fetching, no tokens.
+
+```tsx
+import { apsProvider, apsScopeCatalog, apsScopePresets } from '@/lib/aps-oauth-preset'
+import { ScopePicker, withRequiredScopes } from '@/components/ui/scope-picker'
+import { SignInCard } from '@/components/ui/sign-in-card'
+
+<SignInCard providers={[apsProvider]} hrefTemplate="/api/auth/{provider}" />
+
+<ScopePicker
+  scopes={apsScopeCatalog}
+  presets={apsScopePresets}
+  value={selected}
+  onChange={setSelected}
+  allowCustomScopes
+/>
+
+// Required scopes are unioned in where the value is used, never on mount.
+const scope = withRequiredScopes(apsScopeCatalog, selected).join(' ')
+```
+
+Files written into the consumer project:
+
+- lib/aps-oauth-preset.tsx
+
+#### Exports
+
+- `apsProvider` (`OAuthProvider`) — Autodesk provider metadata: id "aps", name, brand mark, OAuth docs link.
+- `apsScopeCatalog` (`OAuthScope[]`) — The APS scope catalog — data, viewables, buckets, account admin, OpenID — with human explanations.
+- `apsScopePresets` (`OAuthScopePreset[]`) — Common bundles mirrored from aec-auth's apsScopes recipes: viewer, data-read, data-write, account-admin.
+- `ApsUserInfo` (`interface`) — The subset of the APS userinfo response the adapter reads.
+- `fromApsUserInfo` (`(userInfo: ApsUserInfo) => OAuthAccount`) — Adapter from an APS userinfo payload into a cantera OAuthAccount.
+
+### Status Tokens (`@cantera/status-tokens`)
+
+Type: tokens (CSS variables only, no files)
+Install: npx shadcn@latest add @cantera/status-tokens
+Docs: https://canteraui.xyz/components/status-tokens
+Item: https://canteraui.xyz/r/status-tokens.json
+
+Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.
+
+#### Tokens
+
+- `--status-success` (`bg-status-success · text-status-success`) — Healthy. A live grant, a passing check, a connection that needs nothing.
+- `--status-warning` (`bg-status-warning · text-status-warning`) — Recoverable and needs attention. Expiring soon and expired both live here — a refresh away, not a failure.
+- `--status-danger` (`bg-status-danger · text-status-danger`) — A failure the user must act on: a revoked grant, a rejected scope.
+- `--status-neutral` (`bg-status-neutral · text-status-neutral`) — Absence. Never connected, nothing to report — not an error.
+- `-foreground` (`text-status-*-foreground`) — Ink for text sitting on the solid fill. Every pair clears 4.5:1 in both appearances.
+- `-surface` (`bg-status-*-surface`) — Soft background for rows and callouts. Always carries text-status-* ink, never the -foreground ink.
+
+### Provider Sign-In Button (`@cantera/provider-sign-in-button`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/provider-sign-in-button
+Docs: https://canteraui.xyz/components/provider-sign-in-button
+Item: https://canteraui.xyz/r/provider-sign-in-button.json
+Registry dependencies: button, @cantera/oauth-types
+npm dependencies: lucide-react
+
+A sign-in button for a single OAuth provider: brand icon, label, loading state. Works as a link or a click handler.
+
+Files written into the consumer project:
+
+- provider-sign-in-button.tsx
+
+#### Props
+
+- `provider` (`OAuthProvider`) — The provider to render: id, name, and an optional brand icon.
+- `href` (`string`) — Navigate to an auth route instead of handling a click; renders an anchor, and stays an anchor while pending. Mutually exclusive with onSignIn — passing both is a type error.
+- `onSignIn` (`() => void | Promise<void>`) — Called with no arguments on click; renders a button. A returned promise drives the pending state for you. Mutually exclusive with href.
+- `loading` (`boolean`, default `false`) — Pending: the label stays, the icon crossfades to a spinner over 150ms, and activation is blocked via aria-disabled so focus is never dropped.
+- `disabled` (`boolean`, default `false`) — Rendered as aria-disabled, never the native attribute, so the control keeps focus and a screen reader user can still find it.
+- `variant` (`'default' | 'outline' | 'secondary' | 'ghost'`, default `'outline'`) — Button variant, forwarded to the shadcn button styles.
+- `size` (`'default' | 'sm' | 'lg'`, default `'lg'`) — Button size. Everything but sm carries the 44px minimum touch target; sm is the opt-in compact escape hatch.
+- `children` (`ReactNode`, default `'Continue with {provider.name}'`) — Custom label replacing the default text.
+- `...props` (`ComponentProps<'a'> | ComponentProps<'button'>`) — Remaining props go to whichever element renders — anchor props with href, button props without — and are typed for it.
+
+### Sign-In Card (`@cantera/sign-in-card`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/sign-in-card
+Docs: https://canteraui.xyz/components/sign-in-card
+Item: https://canteraui.xyz/r/sign-in-card.json
+Registry dependencies: card, @cantera/provider-sign-in-button, @cantera/oauth-types
+
+A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
+
+Files written into the consumer project:
+
+- sign-in-card.tsx
+
+#### Props
+
+- `providers` (`OAuthProvider[]`) — Providers to offer, rendered as one ProviderSignInButton each.
+- `hrefTemplate` (`string`) — Href for a provider auth route; "{provider}" is replaced with the provider id, e.g. "/api/auth/{provider}". Serializable, so the card can be rendered from a server component.
+- `onSignIn` (`(providerId: string) => void | Promise<void>`) — Click handler alternative to hrefTemplate, for client-side flows. A returned promise drives the pending state for that provider.
+- `loadingProvider` (`string`) — Id of the provider currently authenticating, to show its spinner. While one provider is pending its siblings lock — one OAuth flow at a time, since a second redirect would race the first.
+- `title` (`ReactNode`, default `'Sign in'`) — Card title.
+- `titleAs` (`'h1' | … | 'h6' | 'div'`, default `'h2'`) — Heading element for the title — a card dropped onto a page needs a real heading. Pick the level that fits the page outline, or pass "div" when the surrounding page already provides one.
+- `description` (`ReactNode`) — Optional text under the title.
+- `footer` (`ReactNode`) — Optional muted footer content.
+- `...props` (`ComponentProps<typeof Card>`) — Remaining props are spread onto the underlying Card.
+
+### Scope Picker (`@cantera/scope-picker`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/scope-picker
+Docs: https://canteraui.xyz/components/scope-picker
+Item: https://canteraui.xyz/r/scope-picker.json
+Registry dependencies: badge, button, checkbox, input, label, @cantera/oauth-types
+npm dependencies: lucide-react
+
+A controlled OAuth scope picker: checkbox list with descriptions, one-click presets, required scopes pinned on, and an escape hatch for scopes outside the catalog.
+
+Files written into the consumer project:
+
+- scope-picker.tsx
+
+#### Props
+
+- `scopes` (`OAuthScope[]`) — The scope catalog to render. Scopes marked required render checked and cannot be deselected — they stay focusable via aria-disabled and announce why.
+- `value` (`string[]`) — Selected scope ids. Controlled and taken literally: the picker never calls onChange on mount to backfill required scopes. Union them in where the value is used with withRequiredScopes.
+- `onChange` (`(value: string[]) => void`) — Called with the next selection on every change — catalog order first, custom scopes trailing in insertion order.
+- `presets` (`OAuthScopePreset[]`) — Named bundles rendered as toggle buttons above the list, each showing its label and description, with aria-pressed reflecting whether the current selection matches the bundle.
+- `allowCustomScopes` (`boolean`, default `false`) — Adds a field for scopes outside the catalog — granular resource scopes like data:read:<urn>, or anything the provider added since. Custom scopes render with a "custom" badge and round-trip through value / onChange like any other.
+- `customScopeLabel` (`string`, default `'Add a scope'`) — Label for the custom-scope field.
+- `disabled` (`boolean`, default `false`) — Disables the presets, every checkbox, and the custom-scope field.
+- `...props` (`ComponentProps<'div'>`) — Remaining props are spread onto the wrapping div.
+
+#### Exports
+
+- `withRequiredScopes` (`(scopes: OAuthScope[], value: string[]) => string[]`) — The required scopes of the catalog, unioned into a picker value, in catalog order with custom scopes appended. Call it at submit time, or when building the authorize URL, so required scopes are never silently dropped.
+
+### User Account Badge (`@cantera/user-account-badge`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/user-account-badge
+Docs: https://canteraui.xyz/components/user-account-badge
+Item: https://canteraui.xyz/r/user-account-badge.json
+Registry dependencies: avatar, @cantera/oauth-types
+
+An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.
+
+Files written into the consumer project:
+
+- user-account-badge.tsx
+
+#### Props
+
+- `account` (`OAuthAccount`) — The account to show. Falls back from name to email; the avatar falls back to initials.
+- `provider` (`OAuthProvider`) — When set, the provider mark is shown at the end of the chip.
+- `size` (`'sm' | 'default'`, default `'default'`) — Compact or regular sizing. Text never drops below 12px in either.
+- `...props` (`ComponentProps<'div'>`) — Remaining props are spread onto the wrapping div.
+
+### Token Status (`@cantera/token-status`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/token-status
+Docs: https://canteraui.xyz/components/token-status
+Item: https://canteraui.xyz/r/token-status.json
+Registry dependencies: badge, @cantera/status-tokens, @cantera/oauth-types
+
+Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.
+
+Files written into the consumer project:
+
+- token-status.tsx
+
+#### Props
+
+- `connection` (`OAuthConnection`) — The grant to summarize: status badge, expiry, error text, scopes.
+- `showExpiry` (`boolean`, default `true`) — Show a relative expiry while connected. Expiry is recoverable, so it takes the warning tone — never danger — as the deadline approaches.
+- `showScopes` (`boolean`, default `false`) — Render each held scope as an outline badge.
+- `locale` (`string | string[]`, default `runtime locale`) — BCP 47 locale(s) for the relative expiry. Left undefined, Intl resolves the runtime locale — nothing is hardcoded to English.
+- `expiringSoonMs` (`number`, default `300000`) — How far ahead counts as "expiring soon", in milliseconds. Five minutes by default.
+- `...props` (`ComponentProps<'div'>`) — Remaining props are spread onto the wrapping div.
+
+#### Exports
+
+- `StatusTone` (`'success' | 'warning' | 'danger' | 'neutral'`) — The four semantic tones. One color, one meaning — reuse this type instead of inventing a parallel vocabulary.
+- `statusToneClasses` (`Record<StatusTone, string>`) — Solid fill plus its ink, e.g. "bg-status-success text-status-success-foreground". Solid, not a low-alpha tint, so it survives direct sunlight.
+- `statusInkClasses` (`Record<StatusTone, string>`) — The same tones as text color, for ink on the page or on a -surface companion.
+
+#### Data attributes
+
+- `data-status` (`'connected' | 'expired' | 'error' | 'disconnected'`) — The raw connection status, for styling or querying from the outside.
+- `data-tone` (`'success' | 'warning' | 'danger' | 'neutral'`) — The tone actually rendered — connected but expiring soon resolves to warning, not success.
+
+### Connection Card (`@cantera/connection-card`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/connection-card
+Docs: https://canteraui.xyz/components/connection-card
+Item: https://canteraui.xyz/r/connection-card.json
+Registry dependencies: button, card, @cantera/user-account-badge, @cantera/token-status, @cantera/oauth-types
+npm dependencies: lucide-react
+
+A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions.
+
+Files written into the consumer project:
+
+- connection-card.tsx
+
+#### Props
+
+- `connection` (`OAuthConnection`) — The provider grant to show: provider, account, status, scopes, expiry.
+- `onDisconnect` (`() => void | Promise<void>`) — When set, a Disconnect button is shown while the connection is connected. Disconnecting revokes a grant, so it renders destructive. A returned promise drives the pending state.
+- `onReconnect` (`() => void | Promise<void>`) — When set, a Connect / Reconnect button is shown while expired, errored, or disconnected. A returned promise drives the pending state.
+- `disconnectPending` (`boolean`, default `false`) — Consumer-driven pending for the disconnect action — for a server action, where no promise comes back. The button stays mounted, keeps its label, and shows a spinner.
+- `reconnectPending` (`boolean`, default `false`) — Consumer-driven pending for the connect / reconnect action.
+- `showScopes` (`boolean`, default `true`) — Forwarded to the embedded TokenStatus.
+- `...props` (`ComponentProps<typeof Card>`) — Remaining props are spread onto the underlying Card.
+
+### ACC Sign-In (`@cantera/acc-sign-in`)
+
+Type: block
+Install: npx shadcn@latest add @cantera/acc-sign-in
+Docs: https://canteraui.xyz/components/acc-sign-in
+Item: https://canteraui.xyz/r/acc-sign-in.json
+Registry dependencies: @cantera/sign-in-card, @cantera/connection-card, @cantera/aps-oauth-preset, @cantera/oauth-types
+npm dependencies: aec-auth
+
+Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.
+
+Files written into the consumer project:
+
+- app/sign-in/page.tsx
+- components/acc-connection-panel.tsx
+- lib/acc-auth.ts
+- app/api/auth/[provider]/route.ts
+- app/api/auth/callback/[provider]/route.ts
+- app/api/auth/signout/route.ts

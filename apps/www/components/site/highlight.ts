@@ -17,7 +17,7 @@ import { createHighlighter, createJavaScriptRegexEngine, type Highlighter } from
  */
 const themes = { light: 'light-plus', dark: 'dark-plus' } as const
 
-const languages = ['tsx', 'ts', 'json', 'bash'] as const
+const languages = ['tsx', 'ts', 'json', 'css', 'bash'] as const
 
 export type CodeLang = (typeof languages)[number]
 
@@ -39,6 +39,7 @@ const extensionLangs: Record<string, CodeLang> = {
   tsx: 'tsx',
   ts: 'ts',
   json: 'json',
+  css: 'css',
   sh: 'bash',
 }
 

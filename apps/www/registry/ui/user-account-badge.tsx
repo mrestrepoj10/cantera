@@ -32,7 +32,13 @@ function UserAccountBadge({
           initials at text-xs need the room. */}
       <Avatar className={size === 'sm' ? 'size-7' : 'size-8'}>
         {account.avatarUrl && <AvatarImage src={account.avatarUrl} alt="" />}
-        <AvatarFallback className="text-xs font-medium">{accountInitials(account)}</AvatarFallback>
+        {/* The primitive's fallback ink is muted-foreground on bg-muted, which
+            measures 4.35:1 on a stock shadcn theme. Foreground at 60% reads as
+            the same gray and clears 5:1 wherever the theme's foreground
+            contrasts its own muted surface. */}
+        <AvatarFallback className="font-medium text-foreground/60 text-xs">
+          {accountInitials(account)}
+        </AvatarFallback>
       </Avatar>
       <div className="grid min-w-0 leading-tight">
         <span className={cn('truncate font-medium', size === 'sm' ? 'text-xs' : 'text-sm')}>

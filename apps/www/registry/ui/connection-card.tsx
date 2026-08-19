@@ -129,10 +129,16 @@ function ConnectionCard({
             )}
             {status === 'connected' && onDisconnect && (
               // Disconnecting revokes a grant — destructive, not a neutral outline.
+              // The ink comes from the status palette rather than the variant's
+              // own --destructive: the primitives render destructive ink on a
+              // 10% tint of itself, which measures 4.06:1 on a stock shadcn
+              // theme. --status-danger clears 5:1 on that same tint, and ships
+              // with this component through token-status. The tint stays.
               <ConnectionAction
                 pending={disconnectPending}
                 onAction={onDisconnect}
                 variant="destructive"
+                className="text-status-danger"
               >
                 Disconnect
               </ConnectionAction>

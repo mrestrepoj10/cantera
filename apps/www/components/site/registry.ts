@@ -1,5 +1,9 @@
 import registryJson from '@/registry.json'
 
+// Re-exported so the docs pages keep one import for "the registry", while the
+// command itself stays next to the URLs it is paired with in lib/site.
+export { installCommandFor } from '@/lib/site'
+
 export interface RegistryFile {
   path: string
   type: string
@@ -21,8 +25,4 @@ export const registryItems = registryJson.items as RegistryItem[]
 
 export function getRegistryItem(name: string): RegistryItem | undefined {
   return registryItems.find((item) => item.name === name)
-}
-
-export function installCommandFor(name: string): string {
-  return `npx shadcn@latest add @cantera/${name}`
 }

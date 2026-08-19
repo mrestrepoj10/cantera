@@ -12,6 +12,12 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           </Link>
           <nav aria-label="Main" className="ml-auto flex items-center gap-5 text-sm">
             <Link
+              href="/installation"
+              className="focus-ring rounded-md text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Installation
+            </Link>
+            <Link
               href="/components"
               className="focus-ring rounded-md text-muted-foreground transition-colors hover:text-foreground"
             >

@@ -27,7 +27,9 @@ npx shadcn@latest add @cantera/sign-in-card
 npx shadcn@latest add @cantera/acc-sign-in
 ```
 
-The CLI resolves everything: shadcn primitives from your configured base and style, cantera dependencies from this registry.
+The CLI resolves everything: shadcn primitives from your configured base and style, cantera dependencies from this registry. Full guide — package-manager tabs, the path-alias caveat, and theming: [canteraui.xyz/installation](https://canteraui.xyz/installation).
+
+Agents: [`/llms.txt`](https://canteraui.xyz/llms.txt) indexes the site, [`/llms-full.txt`](https://canteraui.xyz/llms-full.txt) carries every item's props and the design contracts, and [`/r/llms.txt`](https://canteraui.xyz/r/llms.txt) sits next to the registry JSON.
 
 ## Items
 
@@ -65,7 +67,7 @@ pnpm install
 pnpm dev              # apps/www on :3000 — landing, docs, registry, live demo
 pnpm lint             # biome
 pnpm typecheck
-pnpm registry:build   # registry.json -> apps/www/public/r/*.json (committed)
+pnpm registry:build   # registry.json -> apps/www/public/r/*.json + llms.txt artifacts (committed)
 pnpm e2e              # Playwright: full OAuth flow through the embedded emulator
 ```
 

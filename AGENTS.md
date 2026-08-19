@@ -9,12 +9,13 @@ Use `pnpm` for everything. Before calling any change done, from the repo root:
 ```sh
 pnpm lint            # biome (single quotes, no semicolons, 100-col lines)
 pnpm typecheck
-pnpm registry:build  # required after touching apps/www/registry/** or registry.json
+pnpm registry:build  # required after touching apps/www/registry/** or registry.json;
+                     # also regenerates the llms.txt artifacts under apps/www/public
 pnpm --filter www build
 pnpm e2e             # Playwright: OAuth flow, axe (WCAG A/AA, both themes), theme + pending contracts
 ```
 
-CI fails if `apps/www/public/r/` drifts from the registry sources — the build output is committed.
+CI fails if `apps/www/public/r/`, `apps/www/public/llms.txt`, or `apps/www/public/llms-full.txt` drifts from the registry sources — the build output is committed. The generator (`apps/www/scripts/build-llms.mts`) reads `registry.json` and `components/site/props-tables.ts`, and every URL in it comes from `apps/www/lib/site.ts`, the one place the public origin is decided.
 
 ## The registry is the source of truth
 
