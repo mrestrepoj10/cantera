@@ -4,6 +4,7 @@ import { CodeBlock } from '@/components/site/code-block'
 import { ComponentGrid } from '@/components/site/component-grid'
 import { ConnectionCardDemo, ScopePickerDemo, SignInCardDemo } from '@/components/site/demos'
 import { InstallCommand } from '@/components/site/install-command'
+import { Button } from '@/components/ui/button'
 
 const registryConfigSnippet = `{
   "registries": {
@@ -43,12 +44,12 @@ export default function HomePage() {
         </p>
         <div className="flex w-full max-w-xl flex-col gap-3">
           <InstallCommand command="npx shadcn@latest add @cantera/sign-in-card" />
-          <details className="group">
-            <summary className="cursor-pointer list-none rounded-md font-mono text-muted-foreground text-xs outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
+          <details className="group" data-slot="disclosure">
+            <summary className="focus-ring inline-flex w-fit cursor-pointer list-none rounded-md font-mono text-muted-foreground text-xs transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
               <span className="group-open:hidden">Show one-time registry setup</span>
               <span className="hidden group-open:inline">One-time setup — components.json</span>
             </summary>
-            <CodeBlock code={registryConfigSnippet} className="mt-2" />
+            <CodeBlock code={registryConfigSnippet} lang="json" className="mt-2" />
           </details>
         </div>
       </section>
@@ -59,9 +60,9 @@ export default function HomePage() {
         </h2>
         <p className="mt-2 max-w-2xl text-muted-foreground text-sm">
           Components take plain props and never fetch. The Autodesk provider and scope catalog below
-          come from the <code className="font-mono text-[13px]">aps-oauth-preset</code> registry
-          item; Procore is a hand-rolled object. Same components, any source. Click around — every
-          demo is live.
+          come from the <code className="font-mono text-code">aps-oauth-preset</code> registry item;
+          Procore is a hand-rolled object. Same components, any source. Click around — every demo is
+          live.
         </p>
         <div className="mt-8 grid gap-4 lg:grid-cols-3">
           <div className="flex flex-col gap-4 rounded-lg border border-border p-6">
@@ -90,7 +91,7 @@ export default function HomePage() {
           <h2 className="font-semibold text-2xl tracking-tight">Components</h2>
           <Link
             href="/components"
-            className="rounded-md text-muted-foreground text-sm outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="focus-ring rounded-md text-muted-foreground text-sm transition-colors hover:text-foreground"
           >
             View all
           </Link>
@@ -109,12 +110,17 @@ export default function HomePage() {
               emulator.
             </p>
           </div>
-          <Link
-            href="/demo"
-            className="shrink-0 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground text-sm outline-none transition-opacity hover:opacity-90 focus-visible:ring-3 focus-visible:ring-ring/50"
+          {/* On the primitive, so it inherits the house press idiom
+              (active:translate-y-px), the bg/80 hover, and the focus pattern. */}
+          <Button
+            render={<Link href="/demo" />}
+            nativeButton={false}
+            role="link"
+            size="lg"
+            className="min-h-11 shrink-0 px-4"
           >
             Open the demo
-          </Link>
+          </Button>
         </div>
       </section>
 
@@ -131,9 +137,9 @@ export default function HomePage() {
               href={project.href}
               target="_blank"
               rel="noreferrer"
-              className="flex flex-col gap-1.5 rounded-lg border border-border p-5 outline-none transition-colors hover:border-foreground/25 focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="focus-ring flex flex-col gap-1.5 rounded-lg border border-border p-5 transition-colors hover:border-foreground/25"
             >
-              <span className="font-mono text-[13px]">{project.name}</span>
+              <span className="font-mono text-code">{project.name}</span>
               <span className="text-muted-foreground text-sm">{project.description}</span>
             </a>
           ))}

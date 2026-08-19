@@ -67,6 +67,10 @@ Showcase pages import from `@/registry/*` so demos render the exact distributed 
   ```
 - **`aps-oauth-preset`** — `apsProvider`, `apsScopeCatalog` (built from aec-auth's `apsScopes` recipes: viewer, dataRead, dataWrite, accountAdmin + the APS scope list), `fromApsConnection()` adapters.
 
+### `registry:item`
+
+- **`status-tokens`** — the semantic status palette: `--status-success` / `-warning` / `-danger` / `-neutral`, each with a `-foreground` (ink on the solid fill) and a `-surface` (soft background) companion, in light and dark. Shipped as `cssVars` rather than a file, so `npx shadcn add @cantera/status-tokens` merges the variables and the `@theme inline` mappings straight into the consumer's CSS. Every component that renders status declares it as a `registryDependency`; the `@theme` mappings carry `var(--token, var(--fallback))` defaults so a theme that drops the variables degrades instead of rendering invisible.
+
 ### `registry:component` (pure, controlled, data-in-props)
 
 | Item | API sketch |
@@ -116,7 +120,15 @@ APIs are the working contract — props get refined in implementation; shape and
 - `apps/app` — dashboards for construction data: issues, RFIs, submittals, model viewers (APS Viewer via aps-viewer-react learnings). Each new domain follows the locked pattern: **types + adapters + blocks**. Domain schemas get designed when their slice starts, not before.
 - Procore preset (`procore-oauth-preset`) once aec-auth ships Procore support.
 
-## 9. Risks & watch items
+## 9. Design roadmap (from the 2026-08-19 design review)
+
+Design work from the review. Each item is a contract for whoever picks it up; none block v1 launch. Shipped items keep their contract text so the decision stays readable.
+
+- **Done — `scope-picker` custom-scope escape hatch.** Shipped as `allowCustomScopes` / `customScopeLabel`: a labelled field (Enter or Add) appends any string as a scope, custom scopes render with a `custom` badge and a remove button, and they round-trip through `value` / `onChange` in insertion order after the catalog scopes. The original contract: the catalog covers the documented APS scopes, but the emulator already validates granular scopes (`data:read:<urn>`) and providers add scopes faster than a preset can track. `scope-picker` needs a way to enter a scope that is not in the catalog — an "Add scope" affordance producing an `OAuthScope` with the raw string as both `id` and `label` — so a locked catalog never becomes a dead end. Custom scopes render distinguishably from catalog scopes and round-trip through `value` / `onChange` like any other.
+- **Empty, error, and loading states for the `connections-page` block.** The block ships all four states or it does not ship: **empty** (no connections yet — the provider chooser is the empty state, not a message about nothingness), **loading** (skeleton rows that match the real row geometry, no layout shift on resolve, no stagger), **error** (the failure is on the row that failed, with a retry that follows the async-pending contract, and a page-level error only when the whole fetch failed), and **partial** (one provider errored while the others are fine — the healthy rows still render). Guidance lives with the block; the presentational components stay data-agnostic and take these as props.
+- **Done — provider icon sizing contract.** Settled on the default: preset marks carry their own `className="size-4"`, so one renders correctly wherever it is dropped, and a `[&_svg]:size-*` wrapper still wins on specificity where a surface wants another size. Documented on `OAuthProvider.icon` in `oauth-types`. The original contract: preset icons (`apsProvider.icon` and every future provider mark) are unsized SVGs: they inherit size only inside a `[&_svg]:size-*` wrapper, so dropping one into arbitrary markup renders it at the intrinsic or collapsed size. Settle this one of two ways and document the choice in `oauth-types`: either every consumer surface declares a `[&_svg]:size-*` wrapper (documented on `OAuthProvider.icon`), or preset icons carry a default `className="size-4"` that a wrapper can still override. Prefer the default — it fails visibly correct rather than invisibly wrong — and keep the wrapper pattern working either way.
+
+## 10. Risks & watch items
 
 - **Fork dependency**: `@emulators/aps` unpublished; git-subpath dep until the upstream PR lands. Fallback path exists (mock fixtures).
 - **Serverless emulator state**: in-memory store may reset between invocations (see §5).

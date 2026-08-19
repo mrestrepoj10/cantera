@@ -8,8 +8,10 @@ import type { OAuthAccount, OAuthProvider } from '@/lib/oauth-types'
 export const procoreProvider: OAuthProvider = {
   id: 'procore',
   name: 'Procore',
+  // Same sizing contract as the preset marks: a default size, overridable by
+  // a `[&_svg]:size-*` wrapper.
   icon: (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="size-4">
       <path d="M3 4h18v7h-4.6V8.4H7.6v7.2h8.8V13H21v7H3z" />
     </svg>
   ),

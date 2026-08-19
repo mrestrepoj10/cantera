@@ -83,6 +83,11 @@
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* The site's "code" type role: inline identifiers, table cells, install
+     commands, and highlighted source. Named so 13px is a decision, not a
+     magic number scattered through the markup. */
+  --text-code: 0.8125rem;
+  --text-code--line-height: 1.6;
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
@@ -103,6 +108,18 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-status-success: var(--status-success, var(--foreground));
+  --color-status-success-foreground: var(--status-success-foreground, var(--background));
+  --color-status-success-surface: var(--status-success-surface, var(--muted));
+  --color-status-warning: var(--status-warning, var(--foreground));
+  --color-status-warning-foreground: var(--status-warning-foreground, var(--background));
+  --color-status-warning-surface: var(--status-warning-surface, var(--muted));
+  --color-status-danger: var(--status-danger, var(--destructive));
+  --color-status-danger-foreground: var(--status-danger-foreground, var(--background));
+  --color-status-danger-surface: var(--status-danger-surface, var(--muted));
+  --color-status-neutral: var(--status-neutral, var(--muted-foreground));
+  --color-status-neutral-foreground: var(--status-neutral-foreground, var(--background));
+  --color-status-neutral-surface: var(--status-neutral-surface, var(--muted));
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -122,6 +139,20 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* The site-wide focus indicator. Custom indicators are 3:1 against their
+   surroundings, so this is a full-alpha 2px outline — `ring-ring/50` alone
+   measures 1.54:1 and does not clear the bar. Controls built on the shadcn
+   primitives already carry the equivalent `focus-visible:border-ring` pattern;
+   this is for bare links, summaries, and hand-rolled buttons. */
+@utility focus-ring {
+  outline: none;
+
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }
 
 @utility no-scrollbar {
@@ -145,10 +176,27 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  /* Darkened from the stock 0.556: muted ink on a muted surface (the avatar
+     fallback, the inline code chips) measured 4.35:1, under AA. 0.53 clears
+     4.8:1 on --muted and 5.25:1 on --background. */
+  --muted-foreground: oklch(0.53 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  /* Darkened from the stock 0.577: the primitives render destructive as ink on
+     a 10% tint of itself, which measured 4.06:1. 0.51 clears 4.8:1. */
+  --destructive: oklch(0.51 0.245 27.325);
+  --status-success: oklch(0.5 0.13 150);
+  --status-success-foreground: oklch(0.985 0.01 150);
+  --status-success-surface: oklch(0.955 0.035 150);
+  --status-warning: oklch(0.52 0.11 72);
+  --status-warning-foreground: oklch(0.99 0.01 85);
+  --status-warning-surface: oklch(0.955 0.045 85);
+  --status-danger: oklch(0.52 0.2 27);
+  --status-danger-foreground: oklch(0.985 0.005 27);
+  --status-danger-surface: oklch(0.94 0.03 27);
+  --status-neutral: oklch(0.48 0 0);
+  --status-neutral-foreground: oklch(0.985 0 0);
+  --status-neutral-surface: oklch(0.955 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -184,6 +232,18 @@
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
+  --status-success: oklch(0.78 0.15 150);
+  --status-success-foreground: oklch(0.19 0.04 150);
+  --status-success-surface: oklch(0.28 0.05 150);
+  --status-warning: oklch(0.8 0.14 80);
+  --status-warning-foreground: oklch(0.2 0.04 80);
+  --status-warning-surface: oklch(0.29 0.05 80);
+  --status-danger: oklch(0.72 0.16 25);
+  --status-danger-foreground: oklch(0.19 0.04 25);
+  --status-danger-surface: oklch(0.29 0.06 25);
+  --status-neutral: oklch(0.75 0 0);
+  --status-neutral-foreground: oklch(0.2 0 0);
+  --status-neutral-surface: oklch(0.29 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
@@ -194,8 +254,8 @@
   --chart-5: oklch(0.269 0 0);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.922 0 0);
+  --sidebar-primary-foreground: oklch(0.205 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
@@ -211,5 +271,38 @@
   }
   html {
     @apply font-sans;
+    /* Lets the disclosure below transition to `block-size: auto`. */
+    interpolate-size: allow-keywords;
   }
+
+  /* Disclosure open/close: the one place on the site where a height change is
+     the content arriving, so it gets a 200ms reveal. CSS only — no JS, no
+     measurement — and it degrades to an instant open where
+     `::details-content` is unsupported. */
+  @media (prefers-reduced-motion: no-preference) {
+    details[data-slot='disclosure']::details-content {
+      block-size: 0;
+      overflow: clip;
+      transition:
+        block-size 200ms ease-out,
+        content-visibility 200ms ease-out allow-discrete;
+    }
+
+    details[data-slot='disclosure'][open]::details-content {
+      block-size: auto;
+    }
+  }
+}
+
+/* Shiki dual-theme output. `defaultColor: false` emits both palettes as custom
+   properties and sets no inline color, so the class-strategy dark variant just
+   picks the other one — no flash, no second render, no !important. */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+}
+
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark);
 }

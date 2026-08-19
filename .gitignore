@@ -1,5 +1,7 @@
 node_modules/
 dist/
+!vendor/@emulators/*/dist/
+!vendor/@emulators/*/dist/**
 .turbo/
 .next/
 coverage/

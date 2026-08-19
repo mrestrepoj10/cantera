@@ -20,25 +20,31 @@ interface AccConnectionPanelProps {
  */
 function AccConnectionPanel({ connection, signOutHref, signInHref }: AccConnectionPanelProps) {
   const router = useRouter()
-  const [busy, setBusy] = useState(false)
+  const [disconnecting, setDisconnecting] = useState(false)
+  const [reconnecting, setReconnecting] = useState(false)
 
   async function disconnect() {
-    setBusy(true)
+    setDisconnecting(true)
     try {
       await fetch(signOutHref, { method: 'POST', redirect: 'manual' })
       router.refresh()
     } finally {
-      setBusy(false)
+      setDisconnecting(false)
     }
   }
 
   return (
     <ConnectionCard
       connection={connection}
-      onDisconnect={busy ? undefined : disconnect}
+      // The handler is always passed: pending is a prop, never an absent
+      // callback, so the pressed button stays mounted through the request.
+      onDisconnect={disconnect}
+      disconnectPending={disconnecting}
       onReconnect={() => {
+        setReconnecting(true)
         window.location.href = signInHref
       }}
+      reconnectPending={reconnecting}
     />
   )
 }

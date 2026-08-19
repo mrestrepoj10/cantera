@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 
 export default function DemoPage() {
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center gap-8 px-6 py-16">
+    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center gap-8 px-6 py-16">
       <div className="max-w-xl text-center">
         <h1 className="text-balance font-semibold text-3xl tracking-tight">Live demo</h1>
         <p className="mt-3 text-muted-foreground text-sm">
@@ -32,6 +32,6 @@ export default function DemoPage() {
         <code className="font-mono">APS_CLIENT_SECRET</code>, and removing{' '}
         <code className="font-mono">APS_AUTH_BASE_URL</code>.
       </p>
-    </main>
+    </div>
   )
 }

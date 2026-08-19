@@ -8,12 +8,13 @@ export interface RegistryFile {
 
 export interface RegistryItem {
   name: string
-  type: 'registry:lib' | 'registry:component' | 'registry:block'
+  /** `registry:item` is the file-less shape — cssVars only, e.g. status-tokens. */
+  type: 'registry:lib' | 'registry:component' | 'registry:block' | 'registry:item'
   title: string
   description: string
   dependencies?: string[]
   registryDependencies?: string[]
-  files: RegistryFile[]
+  files?: RegistryFile[]
 }
 
 export const registryItems = registryJson.items as RegistryItem[]

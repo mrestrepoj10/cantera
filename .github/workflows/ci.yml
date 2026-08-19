@@ -23,7 +23,7 @@ jobs:
           pnpm registry:build
           git diff --exit-code apps/www/public/r
       - run: pnpm --filter www build
-      - name: E2E (embedded emulator OAuth flow)
+      - name: E2E (OAuth flow, axe a11y in both themes, theme and pending contracts)
         run: |
           pnpm exec playwright install --with-deps chromium
           pnpm e2e

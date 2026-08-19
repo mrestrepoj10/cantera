@@ -1,0 +1,89 @@
+import { expect, test } from '@playwright/test'
+
+import { waitForHydration } from './hydration'
+
+/**
+ * Dark mode is a shipping surface, not a nicety: the components are
+ * contrast-verified in both appearances, so the appearance has to be correct
+ * from the first paint and has to survive navigation.
+ */
+
+test.describe('theme toggle', () => {
+  test.use({ colorScheme: 'light' })
+
+  test('toggles the appearance and persists the choice across navigation', async ({ page }) => {
+    await page.goto('/')
+    await waitForHydration(page)
+
+    const html = page.locator('html')
+    await expect(html).not.toHaveClass(/\bdark\b/)
+
+    // The button names itself after the appearance it moves to, so the name is
+    // the assertion: pressing it must flip both the class and the name.
+    await page.getByRole('button', { name: 'Switch to dark theme' }).click()
+    await expect(html).toHaveClass(/\bdark\b/)
+    await expect(page.getByRole('button', { name: 'Switch to light theme' })).toBeVisible()
+
+    // Client-side navigation keeps the choice…
+    const nav = page.getByRole('navigation', { name: 'Main' })
+    await nav.getByRole('link', { name: 'Components' }).click()
+    await expect(page).toHaveURL(/\/components$/)
+    await expect(html).toHaveClass(/\bdark\b/)
+
+    // …and so does a full document load, because the choice is persisted.
+    await page.goto('/components/connection-card')
+    await expect(html).toHaveClass(/\bdark\b/)
+    await expect(page.getByRole('button', { name: 'Switch to light theme' })).toBeVisible()
+
+    // Back to light, and the reverse direction persists too.
+    await page.getByRole('button', { name: 'Switch to light theme' }).click()
+    await expect(html).not.toHaveClass(/\bdark\b/)
+    await page.reload()
+    await expect(html).not.toHaveClass(/\bdark\b/)
+  })
+})
+
+test.describe('no flash of the wrong theme', () => {
+  test.use({ colorScheme: 'dark' })
+
+  test('the appearance class is set before the first paint on a hard load', async ({ page }) => {
+    // A parser-blocking inline script ahead of the first rendered element is
+    // what makes this possible; without it the document paints light and
+    // corrects itself after hydration. next-themes emits it at the top of
+    // <body>, so assert both that it is there and that nothing renders before it.
+    const response = await page.request.get('/components')
+    const markup = await response.text()
+    const scriptAt = markup.search(
+      /<script>[^<]*document\.documentElement[^<]*prefers-color-scheme[^<]*<\/script>/,
+    )
+    expect(
+      scriptAt,
+      'the blocking appearance script is missing from the server markup',
+    ).toBeGreaterThan(-1)
+    expect(scriptAt, 'the blocking appearance script renders after page content').toBeLessThan(
+      markup.indexOf('<header'),
+    )
+
+    // Record the class list inside the first animation frame. rAF callbacks run
+    // as part of the rendering steps, before that frame is painted — so a class
+    // observed here was in place for the very first paint.
+    await page.addInitScript(() => {
+      requestAnimationFrame(() => {
+        ;(window as unknown as { __firstFrameClass?: string }).__firstFrameClass =
+          document.documentElement.className
+      })
+    })
+
+    await page.goto('/components')
+    await waitForHydration(page)
+
+    const firstFrameClass = await page.evaluate(
+      () => (window as unknown as { __firstFrameClass?: string }).__firstFrameClass,
+    )
+    expect(firstFrameClass, 'no frame was recorded').toBeDefined()
+    expect(firstFrameClass, 'the first painted frame was not dark').toContain('dark')
+
+    // And it stays dark — no post-hydration correction.
+    await expect(page.locator('html')).toHaveClass(/\bdark\b/)
+  })
+})
