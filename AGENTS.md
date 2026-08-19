@@ -48,6 +48,6 @@ These are shipping requirements, not preferences. A component that misses one is
 
 ## Conventions
 
-- End-user install instructions use `npx shadcn@latest add ...`; repo development uses pnpm.
+- End-user install instructions use `npx shadcn@latest add ...` as the canonical form — it is the default tab on the installation page and the only form in README, docs prose, and the llms outputs. The installation page may additionally offer pnpm/bun tabs. Repo development uses pnpm.
 - Prose uses em dashes, not `--` (CLI flags excepted). No emojis in code, docs, or output.
 - aec-auth owns everything token-shaped (refresh, storage, rotation). cantera renders; it never implements OAuth mechanics beyond the block's thin route wiring.

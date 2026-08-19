@@ -194,7 +194,7 @@ function ScopePicker({
                       AA. This renders within a shade of the same gray and
                       clears 5:1 on any theme whose foreground contrasts its own
                       muted surface. */}
-                  <code className="rounded bg-muted px-1 py-px font-mono text-foreground/60 text-xs">
+                  <code className="rounded bg-muted px-1 py-px font-mono text-status-neutral text-xs">
                     {scope.id}
                   </code>
                   {isRequired && <span className="text-muted-foreground text-xs">required</span>}
@@ -224,7 +224,7 @@ function ScopePicker({
                 htmlFor={`${baseId}-custom-${scopeId}`}
                 className="flex-wrap gap-2"
               >
-                <code className="rounded bg-muted px-1 py-px font-mono text-foreground/60 text-xs">
+                <code className="rounded bg-muted px-1 py-px font-mono text-status-neutral text-xs">
                   {scopeId}
                 </code>
                 <Badge variant="outline">custom</Badge>

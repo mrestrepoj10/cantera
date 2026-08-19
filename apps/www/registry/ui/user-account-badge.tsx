@@ -36,7 +36,7 @@ function UserAccountBadge({
             measures 4.35:1 on a stock shadcn theme. Foreground at 60% reads as
             the same gray and clears 5:1 wherever the theme's foreground
             contrasts its own muted surface. */}
-        <AvatarFallback className="font-medium text-foreground/60 text-xs">
+        <AvatarFallback className="font-medium text-status-neutral text-xs">
           {accountInitials(account)}
         </AvatarFallback>
       </Avatar>

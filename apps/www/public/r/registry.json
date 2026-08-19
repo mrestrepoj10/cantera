@@ -34,7 +34,7 @@
       "name": "status-tokens",
       "type": "registry:item",
       "title": "Status Tokens",
-      "description": "Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.",
+      "description": "Semantic status colors \u2014 success, warning, danger, neutral \u2014 each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.",
       "cssVars": {
         "theme": {
           "color-status-success": "var(--status-success, var(--foreground))",
@@ -120,7 +120,8 @@
         "checkbox",
         "input",
         "label",
-        "@cantera/oauth-types"
+        "@cantera/oauth-types",
+        "@cantera/status-tokens"
       ],
       "files": [
         {
@@ -134,7 +135,7 @@
       "type": "registry:component",
       "title": "User Account Badge",
       "description": "An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.",
-      "registryDependencies": ["avatar", "@cantera/oauth-types"],
+      "registryDependencies": ["avatar", "@cantera/oauth-types", "@cantera/status-tokens"],
       "files": [
         {
           "path": "registry/ui/user-account-badge.tsx",

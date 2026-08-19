@@ -219,7 +219,7 @@ Type: component
 Install: npx shadcn@latest add @cantera/scope-picker
 Docs: https://canteraui.xyz/components/scope-picker
 Item: https://canteraui.xyz/r/scope-picker.json
-Registry dependencies: badge, button, checkbox, input, label, @cantera/oauth-types
+Registry dependencies: badge, button, checkbox, input, label, @cantera/oauth-types, @cantera/status-tokens
 npm dependencies: lucide-react
 
 A controlled OAuth scope picker: checkbox list with descriptions, one-click presets, required scopes pinned on, and an escape hatch for scopes outside the catalog.
@@ -249,7 +249,7 @@ Type: component
 Install: npx shadcn@latest add @cantera/user-account-badge
 Docs: https://canteraui.xyz/components/user-account-badge
 Item: https://canteraui.xyz/r/user-account-badge.json
-Registry dependencies: avatar, @cantera/oauth-types
+Registry dependencies: avatar, @cantera/oauth-types, @cantera/status-tokens
 
 An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.
 
