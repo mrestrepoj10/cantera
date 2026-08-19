@@ -1,0 +1,8 @@
+packages:
+  - "apps/*"
+  - "vendor/@emulators/*"
+allowBuilds:
+  msw: true
+  sharp: true
+minimumReleaseAgeExclude:
+  - aec-auth@0.2.0
