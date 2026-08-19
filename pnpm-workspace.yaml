@@ -2,6 +2,7 @@ packages:
   - "apps/*"
   - "vendor/@emulators/*"
 allowBuilds:
+  agent-browser: true
   msw: true
   sharp: true
 minimumReleaseAgeExclude:

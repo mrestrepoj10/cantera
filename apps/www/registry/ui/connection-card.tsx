@@ -30,6 +30,7 @@ interface ConnectionActionProps {
   pending: boolean
   onAction: () => void | Promise<void>
   variant?: React.ComponentProps<typeof Button>['variant']
+  className?: string
   children: React.ReactNode
 }
 
@@ -37,20 +38,30 @@ interface ConnectionActionProps {
  * An action that follows the async-pending contract: disabled with a spinner
  * while it keeps its label, focusable throughout (`focusableWhenDisabled`
  * renders aria-disabled, not the native attribute), and never unmounted
- * mid-request. The spinner slot is always reserved so the label never shifts.
+ * mid-request. The spinner slot collapses at rest so the label sits centered,
+ * and morphs open smoothly while busy.
  */
-function ConnectionAction({ pending, onAction, variant, children }: ConnectionActionProps) {
+function ConnectionAction({
+  pending,
+  onAction,
+  variant,
+  className,
+  children,
+}: ConnectionActionProps) {
   const [asyncPending, setAsyncPending] = useState(false)
   const busy = pending || asyncPending
 
   return (
     <Button
-      size="lg"
+      size="sm"
       variant={variant}
       disabled={busy}
       focusableWhenDisabled
       aria-busy={busy || undefined}
-      className="min-h-11 gap-2 px-4"
+      // Visually compact so it never outweighs the provider identity beside it;
+      // the pseudo-element extends the hit area to the 44px field-density floor,
+      // same pattern as the checkbox primitive.
+      className={cn('relative gap-0 after:absolute after:-inset-y-2 after:inset-x-0', className)}
       onClick={() => {
         const result = onAction()
         if (!(result instanceof Promise)) return
@@ -61,11 +72,20 @@ function ConnectionAction({ pending, onAction, variant, children }: ConnectionAc
         )
       }}
     >
-      <span aria-hidden className="grid size-4 shrink-0 place-items-center">
+      {/* Collapsed at rest so the label sits centered; morphs open while busy.
+          Width + icon transitions are interruptible, and the spinner enters
+          with the opacity/scale/blur crossfade rather than a bare fade. */}
+      <span
+        aria-hidden
+        className={cn(
+          'grid shrink-0 place-items-center overflow-hidden transition-[width,margin] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
+          busy ? 'mr-1 w-3.5' : 'mr-0 w-0',
+        )}
+      >
         <LoaderCircleIcon
           className={cn(
-            'col-start-1 row-start-1 size-4 animate-spin transition-opacity duration-150 ease-out',
-            busy ? 'opacity-100' : 'opacity-0',
+            'size-3.5 animate-spin transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
+            busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
           )}
         />
       </span>

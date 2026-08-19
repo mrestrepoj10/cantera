@@ -17,7 +17,7 @@ export const apsProvider: OAuthProvider = {
   // `[&_svg]:size-*` wrapper still wins on specificity and overrides it.
   icon: (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="size-4">
-      <path d="M12.2 4 2 20h4.8l6.14-9.9c.1-.17.35-.17.45 0l3.9 6.36c.1.17-.02.39-.22.39h-3.16l2.03 3.15H22z" />
+      <path d="m.129 20.202 14.7-9.136h7.625c.235 0 .445.188.445.445 0 .21-.092.305-.21.375l-7.222 4.323c-.47.283-.633.845-.633 1.265l-.008 2.725H24V4.362a.56.56 0 0 0-.585-.562h-8.752L0 12.893V20.2h.129z" />
     </svg>
   ),
 }
