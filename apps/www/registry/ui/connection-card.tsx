@@ -1,6 +1,8 @@
 'use client'
 
+import { LoaderCircleIcon } from 'lucide-react'
 import type * as React from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -13,7 +15,63 @@ interface ConnectionCardProps extends React.ComponentProps<typeof Card> {
   connection: OAuthConnection
   onDisconnect?: () => void | Promise<void>
   onReconnect?: () => void | Promise<void>
+  /**
+   * Pending state for the disconnect action. The button stays mounted, keeps
+   * its label, and shows a spinner — never pass `undefined` for the handler to
+   * express "busy", that unmounts the control under the user's cursor.
+   */
+  disconnectPending?: boolean
+  /** Pending state for the connect / reconnect action. */
+  reconnectPending?: boolean
   showScopes?: boolean
+}
+
+interface ConnectionActionProps {
+  pending: boolean
+  onAction: () => void | Promise<void>
+  variant?: React.ComponentProps<typeof Button>['variant']
+  children: React.ReactNode
+}
+
+/**
+ * An action that follows the async-pending contract: disabled with a spinner
+ * while it keeps its label, focusable throughout (`focusableWhenDisabled`
+ * renders aria-disabled, not the native attribute), and never unmounted
+ * mid-request. The spinner slot is always reserved so the label never shifts.
+ */
+function ConnectionAction({ pending, onAction, variant, children }: ConnectionActionProps) {
+  const [asyncPending, setAsyncPending] = useState(false)
+  const busy = pending || asyncPending
+
+  return (
+    <Button
+      size="lg"
+      variant={variant}
+      disabled={busy}
+      focusableWhenDisabled
+      aria-busy={busy || undefined}
+      className="min-h-11 gap-2 px-4"
+      onClick={() => {
+        const result = onAction()
+        if (!(result instanceof Promise)) return
+        setAsyncPending(true)
+        result.then(
+          () => setAsyncPending(false),
+          () => setAsyncPending(false),
+        )
+      }}
+    >
+      <span aria-hidden className="grid size-4 shrink-0 place-items-center">
+        <LoaderCircleIcon
+          className={cn(
+            'col-start-1 row-start-1 size-4 animate-spin transition-opacity duration-150 ease-out',
+            busy ? 'opacity-100' : 'opacity-0',
+          )}
+        />
+      </span>
+      {children}
+    </Button>
+  )
 }
 
 /**
@@ -24,6 +82,8 @@ function ConnectionCard({
   connection,
   onDisconnect,
   onReconnect,
+  disconnectPending = false,
+  reconnectPending = false,
   showScopes = true,
   className,
   ...props
@@ -36,21 +96,26 @@ function ConnectionCard({
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
           {provider.icon && (
-            <span aria-hidden className="flex [&_svg]:size-5 [&_svg]:shrink-0">
+            <span aria-hidden className="flex shrink-0 [&_svg]:size-5 [&_svg]:shrink-0">
               {provider.icon}
             </span>
           )}
-          <span className="font-medium">{provider.name}</span>
-          <div className="ml-auto flex gap-2">
+          <span className="min-w-0 flex-1 truncate font-medium">{provider.name}</span>
+          <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
             {needsReconnect && onReconnect && (
-              <Button size="sm" onClick={() => void onReconnect()}>
+              <ConnectionAction pending={reconnectPending} onAction={onReconnect}>
                 {status === 'disconnected' ? 'Connect' : 'Reconnect'}
-              </Button>
+              </ConnectionAction>
             )}
             {status === 'connected' && onDisconnect && (
-              <Button size="sm" variant="outline" onClick={() => void onDisconnect()}>
+              // Disconnecting revokes a grant — destructive, not a neutral outline.
+              <ConnectionAction
+                pending={disconnectPending}
+                onAction={onDisconnect}
+                variant="destructive"
+              >
                 Disconnect
-              </Button>
+              </ConnectionAction>
             )}
           </div>
         </div>

@@ -28,11 +28,11 @@ function UserAccountBadge({
       className={cn('flex min-w-0 items-center gap-2', className)}
       {...props}
     >
-      <Avatar className={size === 'sm' ? 'size-6' : 'size-8'}>
+      {/* 12px is the text floor, so the compact avatar is 28px, not 24px — two
+          initials at text-xs need the room. */}
+      <Avatar className={size === 'sm' ? 'size-7' : 'size-8'}>
         {account.avatarUrl && <AvatarImage src={account.avatarUrl} alt="" />}
-        <AvatarFallback className={size === 'sm' ? 'text-[0.6rem]' : 'text-xs'}>
-          {accountInitials(account)}
-        </AvatarFallback>
+        <AvatarFallback className="text-xs font-medium">{accountInitials(account)}</AvatarFallback>
       </Avatar>
       <div className="grid min-w-0 leading-tight">
         <span className={cn('truncate font-medium', size === 'sm' ? 'text-xs' : 'text-sm')}>

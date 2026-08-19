@@ -9,13 +9,39 @@ import {
 } from '@/lib/oauth-types'
 import { cn } from '@/lib/utils'
 
-const statusVariant: Record<OAuthConnectionStatus, React.ComponentProps<typeof Badge>['variant']> =
-  {
-    connected: 'secondary',
-    expired: 'destructive',
-    error: 'destructive',
-    disconnected: 'outline',
-  }
+/**
+ * The four semantic status tones. One color, one meaning — never a generic
+ * badge variant. Requires the `@cantera/status-tokens` CSS variables; the
+ * utilities fall back to foreground / destructive / muted without them.
+ */
+type StatusTone = 'success' | 'warning' | 'danger' | 'neutral'
+
+/**
+ * Solid fills, not low-alpha tints: a tablet in direct sunlight loses a 10%
+ * tint entirely. Every pair below is contrast-verified in both appearances.
+ */
+const statusToneClasses: Record<StatusTone, string> = {
+  success: 'bg-status-success text-status-success-foreground',
+  warning: 'bg-status-warning text-status-warning-foreground',
+  danger: 'bg-status-danger text-status-danger-foreground',
+  neutral: 'bg-status-neutral text-status-neutral-foreground',
+}
+
+/** The same tones as ink, for text sitting on the page or on a `-surface`. */
+const statusInkClasses: Record<StatusTone, string> = {
+  success: 'text-status-success',
+  warning: 'text-status-warning',
+  danger: 'text-status-danger',
+  neutral: 'text-status-neutral',
+}
+
+const statusTone: Record<OAuthConnectionStatus, StatusTone> = {
+  connected: 'success',
+  // Expiry is recoverable — a refresh away, not a failure. Warning, not danger.
+  expired: 'warning',
+  error: 'danger',
+  disconnected: 'neutral',
+}
 
 const statusLabel: Record<OAuthConnectionStatus, string> = {
   connected: 'Connected',
@@ -24,20 +50,30 @@ const statusLabel: Record<OAuthConnectionStatus, string> = {
   disconnected: 'Not connected',
 }
 
-function formatExpiry(expiry: Date): string {
+/**
+ * Relative expiry, clamped at zero: a token that is already gone reads
+ * "expired", never "expires 5 min. ago".
+ */
+function formatExpiry(expiry: Date, locale?: string | string[]): string {
   const deltaMs = expiry.getTime() - Date.now()
-  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'always', style: 'narrow' })
+  if (deltaMs <= 0) return 'expired'
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'always', style: 'narrow' })
   const minutes = Math.round(deltaMs / 60_000)
-  if (Math.abs(minutes) < 60) return rtf.format(minutes, 'minute')
+  if (minutes < 1) return 'expires now'
+  if (minutes < 60) return `expires ${rtf.format(minutes, 'minute')}`
   const hours = Math.round(minutes / 60)
-  if (Math.abs(hours) < 48) return rtf.format(hours, 'hour')
-  return rtf.format(Math.round(hours / 24), 'day')
+  if (hours < 48) return `expires ${rtf.format(hours, 'hour')}`
+  return `expires ${rtf.format(Math.round(hours / 24), 'day')}`
 }
 
 interface TokenStatusProps extends React.ComponentProps<'div'> {
   connection: OAuthConnection
   showExpiry?: boolean
   showScopes?: boolean
+  /** BCP 47 locale(s) for the relative expiry. Defaults to the runtime locale. */
+  locale?: string | string[]
+  /** How far ahead counts as "expiring soon". Default five minutes. */
+  expiringSoonMs?: number
 }
 
 /**
@@ -48,32 +84,44 @@ function TokenStatus({
   connection,
   showExpiry = true,
   showScopes = false,
+  locale,
+  expiringSoonMs,
   className,
   ...props
 }: TokenStatusProps) {
   const expiry = connectionExpiry(connection)
-  const expiringSoon = connection.status === 'connected' && isExpiringSoon(connection)
+  const expiringSoon =
+    connection.status === 'connected' && isExpiringSoon(connection, expiringSoonMs)
+  const tone = expiringSoon ? 'warning' : statusTone[connection.status]
+  const label = expiringSoon ? 'Expiring soon' : statusLabel[connection.status]
 
   return (
     <div
       data-slot="token-status"
+      data-status={connection.status}
+      data-tone={tone}
       className={cn('flex flex-wrap items-center gap-x-2 gap-y-1.5', className)}
       {...props}
     >
-      <Badge variant={statusVariant[connection.status]}>{statusLabel[connection.status]}</Badge>
+      <Badge className={cn('h-6 px-2.5 transition-colors', statusToneClasses[tone])}>{label}</Badge>
       {showExpiry && expiry && connection.status === 'connected' && (
-        <span
-          className={cn('text-xs', expiringSoon ? 'text-destructive' : 'text-muted-foreground')}
+        <time
+          dateTime={expiry.toISOString()}
+          suppressHydrationWarning
+          className={cn(
+            'text-xs tabular-nums transition-colors',
+            expiringSoon ? statusInkClasses.warning : 'text-muted-foreground',
+          )}
         >
-          expires {formatExpiry(expiry)}
-        </span>
+          {formatExpiry(expiry, locale)}
+        </time>
       )}
       {connection.status === 'error' && connection.error && (
-        <span className="text-xs text-destructive">{connection.error}</span>
+        <span className={cn('text-xs', statusInkClasses.danger)}>{connection.error}</span>
       )}
       {showScopes &&
         connection.scopes?.map((scope) => (
-          <Badge key={scope} variant="outline" className="font-mono text-[0.7rem]">
+          <Badge key={scope} variant="outline" className="font-mono text-xs">
             {scope}
           </Badge>
         ))}
@@ -81,4 +129,4 @@ function TokenStatus({
   )
 }
 
-export { TokenStatus, type TokenStatusProps }
+export { type StatusTone, statusInkClasses, statusToneClasses, TokenStatus, type TokenStatusProps }

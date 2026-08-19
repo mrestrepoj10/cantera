@@ -31,21 +31,37 @@ function InstallCommand({ command, className }: InstallCommandProps) {
         className,
       )}
     >
-      <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-[13px]">
+      <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-code">
         {command}
       </code>
       <button
         type="button"
         onClick={() => void copy()}
         aria-label={copied ? 'Copied' : 'Copy command'}
-        className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="focus-ring flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
-        {copied ? (
-          <CheckIcon aria-hidden className="size-4" />
-        ) : (
-          <CopyIcon aria-hidden className="size-4" />
-        )}
+        {/* Both icons stay mounted in one grid cell and crossfade — the
+            confirmation reads as the same control changing, not as a swap. */}
+        <span aria-hidden className="grid size-4 place-items-center">
+          <CopyIcon
+            className={cn(
+              'col-start-1 row-start-1 size-4 transition-opacity duration-150 ease-out',
+              copied ? 'opacity-0' : 'opacity-100',
+            )}
+          />
+          <CheckIcon
+            className={cn(
+              'col-start-1 row-start-1 size-4 transition-opacity duration-150 ease-out',
+              copied ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+        </span>
       </button>
+      {/* The icon change is invisible to a screen reader, so announce it. The
+          live region is always in the DOM; only its text changes. */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {copied ? `Copied ${command} to the clipboard` : ''}
+      </span>
     </div>
   )
 }

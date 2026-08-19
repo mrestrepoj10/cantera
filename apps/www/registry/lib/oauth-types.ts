@@ -14,7 +14,14 @@ export interface OAuthProvider {
   id: string
   /** Human-readable name shown on buttons and cards, e.g. "Autodesk". */
   name: string
-  /** Brand mark rendered alongside the name. Any ReactNode; usually an SVG. */
+  /**
+   * Brand mark rendered alongside the name. Any ReactNode; usually an SVG.
+   *
+   * Sizing contract: a mark carries its own default size (the presets ship
+   * `className="size-4"`), so it renders correctly wherever it is dropped. A
+   * surface that wants a different size wraps it in a `[&_svg]:size-*`
+   * container, which wins on specificity.
+   */
   icon?: ReactNode
   /** Optional link to the provider's developer or account documentation. */
   docsUrl?: string

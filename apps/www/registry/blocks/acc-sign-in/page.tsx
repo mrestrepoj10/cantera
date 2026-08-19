@@ -21,7 +21,15 @@ async function requestOrigin(): Promise<string> {
   return `${proto}://${host}`
 }
 
-export async function AccSignIn({ nextPath = '/sign-in' }: { nextPath?: string }) {
+export async function AccSignIn({
+  nextPath = '/sign-in',
+  headingLevel = 'h1',
+}: {
+  nextPath?: string
+  /** Heading level for the block's title. Drop to h2 when embedding under one. */
+  headingLevel?: 'h1' | 'h2' | 'h3'
+}) {
+  const Heading = headingLevel
   const cookieStore = await cookies()
   const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)
   const signInHref = `/api/auth/${APS_PROVIDER_ID}?next=${encodeURIComponent(nextPath)}`
@@ -32,6 +40,7 @@ export async function AccSignIn({ nextPath = '/sign-in' }: { nextPath?: string }
         providers={[apsProvider]}
         hrefTemplate={`/api/auth/{provider}?next=${encodeURIComponent(nextPath)}`}
         title="Sign in"
+        titleAs={headingLevel}
         description="Connect your Autodesk account to continue."
       />
     )
@@ -68,7 +77,10 @@ export async function AccSignIn({ nextPath = '/sign-in' }: { nextPath?: string }
   }
 
   return (
-    <div className="w-full max-w-sm">
+    <div className="flex w-full max-w-sm flex-col gap-4">
+      <Heading className="font-heading font-medium text-2xl tracking-tight">
+        Autodesk connection
+      </Heading>
       <AccConnectionPanel
         connection={connection}
         signOutHref={`/api/auth/signout?next=${encodeURIComponent(nextPath)}`}
