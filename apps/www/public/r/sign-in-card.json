@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "sign-in-card",
+  "title": "Sign-In Card",
+  "description": "A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.",
+  "registryDependencies": [
+    "card",
+    "@cantera/provider-sign-in-button",
+    "@cantera/oauth-types"
+  ],
+  "files": [
+    {
+      "path": "registry/ui/sign-in-card.tsx",
+      "content": "'use client'\n\nimport type * as React from 'react'\n\nimport {\n  Card,\n  CardContent,\n  CardDescription,\n  CardFooter,\n  CardHeader,\n  CardTitle,\n} from '@/components/ui/card'\nimport { ProviderSignInButton } from '@/components/ui/provider-sign-in-button'\nimport type { OAuthProvider } from '@/lib/oauth-types'\nimport { cn } from '@/lib/utils'\n\ninterface SignInCardProps extends Omit<React.ComponentProps<typeof Card>, 'title'> {\n  providers: OAuthProvider[]\n  /**\n   * Href for a provider's auth route. \"{provider}\" is replaced with the\n   * provider id, e.g. \"/api/auth/{provider}\". Serializable, so the card can be\n   * rendered from a server component.\n   */\n  hrefTemplate?: string\n  /** Click handler alternative to hrefTemplate, for client-side flows. */\n  onSignIn?: (providerId: string) => void | Promise<void>\n  /** Id of the provider currently authenticating, to show its spinner. */\n  loadingProvider?: string\n  title?: React.ReactNode\n  description?: React.ReactNode\n  footer?: React.ReactNode\n}\n\n/**\n * A multi-provider sign-in chooser. Data-agnostic: pass any providers and\n * either an hrefTemplate (server-rendered flows) or an onSignIn callback.\n */\nfunction SignInCard({\n  providers,\n  hrefTemplate,\n  onSignIn,\n  loadingProvider,\n  title = 'Sign in',\n  description,\n  footer,\n  className,\n  ...props\n}: SignInCardProps) {\n  return (\n    <Card data-slot=\"sign-in-card\" className={cn('w-full max-w-sm', className)} {...props}>\n      <CardHeader className=\"text-center\">\n        <CardTitle className=\"text-2xl\">{title}</CardTitle>\n        {description && <CardDescription>{description}</CardDescription>}\n      </CardHeader>\n      <CardContent className=\"flex flex-col gap-3\">\n        {providers.map((provider) => (\n          <ProviderSignInButton\n            key={provider.id}\n            provider={provider}\n            href={hrefTemplate?.replaceAll('{provider}', provider.id)}\n            onSignIn={onSignIn ? () => onSignIn(provider.id) : undefined}\n            loading={loadingProvider === provider.id}\n          />\n        ))}\n      </CardContent>\n      {footer && (\n        <CardFooter className=\"justify-center text-center text-xs text-muted-foreground\">\n          {footer}\n        </CardFooter>\n      )}\n    </Card>\n  )\n}\n\nexport { SignInCard, type SignInCardProps }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

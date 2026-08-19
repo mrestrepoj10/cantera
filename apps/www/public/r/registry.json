@@ -1,0 +1,164 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "cantera",
+  "homepage": "https://canteraui.xyz",
+  "items": [
+    {
+      "name": "oauth-types",
+      "type": "registry:lib",
+      "title": "OAuth Types",
+      "description": "Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.",
+      "files": [
+        {
+          "path": "registry/lib/oauth-types.ts",
+          "type": "registry:lib",
+          "target": "lib/oauth-types.ts"
+        }
+      ]
+    },
+    {
+      "name": "aps-oauth-preset",
+      "type": "registry:lib",
+      "title": "APS OAuth Preset",
+      "description": "Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.",
+      "registryDependencies": ["@cantera/oauth-types"],
+      "files": [
+        {
+          "path": "registry/lib/aps-oauth-preset.tsx",
+          "type": "registry:lib",
+          "target": "lib/aps-oauth-preset.tsx"
+        }
+      ]
+    },
+    {
+      "name": "provider-sign-in-button",
+      "type": "registry:component",
+      "title": "Provider Sign-In Button",
+      "description": "A sign-in button for a single OAuth provider: brand icon, label, loading state. Works as a link or a click handler.",
+      "dependencies": ["lucide-react"],
+      "registryDependencies": ["button", "@cantera/oauth-types"],
+      "files": [
+        {
+          "path": "registry/ui/provider-sign-in-button.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "sign-in-card",
+      "type": "registry:component",
+      "title": "Sign-In Card",
+      "description": "A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.",
+      "registryDependencies": ["card", "@cantera/provider-sign-in-button", "@cantera/oauth-types"],
+      "files": [
+        {
+          "path": "registry/ui/sign-in-card.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "scope-picker",
+      "type": "registry:component",
+      "title": "Scope Picker",
+      "description": "A controlled OAuth scope picker: checkbox list with descriptions, one-click presets, and required scopes pinned on.",
+      "registryDependencies": ["badge", "checkbox", "label", "@cantera/oauth-types"],
+      "files": [
+        {
+          "path": "registry/ui/scope-picker.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "user-account-badge",
+      "type": "registry:component",
+      "title": "User Account Badge",
+      "description": "An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.",
+      "registryDependencies": ["avatar", "@cantera/oauth-types"],
+      "files": [
+        {
+          "path": "registry/ui/user-account-badge.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "token-status",
+      "type": "registry:component",
+      "title": "Token Status",
+      "description": "Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.",
+      "registryDependencies": ["badge", "@cantera/oauth-types"],
+      "files": [
+        {
+          "path": "registry/ui/token-status.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "connection-card",
+      "type": "registry:component",
+      "title": "Connection Card",
+      "description": "A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions.",
+      "registryDependencies": [
+        "button",
+        "card",
+        "@cantera/user-account-badge",
+        "@cantera/token-status",
+        "@cantera/oauth-types"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/connection-card.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "acc-sign-in",
+      "type": "registry:block",
+      "title": "ACC Sign-In",
+      "description": "Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.",
+      "dependencies": ["aec-auth"],
+      "registryDependencies": [
+        "@cantera/sign-in-card",
+        "@cantera/connection-card",
+        "@cantera/aps-oauth-preset",
+        "@cantera/oauth-types"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/acc-sign-in/page.tsx",
+          "type": "registry:page",
+          "target": "app/sign-in/page.tsx"
+        },
+        {
+          "path": "registry/blocks/acc-sign-in/components/acc-connection-panel.tsx",
+          "type": "registry:component",
+          "target": "components/acc-connection-panel.tsx"
+        },
+        {
+          "path": "registry/blocks/acc-sign-in/lib/acc-auth.ts",
+          "type": "registry:lib",
+          "target": "lib/acc-auth.ts"
+        },
+        {
+          "path": "registry/blocks/acc-sign-in/api/auth-start-route.ts",
+          "type": "registry:file",
+          "target": "app/api/auth/[provider]/route.ts"
+        },
+        {
+          "path": "registry/blocks/acc-sign-in/api/auth-callback-route.ts",
+          "type": "registry:file",
+          "target": "app/api/auth/callback/[provider]/route.ts"
+        },
+        {
+          "path": "registry/blocks/acc-sign-in/api/signout-route.ts",
+          "type": "registry:file",
+          "target": "app/api/auth/signout/route.ts"
+        }
+      ]
+    }
+  ]
+}

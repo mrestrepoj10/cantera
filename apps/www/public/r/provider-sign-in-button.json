@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "provider-sign-in-button",
+  "title": "Provider Sign-In Button",
+  "description": "A sign-in button for a single OAuth provider: brand icon, label, loading state. Works as a link or a click handler.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "button",
+    "@cantera/oauth-types"
+  ],
+  "files": [
+    {
+      "path": "registry/ui/provider-sign-in-button.tsx",
+      "content": "'use client'\n\nimport { LoaderCircleIcon } from 'lucide-react'\nimport type * as React from 'react'\n\nimport { buttonVariants } from '@/components/ui/button'\nimport type { OAuthProvider } from '@/lib/oauth-types'\nimport { cn } from '@/lib/utils'\n\ninterface ProviderSignInButtonProps extends React.ComponentProps<'button'> {\n  provider: OAuthProvider\n  /** Navigate to an auth route instead of handling a click. Renders an anchor. */\n  href?: string\n  /** Called with no arguments when the button is clicked. Ignored when href is set. */\n  onSignIn?: () => void | Promise<void>\n  loading?: boolean\n  variant?: 'default' | 'outline' | 'secondary'\n  size?: 'default' | 'sm' | 'lg'\n}\n\n/**\n * A sign-in button for a single OAuth provider: brand icon, label, and a\n * loading state. Works for any provider — pass an OAuthProvider shape.\n */\nfunction ProviderSignInButton({\n  provider,\n  href,\n  onSignIn,\n  loading = false,\n  variant = 'outline',\n  size = 'lg',\n  className,\n  children,\n  disabled,\n  ...props\n}: ProviderSignInButtonProps) {\n  const content = (\n    <>\n      {loading ? (\n        <LoaderCircleIcon aria-hidden className=\"animate-spin\" />\n      ) : (\n        provider.icon && (\n          <span aria-hidden className=\"flex [&_svg]:size-4 [&_svg]:shrink-0\">\n            {provider.icon}\n          </span>\n        )\n      )}\n      {children ?? `Continue with ${provider.name}`}\n    </>\n  )\n\n  const classes = cn(buttonVariants({ variant, size }), 'w-full justify-center gap-2', className)\n\n  if (href && !loading && !disabled) {\n    return (\n      <a data-slot=\"provider-sign-in-button\" href={href} className={classes}>\n        {content}\n      </a>\n    )\n  }\n\n  return (\n    <button\n      data-slot=\"provider-sign-in-button\"\n      type=\"button\"\n      className={classes}\n      disabled={disabled || loading}\n      onClick={onSignIn ? () => void onSignIn() : undefined}\n      {...props}\n    >\n      {content}\n    </button>\n  )\n}\n\nexport { ProviderSignInButton, type ProviderSignInButtonProps }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

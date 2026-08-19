@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "token-status",
+  "title": "Token Status",
+  "description": "Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.",
+  "registryDependencies": [
+    "badge",
+    "@cantera/oauth-types"
+  ],
+  "files": [
+    {
+      "path": "registry/ui/token-status.tsx",
+      "content": "import type * as React from 'react'\n\nimport { Badge } from '@/components/ui/badge'\nimport {\n  connectionExpiry,\n  isExpiringSoon,\n  type OAuthConnection,\n  type OAuthConnectionStatus,\n} from '@/lib/oauth-types'\nimport { cn } from '@/lib/utils'\n\nconst statusVariant: Record<OAuthConnectionStatus, React.ComponentProps<typeof Badge>['variant']> =\n  {\n    connected: 'secondary',\n    expired: 'destructive',\n    error: 'destructive',\n    disconnected: 'outline',\n  }\n\nconst statusLabel: Record<OAuthConnectionStatus, string> = {\n  connected: 'Connected',\n  expired: 'Expired',\n  error: 'Error',\n  disconnected: 'Not connected',\n}\n\nfunction formatExpiry(expiry: Date): string {\n  const deltaMs = expiry.getTime() - Date.now()\n  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'always', style: 'narrow' })\n  const minutes = Math.round(deltaMs / 60_000)\n  if (Math.abs(minutes) < 60) return rtf.format(minutes, 'minute')\n  const hours = Math.round(minutes / 60)\n  if (Math.abs(hours) < 48) return rtf.format(hours, 'hour')\n  return rtf.format(Math.round(hours / 24), 'day')\n}\n\ninterface TokenStatusProps extends React.ComponentProps<'div'> {\n  connection: OAuthConnection\n  showExpiry?: boolean\n  showScopes?: boolean\n}\n\n/**\n * Status line for an OAuth grant: connection state, token expiry, and the\n * scopes it holds. Server-safe.\n */\nfunction TokenStatus({\n  connection,\n  showExpiry = true,\n  showScopes = false,\n  className,\n  ...props\n}: TokenStatusProps) {\n  const expiry = connectionExpiry(connection)\n  const expiringSoon = connection.status === 'connected' && isExpiringSoon(connection)\n\n  return (\n    <div\n      data-slot=\"token-status\"\n      className={cn('flex flex-wrap items-center gap-x-2 gap-y-1.5', className)}\n      {...props}\n    >\n      <Badge variant={statusVariant[connection.status]}>{statusLabel[connection.status]}</Badge>\n      {showExpiry && expiry && connection.status === 'connected' && (\n        <span\n          className={cn('text-xs', expiringSoon ? 'text-destructive' : 'text-muted-foreground')}\n        >\n          expires {formatExpiry(expiry)}\n        </span>\n      )}\n      {connection.status === 'error' && connection.error && (\n        <span className=\"text-xs text-destructive\">{connection.error}</span>\n      )}\n      {showScopes &&\n        connection.scopes?.map((scope) => (\n          <Badge key={scope} variant=\"outline\" className=\"font-mono text-[0.7rem]\">\n            {scope}\n          </Badge>\n        ))}\n    </div>\n  )\n}\n\nexport { TokenStatus, type TokenStatusProps }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}
