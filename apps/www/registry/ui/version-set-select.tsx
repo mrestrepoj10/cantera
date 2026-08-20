@@ -38,6 +38,8 @@ interface VersionSetSelectProps {
   placeholder?: string
   /** BCP 47 locale(s) for the issuance dates. Defaults to the runtime locale. */
   locale?: string | string[]
+  /** Shown inside the open list when there are no version sets at all. */
+  emptyMessage?: string
   /**
    * Accessible name for the trigger. A combobox never takes its name from its
    * content — without this the control announces its value but not what it is.
@@ -61,6 +63,7 @@ function VersionSetSelect({
   disabled = false,
   placeholder = 'Select version set',
   locale,
+  emptyMessage = 'No version sets published yet.',
   'aria-label': ariaLabel = 'Version set',
   className,
 }: VersionSetSelectProps) {
@@ -89,8 +92,13 @@ function VersionSetSelect({
         data-slot="version-set-select"
         aria-label={ariaLabel}
         aria-busy={busy || undefined}
-        // The pseudo-element extends the hit area to the 44px field-density floor.
-        className={cn('relative w-full after:absolute after:-inset-y-2 after:inset-x-0', className)}
+        // gap-0 so the collapsed spinner slot leaves no phantom inset at rest
+        // (the chevron gets its margin back explicitly); the pseudo-element
+        // extends the hit area to the 44px field-density floor.
+        className={cn(
+          'relative w-full gap-0 after:absolute after:-inset-y-2 after:inset-x-0 [&>svg]:ml-1.5',
+          className,
+        )}
       >
         <span
           aria-hidden
@@ -129,6 +137,14 @@ function VersionSetSelect({
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
+        {versionSets.length === 0 && (
+          <p
+            className="px-3 py-4 text-muted-foreground text-sm"
+            data-slot="version-set-select-empty"
+          >
+            {emptyMessage}
+          </p>
+        )}
         {versionSets.map((versionSet) => {
           const issued = versionSetIssuance(versionSet)
           return (

@@ -866,6 +866,12 @@ export const apiTables: Record<string, ApiTable[]> = {
           description: 'Shown while no hub is selected.',
         },
         {
+          name: 'emptyMessage',
+          type: 'string',
+          defaultValue: "'No hubs available.'",
+          description: 'Shown inside the open list when there are no hubs at all.',
+        },
+        {
           name: "'aria-label'",
           type: 'string',
           defaultValue: "'Hub'",
@@ -942,7 +948,7 @@ export const apiTables: Record<string, ApiTable[]> = {
         {
           name: 'emptyMessage',
           type: 'string',
-          defaultValue: "'No projects in this hub yet.'",
+          defaultValue: "'No projects yet.'",
           description: 'Shown when the list is ready but holds no projects at all.',
         },
         {
@@ -1002,6 +1008,12 @@ export const apiTables: Record<string, ApiTable[]> = {
           defaultValue: 'runtime locale',
           description:
             'BCP 47 locale(s) for the issuance dates. Left undefined, Intl resolves the runtime locale — nothing is hardcoded to English.',
+        },
+        {
+          name: 'emptyMessage',
+          type: 'string',
+          defaultValue: "'No version sets published yet.'",
+          description: 'Shown inside the open list when there are no version sets at all.',
         },
         {
           name: "'aria-label'",

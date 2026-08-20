@@ -23,4 +23,5 @@ Files written into the consumer project:
 - `pending` (`boolean`, default `false`) — The trigger keeps showing the current set, crossfades in a spinner, and goes read-only — still focusable, never unmounted.
 - `disabled` (`boolean`, default `false`) — Disables the whole select.
 - `locale` (`string | string[]`, default `runtime locale`) — BCP 47 locale(s) for the issuance dates. Left undefined, Intl resolves the runtime locale — nothing is hardcoded to English.
+- `emptyMessage` (`string`, default `'No version sets published yet.'`) — Shown inside the open list when there are no version sets at all.
 - `'aria-label'` (`string`, default `'Version set'`) — Accessible name for the trigger. A combobox never takes its name from its content, so without one the control announces its value but not what it is.

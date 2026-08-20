@@ -23,4 +23,5 @@ Files written into the consumer project:
 - `pending` (`boolean`, default `false`) — The trigger keeps showing the current hub, crossfades in a spinner, and goes read-only — still focusable, never unmounted.
 - `disabled` (`boolean`, default `false`) — Disables the whole select.
 - `placeholder` (`string`, default `'Select hub'`) — Shown while no hub is selected.
+- `emptyMessage` (`string`, default `'No hubs available.'`) — Shown inside the open list when there are no hubs at all.
 - `'aria-label'` (`string`, default `'Hub'`) — Accessible name for the trigger. A combobox never takes its name from its content, so without one the control announces its value but not what it is.

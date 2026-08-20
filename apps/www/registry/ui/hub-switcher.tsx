@@ -31,6 +31,8 @@ interface HubSwitcherProps {
   pending?: boolean
   disabled?: boolean
   placeholder?: string
+  /** Shown inside the open list when there are no hubs at all. */
+  emptyMessage?: string
   /**
    * Accessible name for the trigger. A combobox never takes its name from its
    * content — without this the control announces its value but not what it is.
@@ -51,6 +53,7 @@ function HubSwitcher({
   pending = false,
   disabled = false,
   placeholder = 'Select hub',
+  emptyMessage = 'No hubs available.',
   'aria-label': ariaLabel = 'Hub',
   className,
 }: HubSwitcherProps) {
@@ -81,9 +84,13 @@ function HubSwitcher({
         data-slot="hub-switcher"
         aria-label={ariaLabel}
         aria-busy={busy || undefined}
-        // The pseudo-element extends the hit area to the 44px field-density
-        // floor without growing the visual box.
-        className={cn('relative w-full after:absolute after:-inset-y-2 after:inset-x-0', className)}
+        // gap-0 so the collapsed spinner slot leaves no phantom inset at rest
+        // (the chevron gets its margin back explicitly); the pseudo-element
+        // extends the hit area to the 44px field-density floor.
+        className={cn(
+          'relative w-full gap-0 after:absolute after:-inset-y-2 after:inset-x-0 [&>svg]:ml-1.5',
+          className,
+        )}
       >
         {/* Collapsed at rest; morphs open while busy with the icon crossfade. */}
         <span
@@ -116,6 +123,11 @@ function HubSwitcher({
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
+        {hubs.length === 0 && (
+          <p className="px-3 py-4 text-muted-foreground text-sm" data-slot="hub-switcher-empty">
+            {emptyMessage}
+          </p>
+        )}
         {hubs.map((hub) => (
           <SelectItem key={hub.id} value={hub.id}>
             <span className="min-w-0 flex-1 truncate">{hub.name}</span>

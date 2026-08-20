@@ -2,7 +2,7 @@
 
 import { LoaderCircleIcon } from 'lucide-react'
 import type * as React from 'react'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -45,6 +45,61 @@ interface ModelStatusCardProps extends React.ComponentProps<typeof Card> {
 }
 
 /**
+ * An action on the async-pending contract: disabled with a spinner while it
+ * keeps its label, focusable throughout, never unmounted mid-request.
+ */
+function RetryAction({
+  pending,
+  onRetry,
+  'aria-describedby': ariaDescribedby,
+}: {
+  pending: boolean
+  onRetry: () => void | Promise<void>
+  'aria-describedby'?: string
+}) {
+  const [asyncPending, setAsyncPending] = useState(false)
+  const busy = pending || asyncPending
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      disabled={busy}
+      focusableWhenDisabled
+      aria-busy={busy || undefined}
+      aria-describedby={ariaDescribedby}
+      // The pseudo-element extends the hit area to the 44px floor.
+      className="relative shrink-0 gap-0 after:absolute after:-inset-y-2 after:inset-x-0"
+      onClick={() => {
+        const result = onRetry()
+        if (!(result instanceof Promise)) return
+        setAsyncPending(true)
+        result.then(
+          () => setAsyncPending(false),
+          () => setAsyncPending(false),
+        )
+      }}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          'grid shrink-0 place-items-center overflow-hidden transition-[width,margin] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
+          busy ? 'mr-1 w-3.5' : 'mr-0 w-0',
+        )}
+      >
+        <LoaderCircleIcon
+          className={cn(
+            'size-3.5 animate-spin transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
+            busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
+          )}
+        />
+      </span>
+      Retry
+    </Button>
+  )
+}
+
+/**
  * The translation state of one design: whether the model is viewable yet, how
  * far along it is, and what failed. Drive it from a Model Derivative manifest
  * via `fromApsManifest`, or from any backend that fills a ModelTranslation.
@@ -57,16 +112,15 @@ function ModelStatusCard({
   className,
   ...props
 }: ModelStatusCardProps) {
-  const [asyncPending, setAsyncPending] = useState(false)
-  const busy = retryPending || asyncPending
+  const errorId = useId()
   const tone = translationTone[translation.status]
   const retryable = translation.status === 'failed' || translation.status === 'timeout'
-  const errorId = `model-status-error-${translation.urn}`
 
   return (
     <Card
       data-slot="model-status-card"
       data-status={translation.status}
+      data-tone={tone}
       className={cn('w-full', className)}
       {...props}
     >
@@ -83,41 +137,11 @@ function ModelStatusCard({
             {translation.name ?? translation.urn}
           </span>
           {retryable && onRetry && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy}
-              focusableWhenDisabled
-              aria-busy={busy || undefined}
+            <RetryAction
+              pending={retryPending}
+              onRetry={onRetry}
               aria-describedby={translation.error ? errorId : undefined}
-              // The pseudo-element extends the hit area to the 44px floor.
-              className="relative shrink-0 gap-0 after:absolute after:-inset-y-2 after:inset-x-0"
-              onClick={() => {
-                const result = onRetry()
-                if (!(result instanceof Promise)) return
-                setAsyncPending(true)
-                result.then(
-                  () => setAsyncPending(false),
-                  () => setAsyncPending(false),
-                )
-              }}
-            >
-              <span
-                aria-hidden
-                className={cn(
-                  'grid shrink-0 place-items-center overflow-hidden transition-[width,margin] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
-                  busy ? 'mr-1 w-3.5' : 'mr-0 w-0',
-                )}
-              >
-                <LoaderCircleIcon
-                  className={cn(
-                    'size-3.5 animate-spin transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
-                    busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
-                  )}
-                />
-              </span>
-              Retry
-            </Button>
+            />
           )}
         </div>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">

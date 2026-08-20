@@ -26,5 +26,5 @@ Files written into the consumer project:
 - `onRetry` (`() => void | Promise<void>`) — Retry for the failed fetch, rendered on the async-pending contract at the 44px floor.
 - `retryPending` (`boolean`, default `false`) — Pending state for the retry action, drivable from outside.
 - `pending` (`boolean`, default `false`) — The trigger keeps its label, crossfades in a spinner, and stays focusable while a selection lands.
-- `emptyMessage` (`string`, default `'No projects in this hub yet.'`) — Shown when the list is ready but holds no projects at all.
+- `emptyMessage` (`string`, default `'No projects yet.'`) — Shown when the list is ready but holds no projects at all.
 - `'aria-label'` (`string`, default `'Project'`) — Accessible name for the trigger. A combobox never takes its name from its content, so without one the control announces its value but not what it is.

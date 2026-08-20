@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronsUpDownIcon, LoaderCircleIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -67,9 +67,11 @@ interface ProjectPickerProps {
 function RetryAction({
   pending,
   onRetry,
+  'aria-describedby': ariaDescribedby,
 }: {
   pending: boolean
   onRetry: () => void | Promise<void>
+  'aria-describedby'?: string
 }) {
   const [asyncPending, setAsyncPending] = useState(false)
   const busy = pending || asyncPending
@@ -81,6 +83,7 @@ function RetryAction({
       disabled={busy}
       focusableWhenDisabled
       aria-busy={busy || undefined}
+      aria-describedby={ariaDescribedby}
       className="relative gap-0 after:absolute after:-inset-y-2 after:inset-x-0"
       onClick={() => {
         const result = onRetry()
@@ -131,20 +134,31 @@ function ProjectPicker({
   disabled = false,
   placeholder = 'Select project',
   searchPlaceholder = 'Search projects…',
-  emptyMessage = 'No projects in this hub yet.',
+  emptyMessage = 'No projects yet.',
   'aria-label': ariaLabel = 'Project',
   className,
 }: ProjectPickerProps) {
   const [open, setOpen] = useState(false)
   const [uncontrolled, setUncontrolled] = useState(defaultValue)
   const [asyncPending, setAsyncPending] = useState(false)
+  const errorId = useId()
   const selectedId = value ?? uncontrolled
   const selected = projects.find((project) => project.id === selectedId)
   const busy = pending || asyncPending
+  const gated = busy || disabled
+
+  // A gate closing the popup resets the open state too. Without this a
+  // pending phase would snap the list back open the instant it cleared —
+  // motion the user never asked for.
+  useEffect(() => {
+    if (gated && open) setOpen(false)
+  }, [gated, open])
 
   const groups = hubs
     ? groupProjectsByHub(hubs, projects)
     : [{ hub: null, projects }].filter((group) => group.projects.length > 0)
+
+  const listReady = status === 'ready' && projects.length > 0
 
   function choose(projectId: string) {
     setOpen(false)
@@ -160,7 +174,13 @@ function ProjectPicker({
   }
 
   return (
-    <Popover open={open && !busy && !disabled} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (next && gated) return
+        setOpen(next)
+      }}
+    >
       <PopoverTrigger
         render={
           <Button
@@ -168,13 +188,14 @@ function ProjectPicker({
             role="combobox"
             aria-label={ariaLabel}
             aria-expanded={open}
-            disabled={disabled || busy}
+            disabled={gated}
             focusableWhenDisabled
             aria-busy={busy || undefined}
             data-slot="project-picker"
             className={cn(
-              // The pseudo-element extends the hit area to the 44px floor.
-              'relative w-full justify-between gap-1.5 font-normal after:absolute after:-inset-y-2 after:inset-x-0',
+              // gap-0 so the collapsed spinner slot leaves no phantom inset at
+              // rest; the pseudo-element extends the hit area to the 44px floor.
+              'relative w-full justify-between gap-0 font-normal after:absolute after:-inset-y-2 after:inset-x-0',
               !selected && 'text-muted-foreground',
               className,
             )}
@@ -183,7 +204,7 @@ function ProjectPicker({
               aria-hidden
               className={cn(
                 'grid shrink-0 place-items-center overflow-hidden transition-[width,margin] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
-                busy ? 'mr-0.5 w-4' : 'mr-0 w-0',
+                busy ? 'mr-1.5 w-4' : 'mr-0 w-0',
               )}
             >
               <LoaderCircleIcon
@@ -196,69 +217,76 @@ function ProjectPicker({
             <span className="min-w-0 flex-1 truncate text-left">
               {selected ? selected.name : placeholder}
             </span>
-            <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground" />
+            <ChevronsUpDownIcon className="ml-1.5 size-4 shrink-0 text-muted-foreground" />
           </Button>
         }
       />
       <PopoverContent className="w-(--anchor-width) min-w-64 p-0" align="start">
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} />
-          <CommandList>
-            {status === 'loading' && (
-              <div className="flex flex-col gap-1 p-2" data-slot="project-picker-loading">
-                {/* A still skeleton in the rows' own box model — no shimmer,
-                    no stagger — plus one live-region announcement. */}
-                <output aria-live="polite" className="sr-only">
-                  Loading projects…
-                </output>
-                {[0, 1, 2].map((row) => (
-                  <div key={row} aria-hidden className="flex h-8 items-center px-2">
-                    <div className="h-3 w-2/3 rounded bg-muted" />
-                  </div>
-                ))}
-              </div>
-            )}
-            {status === 'error' && (
-              <div className="flex flex-col items-start gap-3 p-4" data-slot="project-picker-error">
-                <p id="project-picker-error-text" className="text-sm text-status-danger">
-                  {error ?? 'Projects could not be loaded.'}
-                </p>
-                {onRetry && (
-                  <span aria-describedby="project-picker-error-text" className="contents">
-                    <RetryAction pending={retryPending} onRetry={onRetry} />
-                  </span>
-                )}
-              </div>
-            )}
-            {status === 'ready' && projects.length === 0 && (
-              <p className="p-4 text-muted-foreground text-sm" data-slot="project-picker-empty">
-                {emptyMessage}
+        {/* Match on keywords (the visible names) only — the opaque ids keep
+            cmdk values unique but must never drive search. */}
+        <Command
+          filter={(_value, search, keywords) => {
+            const haystack = (keywords ?? []).join(' ').toLowerCase()
+            return haystack.includes(search.toLowerCase()) ? 1 : 0
+          }}
+        >
+          {/* The search box exists only when there is a list to filter; over a
+              skeleton, an error, or an empty list it would filter nothing. */}
+          {listReady && <CommandInput placeholder={searchPlaceholder} />}
+          {status === 'loading' && (
+            <div className="flex flex-col gap-1 p-2" data-slot="project-picker-loading">
+              {/* A still skeleton in the rows' own box model — no shimmer,
+                  no stagger — plus one live-region announcement. */}
+              <output aria-live="polite" className="sr-only">
+                Loading projects…
+              </output>
+              {[0, 1, 2].map((row) => (
+                <div key={row} aria-hidden className="flex h-8 items-center px-2">
+                  <div className="h-3 w-2/3 rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+          )}
+          {status === 'error' && (
+            <div className="flex flex-col items-start gap-3 p-4" data-slot="project-picker-error">
+              {/* role="status" so the loading → error flip is announced, not
+                  just painted. */}
+              <p id={errorId} role="status" className="text-sm text-status-danger">
+                {error ?? 'Projects could not be loaded.'}
               </p>
-            )}
-            {status === 'ready' && projects.length > 0 && (
-              <>
-                <CommandEmpty>No projects match.</CommandEmpty>
-                {groups.map((group) => (
-                  <CommandGroup key={group.hub?.id ?? '__ungrouped'} heading={group.hub?.name}>
-                    {group.projects.map((project) => (
-                      <CommandItem
-                        key={project.id}
-                        // The id keeps cmdk values unique when two hubs hold
-                        // same-named projects; keywords make search match the
-                        // visible name, never the opaque id alone.
-                        value={project.id}
-                        keywords={[project.name]}
-                        data-checked={project.id === selectedId || undefined}
-                        onSelect={() => choose(project.id)}
-                      >
-                        <span className="min-w-0 flex-1 truncate">{project.name}</span>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                ))}
-              </>
-            )}
-          </CommandList>
+              {onRetry && (
+                <RetryAction pending={retryPending} onRetry={onRetry} aria-describedby={errorId} />
+              )}
+            </div>
+          )}
+          {status === 'ready' && projects.length === 0 && (
+            <p className="p-4 text-muted-foreground text-sm" data-slot="project-picker-empty">
+              {emptyMessage}
+            </p>
+          )}
+          {listReady && (
+            <CommandList>
+              <CommandEmpty>No projects match.</CommandEmpty>
+              {groups.map((group) => (
+                <CommandGroup key={group.hub?.id ?? '__ungrouped'} heading={group.hub?.name}>
+                  {group.projects.map((project) => (
+                    <CommandItem
+                      key={project.id}
+                      // The id keeps cmdk values unique when two hubs hold
+                      // same-named projects; the filter above matches the
+                      // keywords — the visible name — never the id.
+                      value={project.id}
+                      keywords={[project.name]}
+                      data-checked={project.id === selectedId || undefined}
+                      onSelect={() => choose(project.id)}
+                    >
+                      <span className="min-w-0 flex-1 truncate">{project.name}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              ))}
+            </CommandList>
+          )}
         </Command>
       </PopoverContent>
     </Popover>

@@ -18,17 +18,52 @@ const projects: Project[] = [
   { id: 'b.kanal-west', name: 'Kanalhaus West', hubId: 'b.ridgeline-emea' },
 ]
 
+type ListState = 'ready' | 'loading' | 'error'
+
+const listStates: { id: ListState; label: string }[] = [
+  { id: 'ready', label: 'Ready' },
+  { id: 'loading', label: 'Loading' },
+  { id: 'error', label: 'Error' },
+]
+
 /**
- * A picker over two hubs' projects. Selection is uncontrolled here —
- * `defaultValue` seeds it and the picker owns the rest; pass `value` to
- * control it. The chosen id surfaces below the picker.
+ * The picker with its whole fetch vocabulary: the ready list grouped by hub,
+ * the still loading skeleton, and the error wired to a retry. Selection is
+ * uncontrolled here — pass `value` to control it.
  */
 export function ProjectPickerDemo() {
+  const [state, setState] = useState<ListState>('ready')
   const [projectId, setProjectId] = useState<string>()
 
   return (
-    <div className="flex w-full flex-col gap-3">
-      <ProjectPicker hubs={hubs} projects={projects} onValueChange={setProjectId} />
+    <div className="flex w-full flex-col gap-4">
+      <fieldset className="flex flex-wrap gap-2">
+        <legend className="sr-only">Project list state</legend>
+        {listStates.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            aria-pressed={state === option.id}
+            onClick={() => setState(option.id)}
+            className="flex min-h-9 items-center rounded-md border border-border px-2.5 text-xs transition-colors hover:bg-muted aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary"
+          >
+            {option.label}
+          </button>
+        ))}
+      </fieldset>
+      <ProjectPicker
+        hubs={hubs}
+        projects={state === 'ready' ? projects : []}
+        onValueChange={setProjectId}
+        status={state}
+        error="Projects could not be loaded."
+        onRetry={async () => {
+          await new Promise((resolve) => {
+            setTimeout(resolve, 900)
+          })
+          setState('ready')
+        }}
+      />
       <p className="text-muted-foreground text-sm">
         {projectId ? (
           <>
