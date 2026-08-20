@@ -61,6 +61,17 @@ export interface SheetVersionSet {
 /** Normalize a version set's issuance into a Date, or null when absent or invalid. */
 export function versionSetIssuance(versionSet: SheetVersionSet): Date | null {
   if (versionSet.issuanceDate == null) return null
+  // A date-only string ("2026-03-12" — the shape ACC Sheets returns) names a
+  // calendar day, not an instant. `new Date(string)` would read it as UTC
+  // midnight, which formats a day early anywhere west of UTC — so build it in
+  // local time instead.
+  if (typeof versionSet.issuanceDate === 'string') {
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(versionSet.issuanceDate)
+    if (dateOnly) {
+      const [, year, month, day] = dateOnly
+      return new Date(Number(year), Number(month) - 1, Number(day))
+    }
+  }
   const date = new Date(versionSet.issuanceDate)
   return Number.isNaN(date.getTime()) ? null : date
 }
