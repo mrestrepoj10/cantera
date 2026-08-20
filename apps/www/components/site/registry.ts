@@ -47,6 +47,91 @@ export function getRegistryItem(name: string): RegistryItem | undefined {
   return registryItems.find((item) => item.name === name)
 }
 
+/** A titled section of the catalog: one kind of registry item, in registry.json order. */
+export interface RegistryGroup {
+  /** Stable slug — used for React keys and heading ids. */
+  id: string
+  title: string
+  /** One sentence on what this kind of item is. */
+  description: string
+  items: RegistryItem[]
+}
+
+/**
+ * Grouping is derived from the item `type`, never from a hardcoded list of
+ * names — a new item lands in its section the moment registry.json gains it.
+ * The one name-shaped rule is the `-types` suffix, which is how the lib items
+ * split between shared prop shapes and provider adapters.
+ */
+type GroupDefinition = Omit<RegistryGroup, 'items'> & {
+  match: (item: RegistryItem) => boolean
+}
+
+const groupDefinitions: GroupDefinition[] = [
+  {
+    id: 'blocks',
+    title: 'Blocks',
+    description:
+      'Wired pages — routes, state, and provider calls already connected, ready to mount in an app.',
+    match: (item) => item.type === 'registry:block',
+  },
+  {
+    id: 'components',
+    title: 'Components',
+    description:
+      'Data-agnostic UI — plain typed props in, callbacks out, no fetching and no provider knowledge.',
+    match: (item) => item.type === 'registry:component',
+  },
+  {
+    id: 'types',
+    title: 'Types',
+    description: 'The shared prop shapes every cantera component and preset is written against.',
+    match: (item) => item.type === 'registry:lib' && item.name.endsWith('-types'),
+  },
+  {
+    id: 'presets',
+    title: 'Provider presets',
+    description: 'Provider adapters that map a vendor API onto the shared types.',
+    match: (item) => item.type === 'registry:lib',
+  },
+  {
+    id: 'tokens',
+    title: 'Design tokens',
+    description: 'cssVars items — the CSS variables components render their state from.',
+    match: (item) => item.type === 'registry:item',
+  },
+]
+
+/** Anything a future `type` introduces lands here rather than dropping out of the catalog. */
+const otherGroup: Omit<RegistryGroup, 'items'> = {
+  id: 'other',
+  title: 'Other items',
+  description: 'Registry items that do not belong to one of the kinds above.',
+}
+
+function buildGroups(): RegistryGroup[] {
+  const remaining = [...registryItems]
+  const groups: RegistryGroup[] = []
+
+  for (const { match, ...group } of groupDefinitions) {
+    const items: RegistryItem[] = []
+    for (let i = remaining.length - 1; i >= 0; i -= 1) {
+      const item = remaining[i]
+      if (item && match(item)) {
+        items.unshift(item)
+        remaining.splice(i, 1)
+      }
+    }
+    if (items.length > 0) groups.push({ ...group, items })
+  }
+
+  if (remaining.length > 0) groups.push({ ...otherGroup, items: remaining })
+  return groups
+}
+
+/** The catalog, split into titled sections by kind. Empty sections are omitted. */
+export const registryGroups: RegistryGroup[] = buildGroups()
+
 /** The generated example page for an item, when it has one. */
 export function getExampleItem(name: string): RegistryItem | undefined {
   return allItems.find((item) => item.type === 'registry:example' && item.name === `${name}-demo`)
