@@ -236,9 +236,37 @@ async function renderPage(item: RegistryItem): Promise<string> {
   return `${sections.join('\n\n')}\n`
 }
 
+/** Biome's line budget, mirrored from `biome.json`. */
+const LINE_WIDTH = 100
+
+/**
+ * A single-quoted TypeScript string literal, matching Biome's `quoteStyle`.
+ *
+ * `meta.ts` is the one generated file Biome formats — everything else this
+ * script writes is `.mdx`, which Biome does not touch — so it has to be written
+ * the way Biome would leave it. Otherwise `pnpm format` rewrites the quotes,
+ * the committed file stops matching what the generator emits, and CI's
+ * `git diff --exit-code` fails on a file nobody edited. Registry names are
+ * kebab-case, so nothing here needs escaping, but a quote or backslash in one
+ * should not silently produce a broken module.
+ */
+function tsString(value: string): string {
+  return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+}
+
 /** Sidebar order: the registry's own order, which groups the domain sensibly. */
 function renderMeta(items: RegistryItem[]): string {
-  const pages = items.map((item) => `    ${yamlString(item.name)},`).join('\n')
+  const names = items.map((item) => tsString(item.name))
+  // Biome folds an array of primitives onto one line when it fits the budget
+  // and expands it otherwise — the same rule `formatRegistry` encodes for
+  // registry.json. Emitting the wrong one is a formatting diff, not a bug in
+  // the output, which is exactly the kind that survives review and breaks CI.
+  const inline = `  pages: [${names.join(', ')}],`
+  const pages =
+    inline.length <= LINE_WIDTH
+      ? [inline]
+      : ['  pages: [', ...names.map((name) => `    ${name},`), '  ],']
+
   return [
     "import { defineMeta } from 'blume'",
     '',
@@ -251,9 +279,7 @@ function renderMeta(items: RegistryItem[]): string {
     'export default defineMeta({',
     "  title: 'Components',",
     "  icon: 'blocks',",
-    '  pages: [',
-    pages,
-    '  ],',
+    ...pages,
     '})',
     '',
   ].join('\n')
