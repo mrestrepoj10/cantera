@@ -55,11 +55,15 @@ function ConnectionsManager({
         method: 'POST',
         redirect: 'manual',
       })
+    } finally {
+      // Clearing pending is part of the same transition as the refresh, so the
+      // Disconnect control keeps its spinner until the re-rendered server page
+      // commits — never actionable again beside a stale connected row. The
+      // refresh runs on failure too: the server view is the truth either way.
       startRefresh(() => {
         router.refresh()
+        setDisconnecting(undefined)
       })
-    } finally {
-      setDisconnecting(undefined)
     }
   }
 
