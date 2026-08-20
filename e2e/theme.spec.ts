@@ -64,14 +64,22 @@ test.describe('no flash of the wrong theme', () => {
       markup.indexOf('<header'),
     )
 
-    // Record the class list inside the first animation frame. rAF callbacks run
-    // as part of the rendering steps, before that frame is painted — so a class
-    // observed here was in place for the very first paint.
+    // Record the class list inside the first animation frame that has content.
+    // rAF callbacks run as part of the rendering steps, before that frame is
+    // painted — so a class observed here was in place for the paint. Frames
+    // before <body> has parsed any content are skipped: a slow-streaming
+    // document can produce blank frames ahead of the body-top appearance
+    // script, and a blank paint cannot flash the wrong theme.
     await page.addInitScript(() => {
-      requestAnimationFrame(() => {
-        ;(window as unknown as { __firstFrameClass?: string }).__firstFrameClass =
-          document.documentElement.className
-      })
+      const record = () => {
+        if (document.body?.firstElementChild) {
+          ;(window as unknown as { __firstFrameClass?: string }).__firstFrameClass =
+            document.documentElement.className
+          return
+        }
+        requestAnimationFrame(record)
+      }
+      requestAnimationFrame(record)
     })
 
     await page.goto('/components')

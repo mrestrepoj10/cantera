@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+import { waitForHydration } from './hydration'
+
 // The product's core promise: the acc-sign-in block completes a real OAuth
 // flow against the embedded APS emulator — consent, code exchange, vault
 // refresh custody, session — with zero credentials.
@@ -35,7 +37,10 @@ test('full sign-in flow through the embedded APS emulator', async ({ page }) => 
   await expect(page.locator('[data-slot="model-status-card"][data-status="success"]')).toBeVisible()
 
   // Picking another project re-reads the server: a different hub's projects,
-  // a different issuance, different models.
+  // a different issuance, different models. The redirect back landed a fresh
+  // document, so wait for hydration before the first client interaction — a
+  // click that races it lands on a picker with no handlers yet.
+  await waitForHydration(page)
   await page.getByRole('combobox', { name: 'Project' }).click()
   await page.getByRole('option', { name: 'Cedar Mill Campus' }).click()
   await expect(page.getByRole('combobox', { name: 'Version set' })).toContainText('IFC 2026-05')
