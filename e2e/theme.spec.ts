@@ -64,14 +64,23 @@ test.describe('no flash of the wrong theme', () => {
       markup.indexOf('<header'),
     )
 
-    // Record the class list inside the first animation frame. rAF callbacks run
-    // as part of the rendering steps, before that frame is painted — so a class
-    // observed here was in place for the very first paint.
+    // Record the class list inside the first animation frame in which <body>
+    // exists. rAF callbacks run as part of the rendering steps, before that
+    // frame is painted — so a class observed here was in place for the paint.
+    // Frames before <body> is parsed are skipped: nothing page-controlled has
+    // painted yet (the background lives on body), so a slow-streaming head
+    // cannot flash a theme. But an empty body is not skipped — body carries
+    // bg-background, so from its first frame a wrong class is a visible flash.
     await page.addInitScript(() => {
-      requestAnimationFrame(() => {
-        ;(window as unknown as { __firstFrameClass?: string }).__firstFrameClass =
-          document.documentElement.className
-      })
+      const record = () => {
+        if (document.body) {
+          ;(window as unknown as { __firstFrameClass?: string }).__firstFrameClass =
+            document.documentElement.className
+          return
+        }
+        requestAnimationFrame(record)
+      }
+      requestAnimationFrame(record)
     })
 
     await page.goto('/components')
