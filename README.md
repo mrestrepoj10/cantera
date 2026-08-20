@@ -44,6 +44,7 @@ Agents: [`/llms.txt`](https://canteraui.xyz/llms.txt) indexes the site, [`/llms-
 | `token-status` | component | Grant status line: connection state, token expiry, held scopes. Server-safe. |
 | `connection-card` | component | A provider connection at a glance, with disconnect / reconnect. |
 | `acc-sign-in` | block | Complete Autodesk sign-in flow on [aec-auth](https://github.com/mrestrepoj10/aec-auth): consent redirect, code exchange, vault-managed single-use refresh, signed session, live connection panel. |
+| `connections-page` | block | The manage-grants page: one card per provider connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states. |
 
 Components are data-agnostic by design: they never fetch. The pattern every future domain (issues, RFIs, submittals, model viewers) follows is **types + adapters + blocks** — generic types as props, adapters per provider, blocks for the batteries-included path.
 
@@ -59,6 +60,21 @@ Components are data-agnostic by design: they never fetch. The pattern every futu
 | `ACC_AUTH_DEMO` | Set to `1` only for emulator-backed demos: allows the insecure fallback session secret in production. |
 
 The default vault store is in-memory. For production, swap in a durable `VaultStore` (Upstash Redis + encryption) — two lines, see the [aec-auth README](https://github.com/mrestrepoj10/aec-auth).
+
+## The connections-page block
+
+`npx shadcn add @cantera/connections-page` installs a `/connections` page, its streamed `loading.tsx`, and two components: `ConnectionsView` (presentational — providers and connections in, callbacks out) and `ConnectionsManager` (the wiring). It depends on `acc-sign-in` for the routes and the aec-auth glue, so the same environment variables above configure both.
+
+The block ships all four states, each exported so adapting the page keeps them:
+
+| State | What it is |
+| --- | --- |
+| `ConnectionsList` | The mixed dashboard — connected, expiring soon, expired, errored, and never-connected rows together. |
+| `ConnectionsEmpty` | Nothing connected yet. The provider chooser *is* the empty state; no illustration, no message about nothingness. |
+| `ConnectionsLoading` | A still skeleton at the real card geometry, so nothing shifts on resolve. No shimmer, no stagger. |
+| `ConnectionsError` | The whole fetch failed: message plus a retry on the async-pending contract. A single provider that failed stays a row, not a page. |
+
+Point `ConnectionsView` at any backend — it never fetches.
 
 ## Development
 

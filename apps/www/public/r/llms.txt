@@ -109,3 +109,12 @@ Description: Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent red
 Install: npx shadcn@latest add @cantera/acc-sign-in
 Docs: https://canteraui.xyz/components/acc-sign-in
 Item: https://canteraui.xyz/r/acc-sign-in.json
+
+### connections-page
+
+Title: Connections Page
+Type: block
+Description: The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
+Install: npx shadcn@latest add @cantera/connections-page
+Docs: https://canteraui.xyz/components/connections-page
+Item: https://canteraui.xyz/r/connections-page.json

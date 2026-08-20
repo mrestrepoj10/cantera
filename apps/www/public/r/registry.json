@@ -220,6 +220,46 @@
           "target": "app/api/auth/signout/route.ts"
         }
       ]
+    },
+    {
+      "name": "connections-page",
+      "type": "registry:block",
+      "title": "Connections Page",
+      "description": "The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect \u2014 plus the designed empty, loading, and error states a real fetch needs.",
+      "dependencies": ["aec-auth", "lucide-react"],
+      "registryDependencies": [
+        "button",
+        "@cantera/connection-card",
+        "@cantera/provider-sign-in-button",
+        "@cantera/token-status",
+        "@cantera/user-account-badge",
+        "@cantera/acc-sign-in",
+        "@cantera/aps-oauth-preset",
+        "@cantera/oauth-types",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/connections-page/page.tsx",
+          "type": "registry:page",
+          "target": "app/connections/page.tsx"
+        },
+        {
+          "path": "registry/blocks/connections-page/loading.tsx",
+          "type": "registry:file",
+          "target": "app/connections/loading.tsx"
+        },
+        {
+          "path": "registry/blocks/connections-page/components/connections-view.tsx",
+          "type": "registry:component",
+          "target": "components/connections-view.tsx"
+        },
+        {
+          "path": "registry/blocks/connections-page/components/connections-manager.tsx",
+          "type": "registry:component",
+          "target": "components/connections-manager.tsx"
+        }
+      ]
     }
   ]
 }

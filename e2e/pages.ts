@@ -17,4 +17,11 @@ const registry = JSON.parse(
 
 export const componentPages = registry.items.map((item) => `/components/${item.name}`)
 
-export const sitePages = ['/', '/installation', '/components', '/demo', ...componentPages]
+export const sitePages = [
+  '/',
+  '/installation',
+  '/components',
+  '/demo',
+  '/connections',
+  ...componentPages,
+]

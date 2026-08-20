@@ -21,7 +21,11 @@
     ],
     "paths": {
       "@/components/ui/*": ["./registry/ui/*", "./components/ui/*"],
-      "@/components/*": ["./registry/blocks/acc-sign-in/components/*", "./components/*"],
+      "@/components/*": [
+        "./registry/blocks/acc-sign-in/components/*",
+        "./registry/blocks/connections-page/components/*",
+        "./components/*"
+      ],
       "@/lib/*": ["./registry/lib/*", "./registry/blocks/acc-sign-in/lib/*", "./lib/*"],
       "@/*": ["./*"]
     }

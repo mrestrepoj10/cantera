@@ -2,8 +2,15 @@
 
 import type { ComponentType } from 'react'
 import { useEffect, useState } from 'react'
-
-import { procoreProvider, sampleAccount, sampleForeman } from '@/components/site/sample-data'
+import { ConnectionsView } from '@/components/connections-view'
+import {
+  fieldlinkProvider,
+  procoreProvider,
+  sampleAccount,
+  sampleForeman,
+  sampleInspector,
+  siteworksProvider,
+} from '@/components/site/sample-data'
 import { ConnectionCard } from '@/components/ui/connection-card'
 import { ProviderSignInButton } from '@/components/ui/provider-sign-in-button'
 import { ScopePicker, withRequiredScopes } from '@/components/ui/scope-picker'
@@ -55,17 +62,24 @@ const demoStates: { id: DemoState; label: string }[] = [
   { id: 'disconnected', label: 'Not connected' },
 ]
 
-interface StateSwitcherProps {
-  value: DemoState
-  onChange: (value: DemoState) => void
+interface StateSwitcherProps<T extends string> {
+  value: T
+  onChange: (value: T) => void
   label: string
+  /** The states to offer. Generic so each demo names its own vocabulary. */
+  states: { id: T; label: string }[]
 }
 
-function StateSwitcher({ value, onChange, label }: StateSwitcherProps) {
+function StateSwitcher<T extends string>({
+  value,
+  onChange,
+  label,
+  states,
+}: StateSwitcherProps<T>) {
   return (
     <fieldset className="flex flex-wrap gap-2">
       <legend className="sr-only">{label}</legend>
-      {demoStates.map((state) => (
+      {states.map((state) => (
         <button
           key={state.id}
           type="button"
@@ -223,7 +237,12 @@ export function TokenStatusDemo() {
 
   return (
     <div className="flex w-full max-w-md flex-col gap-4">
-      <StateSwitcher value={state} onChange={setState} label="Connection state" />
+      <StateSwitcher
+        value={state}
+        onChange={setState}
+        label="Connection state"
+        states={demoStates}
+      />
       <div className="rounded-lg border border-border p-4">
         <TokenStatus connection={connection} showScopes />
       </div>
@@ -241,7 +260,12 @@ export function ConnectionCardDemo() {
 
   return (
     <div className="flex w-full max-w-sm flex-col gap-4">
-      <StateSwitcher value={state} onChange={setState} label="Connection state" />
+      <StateSwitcher
+        value={state}
+        onChange={setState}
+        label="Connection state"
+        states={demoStates}
+      />
       <ConnectionCard
         connection={connection}
         // Both handlers return a promise, so the card drives its own pending
@@ -253,6 +277,128 @@ export function ConnectionCardDemo() {
         onReconnect={async () => {
           await delay()
           setState('connected')
+        }}
+      />
+    </div>
+  )
+}
+
+/**
+ * The connections-page block, in the four states it ships. The switcher is the
+ * point: empty, loading, and error are designed surfaces here, not afterthoughts
+ * a consumer has to invent.
+ */
+type ConnectionsDemoState = 'partial' | 'empty' | 'loading' | 'error'
+
+const connectionsDemoStates: { id: ConnectionsDemoState; label: string }[] = [
+  { id: 'partial', label: 'Partial' },
+  { id: 'empty', label: 'Empty' },
+  { id: 'loading', label: 'Loading' },
+  { id: 'error', label: 'Error' },
+]
+
+const connectionsDemoStatus = {
+  partial: 'ready',
+  empty: 'ready',
+  loading: 'loading',
+  error: 'error',
+} as const
+
+const connectionsDemoProviders = [
+  apsProvider,
+  procoreProvider,
+  fieldlinkProvider,
+  siteworksProvider,
+]
+
+/**
+ * One grant per provider, covering the whole status vocabulary in one list:
+ * healthy, expiring soon (a connected grant near its expiry), a real failure,
+ * and — via the provider the demo starts with disconnected — absence.
+ */
+function useDemoConnections(): OAuthConnection[] {
+  const soonExpiry = useDemoExpiry(4)
+  const laterExpiry = useDemoExpiry(42)
+
+  return [
+    {
+      provider: apsProvider,
+      status: 'connected',
+      account: sampleAccount,
+      scopes: ['data:read', 'viewables:read'],
+      expiresAt: laterExpiry,
+    },
+    {
+      provider: procoreProvider,
+      status: 'connected',
+      account: sampleForeman,
+      scopes: ['rfis:read'],
+      expiresAt: soonExpiry,
+    },
+    {
+      provider: fieldlinkProvider,
+      status: 'error',
+      account: sampleInspector,
+      scopes: ['documents:read'],
+      error: 'Refresh token was revoked.',
+    },
+    {
+      provider: siteworksProvider,
+      status: 'connected',
+      account: sampleAccount,
+      scopes: ['assets:read'],
+      expiresAt: laterExpiry,
+    },
+  ]
+}
+
+export function ConnectionsPageDemo() {
+  const [state, setState] = useState<ConnectionsDemoState>('partial')
+  const held = useDemoConnections()
+  // Which grants are gone. Disconnecting adds one, connecting removes one, and
+  // "empty" is simply all of them — so every state is the same one data path.
+  const [revoked, setRevoked] = useState<string[]>([siteworksProvider.id])
+  const connections = held.filter((connection) => !revoked.includes(connection.provider.id))
+
+  function selectState(next: ConnectionsDemoState) {
+    setState(next)
+    setRevoked(
+      next === 'empty' ? held.map((connection) => connection.provider.id) : [siteworksProvider.id],
+    )
+  }
+
+  return (
+    <div className="flex w-full max-w-2xl flex-col gap-5">
+      <StateSwitcher
+        value={state}
+        onChange={selectState}
+        label="Page state"
+        states={connectionsDemoStates}
+      />
+      <ConnectionsView
+        providers={connectionsDemoProviders}
+        connections={connections}
+        status={connectionsDemoStatus[state]}
+        error={state === 'error' ? 'The token vault did not respond.' : undefined}
+        account={sampleAccount}
+        // The docs page already owns h1 and h2, so the block heading slots in
+        // one level down rather than restarting the outline.
+        titleAs="h3"
+        showScopes={false}
+        // Every callback returns a promise, so the cards drive their own
+        // pending: the pressed button keeps its label, spins, and stays put.
+        onConnect={async (providerId) => {
+          await delay()
+          setState('partial')
+          setRevoked((current) => current.filter((id) => id !== providerId))
+        }}
+        onDisconnect={async (providerId) => {
+          await delay()
+          setRevoked((current) => [...current, providerId])
+        }}
+        onRetry={async () => {
+          await delay()
+          selectState('partial')
         }}
       />
     </div>
@@ -331,6 +477,7 @@ const demos: Record<string, ComponentType> = {
   'token-status': TokenStatusDemo,
   'connection-card': ConnectionCardDemo,
   'status-tokens': StatusTokensDemo,
+  'connections-page': ConnectionsPageDemo,
 }
 
 /** Docs-page entry point: renders the demo for a registry item, or nothing for lib items. */

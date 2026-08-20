@@ -19,7 +19,7 @@ CI fails if `apps/www/public/r/`, `apps/www/public/llms.txt`, or `apps/www/publi
 
 ## The registry is the source of truth
 
-- All distributed code lives in `apps/www/registry/` (`ui/`, `lib/`, `blocks/`). The site imports it through tsconfig path fallbacks: `@/components/ui/*` resolves to `registry/ui/*` before `components/ui/*`, and `@/lib/*` walks `registry/lib/*`, then the acc-sign-in block lib, then `lib/`. Docs and demos therefore render exactly what consumers install. Never duplicate a registry file into `components/` or `lib/`.
+- All distributed code lives in `apps/www/registry/` (`ui/`, `lib/`, `blocks/`). The site imports it through tsconfig path fallbacks: `@/components/ui/*` resolves to `registry/ui/*` before `components/ui/*`, `@/components/*` walks the block component folders (`acc-sign-in`, then `connections-page`) before `components/`, and `@/lib/*` walks `registry/lib/*`, then the acc-sign-in block lib, then `lib/`. A new block with its own `components/` folder adds a path entry. Docs and demos therefore render exactly what consumers install. Never duplicate a registry file into `components/` or `lib/`.
 - Write imports in registry files as their INSTALLED specifiers (`@/components/ui/button`, `@/lib/oauth-types`), never as `@/registry/...`.
 - Registry items reference siblings with namespaced deps (`@cantera/oauth-types`) and shadcn primitives by plain name (`button`) in `registry.json`.
 - Distributed components are data-agnostic and style-agnostic: plain typed props in, callbacks out, no fetching, built only on the consumer's shadcn primitives. New domains follow the locked pattern: generic types + provider adapters + wired blocks.

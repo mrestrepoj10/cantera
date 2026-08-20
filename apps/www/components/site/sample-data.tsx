@@ -25,3 +25,28 @@ export const sampleAccount: OAuthAccount = {
 export const sampleForeman: OAuthAccount = {
   name: 'Luis Ibarra',
 }
+
+/** A second hand-rolled provider, so the connections demo shows a mixed list. */
+export const fieldlinkProvider: OAuthProvider = {
+  id: 'fieldlink',
+  name: 'FieldLink',
+  icon: (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="size-4">
+      <path d="M12 2 3 7v10l9 5 9-5V7zm0 2.3 6.5 3.6L12 11.5 5.5 7.9zM5 9.6l6 3.3v6.5l-6-3.3zm8 9.8v-6.5l6-3.3v6.5z" />
+    </svg>
+  ),
+}
+
+/**
+ * No mark at all. `provider.icon` is optional, and every surface has to render
+ * a provider without one — this is the demo row that proves it.
+ */
+export const siteworksProvider: OAuthProvider = {
+  id: 'siteworks',
+  name: 'Siteworks',
+}
+
+export const sampleInspector: OAuthAccount = {
+  name: 'Priya Raman',
+  email: 'priya@summittower.build',
+}

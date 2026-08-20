@@ -28,6 +28,7 @@ Data-agnostic UI: typed props in, callbacks out, no fetching.
 Wired end-to-end flows — pages, route handlers, and the auth glue between them.
 
 - [ACC Sign-In](https://canteraui.xyz/components/acc-sign-in): Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.
+- [Connections Page](https://canteraui.xyz/components/connections-page): The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
 
 ## Libraries
 
