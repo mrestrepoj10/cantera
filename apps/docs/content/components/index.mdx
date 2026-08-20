@@ -1,0 +1,69 @@
+---
+title: "Components"
+description: "Every cantera registry item, with a live preview and the exact installed source."
+---
+
+Components take cantera's OAuth types as props and never fetch; lib items ship the types and
+provider presets they build on; blocks wire the whole flow. Install any of them with the shadcn
+CLI once the namespace is registered — see [Installation](/installation).
+
+## Libs
+
+The types the components speak, and the presets that translate into them.
+
+<CardGroup cols={2}>
+  <Card title="OAuth Types" href="/components/oauth-types">
+    Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.
+  </Card>
+  <Card title="APS OAuth Preset" href="/components/aps-oauth-preset">
+    Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.
+  </Card>
+</CardGroup>
+
+## Tokenss
+
+CSS variables installed into the consumer theme.
+
+<CardGroup cols={2}>
+  <Card title="Status Tokens" href="/components/status-tokens">
+    Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.
+  </Card>
+</CardGroup>
+
+## Components
+
+Data-agnostic UI: typed props in, callbacks out, no fetching.
+
+<CardGroup cols={2}>
+  <Card title="Provider Sign-In Button" href="/components/provider-sign-in-button">
+    A sign-in button for a single OAuth provider: brand icon, label, loading state. Works as a link or a click handler.
+  </Card>
+  <Card title="Sign-In Card" href="/components/sign-in-card">
+    A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
+  </Card>
+  <Card title="Scope Picker" href="/components/scope-picker">
+    A controlled OAuth scope picker: checkbox list with descriptions, one-click presets, required scopes pinned on, and an escape hatch for scopes outside the catalog.
+  </Card>
+  <Card title="User Account Badge" href="/components/user-account-badge">
+    An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.
+  </Card>
+  <Card title="Token Status" href="/components/token-status">
+    Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.
+  </Card>
+  <Card title="Connection Card" href="/components/connection-card">
+    A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions.
+  </Card>
+</CardGroup>
+
+## Blocks
+
+Wired end-to-end flows — pages, route handlers, and the auth glue.
+
+<CardGroup cols={2}>
+  <Card title="ACC Sign-In" href="/components/acc-sign-in">
+    Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.
+  </Card>
+  <Card title="Connections Page" href="/components/connections-page">
+    The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
+  </Card>
+</CardGroup>

@@ -22,8 +22,9 @@ jobs:
         run: |
           pnpm registry:build
           pnpm registry:verify
-          git diff --exit-code apps/www/registry.json apps/www/registry apps/www/public/r apps/www/public/llms.txt apps/www/public/llms-full.txt skills
+          git diff --exit-code apps/www/registry.json apps/www/registry apps/www/public/r apps/www/public/llms.txt apps/www/public/llms-full.txt apps/docs/content/components skills
       - run: pnpm --filter www build
+      - run: pnpm --filter docs build
       - name: E2E (OAuth flow, axe a11y in both themes, theme and pending contracts)
         run: |
           pnpm exec playwright install --with-deps chromium

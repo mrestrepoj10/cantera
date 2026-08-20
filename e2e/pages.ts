@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
+import { demoNames } from '../apps/www/components/site/demo-names'
+
 interface RegistryFile {
   items: { name: string; type: string }[]
 }
@@ -22,6 +24,14 @@ export const componentPages = registry.items
   .filter((item) => item.type !== 'registry:example')
   .map((item) => `/components/${item.name}`)
 
+/**
+ * The framed previews the docs site embeds. Scanned like any other page: they
+ * render the same demos, so an exclusion here would be an exclusion for the
+ * code consumers install — and they are the surface a docs reader actually
+ * looks at once the reference lives on its own origin.
+ */
+export const embedPages = demoNames.map((name) => `/embed/${name}`)
+
 export const sitePages = [
   '/',
   '/installation',
@@ -31,6 +41,7 @@ export const sitePages = [
   '/demo',
   '/connections',
   ...componentPages,
+  ...embedPages,
 ]
 
 /**

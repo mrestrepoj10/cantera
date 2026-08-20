@@ -1,0 +1,203 @@
+---
+title: "Connection Card"
+description: "A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions."
+---
+
+<Badge variant="accent">component</Badge> `@cantera/connection-card`
+
+## Install
+
+```bash
+npx shadcn@latest add @cantera/connection-card
+```
+
+- Registry dependencies: `button`, `card`, `@cantera/user-account-badge`, `@cantera/token-status`, `@cantera/oauth-types`
+- npm dependencies: `lucide-react`
+
+## Preview
+
+<ComponentPreview src="https://canteraui.xyz/embed/connection-card" name="connection-card" title="Connection Card preview" />
+
+## Files
+
+| Path | Type |
+| --- | --- |
+| `connection-card.tsx` | `registry:ui` |
+
+## Props
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `connection` | `OAuthConnection` | — | The provider grant to show: provider, account, status, scopes, expiry. |
+| `onDisconnect` | `() => void \| Promise<void>` | — | When set, a Disconnect button is shown while the connection is connected. Disconnecting revokes a grant, so it renders destructive. A returned promise drives the pending state. |
+| `onReconnect` | `() => void \| Promise<void>` | — | When set, a Connect / Reconnect button is shown while expired, errored, or disconnected. A returned promise drives the pending state. |
+| `disconnectPending` | `boolean` | `false` | Consumer-driven pending for the disconnect action — for a server action, where no promise comes back. The button stays mounted, keeps its label, and shows a spinner. |
+| `reconnectPending` | `boolean` | `false` | Consumer-driven pending for the connect / reconnect action. |
+| `showScopes` | `boolean` | `true` | Forwarded to the embedded TokenStatus. |
+| `...props` | `ComponentProps<typeof Card>` | — | Remaining props are spread onto the underlying Card. |
+
+## Source
+
+This is the exact code the CLI installs into your project — you own it from there.
+
+```tsx connection-card.tsx
+'use client'
+
+import { LoaderCircleIcon } from 'lucide-react'
+import type * as React from 'react'
+import { useState } from 'react'
+
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { TokenStatus } from '@/components/ui/token-status'
+import { UserAccountBadge } from '@/components/ui/user-account-badge'
+import type { OAuthConnection } from '@/lib/oauth-types'
+import { cn } from '@/lib/utils'
+
+interface ConnectionCardProps extends React.ComponentProps<typeof Card> {
+  connection: OAuthConnection
+  onDisconnect?: () => void | Promise<void>
+  onReconnect?: () => void | Promise<void>
+  /**
+   * Pending state for the disconnect action. The button stays mounted, keeps
+   * its label, and shows a spinner — never pass `undefined` for the handler to
+   * express "busy", that unmounts the control under the user's cursor.
+   */
+  disconnectPending?: boolean
+  /** Pending state for the connect / reconnect action. */
+  reconnectPending?: boolean
+  showScopes?: boolean
+}
+
+interface ConnectionActionProps {
+  pending: boolean
+  onAction: () => void | Promise<void>
+  variant?: React.ComponentProps<typeof Button>['variant']
+  className?: string
+  children: React.ReactNode
+}
+
+/**
+ * An action that follows the async-pending contract: disabled with a spinner
+ * while it keeps its label, focusable throughout (`focusableWhenDisabled`
+ * renders aria-disabled, not the native attribute), and never unmounted
+ * mid-request. The spinner slot collapses at rest so the label sits centered,
+ * and morphs open smoothly while busy.
+ */
+function ConnectionAction({
+  pending,
+  onAction,
+  variant,
+  className,
+  children,
+}: ConnectionActionProps) {
+  const [asyncPending, setAsyncPending] = useState(false)
+  const busy = pending || asyncPending
+
+  return (
+    <Button
+      size="sm"
+      variant={variant}
+      disabled={busy}
+      focusableWhenDisabled
+      aria-busy={busy || undefined}
+      // Visually compact so it never outweighs the provider identity beside it;
+      // the pseudo-element extends the hit area to the 44px field-density floor,
+      // same pattern as the checkbox primitive.
+      className={cn('relative gap-0 after:absolute after:-inset-y-2 after:inset-x-0', className)}
+      onClick={() => {
+        const result = onAction()
+        if (!(result instanceof Promise)) return
+        setAsyncPending(true)
+        result.then(
+          () => setAsyncPending(false),
+          () => setAsyncPending(false),
+        )
+      }}
+    >
+      {/* Collapsed at rest so the label sits centered; morphs open while busy.
+          Width + icon transitions are interruptible, and the spinner enters
+          with the opacity/scale/blur crossfade rather than a bare fade. */}
+      <span
+        aria-hidden
+        className={cn(
+          'grid shrink-0 place-items-center overflow-hidden transition-[width,margin] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
+          busy ? 'mr-1 w-3.5' : 'mr-0 w-0',
+        )}
+      >
+        <LoaderCircleIcon
+          className={cn(
+            'size-3.5 animate-spin transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
+            busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
+          )}
+        />
+      </span>
+      {children}
+    </Button>
+  )
+}
+
+/**
+ * A provider connection at a glance: who is connected, grant status, scopes,
+ * and disconnect / reconnect actions. One card per provider grant.
+ */
+function ConnectionCard({
+  connection,
+  onDisconnect,
+  onReconnect,
+  disconnectPending = false,
+  reconnectPending = false,
+  showScopes = true,
+  className,
+  ...props
+}: ConnectionCardProps) {
+  const { provider, account, status } = connection
+  const needsReconnect = status === 'expired' || status === 'error' || status === 'disconnected'
+
+  return (
+    <Card data-slot="connection-card" className={cn('w-full', className)} {...props}>
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          {provider.icon && (
+            <span aria-hidden className="flex shrink-0 [&_svg]:size-5 [&_svg]:shrink-0">
+              {provider.icon}
+            </span>
+          )}
+          <span className="min-w-0 flex-1 truncate font-medium">{provider.name}</span>
+          <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
+            {needsReconnect && onReconnect && (
+              <ConnectionAction pending={reconnectPending} onAction={onReconnect}>
+                {status === 'disconnected' ? 'Connect' : 'Reconnect'}
+              </ConnectionAction>
+            )}
+            {status === 'connected' && onDisconnect && (
+              // Disconnecting revokes a grant — destructive, not a neutral outline.
+              // The ink comes from the status palette rather than the variant's
+              // own --destructive: the primitives render destructive ink on a
+              // 10% tint of itself, which measures 4.06:1 on a stock shadcn
+              // theme. --status-danger clears 5:1 on that same tint, and ships
+              // with this component through token-status. The tint stays.
+              <ConnectionAction
+                pending={disconnectPending}
+                onAction={onDisconnect}
+                variant="destructive"
+                className="text-status-danger"
+              >
+                Disconnect
+              </ConnectionAction>
+            )}
+          </div>
+        </div>
+        {account && <UserAccountBadge account={account} size="sm" />}
+        <TokenStatus connection={connection} showScopes={showScopes} />
+      </CardContent>
+    </Card>
+  )
+}
+
+export { ConnectionCard, type ConnectionCardProps }
+```
+
+## Registry item
+
+The machine-readable item the CLI fetches: [`connection-card.json`](https://canteraui.xyz/r/connection-card.json).

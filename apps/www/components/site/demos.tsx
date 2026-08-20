@@ -3,6 +3,7 @@
 import type { ComponentType } from 'react'
 import { useEffect, useState } from 'react'
 import { ConnectionsView } from '@/components/connections-view'
+import { type DemoName, hasDemo } from '@/components/site/demo-names'
 import {
   fieldlinkProvider,
   procoreProvider,
@@ -469,7 +470,10 @@ export function StatusTokensDemo() {
   )
 }
 
-const demos: Record<string, ComponentType> = {
+// Keyed by `DemoName` rather than `string`: the name list is shared with the
+// embed routes and the docs generator, and this type is what keeps the three in
+// step — a name added there without a component here fails `pnpm typecheck`.
+const demos: Record<DemoName, ComponentType> = {
   'provider-sign-in-button': ProviderSignInButtonDemo,
   'sign-in-card': SignInCardDemo,
   'scope-picker': ScopePickerDemo,
@@ -482,7 +486,7 @@ const demos: Record<string, ComponentType> = {
 
 /** Docs-page entry point: renders the demo for a registry item, or nothing for lib items. */
 export function ComponentDemo({ name }: { name: string }) {
+  if (!hasDemo(name)) return null
   const Demo = demos[name]
-  if (!Demo) return null
   return <Demo />
 }

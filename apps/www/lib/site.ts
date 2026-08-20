@@ -51,6 +51,18 @@ export function docsUrl(name: string): string {
 }
 
 /**
+ * The framed live preview for one item: the demo, no chrome.
+ *
+ * Absolute on purpose. The docs site is its own deployment on its own origin,
+ * so a relative `src` would resolve against the docs domain and 404. This is
+ * also why the origin has to be the production one rather than a preview URL —
+ * see the resolution order above.
+ */
+export function embedUrl(name: string): string {
+  return `${siteUrl}/embed/${name}`
+}
+
+/**
  * The markdown twin of the docs page — the same URL plus an extension, served
  * by `app/(site)/components/[name]/md` through the rewrite in next.config.
  * Relative on purpose: a link to it has to work on a preview deployment too.

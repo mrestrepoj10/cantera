@@ -4,6 +4,8 @@ dist/
 !vendor/@emulators/*/dist/**
 .turbo/
 .next/
+# The hidden Astro project blume generates and drives from apps/docs.
+.blume/
 coverage/
 .env
 .env.*

@@ -1,9 +1,11 @@
 /**
  * Verifier 3 of 3: the committed build output matches the sources it comes from.
  *
- * `public/r/`, the `llms*.txt` artifacts, and `skills/cantera/` are all generated
- * and all committed — that is what makes the registry servable as static files
- * and the skill installable straight from the repo. Committed generated output
+ * `public/r/`, the `llms*.txt` artifacts, `skills/cantera/`, and the docs site's
+ * component reference (`apps/docs/content/components/`) are all generated and
+ * all committed — that is what makes the registry servable as static files, the
+ * skill installable straight from the repo, and the docs provably a rendering of
+ * the registry rather than a second account of it. Committed generated output
  * rots silently, so this rebuilds every artifact into a scratch directory and
  * compares byte for byte.
  *
@@ -83,6 +85,7 @@ try {
   const shadcn = path.join(wwwRoot, 'node_modules/.bin/shadcn')
   await run(shadcn, ['build', '--output', path.join(scratch, 'r')], { cwd: wwwRoot })
   await script('build-llms.mts', ['--out-dir', scratch])
+  await script('build-docs.mts', ['--out-dir', path.join(scratch, 'docs')])
   await script('build-skill.mts', ['--out-dir', path.join(scratch, 'skills')])
 
   const problems = [
@@ -95,6 +98,11 @@ try {
       label: 'skills/cantera',
       committed: path.join(repoRoot, 'skills/cantera'),
       rebuilt: path.join(scratch, 'skills/cantera'),
+    })),
+    ...(await compare({
+      label: 'apps/docs/content/components',
+      committed: path.join(repoRoot, 'apps/docs/content/components'),
+      rebuilt: path.join(scratch, 'docs'),
     })),
   ]
 
@@ -113,7 +121,7 @@ try {
     process.exit(1)
   }
 
-  console.log('drift: committed registry, llms artifacts, and skill match a fresh build')
+  console.log('drift: committed registry, llms artifacts, skill, and docs match a fresh build')
 } finally {
   await rm(scratch, { recursive: true, force: true })
 }

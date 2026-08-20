@@ -2,7 +2,13 @@ packages:
   - "apps/*"
   - "vendor/@emulators/*"
 allowBuilds:
+  # Scarf's install script phones home with install analytics. Nothing in the
+  # build needs it, so it stays off.
+  '@scarf/scarf': false
   agent-browser: true
+  # Vite's bundler, pulled in by Astro under `blume`. Its install script puts the
+  # platform binary in place; without it the docs build has no bundler to run.
+  esbuild: true
   msw: true
   sharp: true
 minimumReleaseAgeExclude:
