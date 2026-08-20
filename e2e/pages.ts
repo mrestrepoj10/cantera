@@ -25,8 +25,16 @@ export const componentPages = registry.items
 export const sitePages = [
   '/',
   '/installation',
+  '/philosophy',
+  '/stack',
   '/components',
   '/demo',
   '/connections',
   ...componentPages,
 ]
+
+/**
+ * The markdown twin of each docs page. Same list as `componentPages`, because
+ * the `.md` route is generated from the same filtered catalog.
+ */
+export const markdownPages = componentPages.map((route) => `${route}.md`)

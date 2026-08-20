@@ -13,14 +13,18 @@
  * that is not derivable — the locked pattern, the design contracts — lives in
  * this file, next to the artifacts it explains.
  *
+ * The per-item references come from `lib/item-markdown.ts`, which the site's
+ * `/components/<name>.md` route handler serves as well — one serializer, so the
+ * markdown an agent installs and the markdown a reader copies cannot disagree.
+ *
  * Run via `pnpm registry:build`.
  */
 
 import { mkdir, readdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { type ApiTable, apiTables, libUsage } from '../components/site/props-tables.ts'
-import { docsUrl, installCommandFor, registryConfigSnippet, registryItemUrl } from '../lib/site.ts'
+import { itemMarkdown, typeLabelFor } from '../lib/item-markdown.ts'
+import { installCommandFor, registryConfigSnippet } from '../lib/site.ts'
 import {
   catalogItems,
   namespace,
@@ -28,14 +32,6 @@ import {
   readRegistry,
   repoRoot,
 } from './lib/registry-source.mts'
-
-const TYPE_LABELS: Record<string, string> = {
-  'registry:component': 'component',
-  'registry:block': 'block',
-  'registry:lib': 'lib',
-  'registry:item': 'tokens',
-  'registry:example': 'example',
-}
 
 const FRONTMATTER = `---
 name: cantera
@@ -104,74 +100,10 @@ one renders correctly wherever it is dropped. A \`[&_svg]:size-*\` wrapper still
 wins on specificity where a surface wants another size — use the wrapper, not a
 rewritten mark, and keep \`aria-hidden\` on decorative marks.`
 
-/** One API table as a flat list — friendlier than a markdown table for types full of pipes. */
-function serializeTable(table: ApiTable): string {
-  const rows = table.rows.map((row) => {
-    const qualifier =
-      table.showDefault && row.defaultValue
-        ? `\`${row.type}\`, default \`${row.defaultValue}\``
-        : `\`${row.type}\``
-    return `- \`${row.name}\` (${qualifier}) — ${row.description}`
-  })
-  return `## ${table.caption}\n\n${rows.join('\n')}`
-}
-
-function referenceFor(item: RegistryItem, example: RegistryItem | undefined): string {
-  const lines: string[] = [
-    `# ${item.title} (\`${namespace}/${item.name}\`)`,
-    '',
-    item.description ?? '',
-    '',
-    `- Type: ${TYPE_LABELS[item.type] ?? item.type}`,
-    `- Install: \`${installCommandFor(item.name)}\``,
-    `- Docs: ${docsUrl(item.name)}`,
-    `- Registry item: ${registryItemUrl(item.name)}`,
-  ]
-  if (item.registryDependencies?.length) {
-    lines.push(`- Registry dependencies: ${item.registryDependencies.join(', ')}`)
-  }
-  if (item.dependencies?.length) {
-    lines.push(`- npm dependencies: ${item.dependencies.join(', ')}`)
-  }
-  if (example) {
-    lines.push(
-      `- Working example page: \`${installCommandFor(example.name)}\` — installs ${
-        example.files?.find((file) => file.type === 'registry:page')?.target ?? 'a page'
-      }`,
-    )
-  }
-
-  const files = item.files ?? []
-  if (files.length > 0) {
-    lines.push('', 'Files written into the consumer project:', '')
-    for (const file of files) lines.push(`- \`${file.target ?? path.basename(file.path)}\``)
-  }
-  if (item.cssVars) {
-    lines.push('', 'Installs CSS variables into the consumer theme (light and dark).')
-  }
-  if (item.envVars) {
-    lines.push('', 'Environment variables added to `.env.local`:', '')
-    for (const name of Object.keys(item.envVars)) lines.push(`- \`${name}\``)
-  }
-  if (item.docs) {
-    lines.push('', '## Install notes', '', item.docs)
-  }
-
-  const usage = libUsage[item.name]
-  if (usage) {
-    lines.push('', '## Usage', '', usage.intro, '', '```tsx', usage.example, '```')
-  }
-  for (const table of apiTables[item.name] ?? []) {
-    lines.push('', serializeTable(table))
-  }
-
-  return `${lines.join('\n')}\n`
-}
-
 function skillFor(items: RegistryItem[], examples: Map<string, RegistryItem>): string {
   const rows = items.map(
     (item) =>
-      `| \`${namespace}/${item.name}\` | ${TYPE_LABELS[item.type] ?? item.type} | ${item.description} | [references/${item.name}.md](references/${item.name}.md) |`,
+      `| \`${namespace}/${item.name}\` | ${typeLabelFor(item.type)} | ${item.description} | [references/${item.name}.md](references/${item.name}.md) |`,
   )
 
   const withExamples = items.filter((item) => examples.has(item.name))
@@ -258,7 +190,7 @@ async function main() {
   for (const item of items) {
     await writeFile(
       path.join(referencesDir, `${item.name}.md`),
-      referenceFor(item, examples.get(item.name)),
+      itemMarkdown(item, examples.get(item.name)),
       'utf8',
     )
   }

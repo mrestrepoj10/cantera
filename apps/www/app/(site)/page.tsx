@@ -129,7 +129,14 @@ export default function HomePage() {
         <h2 className="font-semibold text-2xl tracking-tight">The stack around it</h2>
         <p className="mt-2 max-w-2xl text-muted-foreground text-sm">
           cantera is the UI layer of a small open ecosystem — each piece works alone, together they
-          are the five-minute ACC path.
+          are the five-minute ACC path.{' '}
+          <Link
+            href="/stack"
+            className="focus-ring rounded-md underline underline-offset-4 hover:text-foreground"
+          >
+            How they compose
+          </Link>
+          .
         </p>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {ecosystem.map((project) => (

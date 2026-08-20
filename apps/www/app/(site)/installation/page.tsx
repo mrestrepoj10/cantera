@@ -209,6 +209,27 @@ export default function InstallationPage() {
           </p>
           <CodeBlock code={contrastOverrideSnippet} lang="css" filename="globals.css" />
         </Section>
+
+        <Section id="why" title="Why it is built this way">
+          <p className="text-muted-foreground text-sm">
+            The rules behind the tokens, the pending states, and the 44px targets are written down:{' '}
+            <Link
+              href="/philosophy"
+              className="focus-ring rounded-md underline underline-offset-4 hover:text-foreground"
+            >
+              Philosophy
+            </Link>{' '}
+            covers what every item is held to, and{' '}
+            <Link
+              href="/stack"
+              className="focus-ring rounded-md underline underline-offset-4 hover:text-foreground"
+            >
+              the stack
+            </Link>{' '}
+            covers how cantera, aec-auth, and the APS emulator fit together — including the
+            environment variables the blocks read and the credential-free way to run them.
+          </p>
+        </Section>
       </div>
     </PackageManagerProvider>
   )

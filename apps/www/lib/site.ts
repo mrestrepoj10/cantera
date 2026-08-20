@@ -50,6 +50,23 @@ export function docsUrl(name: string): string {
   return `${siteUrl}/components/${name}`
 }
 
+/**
+ * The markdown twin of the docs page — the same URL plus an extension, served
+ * by `app/(site)/components/[name]/md` through the rewrite in next.config.
+ * Relative on purpose: a link to it has to work on a preview deployment too.
+ */
+export function markdownPathFor(name: string): string {
+  return `/components/${name}.md`
+}
+
+/**
+ * The absolute markdown URL, for the prompt links that hand a page to a model —
+ * those need a URL the model can fetch, not one relative to the reader's tab.
+ */
+export function markdownUrlFor(name: string): string {
+  return `${siteUrl}${markdownPathFor(name)}`
+}
+
 /** v0's open endpoint, which imports a registry item into a new chat. */
 export function v0Url(name: string): string {
   return `https://v0.dev/chat/api/open?url=${encodeURIComponent(registryItemUrl(name))}`
