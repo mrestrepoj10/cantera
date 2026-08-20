@@ -9,7 +9,12 @@ import { ConnectionCard } from '@/components/ui/connection-card'
 import { ProviderSignInButton } from '@/components/ui/provider-sign-in-button'
 import { statusInkClasses } from '@/components/ui/token-status'
 import { UserAccountBadge } from '@/components/ui/user-account-badge'
-import type { OAuthAccount, OAuthConnection, OAuthProvider } from '@/lib/oauth-types'
+import {
+  isExpiringSoon,
+  type OAuthAccount,
+  type OAuthConnection,
+  type OAuthProvider,
+} from '@/lib/oauth-types'
 import { cn } from '@/lib/utils'
 
 /**
@@ -412,7 +417,10 @@ function ConnectionsView({
   const connected = rows.filter((row) => row.status === 'connected').length
   const expired = rows.filter((row) => row.status === 'expired').length
   const failed = rows.filter((row) => row.status === 'error').length
-  const attention = expired + failed
+  // Same predicate TokenStatus renders "Expiring soon" from, so the count can
+  // never disagree with a warning shown on a card below it.
+  const expiring = rows.filter((row) => row.status === 'connected' && isExpiringSoon(row)).length
+  const attention = expired + failed + expiring
   const isEmpty = rows.every((row) => row.status === 'disconnected')
 
   let body: React.ReactNode
