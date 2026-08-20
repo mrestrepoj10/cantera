@@ -86,9 +86,18 @@ export default function ComponentPreview({
   // Resolved on mount, not during render: the server pass has no DOM, and
   // reading one here would desynchronize hydration.
   const [appearance, setAppearance] = useState<Appearance | null>(null)
+  // Set once and never recomputed. Deriving the URL from `appearance` would
+  // renavigate the frame on every host theme change — discarding whatever
+  // state the reader built up in the demo — which is the exact thing the
+  // message channel below exists to avoid.
+  const [frameSrc, setFrameSrc] = useState<string | null>(null)
 
   useEffect(() => {
-    setAppearance(currentAppearance())
+    const initial = currentAppearance()
+    setAppearance(initial)
+    // The appearance rides in on the query string so the frame paints the right
+    // palette on its first frame; `postMessage` carries every change after.
+    setFrameSrc(`${resolveSrc(src)}?theme=${initial}`)
 
     const observer = new MutationObserver(() => setAppearance(currentAppearance()))
     observer.observe(document.documentElement, {
@@ -106,7 +115,7 @@ export default function ComponentPreview({
       observer.disconnect()
       media.removeEventListener('change', onMedia)
     }
-  }, [])
+  }, [src])
 
   // Push appearance changes rather than re-pointing `src`: a new URL would
   // reload the frame, resetting any state the reader built up in the demo.
@@ -136,10 +145,16 @@ export default function ComponentPreview({
     return () => window.removeEventListener('message', onMessage)
   }, [name])
 
-  // The initial appearance rides in on the query string so the frame paints the
-  // right palette on its first frame; `postMessage` handles every change after.
-  const resolved = resolveSrc(src)
-  const frameSrc = appearance ? `${resolved}?theme=${appearance}` : resolved
+  // Rendered without a `src` until the appearance resolves on mount, so the
+  // frame is never navigated twice.
+  if (!frameSrc) {
+    return (
+      <div
+        className="not-prose my-6 rounded-lg border border-[var(--blume-border,currentColor)]"
+        style={{ height: `${height}px` }}
+      />
+    )
+  }
 
   return (
     <div className="not-prose my-6 overflow-hidden rounded-lg border border-[var(--blume-border,currentColor)]">

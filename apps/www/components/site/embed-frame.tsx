@@ -28,6 +28,19 @@ import { useEffect, useRef } from 'react'
 /** Messages are namespaced: a docs page may frame more than one thing. */
 export const EMBED_MESSAGE_SOURCE = 'cantera-embed'
 
+/**
+ * Storage key for the framed previews, kept apart from the site's own.
+ *
+ * The docs site frames these from another origin, but the frame's origin is
+ * *this* site — so its `localStorage` is the same one the site writes its theme
+ * preference to. Following the host's appearance through next-themes therefore
+ * used to overwrite that preference: read the docs in dark, and the next visit
+ * to canteraui.xyz came back dark too, having silently discarded the light the
+ * visitor had chosen. A separate key means the preview can follow its host
+ * without ever speaking for the site.
+ */
+export const EMBED_THEME_STORAGE_KEY = 'cantera-embed-theme'
+
 function isAppearance(value: unknown): value is 'light' | 'dark' {
   return value === 'light' || value === 'dark'
 }

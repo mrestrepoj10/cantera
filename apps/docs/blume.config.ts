@@ -55,6 +55,17 @@ export default defineConfig({
 
   markdown: {
     code: { icons: true, wrap: false },
+    codeBlocks: {
+      // Not the stock `github-light` / `github-dark`: several of their token
+      // colors — comments worst of all — measure under 4.5:1 on the code-block
+      // background, in both appearances. `e2e/docs-a11y.spec.ts` fails on them.
+      // Source is most of what these pages are, so the highlighting is held to
+      // the same bar as the rest of the text rather than excluded from it.
+      theme: {
+        light: 'github-light-high-contrast',
+        dark: 'github-dark-high-contrast',
+      },
+    },
   },
 
   search: {

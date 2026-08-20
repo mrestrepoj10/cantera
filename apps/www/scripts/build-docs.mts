@@ -152,11 +152,13 @@ function renderInstall(item: RegistryItem): string {
   if (notes.length > 0) lines.push('', notes.map((note) => `- ${note}`).join('\n'))
 
   if (item.docs) {
-    // Block form with blank lines inside the tags: `docs` runs to several
-    // paragraphs and a list, and MDX ends an inline JSX element at the first
-    // blank line — the tag has to open and close as its own block for the
-    // markdown between them to parse.
-    lines.push('', '<Callout type="info">', '', prose(item.docs), '', '</Callout>')
+    // Plain prose rather than a `<Callout>`: the callout's body text does not
+    // clear 4.5:1 in Blume's light palette, and `e2e/docs-a11y.spec.ts` fails
+    // on it. This is also what `lib/item-markdown.ts` does for the same field,
+    // so the docs page and the markdown twin now read the same. `docs` is
+    // substantive install guidance — which env vars to set, what fails closed
+    // without them — so a section suits it better than an aside anyway.
+    lines.push('', '### Install notes', '', prose(item.docs))
   }
   return lines.join('\n')
 }

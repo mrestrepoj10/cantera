@@ -15,7 +15,7 @@ npx shadcn@latest add @cantera/acc-sign-in
 - npm dependencies: `aec-auth`
 - Environment variables written to `.env.local`: `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, `SESSION_SECRET`, `APS_AUTH_BASE_URL`
 
-<Callout type="info">
+### Install notes
 
 Installed: app/sign-in/page.tsx, the /api/auth/* route handlers, and lib/acc-auth.ts (aec-auth vault wiring).
 
@@ -27,8 +27,6 @@ Environment (added to .env.local as empty keys — fill them in):
 ACC_AUTH_DEMO=1 is the escape hatch that allows the insecure fallback session secret in production. It exists for emulator-backed showcases only — never set it anywhere real accounts exist.
 
 The default vault store is in-memory: correct for a demo, wrong for production. Swap in a durable VaultStore (see the aec-auth README) before you ship.
-
-</Callout>
 
 ## Files
 

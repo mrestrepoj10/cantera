@@ -11,11 +11,9 @@ description: "Semantic status colors — success, warning, danger, neutral — e
 npx shadcn@latest add @cantera/status-tokens
 ```
 
-<Callout type="info">
+### Install notes
 
 Status tokens installed. The solid pairs (bg-status-* with text-status-*-foreground) are the default treatment; the -surface companions are for soft rows and callouts and must always carry text-status-* ink. If your theme redefines :root without these variables, the utilities fall back to foreground / destructive / muted so nothing renders invisible. lib/status-tokens.ts ships the same twelve tokens as typed var() strings (statusCssVars) for the places a class cannot reach: inline styles, chart series, canvas fills.
-
-</Callout>
 
 ## Preview
 

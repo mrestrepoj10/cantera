@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 
-import { ThemeProvider } from '@/components/site/theme-provider'
 import './globals.css'
 
 const geistSans = Geist({
@@ -36,9 +35,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-background text-foreground">
-        <ThemeProvider>{children}</ThemeProvider>
-      </body>
+      {/* The theme provider is mounted per route group, not here: the site and
+          the framed previews need different storage keys, so a preview embedded
+          on the docs origin cannot overwrite a visitor's site preference. */}
+      <body className="flex min-h-full flex-col bg-background text-foreground">{children}</body>
     </html>
   )
 }

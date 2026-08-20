@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 
 import { demoNames, hasDemo } from '@/components/site/demo-names'
 import { ComponentDemo } from '@/components/site/demos'
-import { EmbedFrame } from '@/components/site/embed-frame'
+import { EMBED_THEME_STORAGE_KEY, EmbedFrame } from '@/components/site/embed-frame'
 import { getRegistryItem } from '@/components/site/registry'
 
 /**
@@ -51,10 +51,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  * blocking script in `<head>`, which for a frame means "the visitor's system
  * theme", not "the theme of the page doing the framing". This runs after that
  * script and before the body renders, so the correct palette is the first one
- * painted. Writing storage too keeps next-themes from reverting on the next
- * read; `EmbedFrame` then syncs React state and follows later changes.
+ * painted. It writes the *embed's* storage key, never the site's, so a preview
+ * cannot overwrite the appearance a visitor chose on canteraui.xyz;
+ * `EmbedFrame` then syncs React state and follows later changes.
  */
-const THEME_SCRIPT = `try{var t=new URLSearchParams(location.search).get('theme');if(t==='dark'||t==='light'){localStorage.setItem('theme',t);document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.style.colorScheme=t}}catch(e){}`
+const THEME_SCRIPT = `try{var t=new URLSearchParams(location.search).get('theme');if(t==='dark'||t==='light'){localStorage.setItem(${JSON.stringify(EMBED_THEME_STORAGE_KEY)},t);document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.style.colorScheme=t}}catch(e){}`
 
 export default async function EmbedPage({ params }: PageProps) {
   const { name } = await params

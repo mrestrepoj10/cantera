@@ -49,3 +49,15 @@ export const sitePages = [
  * the `.md` route is generated from the same filtered catalog.
  */
 export const markdownPages = componentPages.map((route) => `${route}.md`)
+
+/**
+ * Every page on the Blume docs app.
+ *
+ * The component routes share their paths with www's because both are generated
+ * from the same catalog — `content/components/<name>.mdx` and
+ * `/components/[name]` land on the same URL. They are still scanned separately:
+ * these render on the docs app's own theme and chrome, which fail
+ * independently, and the whole point of the split is that neither app's scan
+ * speaks for the other.
+ */
+export const docsPages = ['/', '/installation', '/components', ...componentPages]
