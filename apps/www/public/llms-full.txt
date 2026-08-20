@@ -415,3 +415,186 @@ Files written into the consumer project:
 
 - `data-slot` (`connections-view · connections-list · connections-empty · connections-loading · connections-error`) — Which state is on the page, for styling and for tests.
 - `data-status` (`ready · loading · error`) — On the page section: the fetch state it was rendered with.
+
+### Project Types (`@cantera/project-types`)
+
+Type: lib
+Install: npx shadcn@latest add @cantera/project-types
+Docs: https://canteraui.xyz/components/project-types
+Item: https://canteraui.xyz/r/project-types.json
+
+Generic project-context types for cantera components: hubs, projects, model translations, sheet version sets. The lingua franca adapters translate into.
+
+The lingua franca for project context — hubs, projects, model translations, sheet version sets. The pickers take these shapes as props and never fetch; adapters translate provider payloads into them, so ACC, Procore, or your own backend renders with the same components.
+
+```tsx
+import type { Hub, Project } from '@/lib/project-types'
+
+const hub: Hub = { id: 'b.ridgeline-us', name: 'Ridgeline Builders', region: 'US' }
+
+const projects: Project[] = [
+  { id: 'b.summit-tower', name: 'Summit Tower', hubId: hub.id },
+  { id: 'b.cedar-mill', name: 'Cedar Mill Campus', hubId: hub.id },
+]
+```
+
+Files written into the consumer project:
+
+- lib/project-types.ts
+
+#### Exports
+
+- `Hub` (`interface`) — An account-level container of projects — an ACC hub, a Procore company: id, name, optional region.
+- `Project` (`interface`) — One project: id, name, and the hubId pickers group by when present.
+- `ModelTranslationStatus` (`type`) — 'pending' | 'inprogress' | 'success' | 'failed' | 'timeout'.
+- `ModelTranslation` (`interface`) — The translation state of one design: urn, status, and optional name, progress, outputs, error.
+- `SheetVersionSet` (`interface`) — A named issuance of construction sheets: id, name, and when it was issued.
+- `versionSetIssuance` (`(versionSet: SheetVersionSet) => Date | null`) — Normalizes issuanceDate (Date, string, or number) into a Date, or null when absent.
+- `groupProjectsByHub` (`(hubs: Hub[], projects: Project[]) => { hub: Hub | null; projects: Project[] }[]`) — Projects grouped in hub catalog order; projects referencing no known hub land in a trailing hub: null group rather than being dropped.
+
+### APS Data Preset (`@cantera/aps-data-preset`)
+
+Type: lib
+Install: npx shadcn@latest add @cantera/aps-data-preset
+Docs: https://canteraui.xyz/components/aps-data-preset
+Item: https://canteraui.xyz/r/aps-data-preset.json
+Registry dependencies: @cantera/project-types
+
+Autodesk Platform Services (ACC) data preset: adapters from Data Management, Model Derivative, and ACC Sheets payloads into cantera's project types.
+
+Everything ACC-data-specific in one data-only item: adapters from the Data Management, Model Derivative, and ACC Sheets payloads into cantera project types. Each input interface is the structural subset the adapter actually reads, so any payload with those fields adapts — the APS emulator included. Fetching and tokens stay in your auth layer.
+
+```tsx
+import { fromApsHub, fromApsProject } from '@/lib/aps-data-preset'
+import { ProjectPicker } from '@/components/ui/project-picker'
+
+// GET /project/v1/hubs and /project/v1/hubs/{hub}/projects, fetched by you.
+const hubs = hubsResponse.data.map(fromApsHub)
+const projects = projectsResponse.data.map(fromApsProject)
+
+<ProjectPicker hubs={hubs} projects={projects} onValueChange={setProjectId} />
+```
+
+Files written into the consumer project:
+
+- lib/aps-data-preset.ts
+
+#### Exports
+
+- `fromApsHub` (`(doc: ApsHubDoc) => Hub`) — Adapter from a Data Management hub resource into a cantera Hub.
+- `fromApsProject` (`(doc: ApsProjectDoc) => Project`) — Adapter from a Data Management project resource into a cantera Project, hub relationship included.
+- `fromApsManifest` (`(doc: ApsManifestDoc) => ModelTranslation`) — Adapter from a Model Derivative manifest: normalizes status, reads the design name from the first named derivative, lists outputs once each.
+- `toTranslationStatus` (`(status?: string) => ModelTranslationStatus`) — Normalizes a manifest status string; unknown strings read as "pending", the one state that promises nothing.
+- `fromAccVersionSet` (`(doc: AccVersionSetDoc) => SheetVersionSet`) — Adapter from an ACC Sheets version set into a cantera SheetVersionSet.
+- `ApsHubDoc / ApsProjectDoc / ApsManifestDoc / AccVersionSetDoc` (`interface`) — The structural subsets of the API responses each adapter reads — any payload with these fields adapts, the APS emulator included.
+
+### Hub Switcher (`@cantera/hub-switcher`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/hub-switcher
+Docs: https://canteraui.xyz/components/hub-switcher
+Item: https://canteraui.xyz/r/hub-switcher.json
+Working example page: npx shadcn@latest add @cantera/hub-switcher-demo
+Registry dependencies: select, @cantera/project-types
+npm dependencies: lucide-react
+
+The hub context switch: which ACC hub — or any Hub — the rest of the screen works against, with region context and a pending state for the switch itself.
+
+Files written into the consumer project:
+
+- hub-switcher.tsx
+
+#### Props
+
+- `hubs` (`Hub[]`) — The hubs to offer, in the order they render.
+- `value` (`string`) — Selected hub id (controlled). Leave undefined to let the switcher own it.
+- `defaultValue` (`string`) — Initially selected hub id (uncontrolled).
+- `onValueChange` (`(hubId: string) => void | Promise<void>`) — Called with the chosen hub id. Return a promise and the switcher drives its own pending state for the duration.
+- `pending` (`boolean`, default `false`) — The trigger keeps showing the current hub, crossfades in a spinner, and goes read-only — still focusable, never unmounted.
+- `disabled` (`boolean`, default `false`) — Disables the whole select.
+- `placeholder` (`string`, default `'Select hub'`) — Shown while no hub is selected.
+- `emptyMessage` (`string`, default `'No hubs available.'`) — Shown inside the open list when there are no hubs at all.
+- `'aria-label'` (`string`, default `'Hub'`) — Accessible name for the trigger. A combobox never takes its name from its content, so without one the control announces its value but not what it is.
+
+### Project Picker (`@cantera/project-picker`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/project-picker
+Docs: https://canteraui.xyz/components/project-picker
+Item: https://canteraui.xyz/r/project-picker.json
+Working example page: npx shadcn@latest add @cantera/project-picker-demo
+Registry dependencies: button, command, popover, @cantera/project-types, @cantera/status-tokens
+npm dependencies: lucide-react
+
+The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs.
+
+Files written into the consumer project:
+
+- project-picker.tsx
+
+#### Props
+
+- `projects` (`Project[]`) — The projects to offer. Search matches their visible names.
+- `hubs` (`Hub[]`) — Hubs to group by, in catalog order. Omit for a flat list; projects referencing no known hub still render, never silently dropped.
+- `value` (`string`) — Selected project id (controlled).
+- `defaultValue` (`string`) — Initially selected project id (uncontrolled).
+- `onValueChange` (`(projectId: string) => void | Promise<void>`) — Called with the chosen project id. Return a promise and the picker drives its own pending state.
+- `status` (`'ready' | 'loading' | 'error'`, default `'ready'`) — Where the project list stands. Loading renders a still skeleton, error the message wired to a retry — both inside the open picker, so the trigger never unmounts.
+- `error` (`string`) — Human-readable fetch failure, shown when status is "error".
+- `onRetry` (`() => void | Promise<void>`) — Retry for the failed fetch, rendered on the async-pending contract at the 44px floor.
+- `retryPending` (`boolean`, default `false`) — Pending state for the retry action, drivable from outside.
+- `pending` (`boolean`, default `false`) — The trigger keeps its label, crossfades in a spinner, and stays focusable while a selection lands.
+- `emptyMessage` (`string`, default `'No projects yet.'`) — Shown when the list is ready but holds no projects at all.
+- `'aria-label'` (`string`, default `'Project'`) — Accessible name for the trigger. A combobox never takes its name from its content, so without one the control announces its value but not what it is.
+
+### Version Set Select (`@cantera/version-set-select`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/version-set-select
+Docs: https://canteraui.xyz/components/version-set-select
+Item: https://canteraui.xyz/r/version-set-select.json
+Working example page: npx shadcn@latest add @cantera/version-set-select-demo
+Registry dependencies: select, @cantera/project-types
+npm dependencies: lucide-react
+
+Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake.
+
+Files written into the consumer project:
+
+- version-set-select.tsx
+
+#### Props
+
+- `versionSets` (`SheetVersionSet[]`) — The issuances to offer, in the order they render — each option carries its issuance date.
+- `value` (`string`) — Selected version set id (controlled).
+- `defaultValue` (`string`) — Initially selected version set id (uncontrolled).
+- `onValueChange` (`(versionSetId: string) => void | Promise<void>`) — Called with the chosen version set id. Return a promise and the select drives its own pending state.
+- `pending` (`boolean`, default `false`) — The trigger keeps showing the current set, crossfades in a spinner, and goes read-only — still focusable, never unmounted.
+- `disabled` (`boolean`, default `false`) — Disables the whole select.
+- `locale` (`string | string[]`, default `runtime locale`) — BCP 47 locale(s) for the issuance dates. Left undefined, Intl resolves the runtime locale — nothing is hardcoded to English.
+- `emptyMessage` (`string`, default `'No version sets published yet.'`) — Shown inside the open list when there are no version sets at all.
+- `'aria-label'` (`string`, default `'Version set'`) — Accessible name for the trigger. A combobox never takes its name from its content, so without one the control announces its value but not what it is.
+
+### Model Status Card (`@cantera/model-status-card`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/model-status-card
+Docs: https://canteraui.xyz/components/model-status-card
+Item: https://canteraui.xyz/r/model-status-card.json
+Working example page: npx shadcn@latest add @cantera/model-status-card-demo
+Registry dependencies: badge, button, card, @cantera/token-status, @cantera/status-tokens, @cantera/project-types
+npm dependencies: lucide-react
+
+The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract.
+
+Files written into the consumer project:
+
+- model-status-card.tsx
+
+#### Props
+
+- `translation` (`ModelTranslation`) — The design to summarize: name (or URN fallback), status badge, progress, outputs, error text.
+- `onRetry` (`() => void | Promise<void>`) — Retry for a failed or timed-out translation. Promise-returning handlers drive the pending state; the button keeps its label, spins, and stays put.
+- `retryPending` (`boolean`, default `false`) — Pending state for the retry action, drivable from outside.
+- `showOutputs` (`boolean`, default `true`) — Render each produced output format as an outline badge while ready.
+- `...props` (`ComponentProps<typeof Card>`) — Everything else lands on the root Card.

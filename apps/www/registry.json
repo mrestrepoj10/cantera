@@ -306,6 +306,114 @@
       "docs": "Installed: app/connections/page.tsx with its loading skeleton, plus ConnectionsView (presentational) and ConnectionsManager (wiring).\n\nThis block takes acc-sign-in as a registry dependency for the /api/auth/* routes and the aec-auth glue, so one environment configures both:\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — required in production; the block fails closed without it.\n- APS_AUTH_BASE_URL — optional auth-origin override for an emulator. Unset means real APS.\n\nACC_AUTH_DEMO=1 allows the insecure fallback session secret and must never be set where real accounts exist.\n\nConnectionsView never fetches — providers and connections in, callbacks out — so point it at any backend."
     },
     {
+      "name": "project-types",
+      "type": "registry:lib",
+      "title": "Project Types",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Generic project-context types for cantera components: hubs, projects, model translations, sheet version sets. The lingua franca adapters translate into.",
+      "categories": ["projects", "types"],
+      "files": [
+        {
+          "path": "registry/lib/project-types.ts",
+          "type": "registry:lib",
+          "target": "lib/project-types.ts"
+        }
+      ]
+    },
+    {
+      "name": "aps-data-preset",
+      "type": "registry:lib",
+      "title": "APS Data Preset",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Autodesk Platform Services (ACC) data preset: adapters from Data Management, Model Derivative, and ACC Sheets payloads into cantera's project types.",
+      "categories": ["projects", "providers", "autodesk"],
+      "registryDependencies": ["@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/lib/aps-data-preset.ts",
+          "type": "registry:lib",
+          "target": "lib/aps-data-preset.ts"
+        }
+      ]
+    },
+    {
+      "name": "hub-switcher",
+      "type": "registry:component",
+      "title": "Hub Switcher",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The hub context switch: which ACC hub — or any Hub — the rest of the screen works against, with region context and a pending state for the switch itself.",
+      "categories": ["projects", "navigation"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": ["select", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/ui/hub-switcher.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "project-picker",
+      "type": "registry:component",
+      "title": "Project Picker",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs.",
+      "categories": ["projects", "navigation"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "button",
+        "command",
+        "popover",
+        "@cantera/project-types",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/project-picker.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "version-set-select",
+      "type": "registry:component",
+      "title": "Version Set Select",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake.",
+      "categories": ["projects", "sheets"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": ["select", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/ui/version-set-select.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "model-status-card",
+      "type": "registry:component",
+      "title": "Model Status Card",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract.",
+      "categories": ["projects", "status"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "badge",
+        "button",
+        "card",
+        "@cantera/token-status",
+        "@cantera/status-tokens",
+        "@cantera/project-types"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/model-status-card.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "status-tokens-demo",
       "type": "registry:example",
       "title": "Status Tokens Example",
@@ -465,6 +573,90 @@
           "path": "registry/examples/pages/connection-card-demo-page.tsx",
           "type": "registry:page",
           "target": "app/examples/connection-card/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "hub-switcher-demo",
+      "type": "registry:example",
+      "title": "Hub Switcher Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Hub Switcher, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "navigation"],
+      "registryDependencies": ["@cantera/hub-switcher", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/examples/hub-switcher-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/hub-switcher-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/hub-switcher-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/hub-switcher/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "project-picker-demo",
+      "type": "registry:example",
+      "title": "Project Picker Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Project Picker, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "navigation"],
+      "registryDependencies": ["@cantera/project-picker", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/examples/project-picker-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/project-picker-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/project-picker-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/project-picker/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "version-set-select-demo",
+      "type": "registry:example",
+      "title": "Version Set Select Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Version Set Select, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "sheets"],
+      "registryDependencies": ["@cantera/project-types", "@cantera/version-set-select"],
+      "files": [
+        {
+          "path": "registry/examples/version-set-select-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/version-set-select-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/version-set-select-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/version-set-select/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "model-status-card-demo",
+      "type": "registry:example",
+      "title": "Model Status Card Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Model Status Card, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "status"],
+      "registryDependencies": ["@cantera/model-status-card", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/examples/model-status-card-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/model-status-card-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/model-status-card-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/model-status-card/page.tsx"
         }
       ]
     }

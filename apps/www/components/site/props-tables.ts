@@ -730,6 +730,339 @@ export const apiTables: Record<string, ApiTable[]> = {
       ],
     },
   ],
+  'project-types': [
+    {
+      caption: 'Exports',
+      nameHeader: 'Export',
+      rows: [
+        {
+          name: 'Hub',
+          type: 'interface',
+          description:
+            'An account-level container of projects — an ACC hub, a Procore company: id, name, optional region.',
+        },
+        {
+          name: 'Project',
+          type: 'interface',
+          description: 'One project: id, name, and the hubId pickers group by when present.',
+        },
+        {
+          name: 'ModelTranslationStatus',
+          type: 'type',
+          description: "'pending' | 'inprogress' | 'success' | 'failed' | 'timeout'.",
+        },
+        {
+          name: 'ModelTranslation',
+          type: 'interface',
+          description:
+            'The translation state of one design: urn, status, and optional name, progress, outputs, error.',
+        },
+        {
+          name: 'SheetVersionSet',
+          type: 'interface',
+          description: 'A named issuance of construction sheets: id, name, and when it was issued.',
+        },
+        {
+          name: 'versionSetIssuance',
+          type: '(versionSet: SheetVersionSet) => Date | null',
+          description:
+            'Normalizes issuanceDate (Date, string, or number) into a Date, or null when absent.',
+        },
+        {
+          name: 'groupProjectsByHub',
+          type: '(hubs: Hub[], projects: Project[]) => { hub: Hub | null; projects: Project[] }[]',
+          description:
+            'Projects grouped in hub catalog order; projects referencing no known hub land in a trailing hub: null group rather than being dropped.',
+        },
+      ],
+    },
+  ],
+  'aps-data-preset': [
+    {
+      caption: 'Exports',
+      nameHeader: 'Export',
+      rows: [
+        {
+          name: 'fromApsHub',
+          type: '(doc: ApsHubDoc) => Hub',
+          description: 'Adapter from a Data Management hub resource into a cantera Hub.',
+        },
+        {
+          name: 'fromApsProject',
+          type: '(doc: ApsProjectDoc) => Project',
+          description:
+            'Adapter from a Data Management project resource into a cantera Project, hub relationship included.',
+        },
+        {
+          name: 'fromApsManifest',
+          type: '(doc: ApsManifestDoc) => ModelTranslation',
+          description:
+            'Adapter from a Model Derivative manifest: normalizes status, reads the design name from the first named derivative, lists outputs once each.',
+        },
+        {
+          name: 'toTranslationStatus',
+          type: '(status?: string) => ModelTranslationStatus',
+          description:
+            'Normalizes a manifest status string; unknown strings read as "pending", the one state that promises nothing.',
+        },
+        {
+          name: 'fromAccVersionSet',
+          type: '(doc: AccVersionSetDoc) => SheetVersionSet',
+          description: 'Adapter from an ACC Sheets version set into a cantera SheetVersionSet.',
+        },
+        {
+          name: 'ApsHubDoc / ApsProjectDoc / ApsManifestDoc / AccVersionSetDoc',
+          type: 'interface',
+          description:
+            'The structural subsets of the API responses each adapter reads — any payload with these fields adapts, the APS emulator included.',
+        },
+      ],
+    },
+  ],
+  'hub-switcher': [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'hubs',
+          type: 'Hub[]',
+          description: 'The hubs to offer, in the order they render.',
+        },
+        {
+          name: 'value',
+          type: 'string',
+          description: 'Selected hub id (controlled). Leave undefined to let the switcher own it.',
+        },
+        {
+          name: 'defaultValue',
+          type: 'string',
+          description: 'Initially selected hub id (uncontrolled).',
+        },
+        {
+          name: 'onValueChange',
+          type: '(hubId: string) => void | Promise<void>',
+          description:
+            'Called with the chosen hub id. Return a promise and the switcher drives its own pending state for the duration.',
+        },
+        {
+          name: 'pending',
+          type: 'boolean',
+          defaultValue: 'false',
+          description:
+            'The trigger keeps showing the current hub, crossfades in a spinner, and goes read-only — still focusable, never unmounted.',
+        },
+        {
+          name: 'disabled',
+          type: 'boolean',
+          defaultValue: 'false',
+          description: 'Disables the whole select.',
+        },
+        {
+          name: 'placeholder',
+          type: 'string',
+          defaultValue: "'Select hub'",
+          description: 'Shown while no hub is selected.',
+        },
+        {
+          name: 'emptyMessage',
+          type: 'string',
+          defaultValue: "'No hubs available.'",
+          description: 'Shown inside the open list when there are no hubs at all.',
+        },
+        {
+          name: "'aria-label'",
+          type: 'string',
+          defaultValue: "'Hub'",
+          description:
+            'Accessible name for the trigger. A combobox never takes its name from its content, so without one the control announces its value but not what it is.',
+        },
+      ],
+    },
+  ],
+  'project-picker': [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'projects',
+          type: 'Project[]',
+          description: 'The projects to offer. Search matches their visible names.',
+        },
+        {
+          name: 'hubs',
+          type: 'Hub[]',
+          description:
+            'Hubs to group by, in catalog order. Omit for a flat list; projects referencing no known hub still render, never silently dropped.',
+        },
+        {
+          name: 'value',
+          type: 'string',
+          description: 'Selected project id (controlled).',
+        },
+        {
+          name: 'defaultValue',
+          type: 'string',
+          description: 'Initially selected project id (uncontrolled).',
+        },
+        {
+          name: 'onValueChange',
+          type: '(projectId: string) => void | Promise<void>',
+          description:
+            'Called with the chosen project id. Return a promise and the picker drives its own pending state.',
+        },
+        {
+          name: 'status',
+          type: "'ready' | 'loading' | 'error'",
+          defaultValue: "'ready'",
+          description:
+            'Where the project list stands. Loading renders a still skeleton, error the message wired to a retry — both inside the open picker, so the trigger never unmounts.',
+        },
+        {
+          name: 'error',
+          type: 'string',
+          description: 'Human-readable fetch failure, shown when status is "error".',
+        },
+        {
+          name: 'onRetry',
+          type: '() => void | Promise<void>',
+          description:
+            'Retry for the failed fetch, rendered on the async-pending contract at the 44px floor.',
+        },
+        {
+          name: 'retryPending',
+          type: 'boolean',
+          defaultValue: 'false',
+          description: 'Pending state for the retry action, drivable from outside.',
+        },
+        {
+          name: 'pending',
+          type: 'boolean',
+          defaultValue: 'false',
+          description:
+            'The trigger keeps its label, crossfades in a spinner, and stays focusable while a selection lands.',
+        },
+        {
+          name: 'emptyMessage',
+          type: 'string',
+          defaultValue: "'No projects yet.'",
+          description: 'Shown when the list is ready but holds no projects at all.',
+        },
+        {
+          name: "'aria-label'",
+          type: 'string',
+          defaultValue: "'Project'",
+          description:
+            'Accessible name for the trigger. A combobox never takes its name from its content, so without one the control announces its value but not what it is.',
+        },
+      ],
+    },
+  ],
+  'version-set-select': [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'versionSets',
+          type: 'SheetVersionSet[]',
+          description:
+            'The issuances to offer, in the order they render — each option carries its issuance date.',
+        },
+        {
+          name: 'value',
+          type: 'string',
+          description: 'Selected version set id (controlled).',
+        },
+        {
+          name: 'defaultValue',
+          type: 'string',
+          description: 'Initially selected version set id (uncontrolled).',
+        },
+        {
+          name: 'onValueChange',
+          type: '(versionSetId: string) => void | Promise<void>',
+          description:
+            'Called with the chosen version set id. Return a promise and the select drives its own pending state.',
+        },
+        {
+          name: 'pending',
+          type: 'boolean',
+          defaultValue: 'false',
+          description:
+            'The trigger keeps showing the current set, crossfades in a spinner, and goes read-only — still focusable, never unmounted.',
+        },
+        {
+          name: 'disabled',
+          type: 'boolean',
+          defaultValue: 'false',
+          description: 'Disables the whole select.',
+        },
+        {
+          name: 'locale',
+          type: 'string | string[]',
+          defaultValue: 'runtime locale',
+          description:
+            'BCP 47 locale(s) for the issuance dates. Left undefined, Intl resolves the runtime locale — nothing is hardcoded to English.',
+        },
+        {
+          name: 'emptyMessage',
+          type: 'string',
+          defaultValue: "'No version sets published yet.'",
+          description: 'Shown inside the open list when there are no version sets at all.',
+        },
+        {
+          name: "'aria-label'",
+          type: 'string',
+          defaultValue: "'Version set'",
+          description:
+            'Accessible name for the trigger. A combobox never takes its name from its content, so without one the control announces its value but not what it is.',
+        },
+      ],
+    },
+  ],
+  'model-status-card': [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'translation',
+          type: 'ModelTranslation',
+          description:
+            'The design to summarize: name (or URN fallback), status badge, progress, outputs, error text.',
+        },
+        {
+          name: 'onRetry',
+          type: '() => void | Promise<void>',
+          description:
+            'Retry for a failed or timed-out translation. Promise-returning handlers drive the pending state; the button keeps its label, spins, and stays put.',
+        },
+        {
+          name: 'retryPending',
+          type: 'boolean',
+          defaultValue: 'false',
+          description: 'Pending state for the retry action, drivable from outside.',
+        },
+        {
+          name: 'showOutputs',
+          type: 'boolean',
+          defaultValue: 'true',
+          description: 'Render each produced output format as an outline badge while ready.',
+        },
+        {
+          name: '...props',
+          type: 'ComponentProps<typeof Card>',
+          description: 'Everything else lands on the root Card.',
+        },
+      ],
+    },
+  ],
 }
 
 export interface LibUsage {
@@ -776,5 +1109,29 @@ import { SignInCard } from '@/components/ui/sign-in-card'
 
 // Required scopes are unioned in where the value is used, never on mount.
 const scope = withRequiredScopes(apsScopeCatalog, selected).join(' ')`,
+  },
+  'project-types': {
+    intro:
+      'The lingua franca for project context — hubs, projects, model translations, sheet version sets. The pickers take these shapes as props and never fetch; adapters translate provider payloads into them, so ACC, Procore, or your own backend renders with the same components.',
+    example: `import type { Hub, Project } from '@/lib/project-types'
+
+const hub: Hub = { id: 'b.ridgeline-us', name: 'Ridgeline Builders', region: 'US' }
+
+const projects: Project[] = [
+  { id: 'b.summit-tower', name: 'Summit Tower', hubId: hub.id },
+  { id: 'b.cedar-mill', name: 'Cedar Mill Campus', hubId: hub.id },
+]`,
+  },
+  'aps-data-preset': {
+    intro:
+      'Everything ACC-data-specific in one data-only item: adapters from the Data Management, Model Derivative, and ACC Sheets payloads into cantera project types. Each input interface is the structural subset the adapter actually reads, so any payload with those fields adapts — the APS emulator included. Fetching and tokens stay in your auth layer.',
+    example: `import { fromApsHub, fromApsProject } from '@/lib/aps-data-preset'
+import { ProjectPicker } from '@/components/ui/project-picker'
+
+// GET /project/v1/hubs and /project/v1/hubs/{hub}/projects, fetched by you.
+const hubs = hubsResponse.data.map(fromApsHub)
+const projects = projectsResponse.data.map(fromApsProject)
+
+<ProjectPicker hubs={hubs} projects={projects} onValueChange={setProjectId} />`,
   },
 }

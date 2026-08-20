@@ -98,7 +98,7 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="mt-8">
-          <ComponentGrid />
+          <ComponentGrid headingLevel={3} />
         </div>
       </section>
 

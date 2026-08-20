@@ -109,6 +109,12 @@ exports, the files the install writes, and the environment it needs.
 | `@cantera/connection-card` | component | A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions. | [references/connection-card.md](references/connection-card.md) |
 | `@cantera/acc-sign-in` | block | Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel. | [references/acc-sign-in.md](references/acc-sign-in.md) |
 | `@cantera/connections-page` | block | The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs. | [references/connections-page.md](references/connections-page.md) |
+| `@cantera/project-types` | lib | Generic project-context types for cantera components: hubs, projects, model translations, sheet version sets. The lingua franca adapters translate into. | [references/project-types.md](references/project-types.md) |
+| `@cantera/aps-data-preset` | lib | Autodesk Platform Services (ACC) data preset: adapters from Data Management, Model Derivative, and ACC Sheets payloads into cantera's project types. | [references/aps-data-preset.md](references/aps-data-preset.md) |
+| `@cantera/hub-switcher` | component | The hub context switch: which ACC hub — or any Hub — the rest of the screen works against, with region context and a pending state for the switch itself. | [references/hub-switcher.md](references/hub-switcher.md) |
+| `@cantera/project-picker` | component | The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs. | [references/project-picker.md](references/project-picker.md) |
+| `@cantera/version-set-select` | component | Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake. | [references/version-set-select.md](references/version-set-select.md) |
+| `@cantera/model-status-card` | component | The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract. | [references/model-status-card.md](references/model-status-card.md) |
 
 ## Working examples
 
@@ -124,6 +130,10 @@ npx shadcn@latest add @cantera/scope-picker-demo
 npx shadcn@latest add @cantera/user-account-badge-demo
 npx shadcn@latest add @cantera/token-status-demo
 npx shadcn@latest add @cantera/connection-card-demo
+npx shadcn@latest add @cantera/hub-switcher-demo
+npx shadcn@latest add @cantera/project-picker-demo
+npx shadcn@latest add @cantera/version-set-select-demo
+npx shadcn@latest add @cantera/model-status-card-demo
 ```
 
 ## More

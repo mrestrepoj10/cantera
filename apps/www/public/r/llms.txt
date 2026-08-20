@@ -118,3 +118,57 @@ Description: The page that manages every provider grant: one card per connection
 Install: npx shadcn@latest add @cantera/connections-page
 Docs: https://canteraui.xyz/components/connections-page
 Item: https://canteraui.xyz/r/connections-page.json
+
+### project-types
+
+Title: Project Types
+Type: lib
+Description: Generic project-context types for cantera components: hubs, projects, model translations, sheet version sets. The lingua franca adapters translate into.
+Install: npx shadcn@latest add @cantera/project-types
+Docs: https://canteraui.xyz/components/project-types
+Item: https://canteraui.xyz/r/project-types.json
+
+### aps-data-preset
+
+Title: APS Data Preset
+Type: lib
+Description: Autodesk Platform Services (ACC) data preset: adapters from Data Management, Model Derivative, and ACC Sheets payloads into cantera's project types.
+Install: npx shadcn@latest add @cantera/aps-data-preset
+Docs: https://canteraui.xyz/components/aps-data-preset
+Item: https://canteraui.xyz/r/aps-data-preset.json
+
+### hub-switcher
+
+Title: Hub Switcher
+Type: component
+Description: The hub context switch: which ACC hub — or any Hub — the rest of the screen works against, with region context and a pending state for the switch itself.
+Install: npx shadcn@latest add @cantera/hub-switcher
+Docs: https://canteraui.xyz/components/hub-switcher
+Item: https://canteraui.xyz/r/hub-switcher.json
+
+### project-picker
+
+Title: Project Picker
+Type: component
+Description: The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs.
+Install: npx shadcn@latest add @cantera/project-picker
+Docs: https://canteraui.xyz/components/project-picker
+Item: https://canteraui.xyz/r/project-picker.json
+
+### version-set-select
+
+Title: Version Set Select
+Type: component
+Description: Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake.
+Install: npx shadcn@latest add @cantera/version-set-select
+Docs: https://canteraui.xyz/components/version-set-select
+Item: https://canteraui.xyz/r/version-set-select.json
+
+### model-status-card
+
+Title: Model Status Card
+Type: component
+Description: The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract.
+Install: npx shadcn@latest add @cantera/model-status-card
+Docs: https://canteraui.xyz/components/model-status-card
+Item: https://canteraui.xyz/r/model-status-card.json

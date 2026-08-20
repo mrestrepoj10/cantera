@@ -24,6 +24,25 @@ test('full sign-in flow through the embedded APS emulator', async ({ page }) => 
   await expect(page.getByText('user-profile:read')).toBeVisible()
   await expect(page.getByText('viewables:read')).toBeVisible()
 
+  // The workflow lights up on the same grant: hubs and projects read from the
+  // emulator's Data Management endpoints, the issuance from ACC Sheets, and
+  // the translation status from Model Derivative — all server-side, with this
+  // user's bearer token.
+  await expect(page.getByRole('combobox', { name: 'Hub' })).toContainText('Ridgeline Builders')
+  await expect(page.getByRole('combobox', { name: 'Project' })).toContainText('Summit Tower')
+  await expect(page.getByRole('combobox', { name: 'Version set' })).toContainText('IFC 2026-03')
+  await expect(page.getByText('summit-tower-arch.rvt')).toBeVisible()
+  await expect(page.locator('[data-slot="model-status-card"][data-status="success"]')).toBeVisible()
+
+  // Picking another project re-reads the server: a different hub's projects,
+  // a different issuance, different models.
+  await page.getByRole('combobox', { name: 'Project' }).click()
+  await page.getByRole('option', { name: 'Cedar Mill Campus' }).click()
+  await expect(page.getByRole('combobox', { name: 'Version set' })).toContainText('IFC 2026-05')
+  // Exact match: the failed card's error prose quotes the same file name.
+  await expect(page.getByText('cedar-mill-site.nwd', { exact: true })).toBeVisible()
+  await expect(page.locator('[data-slot="model-status-card"][data-status="failed"]')).toBeVisible()
+
   // Disconnect clears the grant and returns to the sign-in card.
   await page.getByRole('button', { name: 'Disconnect' }).click()
   await expect(page.getByRole('link', { name: /continue with autodesk/i })).toBeVisible()

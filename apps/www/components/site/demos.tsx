@@ -12,6 +12,9 @@ import {
   siteworksProvider,
 } from '@/components/site/sample-data'
 import { ConnectionCard } from '@/components/ui/connection-card'
+import { HubSwitcher } from '@/components/ui/hub-switcher'
+import { ModelStatusCard } from '@/components/ui/model-status-card'
+import { ProjectPicker } from '@/components/ui/project-picker'
 import { ProviderSignInButton } from '@/components/ui/provider-sign-in-button'
 import { ScopePicker, withRequiredScopes } from '@/components/ui/scope-picker'
 import { SignInCard } from '@/components/ui/sign-in-card'
@@ -22,8 +25,10 @@ import {
   TokenStatus,
 } from '@/components/ui/token-status'
 import { UserAccountBadge } from '@/components/ui/user-account-badge'
+import { VersionSetSelect } from '@/components/ui/version-set-select'
 import { apsProvider, apsScopeCatalog, apsScopePresets } from '@/lib/aps-oauth-preset'
 import type { OAuthConnection } from '@/lib/oauth-types'
+import type { Hub, ModelTranslation, Project, SheetVersionSet } from '@/lib/project-types'
 import { cn } from '@/lib/utils'
 
 /**
@@ -469,6 +474,162 @@ export function StatusTokensDemo() {
   )
 }
 
+const demoHubs: Hub[] = [
+  { id: 'b.ridgeline-us', name: 'Ridgeline Builders', region: 'US' },
+  { id: 'b.ridgeline-emea', name: 'Ridgeline Europe', region: 'EMEA' },
+]
+
+const demoProjects: Project[] = [
+  { id: 'b.summit-tower', name: 'Summit Tower', hubId: 'b.ridgeline-us' },
+  { id: 'b.cedar-mill', name: 'Cedar Mill Campus', hubId: 'b.ridgeline-us' },
+  { id: 'b.dockside', name: 'Dockside Renovation', hubId: 'b.ridgeline-us' },
+  { id: 'b.harbor-point', name: 'Harbor Point Garage', hubId: 'b.ridgeline-emea' },
+  { id: 'b.kanal-west', name: 'Kanalhaus West', hubId: 'b.ridgeline-emea' },
+]
+
+export function HubSwitcherDemo() {
+  const [hubId, setHubId] = useState('b.ridgeline-us')
+
+  return (
+    <HubSwitcher
+      hubs={[...demoHubs, { id: 'b.summit-jv', name: 'Summit Tower JV', region: 'US' }]}
+      value={hubId}
+      // The promise drives the pending state: the trigger keeps the current
+      // hub's name and crossfades in a spinner for the round trip.
+      onValueChange={async (next) => {
+        await delay()
+        setHubId(next)
+      }}
+    />
+  )
+}
+
+type PickerDemoState = 'ready' | 'loading' | 'error'
+
+const pickerDemoStates: { id: PickerDemoState; label: string }[] = [
+  { id: 'ready', label: 'Ready' },
+  { id: 'loading', label: 'Loading' },
+  { id: 'error', label: 'Error' },
+]
+
+export function ProjectPickerDemo() {
+  const [state, setState] = useState<PickerDemoState>('ready')
+  const [projectId, setProjectId] = useState<string>()
+
+  return (
+    <div className="flex w-full flex-col gap-4">
+      <StateSwitcher
+        value={state}
+        onChange={setState}
+        label="Project list state"
+        states={pickerDemoStates}
+      />
+      <ProjectPicker
+        hubs={demoHubs}
+        projects={state === 'ready' ? demoProjects : []}
+        value={projectId}
+        onValueChange={setProjectId}
+        status={state}
+        error="Projects could not be loaded."
+        onRetry={async () => {
+          await delay()
+          setState('ready')
+        }}
+      />
+      <p className="text-muted-foreground text-sm">
+        {projectId ? (
+          <>
+            Working against <span className="font-mono text-code">{projectId}</span>
+          </>
+        ) : (
+          'No project selected yet.'
+        )}
+      </p>
+    </div>
+  )
+}
+
+const demoVersionSets: SheetVersionSet[] = [
+  { id: 'vs-ifc-03', name: 'IFC 2026-03', issuanceDate: '2026-03-12' },
+  { id: 'vs-permit', name: 'Permit Set', issuanceDate: '2025-11-04' },
+  { id: 'vs-gmp', name: 'GMP Set', issuanceDate: '2025-08-22' },
+]
+
+export function VersionSetSelectDemo() {
+  const [versionSetId, setVersionSetId] = useState('vs-ifc-03')
+
+  return (
+    <VersionSetSelect
+      versionSets={demoVersionSets}
+      value={versionSetId}
+      onValueChange={setVersionSetId}
+    />
+  )
+}
+
+const demoTranslations: ModelTranslation[] = [
+  {
+    urn: 'dXJuOmFkc2sud2lwcHJvZDpkbS5saW5lYWdlOnN1bW1pdA',
+    name: 'summit-tower.rvt',
+    status: 'success',
+    outputs: ['svf2', 'thumbnail'],
+  },
+  {
+    urn: 'dXJuOmFkc2sud2lwcHJvZDpkbS5saW5lYWdlOmNlZGFy',
+    name: 'cedar-mill-site.nwd',
+    status: 'inprogress',
+    progress: '42% complete',
+  },
+  {
+    urn: 'dXJuOmFkc2sud2lwcHJvZDpkbS5saW5lYWdlOmRvY2s',
+    name: 'dockside-mep.ifc',
+    status: 'timeout',
+    error: 'Translation gave up after 60 minutes.',
+  },
+  {
+    urn: 'dXJuOmFkc2sud2lwcHJvZDpkbS5saW5lYWdlOmhhcmJvcg',
+    name: 'harbor-point.dwg',
+    status: 'failed',
+    error: 'Derivative "harbor-point.dwg" failed to translate.',
+  },
+]
+
+export function ModelStatusCardDemo() {
+  // Retrying flips the card through the real sequence — translating, then
+  // ready — so the whole vocabulary is reachable from the demo.
+  const [retried, setRetried] = useState<Record<string, ModelTranslation['status']>>({})
+
+  return (
+    <div className="flex w-full flex-col gap-3">
+      {demoTranslations.map((translation) => {
+        const status = retried[translation.urn] ?? translation.status
+        const current: ModelTranslation =
+          status === translation.status
+            ? translation
+            : {
+                ...translation,
+                status,
+                error: undefined,
+                progress: status === 'inprogress' ? 'restarting…' : undefined,
+                outputs: status === 'success' ? ['svf2', 'thumbnail'] : undefined,
+              }
+        return (
+          <ModelStatusCard
+            key={translation.urn}
+            translation={current}
+            onRetry={async () => {
+              await delay()
+              setRetried((all) => ({ ...all, [translation.urn]: 'inprogress' }))
+              await delay(1600)
+              setRetried((all) => ({ ...all, [translation.urn]: 'success' }))
+            }}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
 const demos: Record<string, ComponentType> = {
   'provider-sign-in-button': ProviderSignInButtonDemo,
   'sign-in-card': SignInCardDemo,
@@ -478,6 +639,10 @@ const demos: Record<string, ComponentType> = {
   'connection-card': ConnectionCardDemo,
   'status-tokens': StatusTokensDemo,
   'connections-page': ConnectionsPageDemo,
+  'hub-switcher': HubSwitcherDemo,
+  'project-picker': ProjectPickerDemo,
+  'version-set-select': VersionSetSelectDemo,
+  'model-status-card': ModelStatusCardDemo,
 }
 
 /** Docs-page entry point: renders the demo for a registry item, or nothing for lib items. */
