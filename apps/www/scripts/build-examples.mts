@@ -56,6 +56,10 @@ const PAGE_WIDTH: Record<string, string> = {
   'token-status': 'max-w-lg',
   'connection-card': 'max-w-md',
   'status-tokens': 'max-w-3xl',
+  'hub-switcher': 'max-w-sm',
+  'project-picker': 'max-w-md',
+  'version-set-select': 'max-w-sm',
+  'model-status-card': 'max-w-md',
 }
 
 const DEFAULT_PAGE_WIDTH = 'max-w-md'

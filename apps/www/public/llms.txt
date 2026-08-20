@@ -22,6 +22,10 @@ Data-agnostic UI: typed props in, callbacks out, no fetching.
 - [User Account Badge](https://canteraui.xyz/components/user-account-badge): An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.
 - [Token Status](https://canteraui.xyz/components/token-status): Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.
 - [Connection Card](https://canteraui.xyz/components/connection-card): A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions.
+- [Hub Switcher](https://canteraui.xyz/components/hub-switcher): The hub context switch: which ACC hub — or any Hub — the rest of the screen works against, with region context and a pending state for the switch itself.
+- [Project Picker](https://canteraui.xyz/components/project-picker): The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs.
+- [Version Set Select](https://canteraui.xyz/components/version-set-select): Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake.
+- [Model Status Card](https://canteraui.xyz/components/model-status-card): The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract.
 
 ## Blocks
 
@@ -36,6 +40,8 @@ The types the components speak, and the provider presets that translate into the
 
 - [OAuth Types](https://canteraui.xyz/components/oauth-types): Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.
 - [APS OAuth Preset](https://canteraui.xyz/components/aps-oauth-preset): Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.
+- [Project Types](https://canteraui.xyz/components/project-types): Generic project-context types for cantera components: hubs, projects, model translations, sheet version sets. The lingua franca adapters translate into.
+- [APS Data Preset](https://canteraui.xyz/components/aps-data-preset): Autodesk Platform Services (ACC) data preset: adapters from Data Management, Model Derivative, and ACC Sheets payloads into cantera's project types.
 
 ## Tokens
 
