@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
+import { demoNames } from '../apps/www/components/site/demo-names'
+
 interface RegistryFile {
   items: { name: string; type: string }[]
 }
@@ -22,6 +24,14 @@ export const componentPages = registry.items
   .filter((item) => item.type !== 'registry:example')
   .map((item) => `/components/${item.name}`)
 
+/**
+ * The framed previews the docs site embeds. Scanned like any other page: they
+ * render the same demos, so an exclusion here would be an exclusion for the
+ * code consumers install — and they are the surface a docs reader actually
+ * looks at once the reference lives on its own origin.
+ */
+export const embedPages = demoNames.map((name) => `/embed/${name}`)
+
 export const sitePages = [
   '/',
   '/installation',
@@ -31,6 +41,7 @@ export const sitePages = [
   '/demo',
   '/connections',
   ...componentPages,
+  ...embedPages,
 ]
 
 /**
@@ -38,3 +49,15 @@ export const sitePages = [
  * the `.md` route is generated from the same filtered catalog.
  */
 export const markdownPages = componentPages.map((route) => `${route}.md`)
+
+/**
+ * Every page on the Blume docs app.
+ *
+ * The component routes share their paths with www's because both are generated
+ * from the same catalog — `content/components/<name>.mdx` and
+ * `/components/[name]` land on the same URL. They are still scanned separately:
+ * these render on the docs app's own theme and chrome, which fail
+ * independently, and the whole point of the split is that neither app's scan
+ * speaks for the other.
+ */
+export const docsPages = ['/', '/installation', '/components', ...componentPages]

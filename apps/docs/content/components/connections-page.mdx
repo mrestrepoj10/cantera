@@ -1,0 +1,850 @@
+---
+title: "Connections Page"
+description: "The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs."
+---
+
+<Badge variant="accent">block</Badge> `@cantera/connections-page`
+
+## Install
+
+```bash
+npx shadcn@latest add @cantera/connections-page
+```
+
+- Registry dependencies: `button`, `@cantera/connection-card`, `@cantera/provider-sign-in-button`, `@cantera/token-status`, `@cantera/user-account-badge`, `@cantera/acc-sign-in`, `@cantera/aps-oauth-preset`, `@cantera/oauth-types`, `@cantera/status-tokens`
+- npm dependencies: `aec-auth`, `lucide-react`
+- Environment variables written to `.env.local`: `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, `SESSION_SECRET`, `APS_AUTH_BASE_URL`
+
+### Install notes
+
+Installed: app/connections/page.tsx with its loading skeleton, plus ConnectionsView (presentational) and ConnectionsManager (wiring).
+
+This block takes acc-sign-in as a registry dependency for the /api/auth/* routes and the aec-auth glue, so one environment configures both:
+- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.
+- SESSION_SECRET — required in production; the block fails closed without it.
+- APS_AUTH_BASE_URL — optional auth-origin override for an emulator. Unset means real APS.
+
+ACC_AUTH_DEMO=1 allows the insecure fallback session secret and must never be set where real accounts exist.
+
+ConnectionsView never fetches — providers and connections in, callbacks out — so point it at any backend.
+
+## Preview
+
+<ComponentPreview src="https://canteraui.xyz/embed/connections-page" name="connections-page" title="Connections Page preview" />
+
+## Files
+
+| Path | Type |
+| --- | --- |
+| `app/connections/page.tsx` | `registry:page` |
+| `app/connections/loading.tsx` | `registry:file` |
+| `components/connections-view.tsx` | `registry:component` |
+| `components/connections-manager.tsx` | `registry:component` |
+
+## ConnectionsView props
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `providers` | `OAuthProvider[]` | — | Every provider this app can connect to, in display order. A provider with no grant renders as a "not connected" row, and a page where none of them has a grant renders the empty state. |
+| `connections` | `OAuthConnection[]` | — | The grants that exist, matched to providers by connection.provider.id. A grant for a provider outside the catalog is appended rather than dropped, so a removed provider never vanishes silently. |
+| `status` | `'ready' \| 'loading' \| 'error'` | `'ready'` | The fetch state. Loading and error replace the list while the heading stays put — the page never shifts under a resolve. A single provider that failed is not this state: that is a row with status "error", which keeps its healthy siblings visible. |
+| `error` | `string` | — | Page-level failure detail, shown with the retry when status is "error". Wired to the retry button with aria-describedby. |
+| `account` | `OAuthAccount` | — | Who these grants belong to. Rendered as a UserAccountBadge beside the heading when set. |
+| `onConnect` | `(providerId: string) => void \| Promise<void>` | — | Starts consent for one provider. Connect and reconnect are the same act, so one callback serves the empty-state chooser and every row button. A returned promise drives that row's pending state. |
+| `onDisconnect` | `(providerId: string) => void \| Promise<void>` | — | Revokes one grant. A returned promise drives the pending state on that card's Disconnect button. |
+| `onRetry` | `() => void \| Promise<void>` | — | Retries the whole fetch. Shown only in the error state. |
+| `pending` | `{ connecting?: string; disconnecting?: string; retrying?: boolean }` | — | Consumer-driven pending, for wiring where no promise comes back — a server action, or a navigation that never resolves. One provider id, not a set: a second consent redirect would race the first. |
+| `title` | `ReactNode` | `'Connections'` | Page heading text. |
+| `titleAs` | `'h1' \| 'h2' \| 'h3'` | `'h1'` | Heading element for the title — a block ships a real heading, not a styled div. Drop to h2 when embedding under one. |
+| `description` | `ReactNode` | `'The accounts this app can read from…'` | Sentence under the heading. Pass null to drop it. |
+| `showScopes` | `boolean` | `true` | Forwarded to every ConnectionCard, and through it to TokenStatus. |
+| `...props` | `ComponentProps<'section'>` | — | Remaining props are spread onto the page section. |
+
+## AccConnections props
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `providers` | `OAuthProvider[]` | `[apsProvider]` | Providers to list. Autodesk is the wired one; an extra entry renders as "not connected" and its Connect button hits /api/auth/&lt;id>, which 404s until lib/acc-auth.ts knows that provider. |
+| `nextPath` | `string` | `'/connections'` | Where the consent flow returns to. |
+| `headingLevel` | `'h1' \| 'h2' \| 'h3'` | `'h1'` | Heading level for the block title, forwarded to ConnectionsView. |
+
+## Exports
+
+| Export | Kind | Description |
+| --- | --- | --- |
+| `ConnectionsView` | `component` | The presentational page: heading, summary, and whichever of the four states applies. Data in, callbacks out, no fetching. |
+| `ConnectionsList` | `component` | The ready state — one ConnectionCard per row, where the whole status vocabulary shows up at once. |
+| `ConnectionsEmpty` | `component` | The empty state: the provider chooser itself, with one sentence on what a connection buys. No illustration — the system is monochrome. |
+| `ConnectionsLoading` | `component` | The loading state: static skeleton rows built from the ConnectionCard box model, so nothing shifts on resolve, plus one spinner in a live region. No shimmer and no stagger — neither is in the motion grammar. |
+| `ConnectionsError` | `component` | The page-level failure: message in danger ink plus a retry on the async-pending contract, wired with aria-describedby. |
+| `resolveConnections` | `(providers, connections?) => OAuthConnection[]` | The data model: one row per provider in catalog order, a disconnected placeholder where no grant exists, and unknown grants appended. |
+| `ConnectionsManager` | `component` | The client wiring: connect navigates to the consent route, disconnect posts to the revoke route, and both settle by re-rendering the server page. Swap it for your own backend and ConnectionsView does not change. |
+| `AccConnections` | `async component` | The wired server component, on the lib and routes the acc-sign-in block installs. Render it from any server page; the default export is a ready-made /connections page with a streamed loading.tsx beside it. |
+
+## Data attributes
+
+| Attribute | Values | Description |
+| --- | --- | --- |
+| `data-slot` | `connections-view · connections-list · connections-empty · connections-loading · connections-error` | Which state is on the page, for styling and for tests. |
+| `data-status` | `ready · loading · error` | On the page section: the fetch state it was rendered with. |
+
+## Source
+
+This is the exact code the CLI installs into your project — you own it from there.
+
+```tsx page.tsx
+import { TokenError } from 'aec-auth'
+import { cookies, headers } from 'next/headers'
+
+import { ConnectionsManager } from '@/components/connections-manager'
+import { APS_PROVIDER_ID, getTokenSource, openSession, SESSION_COOKIE } from '@/lib/acc-auth'
+import { apsProvider } from '@/lib/aps-oauth-preset'
+import type { OAuthAccount, OAuthConnection, OAuthProvider } from '@/lib/oauth-types'
+
+/**
+ * The connections-page block: every provider grant this app holds, on one
+ * page, with connect, reconnect, and disconnect per provider.
+ *
+ * Server-rendered on the same aec-auth wiring the acc-sign-in block installs —
+ * `lib/acc-auth.ts` and the `/api/auth/*` route handlers come from that item,
+ * so this block adds a page and its client wiring, and nothing token-shaped.
+ *
+ * Reusable inner component: render <AccConnections /> from any server page;
+ * the default export is a ready-made /connections page, and the sibling
+ * loading.tsx is its skeleton.
+ *
+ * Autodesk is the wired provider. Extra entries in `providers` render as "not
+ * connected" and their Connect button hits `/api/auth/<id>`, which 404s until
+ * you teach `lib/acc-auth.ts` about that provider — deliberate, so an unwired
+ * provider fails loudly at the route rather than quietly in the UI.
+ */
+
+async function requestOrigin(): Promise<string> {
+  const headerList = await headers()
+  const host = headerList.get('x-forwarded-host') ?? headerList.get('host') ?? 'localhost:3000'
+  const proto = headerList.get('x-forwarded-proto') ?? 'http'
+  return `${proto}://${host}`
+}
+
+/**
+ * Row-level failures stay on the row. Only a backend that cannot answer at all
+ * — no client id, no provider configured — throws to the page-level state,
+ * because then there is nothing to render a row about.
+ */
+function connectionFromError(
+  error: unknown,
+  account: OAuthAccount,
+  scopes: string[] | undefined,
+): OAuthConnection {
+  if (error instanceof TokenError && error.code === 'not_configured') throw error
+
+  // Recoverable states are warning, not danger: a lost or revoked grant is one
+  // consent away. Only a provider that actually failed takes the error status.
+  const recoverable =
+    error instanceof TokenError &&
+    (error.code === 'consent_required' || error.code === 'grant_invalid')
+
+  return {
+    provider: apsProvider,
+    status: recoverable ? 'expired' : 'error',
+    account,
+    scopes,
+    error: recoverable ? undefined : 'Could not refresh the token.',
+  }
+}
+
+export async function AccConnections({
+  providers = [apsProvider],
+  nextPath = '/connections',
+  headingLevel = 'h1',
+}: {
+  /** Providers to list, in display order. Autodesk is the wired one. */
+  providers?: OAuthProvider[]
+  /** Where the consent flow returns to. */
+  nextPath?: string
+  /** Heading level for the block's title. Drop to h2 when embedding under one. */
+  headingLevel?: 'h1' | 'h2' | 'h3'
+}) {
+  const cookieStore = await cookies()
+  const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)
+  const account = session
+    ? { name: session.name, email: session.email, avatarUrl: session.avatarUrl }
+    : undefined
+
+  let connections: OAuthConnection[] = []
+  let error: string | undefined
+
+  if (session && account) {
+    try {
+      const origin = await requestOrigin()
+      try {
+        const token = await getTokenSource(origin).getToken({
+          provider: APS_PROVIDER_ID,
+          subject: { type: 'user', id: session.userId },
+          scopes: session.scopes,
+        })
+        connections = [
+          {
+            provider: apsProvider,
+            status: 'connected',
+            account,
+            scopes: token.scopes ? [...token.scopes] : session.scopes,
+            expiresAt: token.expiresAt,
+          },
+        ]
+      } catch (tokenError) {
+        connections = [connectionFromError(tokenError, account, session.scopes)]
+      }
+    } catch (fatal) {
+      error = fatal instanceof Error ? fatal.message : 'The connection service is unavailable.'
+    }
+  }
+
+  const next = encodeURIComponent(nextPath)
+
+  return (
+    <ConnectionsManager
+      providers={providers}
+      connections={connections}
+      account={account}
+      status={error ? 'error' : 'ready'}
+      error={error}
+      titleAs={headingLevel}
+      connectHrefTemplate={`/api/auth/{provider}?next=${next}`}
+      disconnectHrefTemplate={`/api/auth/signout?next=${next}`}
+    />
+  )
+}
+
+// The grant state is read from cookies and the vault on every visit.
+export const dynamic = 'force-dynamic'
+
+export default function ConnectionsPage() {
+  return (
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col p-6 sm:py-12">
+      <AccConnections />
+    </main>
+  )
+}
+```
+
+```tsx loading.tsx
+import { ConnectionsView } from '@/components/connections-view'
+
+/**
+ * The route's loading UI, so the block's loading state is the real thing the
+ * App Router streams rather than a decoration in a demo.
+ *
+ * The same ConnectionsView renders it: heading and description are already
+ * final here, and only the list is placeholder — so nothing above the list
+ * moves when the data lands. Retitle the page and retitle this too.
+ */
+export default function ConnectionsLoadingPage() {
+  return (
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col p-6 sm:py-12">
+      <ConnectionsView providers={[]} status="loading" />
+    </main>
+  )
+}
+```
+
+```tsx connections-view.tsx
+'use client'
+
+import { LoaderCircleIcon, RotateCwIcon } from 'lucide-react'
+import type * as React from 'react'
+import { useId, useState } from 'react'
+
+import { Button } from '@/components/ui/button'
+import { ConnectionCard } from '@/components/ui/connection-card'
+import { ProviderSignInButton } from '@/components/ui/provider-sign-in-button'
+import { statusInkClasses } from '@/components/ui/token-status'
+import { UserAccountBadge } from '@/components/ui/user-account-badge'
+import {
+  isExpiringSoon,
+  type OAuthAccount,
+  type OAuthConnection,
+  type OAuthProvider,
+} from '@/lib/oauth-types'
+import { cn } from '@/lib/utils'
+
+/**
+ * The presentational half of the connections-page block: every grant this app
+ * holds, on one page, with connect / reconnect / disconnect per provider.
+ *
+ * Data-agnostic on purpose — connections in, callbacks out, no fetching. The
+ * wiring lives in ConnectionsManager next door; swap it for your own backend
+ * and this file does not change.
+ *
+ * Four states, all shipped and all exported so they survive being adapted:
+ * - loading — the initial fetch. Static skeleton rows at the real row
+ *   geometry, so nothing shifts when the data lands, plus one live spinner.
+ * - error   — the whole fetch failed. Message plus a retry on the
+ *   async-pending contract. A single provider that failed is not this state:
+ *   it is a row with status "error", which keeps its healthy siblings visible.
+ * - empty   — nothing connected yet. The provider chooser IS the empty state.
+ * - ready   — the mixed dashboard: connected, expiring, expired, errored, and
+ *   not-yet-connected providers in one list.
+ */
+
+/** What the page is showing. "ready" with nothing connected renders the empty state. */
+type ConnectionsStatus = 'ready' | 'loading' | 'error'
+
+/**
+ * Consumer-driven pending, for wiring where no promise comes back (a server
+ * action, or a navigation that never resolves). A callback that returns a
+ * promise drives the same states on its own.
+ *
+ * One provider id, not a set: a second consent redirect would race the first,
+ * the same reason SignInCard takes a single `loadingProvider`.
+ */
+interface ConnectionsPending {
+  /** Provider id whose connect / reconnect is in flight. */
+  connecting?: string
+  /** Provider id whose disconnect is in flight. */
+  disconnecting?: string
+  /** The page-level retry, shown only in the error state. */
+  retrying?: boolean
+}
+
+/**
+ * One row per provider, in catalog order: the grant where one exists, a
+ * "disconnected" placeholder where it does not, and any grant for a provider
+ * outside the catalog appended rather than silently dropped.
+ *
+ * Exported because it is the whole data model — an adapter feeding this page
+ * from another backend reimplements nothing.
+ */
+function resolveConnections(
+  providers: OAuthProvider[],
+  connections: OAuthConnection[] = [],
+): OAuthConnection[] {
+  const held = new Map(connections.map((connection) => [connection.provider.id, connection]))
+  const rows: OAuthConnection[] = providers.map(
+    (provider) => held.get(provider.id) ?? { provider, status: 'disconnected' },
+  )
+  const known = new Set(providers.map((provider) => provider.id))
+  return [...rows, ...connections.filter((connection) => !known.has(connection.provider.id))]
+}
+
+// ---------------------------------------------------------------------------
+// Loading
+// ---------------------------------------------------------------------------
+
+interface ConnectionsLoadingProps extends React.ComponentProps<'div'> {
+  /** How many skeleton rows to draw. Match the provider count when you know it. */
+  rows?: number
+}
+
+/**
+ * The initial fetch. Deliberately still: the motion grammar is four moves and
+ * a looping shimmer is not one of them — on a list of rows it is an attention
+ * magnet with nothing to say, and it reads as activity where there is none.
+ * The single spinner is the sanctioned move, and it carries the announcement.
+ *
+ * The skeleton's job is geometry, not entertainment: these rows are built from
+ * the same box model as ConnectionCard, so the real cards land exactly where
+ * the placeholders stood. No stagger, no entrance — the data is dense.
+ */
+function ConnectionsLoading({ rows = 3, className, ...props }: ConnectionsLoadingProps) {
+  const placeholders = Array.from({ length: Math.max(rows, 1) }, (_, index) => `skeleton-${index}`)
+
+  return (
+    <div
+      data-slot="connections-loading"
+      className={cn('flex flex-col gap-3', className)}
+      {...props}
+    >
+      {/* <output> is implicitly role="status" aria-live="polite" — the skeleton
+          itself is decorative and hidden, so this is the only thing announced. */}
+      <output className="flex items-center gap-2 text-muted-foreground text-sm">
+        <LoaderCircleIcon aria-hidden className="size-3.5 shrink-0 animate-spin" />
+        Loading connections
+      </output>
+      {placeholders.map((id) => (
+        <div
+          key={id}
+          aria-hidden
+          // Same box as Card: rounded-xl, ring-1, py-(--card-spacing) at 4.
+          className="rounded-xl bg-card py-4 ring-1 ring-foreground/10"
+        >
+          <div className="flex flex-col gap-3 px-4">
+            {/* Provider row: mark, name, action — matches the card's header line. */}
+            <div className="flex items-center gap-3">
+              <div className="size-5 shrink-0 rounded bg-muted" />
+              <div className="h-4 w-28 rounded bg-muted" />
+              <div className="ml-auto h-7 w-24 shrink-0 rounded-lg bg-muted" />
+            </div>
+            {/* Account badge row: avatar plus the name-over-email stack, whose
+                two 16px lines are what sets a full card's height. */}
+            <div className="flex items-center gap-2">
+              <div className="size-7 shrink-0 rounded-full bg-muted" />
+              <div className="flex flex-col gap-1">
+                <div className="h-3.5 w-24 rounded bg-muted" />
+                <div className="h-3.5 w-40 rounded bg-muted" />
+              </div>
+            </div>
+            {/* Status line: one badge plus the expiry text. */}
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-24 shrink-0 rounded-md bg-muted" />
+              <div className="h-3 w-20 rounded bg-muted" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Error
+// ---------------------------------------------------------------------------
+
+interface ConnectionsErrorProps extends React.ComponentProps<'div'> {
+  /** What failed, in the user's words. Falls back to a generic sentence. */
+  message?: string
+  onRetry?: () => void | Promise<void>
+  /** Consumer-driven pending for the retry. A returned promise drives it too. */
+  retryPending?: boolean
+}
+
+/**
+ * The retry, on the async-pending contract: stays mounted, keeps its label,
+ * crossfades its icon to a spinner, and blocks activation through
+ * aria-disabled so focus is never dropped mid-request.
+ */
+function RetryButton({
+  onRetry,
+  pending = false,
+  describedBy,
+}: {
+  onRetry: () => void | Promise<void>
+  pending?: boolean
+  describedBy?: string
+}) {
+  const [asyncPending, setAsyncPending] = useState(false)
+  const busy = pending || asyncPending
+
+  return (
+    <Button
+      type="button"
+      size="lg"
+      variant="outline"
+      disabled={busy}
+      focusableWhenDisabled
+      aria-busy={busy || undefined}
+      aria-describedby={describedBy}
+      // Retrying a failed page is the primary action here, so it carries the
+      // 44px field-density floor rather than the compact card-action size.
+      className="min-h-11 gap-2 px-4 aria-disabled:pointer-events-none"
+      onClick={() => {
+        const result = onRetry()
+        if (!(result instanceof Promise)) return
+        setAsyncPending(true)
+        result.then(
+          () => setAsyncPending(false),
+          () => setAsyncPending(false),
+        )
+      }}
+    >
+      <span aria-hidden className="grid size-4 shrink-0 place-items-center">
+        <LoaderCircleIcon
+          className={cn(
+            'col-start-1 row-start-1 size-4 animate-spin transition-opacity duration-150 ease-out',
+            busy ? 'opacity-100' : 'opacity-0',
+          )}
+        />
+        <RotateCwIcon
+          className={cn(
+            'col-start-1 row-start-1 size-4 transition-opacity duration-150 ease-out',
+            busy ? 'opacity-0' : 'opacity-100',
+          )}
+        />
+      </span>
+      Try again
+    </Button>
+  )
+}
+
+/**
+ * The whole fetch failed, so there is no list to show. Page-level only — a
+ * single provider that errored keeps its row and its siblings.
+ */
+function ConnectionsError({
+  message,
+  onRetry,
+  retryPending,
+  className,
+  ...props
+}: ConnectionsErrorProps) {
+  const messageId = useId()
+  const detail = message ?? 'The connection service did not respond.'
+
+  return (
+    <div
+      data-slot="connections-error"
+      role="alert"
+      className={cn(
+        'flex flex-col items-start gap-3 rounded-xl border border-border p-6',
+        className,
+      )}
+      {...props}
+    >
+      <div className="flex flex-col gap-1">
+        <p className="font-medium text-sm">Could not load your connections</p>
+        {/* Danger ink from the status palette, not the theme's own destructive:
+            one color, one meaning, and it is contrast-verified in both
+            appearances against the page background. */}
+        <p id={messageId} className={cn('text-sm', statusInkClasses.danger)}>
+          {detail}
+        </p>
+      </div>
+      {onRetry && <RetryButton onRetry={onRetry} pending={retryPending} describedBy={messageId} />}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Empty
+// ---------------------------------------------------------------------------
+
+interface ConnectionsEmptyProps extends React.ComponentProps<'div'> {
+  providers: OAuthProvider[]
+  onConnect?: (providerId: string) => void | Promise<void>
+  /** Provider id whose consent flow is in flight. */
+  connecting?: string
+}
+
+/**
+ * Nothing connected yet. The provider chooser IS the empty state: the page
+ * says what a connection buys and offers the one action worth taking, rather
+ * than narrating the absence and making the user hunt for the button. No
+ * illustration — the system is monochrome, and a drawing would be the loudest
+ * thing on a page whose job is data.
+ */
+function ConnectionsEmpty({
+  providers,
+  onConnect,
+  connecting,
+  className,
+  ...props
+}: ConnectionsEmptyProps) {
+  const hintId = useId()
+
+  return (
+    <div
+      data-slot="connections-empty"
+      className={cn(
+        'flex flex-col gap-4 rounded-xl border border-border border-dashed p-6',
+        className,
+      )}
+      {...props}
+    >
+      <div className="flex flex-col gap-1">
+        <p className="font-medium text-sm">No connections yet</p>
+        <p id={hintId} className="max-w-prose text-muted-foreground text-sm">
+          Connect a provider to pull its projects, documents, and models into this app. You pick the
+          scopes during consent, and you can disconnect from this page at any time.
+        </p>
+      </div>
+      {providers.length > 0 && (
+        <div className="flex w-full flex-col gap-3 sm:max-w-xs">
+          {providers.map((provider) => (
+            <ProviderSignInButton
+              key={provider.id}
+              provider={provider}
+              aria-describedby={hintId}
+              onSignIn={onConnect ? () => onConnect(provider.id) : undefined}
+              loading={connecting === provider.id}
+              // One consent flow at a time: a second redirect races the first.
+              disabled={connecting !== undefined && connecting !== provider.id}
+            >
+              Connect {provider.name}
+            </ProviderSignInButton>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// List
+// ---------------------------------------------------------------------------
+
+interface ConnectionsListProps extends React.ComponentProps<'ul'> {
+  connections: OAuthConnection[]
+  onConnect?: (providerId: string) => void | Promise<void>
+  onDisconnect?: (providerId: string) => void | Promise<void>
+  pending?: ConnectionsPending
+  showScopes?: boolean
+}
+
+/**
+ * The mixed dashboard. One ConnectionCard per row, which is where the whole
+ * status vocabulary shows up at once: connected, expiring soon, expired,
+ * errored, and never-connected all sit in the same list.
+ */
+function ConnectionsList({
+  connections,
+  onConnect,
+  onDisconnect,
+  pending,
+  showScopes = true,
+  className,
+  ...props
+}: ConnectionsListProps) {
+  return (
+    <ul data-slot="connections-list" className={cn('flex flex-col gap-3', className)} {...props}>
+      {connections.map((connection) => {
+        const providerId = connection.provider.id
+        return (
+          <li key={providerId}>
+            <ConnectionCard
+              connection={connection}
+              // Connect and reconnect are the same act — restart consent for
+              // this provider — so the page hands the card one callback.
+              onReconnect={onConnect ? () => onConnect(providerId) : undefined}
+              onDisconnect={onDisconnect ? () => onDisconnect(providerId) : undefined}
+              reconnectPending={pending?.connecting === providerId}
+              disconnectPending={pending?.disconnecting === providerId}
+              showScopes={showScopes}
+            />
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// The page
+// ---------------------------------------------------------------------------
+
+interface ConnectionsViewProps extends Omit<React.ComponentProps<'section'>, 'title'> {
+  /** Every provider this app can connect to, in display order. */
+  providers: OAuthProvider[]
+  /** The grants that exist, matched to providers by `connection.provider.id`. */
+  connections?: OAuthConnection[]
+  /** Fetch state. Loading and error take over the list; the heading stays put. */
+  status?: ConnectionsStatus
+  /** Page-level failure detail, shown when status is "error". */
+  error?: string
+  /** Who these grants belong to. Rendered beside the heading when set. */
+  account?: OAuthAccount
+  onConnect?: (providerId: string) => void | Promise<void>
+  onDisconnect?: (providerId: string) => void | Promise<void>
+  onRetry?: () => void | Promise<void>
+  pending?: ConnectionsPending
+  title?: React.ReactNode
+  /** Heading level for the page title. Drop to h2 when embedding under one. */
+  titleAs?: 'h1' | 'h2' | 'h3'
+  description?: React.ReactNode
+  showScopes?: boolean
+}
+
+/**
+ * The connections page: a real heading, an at-a-glance summary, and one row
+ * per provider — or the empty, loading, or error state that replaces the list.
+ */
+function ConnectionsView({
+  providers,
+  connections,
+  status = 'ready',
+  error,
+  account,
+  onConnect,
+  onDisconnect,
+  onRetry,
+  pending,
+  title = 'Connections',
+  titleAs: Heading = 'h1',
+  description = 'The accounts this app can read from. Grant only what a job needs, and revoke it here when it is done.',
+  showScopes = true,
+  className,
+  ...props
+}: ConnectionsViewProps) {
+  const rows = resolveConnections(providers, connections)
+  const connected = rows.filter((row) => row.status === 'connected').length
+  const expired = rows.filter((row) => row.status === 'expired').length
+  const failed = rows.filter((row) => row.status === 'error').length
+  // Same predicate TokenStatus renders "Expiring soon" from, so the count can
+  // never disagree with a warning shown on a card below it.
+  const expiring = rows.filter((row) => row.status === 'connected' && isExpiringSoon(row)).length
+  const attention = expired + failed + expiring
+  const isEmpty = rows.every((row) => row.status === 'disconnected')
+
+  let body: React.ReactNode
+  if (status === 'loading') {
+    body = <ConnectionsLoading rows={providers.length > 0 ? providers.length : 3} />
+  } else if (status === 'error') {
+    body = <ConnectionsError message={error} onRetry={onRetry} retryPending={pending?.retrying} />
+  } else if (isEmpty) {
+    body = (
+      <ConnectionsEmpty
+        providers={providers}
+        onConnect={onConnect}
+        connecting={pending?.connecting}
+      />
+    )
+  } else {
+    body = (
+      <ConnectionsList
+        connections={rows}
+        onConnect={onConnect}
+        onDisconnect={onDisconnect}
+        pending={pending}
+        showScopes={showScopes}
+      />
+    )
+  }
+
+  return (
+    <section
+      data-slot="connections-view"
+      data-status={status}
+      className={cn('flex w-full max-w-2xl flex-col gap-6', className)}
+      {...props}
+    >
+      <header className="flex flex-col gap-2">
+        {/* The identity sits on the heading line rather than under the prose:
+            whose grants these are is a fact about the page, not a caption. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <Heading className="font-heading font-medium text-2xl tracking-tight">{title}</Heading>
+          {account && <UserAccountBadge account={account} size="sm" className="shrink-0" />}
+        </div>
+        {description && <p className="max-w-prose text-muted-foreground text-sm">{description}</p>}
+        {status === 'ready' && !isEmpty && (
+          <p className="pt-1 text-muted-foreground text-sm">
+            <span className="tabular-nums">
+              {connected} of {rows.length} connected
+            </span>
+            {attention > 0 && (
+              <>
+                {' · '}
+                {/* The worst row sets the tone: an outright failure is danger,
+                    an expiry is recoverable and stays warning. */}
+                <span className={failed > 0 ? statusInkClasses.danger : statusInkClasses.warning}>
+                  <span className="tabular-nums">{attention}</span>{' '}
+                  {attention === 1 ? 'needs' : 'need'} attention
+                </span>
+              </>
+            )}
+          </p>
+        )}
+      </header>
+      {body}
+    </section>
+  )
+}
+
+export {
+  ConnectionsEmpty,
+  type ConnectionsEmptyProps,
+  ConnectionsError,
+  type ConnectionsErrorProps,
+  ConnectionsList,
+  type ConnectionsListProps,
+  ConnectionsLoading,
+  type ConnectionsLoadingProps,
+  type ConnectionsPending,
+  type ConnectionsStatus,
+  ConnectionsView,
+  type ConnectionsViewProps,
+  resolveConnections,
+}
+```
+
+```tsx connections-manager.tsx
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { useState, useTransition } from 'react'
+
+import { ConnectionsView, type ConnectionsViewProps } from '@/components/connections-view'
+
+interface ConnectionsManagerProps
+  extends Omit<ConnectionsViewProps, 'onConnect' | 'onDisconnect' | 'onRetry' | 'pending' | 'ref'> {
+  /**
+   * GET target that starts consent for one provider. "{provider}" is replaced
+   * with the provider id, e.g. "/api/auth/{provider}?next=/connections".
+   */
+  connectHrefTemplate: string
+  /**
+   * POST target that revokes a grant. "{provider}" is replaced with the
+   * provider id when the template carries it — the acc-sign-in signout route
+   * takes no provider, so the default template is a plain path.
+   */
+  disconnectHrefTemplate: string
+}
+
+/**
+ * Client wiring for the connections-page block: connect navigates to the
+ * consent route, disconnect posts to the revoke route, and both settle by
+ * re-rendering the server page — the server view is the truth, never local
+ * optimistic state about a token.
+ *
+ * The page component next door stays presentational; point this at your own
+ * routes, or replace it entirely, and ConnectionsView does not change.
+ */
+function ConnectionsManager({
+  connectHrefTemplate,
+  disconnectHrefTemplate,
+  ...viewProps
+}: ConnectionsManagerProps) {
+  const router = useRouter()
+  const [connecting, setConnecting] = useState<string>()
+  const [disconnecting, setDisconnecting] = useState<string>()
+  // A transition keeps the retry pending until the server page has actually
+  // re-rendered, rather than for the length of a fire-and-forget call.
+  const [retrying, startRefresh] = useTransition()
+
+  function connect(providerId: string) {
+    // A full navigation to the provider's consent screen: the spinner stays up
+    // because this page is on its way out, which is exactly right.
+    setConnecting(providerId)
+    window.location.href = connectHrefTemplate.replaceAll('{provider}', providerId)
+  }
+
+  async function disconnect(providerId: string) {
+    setDisconnecting(providerId)
+    try {
+      await fetch(disconnectHrefTemplate.replaceAll('{provider}', providerId), {
+        method: 'POST',
+        redirect: 'manual',
+      })
+    } finally {
+      // Clearing pending is part of the same transition as the refresh, so the
+      // Disconnect control keeps its spinner until the re-rendered server page
+      // commits — never actionable again beside a stale connected row. The
+      // refresh runs on failure too: the server view is the truth either way.
+      startRefresh(() => {
+        router.refresh()
+        setDisconnecting(undefined)
+      })
+    }
+  }
+
+  return (
+    <ConnectionsView
+      {...viewProps}
+      // The handlers are always passed: pending is a prop, never an absent
+      // callback, so a pressed button stays mounted through the request.
+      onConnect={connect}
+      onDisconnect={disconnect}
+      onRetry={() =>
+        startRefresh(() => {
+          router.refresh()
+        })
+      }
+      pending={{ connecting, disconnecting, retrying }}
+    />
+  )
+}
+
+export { ConnectionsManager, type ConnectionsManagerProps }
+```
+
+## Registry item
+
+The machine-readable item the CLI fetches: [`connections-page.json`](https://canteraui.xyz/r/connections-page.json).

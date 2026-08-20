@@ -1,0 +1,92 @@
+---
+title: "Status Tokens"
+description: "Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from."
+---
+
+<Badge variant="accent">tokens</Badge> `@cantera/status-tokens`
+
+## Install
+
+```bash
+npx shadcn@latest add @cantera/status-tokens
+```
+
+### Install notes
+
+Status tokens installed. The solid pairs (bg-status-* with text-status-*-foreground) are the default treatment; the -surface companions are for soft rows and callouts and must always carry text-status-* ink. If your theme redefines :root without these variables, the utilities fall back to foreground / destructive / muted so nothing renders invisible. lib/status-tokens.ts ships the same twelve tokens as typed var() strings (statusCssVars) for the places a class cannot reach: inline styles, chart series, canvas fills.
+
+## Preview
+
+<ComponentPreview src="https://canteraui.xyz/embed/status-tokens" name="status-tokens" title="Status Tokens preview" />
+
+## Files
+
+| Path | Type |
+| --- | --- |
+| `lib/status-tokens.ts` | `registry:lib` |
+
+## Tokens
+
+| Token | Utilities | Description |
+| --- | --- | --- |
+| `--status-success` | `bg-status-success · text-status-success` | Healthy. A live grant, a passing check, a connection that needs nothing. |
+| `--status-warning` | `bg-status-warning · text-status-warning` | Recoverable and needs attention. Expiring soon and expired both live here — a refresh away, not a failure. |
+| `--status-danger` | `bg-status-danger · text-status-danger` | A failure the user must act on: a revoked grant, a rejected scope. |
+| `--status-neutral` | `bg-status-neutral · text-status-neutral` | Absence. Never connected, nothing to report — not an error. |
+| `-foreground` | `text-status-*-foreground` | Ink for text sitting on the solid fill. Every pair clears 4.5:1 in both appearances. |
+| `-surface` | `bg-status-*-surface` | Soft background for rows and callouts. Always carries text-status-* ink, never the -foreground ink. |
+
+## Exports
+
+| Export | Type | Description |
+| --- | --- | --- |
+| `statusCssVars` | `Record<StatusCssVar, string>` | The twelve tokens as typed var() strings — success, successForeground, successSurface, and the same three for warning, danger, and neutral. For the places a class cannot reach: an inline style, a chart series color, a canvas fill. Each value carries the same fallback chain the utilities use, so an unthemed project degrades instead of rendering invisible. |
+| `StatusCssVar` | `type` | The twelve token names, for a Record keyed by token or a prop that takes one. |
+
+## Source
+
+This is the exact code the CLI installs into your project — you own it from there.
+
+```ts status-tokens.ts
+/**
+ * The status palette as typed `var()` references.
+ *
+ * Tailwind utilities (`bg-status-success`, `text-status-warning-foreground`)
+ * cover markup, and they stay the default. This is for the places a class
+ * cannot reach — an inline `style`, a chart series color, a canvas fill, an SVG
+ * `stroke` — so nothing hand-types a variable name that a rename would silently
+ * break.
+ *
+ * Every value carries the same fallback chain the `@theme` mappings use, so a
+ * consumer theme that never installed the variables degrades to foreground /
+ * destructive / muted instead of rendering invisible.
+ *
+ * One color, one meaning: success is healthy, warning is recoverable and needs
+ * attention, danger is a failure the user must act on, neutral is absence. The
+ * `-foreground` companion is ink on the solid fill; the `-surface` companion is
+ * a soft background that always carries the plain `-status-*` ink, never the
+ * `-foreground` ink.
+ */
+
+export const statusCssVars = {
+  success: 'var(--status-success, var(--foreground))',
+  successForeground: 'var(--status-success-foreground, var(--background))',
+  successSurface: 'var(--status-success-surface, var(--muted))',
+  warning: 'var(--status-warning, var(--foreground))',
+  warningForeground: 'var(--status-warning-foreground, var(--background))',
+  warningSurface: 'var(--status-warning-surface, var(--muted))',
+  danger: 'var(--status-danger, var(--destructive))',
+  dangerForeground: 'var(--status-danger-foreground, var(--background))',
+  dangerSurface: 'var(--status-danger-surface, var(--muted))',
+  neutral: 'var(--status-neutral, var(--muted-foreground))',
+  neutralForeground: 'var(--status-neutral-foreground, var(--background))',
+  neutralSurface: 'var(--status-neutral-surface, var(--muted))',
+} as const
+
+/** The twelve token names, e.g. for a `Record<StatusCssVar, ...>` lookup. */
+export type StatusCssVar = keyof typeof statusCssVars
+```
+
+## Registry item
+
+The machine-readable item the CLI fetches: [`status-tokens.json`](https://canteraui.xyz/r/status-tokens.json).

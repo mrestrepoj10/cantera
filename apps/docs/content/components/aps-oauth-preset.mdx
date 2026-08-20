@@ -1,0 +1,191 @@
+---
+title: "APS OAuth Preset"
+description: "Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types."
+---
+
+<Badge variant="accent">lib</Badge> `@cantera/aps-oauth-preset`
+
+## Install
+
+```bash
+npx shadcn@latest add @cantera/aps-oauth-preset
+```
+
+- Registry dependencies: `@cantera/oauth-types`
+
+## Usage
+
+Everything Autodesk-specific in one data-only item: provider metadata, the APS scope catalog with human explanations, the scope bundles aec-auth uses, and an adapter from the APS userinfo payload. Drop it into any component that takes oauth types — no client, no fetching, no tokens.
+
+```tsx
+import { apsProvider, apsScopeCatalog, apsScopePresets } from '@/lib/aps-oauth-preset'
+import { ScopePicker, withRequiredScopes } from '@/components/ui/scope-picker'
+import { SignInCard } from '@/components/ui/sign-in-card'
+
+<SignInCard providers={[apsProvider]} hrefTemplate="/api/auth/{provider}" />
+
+<ScopePicker
+  scopes={apsScopeCatalog}
+  presets={apsScopePresets}
+  value={selected}
+  onChange={setSelected}
+  allowCustomScopes
+/>
+
+// Required scopes are unioned in where the value is used, never on mount.
+const scope = withRequiredScopes(apsScopeCatalog, selected).join(' ')
+```
+
+## Files
+
+| Path | Type |
+| --- | --- |
+| `lib/aps-oauth-preset.tsx` | `registry:lib` |
+
+## Exports
+
+| Export | Type | Description |
+| --- | --- | --- |
+| `apsProvider` | `OAuthProvider` | Autodesk provider metadata: id "aps", name, brand mark, OAuth docs link. |
+| `apsScopeCatalog` | `OAuthScope[]` | The APS scope catalog — data, viewables, buckets, account admin, OpenID — with human explanations. |
+| `apsScopePresets` | `OAuthScopePreset[]` | Common bundles mirrored from aec-auth's apsScopes recipes: viewer, data-read, data-write, account-admin. |
+| `ApsUserInfo` | `interface` | The subset of the APS userinfo response the adapter reads. |
+| `fromApsUserInfo` | `(userInfo: ApsUserInfo) => OAuthAccount` | Adapter from an APS userinfo payload into a cantera OAuthAccount. |
+
+## Source
+
+This is the exact code the CLI installs into your project — you own it from there.
+
+```tsx aps-oauth-preset.tsx
+import type { OAuthAccount, OAuthProvider, OAuthScope, OAuthScopePreset } from '@/lib/oauth-types'
+
+/**
+ * Autodesk Platform Services (APS / ACC) preset for the cantera oauth
+ * components: provider metadata, the APS scope catalog, common scope bundles,
+ * and adapters from APS payloads into cantera's oauth types.
+ *
+ * This is data, not a client — token handling belongs to your auth layer
+ * (e.g. aec-auth, https://github.com/mrestrepoj10/aec-auth).
+ */
+
+export const apsProvider: OAuthProvider = {
+  id: 'aps',
+  name: 'Autodesk',
+  docsUrl: 'https://aps.autodesk.com/en/docs/oauth/v2',
+  // Defaults to size-4 so the mark renders correctly wherever it is dropped; a
+  // `[&_svg]:size-*` wrapper still wins on specificity and overrides it.
+  icon: (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="size-4">
+      <path d="m.129 20.202 14.7-9.136h7.625c.235 0 .445.188.445.445 0 .21-.092.305-.21.375l-7.222 4.323c-.47.283-.633.845-.633 1.265l-.008 2.725H24V4.362a.56.56 0 0 0-.585-.562h-8.752L0 12.893V20.2h.129z" />
+    </svg>
+  ),
+}
+
+/** The APS scope catalog, with human explanations. */
+export const apsScopeCatalog: OAuthScope[] = [
+  {
+    id: 'user-profile:read',
+    label: 'Read profile',
+    description: 'View basic user profile information.',
+  },
+  {
+    id: 'user:read',
+    label: 'Read user data',
+    description: 'View user data within Autodesk products.',
+  },
+  { id: 'user:write', label: 'Write user data', description: 'Create and update user data.' },
+  {
+    id: 'viewables:read',
+    label: 'Read viewables',
+    description: 'Load translated models in the APS Viewer.',
+  },
+  {
+    id: 'data:read',
+    label: 'Read data',
+    description: 'Read hubs, projects, folders, items, and versions.',
+  },
+  { id: 'data:write', label: 'Write data', description: 'Update and delete project data.' },
+  {
+    id: 'data:create',
+    label: 'Create data',
+    description: 'Create new project data such as files and folders.',
+  },
+  { id: 'data:search', label: 'Search data', description: 'Search across project data.' },
+  { id: 'bucket:create', label: 'Create buckets', description: 'Create OSS storage buckets.' },
+  { id: 'bucket:read', label: 'Read buckets', description: 'List and read OSS storage buckets.' },
+  { id: 'bucket:update', label: 'Update buckets', description: 'Modify OSS bucket settings.' },
+  { id: 'bucket:delete', label: 'Delete buckets', description: 'Delete OSS storage buckets.' },
+  {
+    id: 'code:all',
+    label: 'Design Automation',
+    description: 'Author and run Design Automation work items.',
+  },
+  {
+    id: 'account:read',
+    label: 'Read account',
+    description: 'Read ACC / BIM 360 account administration data.',
+  },
+  {
+    id: 'account:write',
+    label: 'Write account',
+    description: 'Manage ACC / BIM 360 account administration.',
+  },
+  {
+    id: 'openid',
+    label: 'OpenID',
+    description: 'Include an OpenID Connect id_token in the response.',
+  },
+]
+
+/**
+ * Common scope bundles, mirrored from aec-auth's `apsScopes` recipes so the
+ * picker and the token layer speak the same presets.
+ */
+export const apsScopePresets: OAuthScopePreset[] = [
+  {
+    id: 'viewer',
+    label: 'Viewer',
+    description: 'Load models in the APS Viewer.',
+    scopes: ['data:read', 'viewables:read'],
+  },
+  {
+    id: 'data-read',
+    label: 'Read project data',
+    description: 'Read hubs, projects, folders, and items.',
+    scopes: ['data:read'],
+  },
+  {
+    id: 'data-write',
+    label: 'Read and write data',
+    description: 'Read and write project data.',
+    scopes: ['data:read', 'data:write', 'data:create'],
+  },
+  {
+    id: 'account-admin',
+    label: 'Account admin',
+    description: 'ACC / BIM 360 account administration.',
+    scopes: ['account:read', 'account:write'],
+  },
+]
+
+/** Subset of the APS userinfo response the adapter reads. */
+export interface ApsUserInfo {
+  sub?: string
+  name?: string
+  email?: string
+  picture?: string
+}
+
+/** Translate an APS userinfo payload into a cantera OAuthAccount. */
+export function fromApsUserInfo(userInfo: ApsUserInfo): OAuthAccount {
+  return {
+    name: userInfo.name,
+    email: userInfo.email,
+    avatarUrl: userInfo.picture,
+  }
+}
+```
+
+## Registry item
+
+The machine-readable item the CLI fetches: [`aps-oauth-preset.json`](https://canteraui.xyz/r/aps-oauth-preset.json).

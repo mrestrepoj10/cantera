@@ -1,0 +1,179 @@
+---
+title: "Installation"
+description: "Add the @cantera registry to your shadcn project, install items with the CLI, and theme the status tokens."
+---
+
+cantera is a shadcn registry, not an npm package. The CLI copies the source into your project,
+where it renders on your own primitives and theme — you own the code from there.
+
+## 1. Set up shadcn
+
+Skip this if your project already has a `components.json`. cantera builds on your configured base
+and style, so whatever you pick here is what the components inherit.
+
+<Tabs param="pm">
+  <Tab title="npm">
+    ```bash
+    npx shadcn@latest init
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm dlx shadcn@latest init
+    ```
+  </Tab>
+  <Tab title="bun">
+    ```bash
+    bunx --bun shadcn@latest init
+    ```
+  </Tab>
+</Tabs>
+
+## 2. Add the @cantera namespace
+
+One-time edit to `components.json`. It maps the namespace onto the static registry, so the CLI can
+resolve `@cantera/<item>` by name.
+
+```json components.json
+{
+  "registries": {
+    "@cantera": "https://canteraui.xyz/r/{name}.json"
+  }
+}
+```
+
+Registry namespaces need shadcn 3 or newer. Nothing else changes: your existing `aliases` and style
+stay as they are.
+
+## 3. Install items
+
+Add any item by name. The CLI pulls the shadcn primitives it needs from your configured base, and
+the cantera items it depends on from this registry.
+
+<Tabs param="pm">
+  <Tab title="npm">
+    ```bash
+    npx shadcn@latest add @cantera/sign-in-card
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm dlx shadcn@latest add @cantera/sign-in-card
+    ```
+  </Tab>
+  <Tab title="bun">
+    ```bash
+    bunx --bun shadcn@latest add @cantera/sign-in-card
+    ```
+  </Tab>
+</Tabs>
+
+Blocks work the same way. The Autodesk sign-in block installs a working `/sign-in` page, the
+`/api/auth/*` route handlers, and the auth wiring on aec-auth.
+
+<Tabs param="pm">
+  <Tab title="npm">
+    ```bash
+    npx shadcn@latest add @cantera/acc-sign-in
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm dlx shadcn@latest add @cantera/acc-sign-in
+    ```
+  </Tab>
+  <Tab title="bun">
+    ```bash
+    bunx --bun shadcn@latest add @cantera/acc-sign-in
+    ```
+  </Tab>
+</Tabs>
+
+Every item, with a live preview and the exact source the CLI writes, is on the
+[components pages](/components).
+
+## Path aliases — the one thing that bites
+
+The installed files import their neighbours by alias: `@/components/ui/button`,
+`@/lib/oauth-types`. Those resolve through the `aliases` block in components.json and the `paths`
+block in tsconfig.json, and `shadcn add` will rewrite `paths` to its own default when it decides
+your config needs normalizing.
+
+```json tsconfig.json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+```
+
+<Callout type="warn">
+  Check `paths` after your first `shadcn add` and restore your own mappings if the CLI flattened
+  them. We hit this in cantera's own repo — the site resolves `@/components/ui/*` to the registry
+  sources through a fallback list, and every `shadcn add` run in the app has to have it restored
+  from the git diff.
+</Callout>
+
+## Theming
+
+Every status in cantera renders from four semantic colors rather than from a badge variant:
+`success` is healthy, `warning` is recoverable and needs attention (expiring and expired grants
+both live here), `danger` is a failure the user must act on, and `neutral` is absence.
+
+### What @cantera/status-tokens installs
+
+Twelve CSS variables in `:root` and `.dark` — each tone plus a `-foreground` (ink on the solid
+fill) and a `-surface` (soft background, which always carries `text-status-*` ink) — and the
+`@theme inline` wiring that turns them into `bg-status-*` and `text-status-*` utilities. Each
+utility resolves as `var(--token, var(--fallback))`, so a theme that never defines the variables
+still renders readable text instead of nothing. It comes along with any component that shows
+status, so you rarely install it by hand.
+
+### Overriding the tokens
+
+Redefine the variables in your own stylesheet, after the CLI has written them. Keep the meanings:
+one color, one meaning is what makes a wall of connection cards readable at a glance. Text on a
+surface wants 4.5:1 or better, non-text fills 3:1, in both appearances.
+
+```css globals.css
+/* app/globals.css — after the CLI has written the tokens. */
+:root {
+  --status-warning: oklch(0.52 0.11 72);
+  --status-warning-foreground: oklch(0.99 0.01 85);
+  --status-warning-surface: oklch(0.955 0.045 85);
+}
+
+.dark {
+  --status-warning: oklch(0.8 0.14 80);
+  --status-warning-foreground: oklch(0.2 0.04 80);
+  --status-warning-surface: oklch(0.29 0.05 80);
+}
+```
+
+### Two stock pairs measure under AA
+
+Not cantera's tokens — shadcn's own, in light mode. `--muted-foreground` on `--muted` measures
+4.35:1, and the destructive button renders its ink on a 10% tint of itself at 4.06:1. Both are
+under the 4.5:1 the components are held to, so cantera's own components avoid depending on either
+pair. If you want the rest of your app to clear AA too, these are the values we use:
+
+```css globals.css
+/* app/globals.css — the two stock pairs that measure under WCAG AA in light mode. */
+:root {
+  /* Stock oklch(0.556 0 0) on --muted measures 4.35:1. This clears 4.8:1. */
+  --muted-foreground: oklch(0.53 0 0);
+  /* The primitives render destructive as ink on a 10% tint of itself, which
+     measures 4.06:1 at the stock oklch(0.577 0.245 27.325). This clears 4.8:1. */
+  --destructive: oklch(0.51 0.245 27.325);
+}
+```
+
+## Why it is built this way
+
+The rules behind the tokens, the pending states, and the 44px targets are written down:
+[Philosophy](https://canteraui.xyz/philosophy) covers what every item is held to, and
+[the stack](https://canteraui.xyz/stack) covers how cantera, aec-auth, and the APS emulator fit
+together — including the environment variables the blocks read and the credential-free way to run
+them.

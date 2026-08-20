@@ -1,0 +1,95 @@
+---
+title: "cantera"
+description: "Construction UI. shadcn-native. Components for AEC data — ACC-ready, source-agnostic."
+---
+
+cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and
+connection components, plus an end-to-end Autodesk (APS / ACC) sign-in block.
+
+It is **not an npm package**. The shadcn CLI copies the source into your project, where it renders
+on your own shadcn primitives and theme. You own the code from there — no dependency to upgrade, no
+styles to fight.
+
+```bash
+npx shadcn@latest add @cantera/sign-in-card
+```
+
+<CardGroup cols={2}>
+  <Card title="Installation" href="/installation" icon="download">
+    Register the namespace, install items, and theme the status tokens.
+  </Card>
+  <Card title="Components" href="/components" icon="blocks">
+    Every registry item, with a live preview and the exact installed source.
+  </Card>
+  <Card title="Live demo" href="https://canteraui.xyz/demo" icon="play">
+    The whole Autodesk OAuth flow, against an embedded emulator. No credentials.
+  </Card>
+  <Card title="GitHub" href="https://github.com/mrestrepoj10/cantera" icon="github">
+    MIT, public from the first commit.
+  </Card>
+</CardGroup>
+
+## How it is put together
+
+Every domain follows the same three layers, and new work stays inside it.
+
+<Steps>
+  <Step title="Generic types">
+    A `registry:lib` item defines the vocabulary components speak — `OAuthProvider`, `OAuthScope`,
+    `OAuthConnection`. Never provider-specific.
+  </Step>
+  <Step title="Provider adapters">
+    A second `registry:lib` item translates one API into those types.
+    [`aps-oauth-preset`](/components/aps-oauth-preset) carries Autodesk's provider metadata, scope
+    catalog, scope bundles, and a `fromApsUserInfo` adapter.
+  </Step>
+  <Step title="Wired blocks">
+    A `registry:block` composes the components into the batteries-included path: pages, route
+    handlers, and the [aec-auth](https://github.com/mrestrepoj10/aec-auth) glue between them.
+  </Step>
+</Steps>
+
+Components in the middle layer are data-agnostic and style-agnostic: plain typed props in,
+callbacks out, no fetching, no token mechanics. If a component needs data, you fetch it and pass it
+in — which is what lets the same connection card render Autodesk, Procore, or a provider that does
+not exist yet.
+
+## What every item is held to
+
+These are shipping requirements, not preferences.
+
+<Accordion>
+  <AccordionItem title="One color, one meaning">
+    Every status renders from the four [status tokens](/components/status-tokens): success is
+    healthy, warning is recoverable and needs attention, danger is a failure the user must act on,
+    neutral is absence. Expired and expiring soon are **warning** — a refresh away, not a failure.
+    Generic badge variants are never substituted: `secondary` reads as gray nothing, and
+    `destructive` collapses "expired" and "broken" into one color. Every rendered pair is
+    contrast-verified in both appearances.
+  </AccordionItem>
+  <AccordionItem title="Pending keeps the label">
+    Every component with an async callback exposes a pending state, and pending means
+    disabled-with-spinner-while-keeping-the-label — never a label swapped for "Loading…", never a
+    collapsed control. A pressed control is never unmounted and never changes element type
+    mid-action. Pending is a prop you can drive as well as an internal state, so a server action
+    and a client handler both work.
+  </AccordionItem>
+  <AccordionItem title="Built for gloves, on a tablet, on site">
+    Primary actions carry a 44px minimum touch target. Comfortable density is the default and
+    compact is opt-in. Status uses solid fills, not low-alpha tints — a 10% wash is invisible in
+    direct sunlight. 12px is the text floor, everywhere in the registry.
+  </AccordionItem>
+  <AccordionItem title="Accessibility is enforced, not reviewed">
+    axe runs over every docs page in both appearances and fails the build on any WCAG A/AA
+    violation. Focus indicators clear 3:1. Disabled controls render `aria-disabled` rather than the
+    native attribute, so they stay focusable and a screen reader user can still find out why.
+    `Intl` formatting is locale-neutral — nothing is hardcoded to English.
+  </AccordionItem>
+</Accordion>
+
+## The ecosystem
+
+cantera is the UI layer. It never implements OAuth mechanics beyond a block's thin route wiring —
+refresh, storage, and rotation belong to [aec-auth](https://github.com/mrestrepoj10/aec-auth), and
+the credential-free demos run against the APS emulator from
+[emulate](https://github.com/mrestrepoj10/emulate).

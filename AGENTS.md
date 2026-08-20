@@ -11,13 +11,25 @@ pnpm lint            # biome (single quotes, no semicolons, 100-col lines)
 pnpm typecheck
 pnpm registry:build  # required after touching apps/www/registry/** or registry.json;
                      # also regenerates the llms.txt artifacts, the example items,
-                     # and the agent skill under skills/cantera
+                     # the docs site's component reference, and the agent skill
 pnpm registry:verify # install closure, npm-dep coverage, drift vs a fresh build
 pnpm --filter www build
+pnpm --filter docs build
 pnpm e2e             # Playwright: OAuth flow, axe (WCAG A/AA, both themes), theme + pending contracts
 ```
 
-CI fails if the committed build output drifts from the registry sources. `registry:build` generates, in order: the `registry:example` items and their page wrappers from the demo sources in `apps/www/registry/examples/` (`build-examples.mts`, which rewrites the example entries in `registry.json`), `apps/www/public/r/` (`shadcn build`), the llms.txt artifacts (`build-llms.mts`), and the agent skill at `skills/cantera/` (`build-skill.mts`). All of it is committed, all of it is derived from `registry.json` and `components/site/props-tables.ts`, and every URL comes from `apps/www/lib/site.ts`, the one place the public origin is decided. Generators stay deterministic — no timestamps, no unordered iteration — because `pnpm registry:verify` rebuilds everything into a scratch directory and compares byte for byte.
+CI fails if the committed build output drifts from the registry sources. `registry:build` generates, in order: the `registry:example` items and their page wrappers from the demo sources in `apps/www/registry/examples/` (`build-examples.mts`, which rewrites the example entries in `registry.json`), `apps/www/public/r/` (`shadcn build`), the llms.txt artifacts (`build-llms.mts`), the docs site's component reference at `apps/docs/content/components/` (`build-docs.mts`), and the agent skill at `skills/cantera/` (`build-skill.mts`). All of it is committed, all of it is derived from `registry.json` and `components/site/props-tables.ts`, and every URL comes from `apps/www/lib/site.ts`, the one place the public origin is decided. Generators stay deterministic — no timestamps, no unordered iteration — because `pnpm registry:verify` rebuilds everything into a scratch directory and compares byte for byte.
+
+## The two apps
+
+`apps/www` is the registry host, the landing page, and the live demo. `apps/docs` is the reference documentation, built with [Blume](https://useblume.dev) and deployed separately to its own subdomain.
+
+They stay in one repo for one reason: `apps/docs/content/components/` is generated from the registry by `build-docs.mts` and pinned by the drift verifier, and that check only works while the generator, its inputs, and its output share a commit. Split the docs into their own repo and no-drift becomes a cross-repo sync problem that nothing structurally enforces.
+
+- **Never hand-edit `apps/docs/content/components/`.** It is build output. Edit `registry.json` or `props-tables.ts` and rerun `pnpm registry:build`. The authored pages — `content/index.mdx`, `content/installation.mdx`, `content/meta.ts` — are yours to write and the generator never touches them.
+- **Live previews are framed, never re-implemented.** `apps/www` serves `/embed/<name>` (one demo, no chrome) and the docs site frames it from the `ComponentPreview` island, syncing appearance and height over `postMessage`. That keeps one copy of the registry code and one theme layer, and keeps the previews inside the axe sweep. Never import registry sources into `apps/docs`.
+- Working on a component locally? Run `pnpm --filter www dev` and point the frames at it: `PUBLIC_EMBED_ORIGIN=http://localhost:3000 pnpm --filter docs dev`. Without the override the frames show production, because the committed MDX has to name a fixed origin to stay byte-stable.
+- Any file in `apps/docs/islands/` becomes a global MDX tag, hydrated, named after the file — which must be PascalCase and default-export the component.
 
 ## The registry is the source of truth
 

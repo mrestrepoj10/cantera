@@ -1,10 +1,12 @@
 import Link from 'next/link'
 
+import { ThemeProvider } from '@/components/site/theme-provider'
 import { ThemeToggle } from '@/components/site/theme-toggle'
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    // Default storage key: this is the site-wide preference the toggle sets.
+    <ThemeProvider>
       <header className="sticky top-0 z-40 border-border border-b bg-background/80 backdrop-blur">
         {/* min-h + wrap: on phone widths the nav folds to a second row instead of
             overflowing the viewport; desktop renders identically (nothing wraps). */}
@@ -85,6 +87,6 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           </nav>
         </div>
       </footer>
-    </>
+    </ThemeProvider>
   )
 }

@@ -1,0 +1,581 @@
+---
+title: "ACC Sign-In"
+description: "Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel."
+---
+
+<Badge variant="accent">block</Badge> `@cantera/acc-sign-in`
+
+## Install
+
+```bash
+npx shadcn@latest add @cantera/acc-sign-in
+```
+
+- Registry dependencies: `@cantera/sign-in-card`, `@cantera/connection-card`, `@cantera/aps-oauth-preset`, `@cantera/oauth-types`
+- npm dependencies: `aec-auth`
+- Environment variables written to `.env.local`: `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, `SESSION_SECRET`, `APS_AUTH_BASE_URL`
+
+### Install notes
+
+Installed: app/sign-in/page.tsx, the /api/auth/* route handlers, and lib/acc-auth.ts (aec-auth vault wiring).
+
+Environment (added to .env.local as empty keys — fill them in):
+- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.
+- SESSION_SECRET — HMAC key for the session cookie. Generate one with `openssl rand -base64 32`. In production the block fails closed without it: a shared default key would let anyone mint a session for any user.
+- APS_AUTH_BASE_URL — optional auth-origin override, absolute or relative ("/emulate/aps") for an embedded emulator. Leave it unset to talk to real APS.
+
+ACC_AUTH_DEMO=1 is the escape hatch that allows the insecure fallback session secret in production. It exists for emulator-backed showcases only — never set it anywhere real accounts exist.
+
+The default vault store is in-memory: correct for a demo, wrong for production. Swap in a durable VaultStore (see the aec-auth README) before you ship.
+
+## Files
+
+| Path | Type |
+| --- | --- |
+| `app/sign-in/page.tsx` | `registry:page` |
+| `components/acc-connection-panel.tsx` | `registry:component` |
+| `lib/acc-auth.ts` | `registry:lib` |
+| `app/api/auth/[provider]/route.ts` | `registry:file` |
+| `app/api/auth/callback/[provider]/route.ts` | `registry:file` |
+| `app/api/auth/signout/route.ts` | `registry:file` |
+
+## Source
+
+This is the exact code the CLI installs into your project — you own it from there.
+
+```tsx page.tsx
+import { TokenError } from 'aec-auth'
+import { cookies, headers } from 'next/headers'
+
+import { AccConnectionPanel } from '@/components/acc-connection-panel'
+import { SignInCard } from '@/components/ui/sign-in-card'
+import { APS_PROVIDER_ID, getTokenSource, openSession, SESSION_COOKIE } from '@/lib/acc-auth'
+import { apsProvider } from '@/lib/aps-oauth-preset'
+import type { OAuthConnection } from '@/lib/oauth-types'
+
+/**
+ * The acc-sign-in block: sign in with Autodesk, then see the live connection —
+ * account, token expiry, held scopes — with disconnect and reconnect.
+ *
+ * Reusable inner component: render <AccSignIn nextPath="/your-page" /> from
+ * any server page; the default export is a ready-made /sign-in page.
+ */
+async function requestOrigin(): Promise<string> {
+  const headerList = await headers()
+  const host = headerList.get('x-forwarded-host') ?? headerList.get('host') ?? 'localhost:3000'
+  const proto = headerList.get('x-forwarded-proto') ?? 'http'
+  return `${proto}://${host}`
+}
+
+export async function AccSignIn({
+  nextPath = '/sign-in',
+  headingLevel = 'h1',
+}: {
+  nextPath?: string
+  /** Heading level for the block's title. Drop to h2 when embedding under one. */
+  headingLevel?: 'h1' | 'h2' | 'h3'
+}) {
+  const Heading = headingLevel
+  const cookieStore = await cookies()
+  const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)
+  const signInHref = `/api/auth/${APS_PROVIDER_ID}?next=${encodeURIComponent(nextPath)}`
+
+  if (!session) {
+    return (
+      <SignInCard
+        providers={[apsProvider]}
+        hrefTemplate={`/api/auth/{provider}?next=${encodeURIComponent(nextPath)}`}
+        title="Sign in"
+        titleAs={headingLevel}
+        description="Connect your Autodesk account to continue."
+      />
+    )
+  }
+
+  const account = { name: session.name, email: session.email, avatarUrl: session.avatarUrl }
+  let connection: OAuthConnection
+  try {
+    const origin = await requestOrigin()
+    const token = await getTokenSource(origin).getToken({
+      provider: APS_PROVIDER_ID,
+      subject: { type: 'user', id: session.userId },
+      scopes: session.scopes,
+    })
+    connection = {
+      provider: apsProvider,
+      status: 'connected',
+      account,
+      scopes: token.scopes ? [...token.scopes] : session.scopes,
+      expiresAt: token.expiresAt,
+    }
+  } catch (error) {
+    connection = {
+      provider: apsProvider,
+      status:
+        error instanceof TokenError && error.code === 'consent_required' ? 'expired' : 'error',
+      account,
+      scopes: session.scopes,
+      error:
+        error instanceof TokenError && error.code === 'consent_required'
+          ? 'Grant lost — reconnect to continue.'
+          : 'Could not refresh the token.',
+    }
+  }
+
+  return (
+    <div className="flex w-full max-w-sm flex-col gap-4">
+      <Heading className="font-heading font-medium text-2xl tracking-tight">
+        Autodesk connection
+      </Heading>
+      <AccConnectionPanel
+        connection={connection}
+        signOutHref={`/api/auth/signout?next=${encodeURIComponent(nextPath)}`}
+        signInHref={signInHref}
+      />
+    </div>
+  )
+}
+
+export default function SignInPage() {
+  return (
+    <main className="flex flex-1 items-center justify-center p-6">
+      <AccSignIn />
+    </main>
+  )
+}
+```
+
+```tsx acc-connection-panel.tsx
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+
+import { ConnectionCard } from '@/components/ui/connection-card'
+import type { OAuthConnection } from '@/lib/oauth-types'
+
+interface AccConnectionPanelProps {
+  connection: OAuthConnection
+  /** POST target that clears the grant and session, e.g. "/api/auth/signout?next=/sign-in". */
+  signOutHref: string
+  /** GET target that restarts consent, e.g. "/api/auth/aps?next=/sign-in". */
+  signInHref: string
+}
+
+/**
+ * Client wrapper around ConnectionCard for the acc-sign-in block: disconnect
+ * posts to the signout route, reconnect restarts the consent flow.
+ */
+function AccConnectionPanel({ connection, signOutHref, signInHref }: AccConnectionPanelProps) {
+  const router = useRouter()
+  const [disconnecting, setDisconnecting] = useState(false)
+  const [reconnecting, setReconnecting] = useState(false)
+
+  async function disconnect() {
+    setDisconnecting(true)
+    try {
+      await fetch(signOutHref, { method: 'POST', redirect: 'manual' })
+      router.refresh()
+    } finally {
+      setDisconnecting(false)
+    }
+  }
+
+  return (
+    <ConnectionCard
+      connection={connection}
+      // The handler is always passed: pending is a prop, never an absent
+      // callback, so the pressed button stays mounted through the request.
+      onDisconnect={disconnect}
+      disconnectPending={disconnecting}
+      onReconnect={() => {
+        setReconnecting(true)
+        window.location.href = signInHref
+      }}
+      reconnectPending={reconnecting}
+    />
+  )
+}
+
+export { AccConnectionPanel, type AccConnectionPanelProps }
+```
+
+```ts acc-auth.ts
+import { APS_AUTH, TokenError, type TokenSource } from 'aec-auth'
+import {
+  apsOAuth,
+  deleteUserGrant,
+  memoryVaultStore,
+  saveUserGrant,
+  type VaultStore,
+  vaultTokenSource,
+} from 'aec-auth/vault'
+
+/**
+ * Server-side auth wiring for the acc-sign-in block, on aec-auth's vault:
+ * OAuth endpoints, grant storage, and a signed session cookie.
+ *
+ * Environment:
+ * - APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.
+ * - APS_AUTH_BASE_URL — optional auth origin override. Absolute
+ *   ("http://localhost:4014") or relative ("/emulate/aps", resolved against
+ *   the request origin) for the @emulators/aps emulator. Unset = real APS.
+ * - SESSION_SECRET — HMAC key for the session cookie. Set it in production.
+ *
+ * The default vault store is in-memory: fine for demos and a single dev
+ * server, wrong for production. Swap in a durable VaultStore (e.g.
+ * `upstashVaultStore()` wrapped in `encryptedVaultStore`) — see the aec-auth
+ * README.
+ */
+
+export const APS_PROVIDER_ID = 'aps'
+
+/** Scopes requested when the sign-in flow starts, unless overridden. */
+export const DEFAULT_SIGN_IN_SCOPES = ['user-profile:read', 'data:read', 'viewables:read']
+
+const globalStore = globalThis as { __accVaultStore?: VaultStore }
+
+export function getVaultStore(): VaultStore {
+  globalStore.__accVaultStore ??= memoryVaultStore()
+  return globalStore.__accVaultStore
+}
+
+function resolveAuthBase(origin: string): string | undefined {
+  const configured = process.env.APS_AUTH_BASE_URL
+  if (!configured) return undefined
+  return configured.startsWith('/') ? `${origin}${configured}` : configured
+}
+
+export function getApsOAuth(origin: string) {
+  const clientId = process.env.APS_CLIENT_ID
+  if (!clientId) {
+    throw new TokenError('not_configured', 'aps', 'APS_CLIENT_ID is not set')
+  }
+  return apsOAuth({
+    clientId,
+    clientSecret: process.env.APS_CLIENT_SECRET,
+    baseUrl: resolveAuthBase(origin),
+  })
+}
+
+export function getTokenSource(origin: string): TokenSource {
+  return vaultTokenSource({
+    store: getVaultStore(),
+    providers: { aps: getApsOAuth(origin) },
+  })
+}
+
+export function userInfoUrl(origin: string): string {
+  const base = resolveAuthBase(origin)
+  return base ? `${base}/userinfo` : APS_AUTH.userInfoUrl
+}
+
+export { deleteUserGrant, saveUserGrant }
+
+// ---------------------------------------------------------------------------
+// Session cookie — HMAC-SHA256-signed JSON. No secrets inside, only identity.
+// ---------------------------------------------------------------------------
+
+export interface AccSession {
+  userId: string
+  name?: string
+  email?: string
+  avatarUrl?: string
+  scopes?: string[]
+}
+
+export const SESSION_COOKIE = 'acc-session'
+const STATE_COOKIE = 'acc-oauth-state'
+
+function sessionSecret(): string {
+  const secret = process.env.SESSION_SECRET
+  if (secret) return secret
+  // A publicly known fallback is only tolerable where forged sessions do not
+  // matter: local development, or a deployment that explicitly opts into demo
+  // mode (ACC_AUTH_DEMO=1, e.g. an emulator-backed showcase). Everywhere else,
+  // fail closed — a shared default key lets anyone mint a session for any user.
+  if (process.env.NODE_ENV !== 'production' || process.env.ACC_AUTH_DEMO === '1') {
+    return 'cantera-demo-insecure-secret'
+  }
+  throw new Error(
+    'SESSION_SECRET is not set. Generate one (e.g. `openssl rand -base64 32`) and set it in production.',
+  )
+}
+
+const encoder = new TextEncoder()
+
+function toBase64Url(bytes: Uint8Array): string {
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
+}
+
+function fromBase64Url(value: string): Uint8Array {
+  const padded = value.replaceAll('-', '+').replaceAll('_', '/')
+  return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))
+}
+
+async function hmac(payload: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(sessionSecret()),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(payload))
+  return toBase64Url(new Uint8Array(signature))
+}
+
+export async function sealSession(session: AccSession): Promise<string> {
+  const payload = toBase64Url(encoder.encode(JSON.stringify(session)))
+  return `${payload}.${await hmac(payload)}`
+}
+
+export async function openSession(cookieValue: string | undefined): Promise<AccSession | null> {
+  if (!cookieValue) return null
+  const [payload, signature] = cookieValue.split('.')
+  if (!payload || !signature) return null
+  if ((await hmac(payload)) !== signature) return null
+  try {
+    return JSON.parse(new TextDecoder().decode(fromBase64Url(payload))) as AccSession
+  } catch {
+    return null
+  }
+}
+
+/** `Secure` for HTTPS requests; local plain-HTTP development stays usable. */
+export function cookieSecurity(requestUrl: URL | string): string {
+  const url = typeof requestUrl === 'string' ? new URL(requestUrl) : requestUrl
+  return url.protocol === 'https:' ? '; Secure' : ''
+}
+
+export function sessionCookie(
+  value: string,
+  secure: string,
+  maxAgeSeconds = 60 * 60 * 24 * 14,
+): string {
+  return `${SESSION_COOKIE}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}${secure}`
+}
+
+export function clearSessionCookie(secure: string): string {
+  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`
+}
+
+// ---------------------------------------------------------------------------
+// OAuth state cookie — CSRF token plus the post-sign-in return path.
+// ---------------------------------------------------------------------------
+
+export interface OAuthState {
+  state: string
+  next: string
+  /** Scopes requested at the start of the flow, kept for providers (and
+   * emulators) whose token response omits the granted scope list. */
+  scopes?: string[]
+}
+
+export function newState(next: string, scopes?: string[]): OAuthState {
+  const bytes = crypto.getRandomValues(new Uint8Array(24))
+  return { state: toBase64Url(bytes), next, scopes }
+}
+
+export function stateCookie(oauthState: OAuthState, secure: string): string {
+  const value = toBase64Url(encoder.encode(JSON.stringify(oauthState)))
+  return `${STATE_COOKIE}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600${secure}`
+}
+
+export function clearStateCookie(secure: string): string {
+  return `${STATE_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`
+}
+
+export function readStateCookie(cookieHeader: string | null): OAuthState | null {
+  const match = cookieHeader?.match(new RegExp(`(?:^|;\\s*)${STATE_COOKIE}=([^;]+)`))
+  if (!match) return null
+  try {
+    return JSON.parse(new TextDecoder().decode(fromBase64Url(match[1]))) as OAuthState
+  } catch {
+    return null
+  }
+}
+
+/** Only allow same-origin relative return paths. */
+export function safeNext(next: string | null | undefined, fallback: string): string {
+  // Same-origin relative paths only. `//` is protocol-relative, and browsers
+  // normalize backslashes in a Location header ("/\\evil.com" -> "//evil.com"),
+  // so both are external redirects in disguise.
+  if (next?.startsWith('/') && !next.startsWith('//') && !next.includes('\\')) return next
+  return fallback
+}
+```
+
+```ts auth-start-route.ts
+import {
+  APS_PROVIDER_ID,
+  cookieSecurity,
+  DEFAULT_SIGN_IN_SCOPES,
+  getApsOAuth,
+  newState,
+  safeNext,
+  stateCookie,
+} from '@/lib/acc-auth'
+
+/**
+ * Starts the 3-legged APS sign-in: builds the consent URL and redirects.
+ * Install target: app/api/auth/[provider]/route.ts
+ *
+ * Query params:
+ * - next   — same-origin path to return to after sign-in (default /sign-in).
+ * - scopes — space- or comma-separated scope override.
+ */
+export async function GET(request: Request, ctx: { params: Promise<{ provider: string }> }) {
+  const { provider } = await ctx.params
+  if (provider !== APS_PROVIDER_ID) {
+    return new Response(`Unknown provider: ${provider}`, { status: 404 })
+  }
+
+  const url = new URL(request.url)
+  const scopesParam = url.searchParams.get('scopes')
+  const scopes = scopesParam ? scopesParam.split(/[\s,]+/).filter(Boolean) : DEFAULT_SIGN_IN_SCOPES
+  const oauthState = newState(safeNext(url.searchParams.get('next'), '/sign-in'), scopes)
+
+  const oauth = getApsOAuth(url.origin)
+  const authorizeUrl = oauth.authorizeUrl({
+    redirectUri: `${url.origin}/api/auth/callback/${APS_PROVIDER_ID}`,
+    scopes,
+    state: oauthState.state,
+  })
+
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: authorizeUrl,
+      'Set-Cookie': stateCookie(oauthState, cookieSecurity(url)),
+    },
+  })
+}
+```
+
+```ts auth-callback-route.ts
+import {
+  APS_PROVIDER_ID,
+  clearStateCookie,
+  cookieSecurity,
+  getApsOAuth,
+  getVaultStore,
+  readStateCookie,
+  saveUserGrant,
+  sealSession,
+  sessionCookie,
+  userInfoUrl,
+} from '@/lib/acc-auth'
+
+/**
+ * Completes the sign-in: verifies state, exchanges the code, hands the
+ * refresh token to the vault (the single owner of refresh from here on),
+ * and seals the session cookie.
+ * Install target: app/api/auth/callback/[provider]/route.ts
+ */
+export async function GET(request: Request, ctx: { params: Promise<{ provider: string }> }) {
+  const { provider } = await ctx.params
+  if (provider !== APS_PROVIDER_ID) {
+    return new Response(`Unknown provider: ${provider}`, { status: 404 })
+  }
+
+  const url = new URL(request.url)
+  const code = url.searchParams.get('code')
+  const state = url.searchParams.get('state')
+  const stored = readStateCookie(request.headers.get('cookie'))
+
+  const secure = cookieSecurity(url)
+  if (!code || !state || !stored || stored.state !== state) {
+    return new Response('Invalid OAuth state', {
+      status: 400,
+      headers: { 'Set-Cookie': clearStateCookie(secure) },
+    })
+  }
+
+  const oauth = getApsOAuth(url.origin)
+  const result = await oauth.exchangeCode({
+    code,
+    redirectUri: `${url.origin}/api/auth/callback/${APS_PROVIDER_ID}`,
+  })
+
+  const infoResponse = await fetch(userInfoUrl(url.origin), {
+    headers: { Authorization: `Bearer ${result.accessToken.token}` },
+  })
+  if (!infoResponse.ok) {
+    return new Response('Failed to load the user profile', { status: 502 })
+  }
+  const info = (await infoResponse.json()) as {
+    sub?: string
+    name?: string
+    email?: string
+    picture?: string
+  }
+  const userId = info.sub
+  if (!userId) {
+    return new Response('User profile has no subject id', { status: 502 })
+  }
+
+  // Providers (and emulators) may omit the granted scope list from the token
+  // response; fall back to what the flow requested, kept in the state cookie.
+  const scopes = result.accessToken.scopes ? [...result.accessToken.scopes] : stored.scopes
+  if (result.refreshToken) {
+    await saveUserGrant(getVaultStore(), APS_PROVIDER_ID, userId, {
+      refreshToken: result.refreshToken,
+      scopes,
+      obtainedAt: Date.now(),
+    })
+  }
+
+  const session = await sealSession({
+    userId,
+    name: info.name,
+    email: info.email,
+    avatarUrl: info.picture,
+    scopes,
+  })
+
+  const headers = new Headers({ Location: stored.next })
+  headers.append('Set-Cookie', sessionCookie(session, secure))
+  headers.append('Set-Cookie', clearStateCookie(secure))
+  return new Response(null, { status: 302, headers })
+}
+```
+
+```ts signout-route.ts
+import {
+  APS_PROVIDER_ID,
+  clearSessionCookie,
+  cookieSecurity,
+  deleteUserGrant,
+  getVaultStore,
+  openSession,
+  SESSION_COOKIE,
+  safeNext,
+} from '@/lib/acc-auth'
+
+/**
+ * Signs out: deletes the stored grant and clears the session cookie.
+ * Install target: app/api/auth/signout/route.ts
+ */
+export async function POST(request: Request) {
+  const cookieHeader = request.headers.get('cookie')
+  const match = cookieHeader?.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`))
+  const session = await openSession(match?.[1])
+  if (session) {
+    await deleteUserGrant(getVaultStore(), APS_PROVIDER_ID, session.userId)
+  }
+
+  const url = new URL(request.url)
+  const next = safeNext(url.searchParams.get('next'), '/sign-in')
+  return new Response(null, {
+    status: 303,
+    headers: { Location: next, 'Set-Cookie': clearSessionCookie(cookieSecurity(url)) },
+  })
+}
+```
+
+## Registry item
+
+The machine-readable item the CLI fetches: [`acc-sign-in.json`](https://canteraui.xyz/r/acc-sign-in.json).

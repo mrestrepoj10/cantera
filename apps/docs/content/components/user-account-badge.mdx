@@ -1,0 +1,109 @@
+---
+title: "User Account Badge"
+description: "An avatar-and-name chip for a connected account, with optional provider mark. Server-safe."
+---
+
+<Badge variant="accent">component</Badge> `@cantera/user-account-badge`
+
+## Install
+
+```bash
+npx shadcn@latest add @cantera/user-account-badge
+```
+
+- Registry dependencies: `avatar`, `@cantera/oauth-types`, `@cantera/status-tokens`
+
+## Preview
+
+<ComponentPreview src="https://canteraui.xyz/embed/user-account-badge" name="user-account-badge" title="User Account Badge preview" />
+
+## Files
+
+| Path | Type |
+| --- | --- |
+| `user-account-badge.tsx` | `registry:ui` |
+
+## Props
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `account` | `OAuthAccount` | — | The account to show. Falls back from name to email; the avatar falls back to initials. |
+| `provider` | `OAuthProvider` | — | When set, the provider mark is shown at the end of the chip. |
+| `size` | `'sm' \| 'default'` | `'default'` | Compact or regular sizing. Text never drops below 12px in either. |
+| `...props` | `ComponentProps<'div'>` | — | Remaining props are spread onto the wrapping div. |
+
+## Source
+
+This is the exact code the CLI installs into your project — you own it from there.
+
+```tsx user-account-badge.tsx
+import type * as React from 'react'
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { accountInitials, type OAuthAccount, type OAuthProvider } from '@/lib/oauth-types'
+import { cn } from '@/lib/utils'
+
+interface UserAccountBadgeProps extends React.ComponentProps<'div'> {
+  account: OAuthAccount
+  /** When set, the provider mark is shown next to the account. */
+  provider?: OAuthProvider
+  size?: 'sm' | 'default'
+}
+
+/**
+ * An avatar-and-name chip for a connected account. Server-safe: no handlers,
+ * plain data in.
+ */
+function UserAccountBadge({
+  account,
+  provider,
+  size = 'default',
+  className,
+  ...props
+}: UserAccountBadgeProps) {
+  return (
+    <div
+      data-slot="user-account-badge"
+      className={cn('flex min-w-0 items-center gap-2', className)}
+      {...props}
+    >
+      {/* 12px is the text floor, so the compact avatar is 28px, not 24px — two
+          initials at text-xs need the room. */}
+      <Avatar className={size === 'sm' ? 'size-7' : 'size-8'}>
+        {account.avatarUrl && <AvatarImage src={account.avatarUrl} alt="" />}
+        {/* The primitive's fallback ink is muted-foreground on bg-muted, which
+            measures 4.35:1 on a stock shadcn theme. Foreground at 60% reads as
+            the same gray and clears 5:1 wherever the theme's foreground
+            contrasts its own muted surface. */}
+        <AvatarFallback className="font-medium text-status-neutral text-xs">
+          {accountInitials(account)}
+        </AvatarFallback>
+      </Avatar>
+      <div className="grid min-w-0 leading-tight">
+        <span className={cn('truncate font-medium', size === 'sm' ? 'text-xs' : 'text-sm')}>
+          {account.name ?? account.email ?? 'Unknown account'}
+        </span>
+        {account.name && account.email && (
+          <span className="truncate text-xs text-muted-foreground">{account.email}</span>
+        )}
+      </div>
+      {provider?.icon && (
+        <span
+          role="img"
+          aria-label={provider.name}
+          title={provider.name}
+          className="ml-auto flex text-muted-foreground [&_svg]:size-3.5 [&_svg]:shrink-0"
+        >
+          {provider.icon}
+        </span>
+      )}
+    </div>
+  )
+}
+
+export { UserAccountBadge, type UserAccountBadgeProps }
+```
+
+## Registry item
+
+The machine-readable item the CLI fetches: [`user-account-badge.json`](https://canteraui.xyz/r/user-account-badge.json).
