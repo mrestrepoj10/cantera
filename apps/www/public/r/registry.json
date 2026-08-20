@@ -360,7 +360,13 @@
       "description": "The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs.",
       "categories": ["projects", "navigation"],
       "dependencies": ["lucide-react"],
-      "registryDependencies": ["button", "command", "popover", "@cantera/project-types"],
+      "registryDependencies": [
+        "button",
+        "command",
+        "popover",
+        "@cantera/project-types",
+        "@cantera/status-tokens"
+      ],
       "files": [
         {
           "path": "registry/ui/project-picker.tsx",

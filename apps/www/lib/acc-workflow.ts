@@ -73,6 +73,26 @@ interface JsonApiList<T> {
 /** ACC Sheets list envelope: results plus an offset pagination block. */
 interface SheetsEnvelope<T> {
   results?: T[]
+  pagination?: { nextUrl?: string }
+}
+
+/**
+ * Read every page of a Sheets listing by following `pagination.nextUrl` until
+ * the API stops offering one. Bounded so a misbehaving server that always
+ * returns a next page cannot loop forever — at that point the list is truncated
+ * honestly rather than hung.
+ */
+const MAX_SHEETS_PAGES = 20
+
+async function apsGetAllSheets<T>(firstUrl: string, token: AccessToken): Promise<T[]> {
+  const results: T[] = []
+  let url: string | undefined = firstUrl
+  for (let page = 0; url && page < MAX_SHEETS_PAGES; page += 1) {
+    const envelope: SheetsEnvelope<T> = await apsGet<SheetsEnvelope<T>>(url, token)
+    results.push(...(envelope.results ?? []))
+    url = envelope.pagination?.nextUrl || undefined
+  }
+  return results
 }
 
 interface AccSheetDoc {
@@ -188,11 +208,11 @@ export async function loadAccWorkflow(
 
   let versionSets: SheetVersionSet[]
   try {
-    const envelope = await apsGet<SheetsEnvelope<AccVersionSetDoc>>(
+    const documents = await apsGetAllSheets<AccVersionSetDoc>(
       `${projectPath}/version-sets?limit=200`,
       token,
     )
-    versionSets = (envelope.results ?? []).map(fromAccVersionSet).sort(byIssuanceDescending)
+    versionSets = documents.map(fromAccVersionSet).sort(byIssuanceDescending)
   } catch (error) {
     return { ...settled, versionSetsError: failureMessage(error, 'Version sets') }
   }
@@ -205,14 +225,16 @@ export async function loadAccWorkflow(
 
   let designs: DesignRef[]
   try {
-    const envelope = await apsGet<SheetsEnvelope<AccSheetDoc>>(
-      `${projectPath}/sheets?filter[versionSetId]=${encodeURIComponent(selectedVersionSet.id)}&currentOnly=true&limit=200`,
+    // No `currentOnly`: a sheet superseded by a newer issuance still belongs
+    // to the historical version set the user selected.
+    const sheets = await apsGetAllSheets<AccSheetDoc>(
+      `${projectPath}/sheets?filter[versionSetId]=${encodeURIComponent(selectedVersionSet.id)}&limit=200`,
       token,
     )
     // Several sheets come out of one upload, so the same design urn repeats;
     // the model status is per design, not per sheet.
     const byUrn = new Map<string, DesignRef>()
-    for (const sheet of envelope.results ?? []) {
+    for (const sheet of sheets) {
       const urn = sheet.viewable?.urn
       if (!urn || byUrn.has(urn)) continue
       byUrn.set(urn, { urn, fileName: sheet.uploadFileName || undefined })

@@ -11,7 +11,8 @@
     "button",
     "command",
     "popover",
-    "@cantera/project-types"
+    "@cantera/project-types",
+    "@cantera/status-tokens"
   ],
   "files": [
     {

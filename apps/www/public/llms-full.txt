@@ -523,7 +523,7 @@ Install: npx shadcn@latest add @cantera/project-picker
 Docs: https://canteraui.xyz/components/project-picker
 Item: https://canteraui.xyz/r/project-picker.json
 Working example page: npx shadcn@latest add @cantera/project-picker-demo
-Registry dependencies: button, command, popover, @cantera/project-types
+Registry dependencies: button, command, popover, @cantera/project-types, @cantera/status-tokens
 npm dependencies: lucide-react
 
 The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs.

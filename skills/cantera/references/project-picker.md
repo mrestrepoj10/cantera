@@ -6,7 +6,7 @@ The project choice every ACC screen starts from: a searchable combobox grouped b
 - Install: `npx shadcn@latest add @cantera/project-picker`
 - Docs: https://canteraui.xyz/components/project-picker
 - Registry item: https://canteraui.xyz/r/project-picker.json
-- Registry dependencies: button, command, popover, @cantera/project-types
+- Registry dependencies: button, command, popover, @cantera/project-types, @cantera/status-tokens
 - npm dependencies: lucide-react
 - Working example page: `npx shadcn@latest add @cantera/project-picker-demo` — installs app/examples/project-picker/page.tsx
 
