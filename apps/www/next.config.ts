@@ -13,6 +13,17 @@ const nextConfig: NextConfig = {
     // (emulator-backed fake users), so the insecure fallback secret is allowed.
     ACC_AUTH_DEMO: process.env.ACC_AUTH_DEMO ?? '1',
   },
+  async rewrites() {
+    return [
+      // The markdown twin of each docs page is served at `/components/<name>.md`.
+      // App Router dynamic segments cannot carry a file extension — `[name].md`
+      // is read as a literal directory — so the extension is matched here and
+      // rewritten onto the route handler's own segment. A rewrite, not a
+      // redirect: the URL that claims `.md` is the one that answers with
+      // markdown.
+      { source: '/components/:name.md', destination: '/components/:name/md' },
+    ]
+  },
 }
 
 export default withEmulate(nextConfig)

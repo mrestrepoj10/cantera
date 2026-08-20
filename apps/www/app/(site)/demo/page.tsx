@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 import { AccSignIn } from '@/registry/blocks/acc-sign-in/page'
 
@@ -31,6 +32,14 @@ export default function DemoPage() {
         real APS by setting <code className="font-mono">APS_CLIENT_ID</code>,{' '}
         <code className="font-mono">APS_CLIENT_SECRET</code>, and removing{' '}
         <code className="font-mono">APS_AUTH_BASE_URL</code>.
+      </p>
+      <p className="max-w-xl text-center text-muted-foreground text-sm">
+        Once you are signed in, the{' '}
+        <Link href="/connections" className="focus-ring rounded-sm underline underline-offset-4">
+          connections page
+        </Link>{' '}
+        manages the same grant: the <code className="font-mono">connections-page</code> block, on
+        this wiring.
       </p>
     </div>
   )

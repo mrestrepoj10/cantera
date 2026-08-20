@@ -87,7 +87,7 @@ APIs are the working contract — props get refined in implementation; shape and
 ### `registry:block`
 
 - **`acc-sign-in`** — sign-in page + `/api/auth` route handlers on aec-auth (vault or Connect backend), composing the components above. The 5-minute ACC path.
-- **`connections-page`** — fast-follow after v1 (manage APS/Procore grants).
+- **`connections-page`** — the manage-grants page: one card per provider connection, plus the empty, loading, and error states a real fetch needs. Composes `connection-card` and depends on `acc-sign-in` for the routes and the aec-auth wiring rather than duplicating them.
 
 ## 5. Live demo architecture
 
@@ -116,7 +116,7 @@ APIs are the working contract — props get refined in implementation; shape and
 ## 8. Post-v1 (deliberately out of scope)
 
 - shadcn registry directory/index submission — **after we review the live registry**, not part of v1.
-- `connections-page` block; cantera theme item; MDX prose guides; dynamic registry routes (search/auth); "Open in v0".
+- cantera theme item; MDX prose guides; dynamic registry routes (search/auth).
 - `apps/app` — dashboards for construction data: issues, RFIs, submittals, model viewers (APS Viewer via aps-viewer-react learnings). Each new domain follows the locked pattern: **types + adapters + blocks**. Domain schemas get designed when their slice starts, not before.
 - Procore preset (`procore-oauth-preset`) once aec-auth ships Procore support.
 
@@ -125,7 +125,13 @@ APIs are the working contract — props get refined in implementation; shape and
 Design work from the review. Each item is a contract for whoever picks it up; none block v1 launch. Shipped items keep their contract text so the decision stays readable.
 
 - **Done — `scope-picker` custom-scope escape hatch.** Shipped as `allowCustomScopes` / `customScopeLabel`: a labelled field (Enter or Add) appends any string as a scope, custom scopes render with a `custom` badge and a remove button, and they round-trip through `value` / `onChange` in insertion order after the catalog scopes. The original contract: the catalog covers the documented APS scopes, but the emulator already validates granular scopes (`data:read:<urn>`) and providers add scopes faster than a preset can track. `scope-picker` needs a way to enter a scope that is not in the catalog — an "Add scope" affordance producing an `OAuthScope` with the raw string as both `id` and `label` — so a locked catalog never becomes a dead end. Custom scopes render distinguishably from catalog scopes and round-trip through `value` / `onChange` like any other.
-- **Empty, error, and loading states for the `connections-page` block.** The block ships all four states or it does not ship: **empty** (no connections yet — the provider chooser is the empty state, not a message about nothingness), **loading** (skeleton rows that match the real row geometry, no layout shift on resolve, no stagger), **error** (the failure is on the row that failed, with a retry that follows the async-pending contract, and a page-level error only when the whole fetch failed), and **partial** (one provider errored while the others are fine — the healthy rows still render). Guidance lives with the block; the presentational components stay data-agnostic and take these as props.
+- **Done — empty, error, and loading states for the `connections-page` block.** Shipped as four exported components — `ConnectionsEmpty`, `ConnectionsLoading`, `ConnectionsError`, `ConnectionsList` — that `ConnectionsView` picks between from a `status` prop, exported individually so adapting the page keeps them rather than reinventing them. The settled decisions, which every later block follows:
+  - **empty** — the provider chooser *is* the empty state: one line on what connecting buys, then a `ProviderSignInButton` per provider. No illustration (the system is monochrome and a drawing would outshout the data), and no sentence narrating the absence.
+  - **loading** — a still skeleton, built from the `ConnectionCard` box model so the rows are the same 140px and the real cards land where the placeholders stood, plus one spinner in an `<output>` live region carrying the announcement. No shimmer and no stagger: a looping ambient animation is not one of the four moves, and data-dense rows do not earn an entrance.
+  - **error** — page-level only when the whole fetch failed: the message in danger ink, wired to a retry with `aria-describedby`, and the retry on the async-pending contract at the 44px floor. A single provider that failed is *not* this state — it stays a row with status `error` beside its healthy siblings.
+  - **partial** — the ready list, unchanged. Mixed statuses are the normal case, and it is where the whole status vocabulary shows up at once: connected, expiring soon, expired, errored, never connected.
+
+  The presentational component stays data-agnostic — `providers` plus `connections` in, callbacks out, no fetching — and `resolveConnections` is exported as the data model: one row per provider in catalog order, a disconnected placeholder where no grant exists, unknown grants appended rather than dropped. The block adds no token mechanics: it takes `acc-sign-in`'s `lib/acc-auth.ts` and `/api/auth/*` routes as registry dependencies.
 - **Done — provider icon sizing contract.** Settled on the default: preset marks carry their own `className="size-4"`, so one renders correctly wherever it is dropped, and a `[&_svg]:size-*` wrapper still wins on specificity where a surface wants another size. Documented on `OAuthProvider.icon` in `oauth-types`. The original contract: preset icons (`apsProvider.icon` and every future provider mark) are unsized SVGs: they inherit size only inside a `[&_svg]:size-*` wrapper, so dropping one into arbitrary markup renders it at the intrinsic or collapsed size. Settle this one of two ways and document the choice in `oauth-types`: either every consumer surface declares a `[&_svg]:size-*` wrapper (documented on `OAuthProvider.icon`), or preset icons carry a default `className="size-4"` that a wrapper can still override. Prefer the default — it fails visibly correct rather than invisibly wrong — and keep the wrapper pattern working either way.
 
 ## 10. Risks & watch items

@@ -6,8 +6,17 @@ import { notFound } from 'next/navigation'
 import { CodeBlock } from '@/components/site/code-block'
 import { ComponentDemo } from '@/components/site/demos'
 import { InstallCommand } from '@/components/site/install-command'
+import { OpenInV0 } from '@/components/site/open-in-v0'
+import { PageHandoff } from '@/components/site/page-handoff'
 import { type ApiTable, apiTables, libUsage } from '@/components/site/props-tables'
-import { getRegistryItem, installCommandFor, registryItems } from '@/components/site/registry'
+import {
+  getExampleItem,
+  getRegistryItem,
+  installCommandFor,
+  registryItems,
+} from '@/components/site/registry'
+import { itemMarkdown } from '@/lib/item-markdown'
+import { markdownPathFor, markdownUrlFor } from '@/lib/site'
 
 export const dynamicParams = false
 
@@ -92,18 +101,33 @@ export default async function ComponentPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 py-12 sm:py-16">
-      <header className="flex flex-col gap-2">
-        <p className="font-mono text-code text-muted-foreground">
-          @cantera/{item.name}
-          {isLib && <span className="ml-2 text-xs uppercase tracking-wide">lib</span>}
-        </p>
-        <h1 className="text-balance font-semibold text-3xl tracking-tight">{item.title}</h1>
-        <p className="max-w-2xl text-muted-foreground">{item.description}</p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-2">
+          <p className="font-mono text-code text-muted-foreground">
+            @cantera/{item.name}
+            {isLib && <span className="ml-2 text-xs uppercase tracking-wide">lib</span>}
+          </p>
+          <h1 className="text-balance font-semibold text-3xl tracking-tight">{item.title}</h1>
+          <p className="max-w-2xl text-muted-foreground">{item.description}</p>
+        </div>
+        {/* Page-level hand-off, generated from the same item this page renders:
+            the clipboard, the raw .md, or a chat that starts by reading it. */}
+        <PageHandoff
+          title={item.title}
+          markdown={itemMarkdown(item, getExampleItem(item.name))}
+          markdownPath={markdownPathFor(item.name)}
+          markdownUrl={markdownUrlFor(item.name)}
+        />
       </header>
 
       <section className="flex flex-col gap-3">
         <h2 className="font-medium text-sm">Install</h2>
-        <InstallCommand command={installCommandFor(item.name)} className="max-w-xl" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <InstallCommand command={installCommandFor(item.name)} className="w-full max-w-xl" />
+          {/* v0 imports a registry item by URL, so an item with no files —
+              status-tokens is cssVars only — has nothing to hand it. */}
+          {files.length > 0 && <OpenInV0 name={item.name} title={item.title} />}
+        </div>
       </section>
 
       {isLib && usage ? (

@@ -189,7 +189,12 @@ function ScopePicker({
               <div className="flex min-h-9 flex-col justify-center gap-1">
                 <Label id={labelId} htmlFor={id} className="flex-wrap gap-2">
                   {scope.label}
-                  <code className="rounded bg-muted px-1 py-px font-mono text-muted-foreground text-xs">
+                  {/* Foreground at 60% rather than muted-foreground: on a stock
+                      shadcn theme muted ink on bg-muted measures 4.35:1, under
+                      AA. This renders within a shade of the same gray and
+                      clears 5:1 on any theme whose foreground contrasts its own
+                      muted surface. */}
+                  <code className="rounded bg-muted px-1 py-px font-mono text-status-neutral text-xs">
                     {scope.id}
                   </code>
                   {isRequired && <span className="text-muted-foreground text-xs">required</span>}
@@ -219,7 +224,7 @@ function ScopePicker({
                 htmlFor={`${baseId}-custom-${scopeId}`}
                 className="flex-wrap gap-2"
               >
-                <code className="rounded bg-muted px-1 py-px font-mono text-muted-foreground text-xs">
+                <code className="rounded bg-muted px-1 py-px font-mono text-status-neutral text-xs">
                   {scopeId}
                 </code>
                 <Badge variant="outline">custom</Badge>

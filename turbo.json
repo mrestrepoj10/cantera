@@ -6,7 +6,10 @@
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "registry:build": {
-      "outputs": ["public/r/**"]
+      "outputs": ["public/r/**", "public/llms.txt", "public/llms-full.txt"]
+    },
+    "registry:verify": {
+      "cache": false
     },
     "test": {
       "dependsOn": ["^build"]

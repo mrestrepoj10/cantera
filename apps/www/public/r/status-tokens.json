@@ -2,7 +2,16 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "status-tokens",
   "title": "Status Tokens",
+  "author": "MR <contact@bimframe.co>",
   "description": "Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.",
+  "files": [
+    {
+      "path": "registry/lib/status-tokens.ts",
+      "content": "/**\n * The status palette as typed `var()` references.\n *\n * Tailwind utilities (`bg-status-success`, `text-status-warning-foreground`)\n * cover markup, and they stay the default. This is for the places a class\n * cannot reach — an inline `style`, a chart series color, a canvas fill, an SVG\n * `stroke` — so nothing hand-types a variable name that a rename would silently\n * break.\n *\n * Every value carries the same fallback chain the `@theme` mappings use, so a\n * consumer theme that never installed the variables degrades to foreground /\n * destructive / muted instead of rendering invisible.\n *\n * One color, one meaning: success is healthy, warning is recoverable and needs\n * attention, danger is a failure the user must act on, neutral is absence. The\n * `-foreground` companion is ink on the solid fill; the `-surface` companion is\n * a soft background that always carries the plain `-status-*` ink, never the\n * `-foreground` ink.\n */\n\nexport const statusCssVars = {\n  success: 'var(--status-success, var(--foreground))',\n  successForeground: 'var(--status-success-foreground, var(--background))',\n  successSurface: 'var(--status-success-surface, var(--muted))',\n  warning: 'var(--status-warning, var(--foreground))',\n  warningForeground: 'var(--status-warning-foreground, var(--background))',\n  warningSurface: 'var(--status-warning-surface, var(--muted))',\n  danger: 'var(--status-danger, var(--destructive))',\n  dangerForeground: 'var(--status-danger-foreground, var(--background))',\n  dangerSurface: 'var(--status-danger-surface, var(--muted))',\n  neutral: 'var(--status-neutral, var(--muted-foreground))',\n  neutralForeground: 'var(--status-neutral-foreground, var(--background))',\n  neutralSurface: 'var(--status-neutral-surface, var(--muted))',\n} as const\n\n/** The twelve token names, e.g. for a `Record<StatusCssVar, ...>` lookup. */\nexport type StatusCssVar = keyof typeof statusCssVars\n",
+      "type": "registry:lib",
+      "target": "lib/status-tokens.ts"
+    }
+  ],
   "cssVars": {
     "theme": {
       "color-status-success": "var(--status-success, var(--foreground))",
@@ -47,6 +56,10 @@
       "status-neutral-surface": "oklch(0.29 0 0)"
     }
   },
-  "docs": "Status tokens installed. The solid pairs (bg-status-* with text-status-*-foreground) are the default treatment; the -surface companions are for soft rows and callouts and must always carry text-status-* ink. If your theme redefines :root without these variables, the utilities fall back to foreground / destructive / muted so nothing renders invisible.",
+  "docs": "Status tokens installed. The solid pairs (bg-status-* with text-status-*-foreground) are the default treatment; the -surface companions are for soft rows and callouts and must always carry text-status-* ink. If your theme redefines :root without these variables, the utilities fall back to foreground / destructive / muted so nothing renders invisible. lib/status-tokens.ts ships the same twelve tokens as typed var() strings (statusCssVars) for the places a class cannot reach: inline styles, chart series, canvas fills.",
+  "categories": [
+    "theming",
+    "status"
+  ],
   "type": "registry:item"
 }

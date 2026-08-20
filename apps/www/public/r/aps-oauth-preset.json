@@ -2,6 +2,7 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "aps-oauth-preset",
   "title": "APS OAuth Preset",
+  "author": "MR <contact@bimframe.co>",
   "description": "Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.",
   "registryDependencies": [
     "@cantera/oauth-types"
@@ -13,6 +14,11 @@
       "type": "registry:lib",
       "target": "lib/aps-oauth-preset.tsx"
     }
+  ],
+  "categories": [
+    "authentication",
+    "providers",
+    "autodesk"
   ],
   "type": "registry:lib"
 }

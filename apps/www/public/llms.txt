@@ -1,0 +1,50 @@
+# cantera
+
+> cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, plus an end-to-end Autodesk (APS / ACC) sign-in block. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
+
+- Install any item with `npx shadcn@latest add @cantera/<name>` once @cantera is registered in components.json.
+- Components take plain typed props and never fetch: provider adapters translate an API payload into the shared oauth types, and the same components render Autodesk, Procore, or anything else.
+- Status color, pending behavior, and field density follow fixed contracts, documented in the full reference below.
+
+## Docs
+
+- [Installation](https://canteraui.xyz/installation): Add the @cantera namespace to components.json, install items, and override the status tokens.
+- [Components](https://canteraui.xyz/components): Index of every registry item, with a live preview and the exact installed source on each page.
+- [Demo](https://canteraui.xyz/demo): The whole Autodesk OAuth flow, running against an embedded APS emulator — no credentials needed.
+
+## Components
+
+Data-agnostic UI: typed props in, callbacks out, no fetching.
+
+- [Provider Sign-In Button](https://canteraui.xyz/components/provider-sign-in-button): A sign-in button for a single OAuth provider: brand icon, label, loading state. Works as a link or a click handler.
+- [Sign-In Card](https://canteraui.xyz/components/sign-in-card): A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
+- [Scope Picker](https://canteraui.xyz/components/scope-picker): A controlled OAuth scope picker: checkbox list with descriptions, one-click presets, required scopes pinned on, and an escape hatch for scopes outside the catalog.
+- [User Account Badge](https://canteraui.xyz/components/user-account-badge): An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.
+- [Token Status](https://canteraui.xyz/components/token-status): Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.
+- [Connection Card](https://canteraui.xyz/components/connection-card): A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions.
+
+## Blocks
+
+Wired end-to-end flows — pages, route handlers, and the auth glue between them.
+
+- [ACC Sign-In](https://canteraui.xyz/components/acc-sign-in): Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.
+- [Connections Page](https://canteraui.xyz/components/connections-page): The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
+
+## Libraries
+
+The types the components speak, and the provider presets that translate into them.
+
+- [OAuth Types](https://canteraui.xyz/components/oauth-types): Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.
+- [APS OAuth Preset](https://canteraui.xyz/components/aps-oauth-preset): Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.
+
+## Tokens
+
+CSS variables installed into the consumer theme.
+
+- [Status Tokens](https://canteraui.xyz/components/status-tokens): Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.
+
+## Optional
+
+- [Full reference](https://canteraui.xyz/llms-full.txt): Every item's description, install command, dependencies, props, exports, and data attributes, plus the design contracts behind them.
+- [Registry index](https://canteraui.xyz/r/llms.txt): The same item list, served next to the registry JSON.
+- [Registry manifest](https://canteraui.xyz/r/registry.json): The machine-readable shadcn registry.

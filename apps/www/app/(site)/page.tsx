@@ -5,12 +5,7 @@ import { ComponentGrid } from '@/components/site/component-grid'
 import { ConnectionCardDemo, ScopePickerDemo, SignInCardDemo } from '@/components/site/demos'
 import { InstallCommand } from '@/components/site/install-command'
 import { Button } from '@/components/ui/button'
-
-const registryConfigSnippet = `{
-  "registries": {
-    "@cantera": "https://canteraui.xyz/r/{name}.json"
-  }
-}`
+import { installCommandFor, registryConfigSnippet } from '@/lib/site'
 
 const ecosystem = [
   {
@@ -43,13 +38,19 @@ export default function HomePage() {
           code.
         </p>
         <div className="flex w-full max-w-xl flex-col gap-3">
-          <InstallCommand command="npx shadcn@latest add @cantera/sign-in-card" />
+          <InstallCommand command={installCommandFor('sign-in-card')} />
           <details className="group" data-slot="disclosure">
             <summary className="focus-ring inline-flex w-fit cursor-pointer list-none rounded-md font-mono text-muted-foreground text-xs transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
               <span className="group-open:hidden">Show one-time registry setup</span>
               <span className="hidden group-open:inline">One-time setup — components.json</span>
             </summary>
             <CodeBlock code={registryConfigSnippet} lang="json" className="mt-2" />
+            <Link
+              href="/installation"
+              className="focus-ring mt-2 inline-flex rounded-md text-muted-foreground text-xs transition-colors hover:text-foreground"
+            >
+              Full installation guide — package managers, path aliases, theming
+            </Link>
           </details>
         </div>
       </section>
@@ -128,7 +129,14 @@ export default function HomePage() {
         <h2 className="font-semibold text-2xl tracking-tight">The stack around it</h2>
         <p className="mt-2 max-w-2xl text-muted-foreground text-sm">
           cantera is the UI layer of a small open ecosystem — each piece works alone, together they
-          are the five-minute ACC path.
+          are the five-minute ACC path.{' '}
+          <Link
+            href="/stack"
+            className="focus-ring rounded-md underline underline-offset-4 hover:text-foreground"
+          >
+            How they compose
+          </Link>
+          .
         </p>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {ecosystem.map((project) => (

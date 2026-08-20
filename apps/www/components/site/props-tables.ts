@@ -427,6 +427,215 @@ export const apiTables: Record<string, ApiTable[]> = {
         },
       ],
     },
+    {
+      caption: 'Exports',
+      nameHeader: 'Export',
+      rows: [
+        {
+          name: 'statusCssVars',
+          type: 'Record<StatusCssVar, string>',
+          description:
+            'The twelve tokens as typed var() strings — success, successForeground, successSurface, and the same three for warning, danger, and neutral. For the places a class cannot reach: an inline style, a chart series color, a canvas fill. Each value carries the same fallback chain the utilities use, so an unthemed project degrades instead of rendering invisible.',
+        },
+        {
+          name: 'StatusCssVar',
+          type: 'type',
+          description:
+            'The twelve token names, for a Record keyed by token or a prop that takes one.',
+        },
+      ],
+    },
+  ],
+  'connections-page': [
+    {
+      caption: 'ConnectionsView props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'providers',
+          type: 'OAuthProvider[]',
+          description:
+            'Every provider this app can connect to, in display order. A provider with no grant renders as a "not connected" row, and a page where none of them has a grant renders the empty state.',
+        },
+        {
+          name: 'connections',
+          type: 'OAuthConnection[]',
+          description:
+            'The grants that exist, matched to providers by connection.provider.id. A grant for a provider outside the catalog is appended rather than dropped, so a removed provider never vanishes silently.',
+        },
+        {
+          name: 'status',
+          type: "'ready' | 'loading' | 'error'",
+          defaultValue: "'ready'",
+          description:
+            'The fetch state. Loading and error replace the list while the heading stays put — the page never shifts under a resolve. A single provider that failed is not this state: that is a row with status "error", which keeps its healthy siblings visible.',
+        },
+        {
+          name: 'error',
+          type: 'string',
+          description:
+            'Page-level failure detail, shown with the retry when status is "error". Wired to the retry button with aria-describedby.',
+        },
+        {
+          name: 'account',
+          type: 'OAuthAccount',
+          description:
+            'Who these grants belong to. Rendered as a UserAccountBadge beside the heading when set.',
+        },
+        {
+          name: 'onConnect',
+          type: '(providerId: string) => void | Promise<void>',
+          description:
+            "Starts consent for one provider. Connect and reconnect are the same act, so one callback serves the empty-state chooser and every row button. A returned promise drives that row's pending state.",
+        },
+        {
+          name: 'onDisconnect',
+          type: '(providerId: string) => void | Promise<void>',
+          description:
+            "Revokes one grant. A returned promise drives the pending state on that card's Disconnect button.",
+        },
+        {
+          name: 'onRetry',
+          type: '() => void | Promise<void>',
+          description: 'Retries the whole fetch. Shown only in the error state.',
+        },
+        {
+          name: 'pending',
+          type: '{ connecting?: string; disconnecting?: string; retrying?: boolean }',
+          description:
+            'Consumer-driven pending, for wiring where no promise comes back — a server action, or a navigation that never resolves. One provider id, not a set: a second consent redirect would race the first.',
+        },
+        {
+          name: 'title',
+          type: 'ReactNode',
+          defaultValue: "'Connections'",
+          description: 'Page heading text.',
+        },
+        {
+          name: 'titleAs',
+          type: "'h1' | 'h2' | 'h3'",
+          defaultValue: "'h1'",
+          description:
+            'Heading element for the title — a block ships a real heading, not a styled div. Drop to h2 when embedding under one.',
+        },
+        {
+          name: 'description',
+          type: 'ReactNode',
+          defaultValue: "'The accounts this app can read from…'",
+          description: 'Sentence under the heading. Pass null to drop it.',
+        },
+        {
+          name: 'showScopes',
+          type: 'boolean',
+          defaultValue: 'true',
+          description: 'Forwarded to every ConnectionCard, and through it to TokenStatus.',
+        },
+        {
+          name: '...props',
+          type: "ComponentProps<'section'>",
+          description: 'Remaining props are spread onto the page section.',
+        },
+      ],
+    },
+    {
+      caption: 'AccConnections props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'providers',
+          type: 'OAuthProvider[]',
+          defaultValue: '[apsProvider]',
+          description:
+            'Providers to list. Autodesk is the wired one; an extra entry renders as "not connected" and its Connect button hits /api/auth/<id>, which 404s until lib/acc-auth.ts knows that provider.',
+        },
+        {
+          name: 'nextPath',
+          type: 'string',
+          defaultValue: "'/connections'",
+          description: 'Where the consent flow returns to.',
+        },
+        {
+          name: 'headingLevel',
+          type: "'h1' | 'h2' | 'h3'",
+          defaultValue: "'h1'",
+          description: 'Heading level for the block title, forwarded to ConnectionsView.',
+        },
+      ],
+    },
+    {
+      caption: 'Exports',
+      nameHeader: 'Export',
+      typeHeader: 'Kind',
+      rows: [
+        {
+          name: 'ConnectionsView',
+          type: 'component',
+          description:
+            'The presentational page: heading, summary, and whichever of the four states applies. Data in, callbacks out, no fetching.',
+        },
+        {
+          name: 'ConnectionsList',
+          type: 'component',
+          description:
+            'The ready state — one ConnectionCard per row, where the whole status vocabulary shows up at once.',
+        },
+        {
+          name: 'ConnectionsEmpty',
+          type: 'component',
+          description:
+            'The empty state: the provider chooser itself, with one sentence on what a connection buys. No illustration — the system is monochrome.',
+        },
+        {
+          name: 'ConnectionsLoading',
+          type: 'component',
+          description:
+            'The loading state: static skeleton rows built from the ConnectionCard box model, so nothing shifts on resolve, plus one spinner in a live region. No shimmer and no stagger — neither is in the motion grammar.',
+        },
+        {
+          name: 'ConnectionsError',
+          type: 'component',
+          description:
+            'The page-level failure: message in danger ink plus a retry on the async-pending contract, wired with aria-describedby.',
+        },
+        {
+          name: 'resolveConnections',
+          type: '(providers, connections?) => OAuthConnection[]',
+          description:
+            'The data model: one row per provider in catalog order, a disconnected placeholder where no grant exists, and unknown grants appended.',
+        },
+        {
+          name: 'ConnectionsManager',
+          type: 'component',
+          description:
+            'The client wiring: connect navigates to the consent route, disconnect posts to the revoke route, and both settle by re-rendering the server page. Swap it for your own backend and ConnectionsView does not change.',
+        },
+        {
+          name: 'AccConnections',
+          type: 'async component',
+          description:
+            'The wired server component, on the lib and routes the acc-sign-in block installs. Render it from any server page; the default export is a ready-made /connections page with a streamed loading.tsx beside it.',
+        },
+      ],
+    },
+    {
+      caption: 'Data attributes',
+      nameHeader: 'Attribute',
+      typeHeader: 'Values',
+      rows: [
+        {
+          name: 'data-slot',
+          type: 'connections-view · connections-list · connections-empty · connections-loading · connections-error',
+          description: 'Which state is on the page, for styling and for tests.',
+        },
+        {
+          name: 'data-status',
+          type: 'ready · loading · error',
+          description: 'On the page section: the fetch state it was rendered with.',
+        },
+      ],
+    },
   ],
   'oauth-types': [
     {

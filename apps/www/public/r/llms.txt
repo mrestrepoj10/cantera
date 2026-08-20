@@ -1,0 +1,120 @@
+# cantera registry
+
+> cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, plus an end-to-end Autodesk (APS / ACC) sign-in block. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
+
+Namespace: @cantera
+Registry item URL: https://canteraui.xyz/r/{name}.json
+Docs: https://canteraui.xyz/components/{name}
+Installation guide: https://canteraui.xyz/installation
+Full reference for agents: https://canteraui.xyz/llms-full.txt
+
+One-time setup — add the namespace to components.json, then install items by name:
+
+```json
+{
+  "registries": {
+    "@cantera": "https://canteraui.xyz/r/{name}.json"
+  }
+}
+```
+
+## Items
+
+### oauth-types
+
+Title: OAuth Types
+Type: lib
+Description: Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.
+Install: npx shadcn@latest add @cantera/oauth-types
+Docs: https://canteraui.xyz/components/oauth-types
+Item: https://canteraui.xyz/r/oauth-types.json
+
+### aps-oauth-preset
+
+Title: APS OAuth Preset
+Type: lib
+Description: Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.
+Install: npx shadcn@latest add @cantera/aps-oauth-preset
+Docs: https://canteraui.xyz/components/aps-oauth-preset
+Item: https://canteraui.xyz/r/aps-oauth-preset.json
+
+### status-tokens
+
+Title: Status Tokens
+Type: tokens (CSS variables plus a typed accessor)
+Description: Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.
+Install: npx shadcn@latest add @cantera/status-tokens
+Docs: https://canteraui.xyz/components/status-tokens
+Item: https://canteraui.xyz/r/status-tokens.json
+
+### provider-sign-in-button
+
+Title: Provider Sign-In Button
+Type: component
+Description: A sign-in button for a single OAuth provider: brand icon, label, loading state. Works as a link or a click handler.
+Install: npx shadcn@latest add @cantera/provider-sign-in-button
+Docs: https://canteraui.xyz/components/provider-sign-in-button
+Item: https://canteraui.xyz/r/provider-sign-in-button.json
+
+### sign-in-card
+
+Title: Sign-In Card
+Type: component
+Description: A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
+Install: npx shadcn@latest add @cantera/sign-in-card
+Docs: https://canteraui.xyz/components/sign-in-card
+Item: https://canteraui.xyz/r/sign-in-card.json
+
+### scope-picker
+
+Title: Scope Picker
+Type: component
+Description: A controlled OAuth scope picker: checkbox list with descriptions, one-click presets, required scopes pinned on, and an escape hatch for scopes outside the catalog.
+Install: npx shadcn@latest add @cantera/scope-picker
+Docs: https://canteraui.xyz/components/scope-picker
+Item: https://canteraui.xyz/r/scope-picker.json
+
+### user-account-badge
+
+Title: User Account Badge
+Type: component
+Description: An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.
+Install: npx shadcn@latest add @cantera/user-account-badge
+Docs: https://canteraui.xyz/components/user-account-badge
+Item: https://canteraui.xyz/r/user-account-badge.json
+
+### token-status
+
+Title: Token Status
+Type: component
+Description: Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.
+Install: npx shadcn@latest add @cantera/token-status
+Docs: https://canteraui.xyz/components/token-status
+Item: https://canteraui.xyz/r/token-status.json
+
+### connection-card
+
+Title: Connection Card
+Type: component
+Description: A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions.
+Install: npx shadcn@latest add @cantera/connection-card
+Docs: https://canteraui.xyz/components/connection-card
+Item: https://canteraui.xyz/r/connection-card.json
+
+### acc-sign-in
+
+Title: ACC Sign-In
+Type: block
+Description: Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.
+Install: npx shadcn@latest add @cantera/acc-sign-in
+Docs: https://canteraui.xyz/components/acc-sign-in
+Item: https://canteraui.xyz/r/acc-sign-in.json
+
+### connections-page
+
+Title: Connections Page
+Type: block
+Description: The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
+Install: npx shadcn@latest add @cantera/connections-page
+Docs: https://canteraui.xyz/components/connections-page
+Item: https://canteraui.xyz/r/connections-page.json

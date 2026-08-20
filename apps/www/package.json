@@ -6,7 +6,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "registry:build": "shadcn build"
+    "registry:build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-examples.mts && shadcn build && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-llms.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-skill.mts",
+    "registry:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-file-closure.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-npm-deps.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-drift.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
