@@ -144,12 +144,17 @@ Files written into the consumer project:
 
 ### Status Tokens (`@cantera/status-tokens`)
 
-Type: tokens (CSS variables only, no files)
+Type: tokens (CSS variables plus a typed accessor)
 Install: npx shadcn@latest add @cantera/status-tokens
 Docs: https://canteraui.xyz/components/status-tokens
 Item: https://canteraui.xyz/r/status-tokens.json
+Working example page: npx shadcn@latest add @cantera/status-tokens-demo
 
 Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.
+
+Files written into the consumer project:
+
+- lib/status-tokens.ts
 
 #### Tokens
 
@@ -160,12 +165,18 @@ Semantic status colors — success, warning, danger, neutral — each with a for
 - `-foreground` (`text-status-*-foreground`) — Ink for text sitting on the solid fill. Every pair clears 4.5:1 in both appearances.
 - `-surface` (`bg-status-*-surface`) — Soft background for rows and callouts. Always carries text-status-* ink, never the -foreground ink.
 
+#### Exports
+
+- `statusCssVars` (`Record<StatusCssVar, string>`) — The twelve tokens as typed var() strings — success, successForeground, successSurface, and the same three for warning, danger, and neutral. For the places a class cannot reach: an inline style, a chart series color, a canvas fill. Each value carries the same fallback chain the utilities use, so an unthemed project degrades instead of rendering invisible.
+- `StatusCssVar` (`type`) — The twelve token names, for a Record keyed by token or a prop that takes one.
+
 ### Provider Sign-In Button (`@cantera/provider-sign-in-button`)
 
 Type: component
 Install: npx shadcn@latest add @cantera/provider-sign-in-button
 Docs: https://canteraui.xyz/components/provider-sign-in-button
 Item: https://canteraui.xyz/r/provider-sign-in-button.json
+Working example page: npx shadcn@latest add @cantera/provider-sign-in-button-demo
 Registry dependencies: button, @cantera/oauth-types
 npm dependencies: lucide-react
 
@@ -193,6 +204,7 @@ Type: component
 Install: npx shadcn@latest add @cantera/sign-in-card
 Docs: https://canteraui.xyz/components/sign-in-card
 Item: https://canteraui.xyz/r/sign-in-card.json
+Working example page: npx shadcn@latest add @cantera/sign-in-card-demo
 Registry dependencies: card, @cantera/provider-sign-in-button, @cantera/oauth-types
 
 A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
@@ -219,6 +231,7 @@ Type: component
 Install: npx shadcn@latest add @cantera/scope-picker
 Docs: https://canteraui.xyz/components/scope-picker
 Item: https://canteraui.xyz/r/scope-picker.json
+Working example page: npx shadcn@latest add @cantera/scope-picker-demo
 Registry dependencies: badge, button, checkbox, input, label, @cantera/oauth-types, @cantera/status-tokens
 npm dependencies: lucide-react
 
@@ -249,6 +262,7 @@ Type: component
 Install: npx shadcn@latest add @cantera/user-account-badge
 Docs: https://canteraui.xyz/components/user-account-badge
 Item: https://canteraui.xyz/r/user-account-badge.json
+Working example page: npx shadcn@latest add @cantera/user-account-badge-demo
 Registry dependencies: avatar, @cantera/oauth-types, @cantera/status-tokens
 
 An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.
@@ -270,6 +284,7 @@ Type: component
 Install: npx shadcn@latest add @cantera/token-status
 Docs: https://canteraui.xyz/components/token-status
 Item: https://canteraui.xyz/r/token-status.json
+Working example page: npx shadcn@latest add @cantera/token-status-demo
 Registry dependencies: badge, @cantera/status-tokens, @cantera/oauth-types
 
 Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.
@@ -304,6 +319,7 @@ Type: component
 Install: npx shadcn@latest add @cantera/connection-card
 Docs: https://canteraui.xyz/components/connection-card
 Item: https://canteraui.xyz/r/connection-card.json
+Working example page: npx shadcn@latest add @cantera/connection-card-demo
 Registry dependencies: button, card, @cantera/user-account-badge, @cantera/token-status, @cantera/oauth-types
 npm dependencies: lucide-react
 

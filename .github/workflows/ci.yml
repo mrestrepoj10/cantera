@@ -18,10 +18,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
-      - name: Registry build is committed
+      - name: Registry builds, verifies, and is committed
         run: |
           pnpm registry:build
-          git diff --exit-code apps/www/public/r apps/www/public/llms.txt apps/www/public/llms-full.txt
+          pnpm registry:verify
+          git diff --exit-code apps/www/registry.json apps/www/registry apps/www/public/r apps/www/public/llms.txt apps/www/public/llms-full.txt skills
       - run: pnpm --filter www build
       - name: E2E (OAuth flow, axe a11y in both themes, theme and pending contracts)
         run: |

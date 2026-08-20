@@ -2,6 +2,7 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "connections-page",
   "title": "Connections Page",
+  "author": "MR <contact@bimframe.co>",
   "description": "The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.",
   "dependencies": [
     "aec-auth",
@@ -43,6 +44,19 @@
       "type": "registry:component",
       "target": "components/connections-manager.tsx"
     }
+  ],
+  "envVars": {
+    "APS_CLIENT_ID": "",
+    "APS_CLIENT_SECRET": "",
+    "SESSION_SECRET": "",
+    "APS_AUTH_BASE_URL": ""
+  },
+  "docs": "Installed: app/connections/page.tsx with its loading skeleton, plus ConnectionsView (presentational) and ConnectionsManager (wiring).\n\nThis block takes acc-sign-in as a registry dependency for the /api/auth/* routes and the aec-auth glue, so one environment configures both:\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — required in production; the block fails closed without it.\n- APS_AUTH_BASE_URL — optional auth-origin override for an emulator. Unset means real APS.\n\nACC_AUTH_DEMO=1 allows the insecure fallback session secret and must never be set where real accounts exist.\n\nConnectionsView never fetches — providers and connections in, callbacks out — so point it at any backend.",
+  "categories": [
+    "authentication",
+    "connections",
+    "dashboard",
+    "autodesk"
   ],
   "type": "registry:block"
 }

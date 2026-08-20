@@ -2,12 +2,15 @@
   "$schema": "https://ui.shadcn.com/schema/registry.json",
   "name": "cantera",
   "homepage": "https://canteraui.xyz",
+  "author": "MR <contact@bimframe.co>",
   "items": [
     {
       "name": "oauth-types",
       "type": "registry:lib",
       "title": "OAuth Types",
+      "author": "MR <contact@bimframe.co>",
       "description": "Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.",
+      "categories": ["authentication", "types"],
       "files": [
         {
           "path": "registry/lib/oauth-types.ts",
@@ -20,7 +23,9 @@
       "name": "aps-oauth-preset",
       "type": "registry:lib",
       "title": "APS OAuth Preset",
+      "author": "MR <contact@bimframe.co>",
       "description": "Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.",
+      "categories": ["authentication", "providers", "autodesk"],
       "registryDependencies": ["@cantera/oauth-types"],
       "files": [
         {
@@ -34,7 +39,16 @@
       "name": "status-tokens",
       "type": "registry:item",
       "title": "Status Tokens",
-      "description": "Semantic status colors \u2014 success, warning, danger, neutral \u2014 each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.",
+      "categories": ["theming", "status"],
+      "files": [
+        {
+          "path": "registry/lib/status-tokens.ts",
+          "type": "registry:lib",
+          "target": "lib/status-tokens.ts"
+        }
+      ],
       "cssVars": {
         "theme": {
           "color-status-success": "var(--status-success, var(--foreground))",
@@ -79,19 +93,21 @@
           "status-neutral-surface": "oklch(0.29 0 0)"
         }
       },
-      "docs": "Status tokens installed. The solid pairs (bg-status-* with text-status-*-foreground) are the default treatment; the -surface companions are for soft rows and callouts and must always carry text-status-* ink. If your theme redefines :root without these variables, the utilities fall back to foreground / destructive / muted so nothing renders invisible."
+      "docs": "Status tokens installed. The solid pairs (bg-status-* with text-status-*-foreground) are the default treatment; the -surface companions are for soft rows and callouts and must always carry text-status-* ink. If your theme redefines :root without these variables, the utilities fall back to foreground / destructive / muted so nothing renders invisible. lib/status-tokens.ts ships the same twelve tokens as typed var() strings (statusCssVars) for the places a class cannot reach: inline styles, chart series, canvas fills."
     },
     {
       "name": "provider-sign-in-button",
       "type": "registry:component",
       "title": "Provider Sign-In Button",
+      "author": "MR <contact@bimframe.co>",
       "description": "A sign-in button for a single OAuth provider: brand icon, label, loading state. Works as a link or a click handler.",
+      "categories": ["authentication", "buttons"],
       "dependencies": ["lucide-react"],
       "registryDependencies": ["button", "@cantera/oauth-types"],
       "files": [
         {
           "path": "registry/ui/provider-sign-in-button.tsx",
-          "type": "registry:component"
+          "type": "registry:ui"
         }
       ]
     },
@@ -99,12 +115,14 @@
       "name": "sign-in-card",
       "type": "registry:component",
       "title": "Sign-In Card",
+      "author": "MR <contact@bimframe.co>",
       "description": "A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.",
+      "categories": ["authentication", "login"],
       "registryDependencies": ["card", "@cantera/provider-sign-in-button", "@cantera/oauth-types"],
       "files": [
         {
           "path": "registry/ui/sign-in-card.tsx",
-          "type": "registry:component"
+          "type": "registry:ui"
         }
       ]
     },
@@ -112,7 +130,9 @@
       "name": "scope-picker",
       "type": "registry:component",
       "title": "Scope Picker",
+      "author": "MR <contact@bimframe.co>",
       "description": "A controlled OAuth scope picker: checkbox list with descriptions, one-click presets, required scopes pinned on, and an escape hatch for scopes outside the catalog.",
+      "categories": ["authentication", "permissions", "forms"],
       "dependencies": ["lucide-react"],
       "registryDependencies": [
         "badge",
@@ -126,7 +146,7 @@
       "files": [
         {
           "path": "registry/ui/scope-picker.tsx",
-          "type": "registry:component"
+          "type": "registry:ui"
         }
       ]
     },
@@ -134,12 +154,14 @@
       "name": "user-account-badge",
       "type": "registry:component",
       "title": "User Account Badge",
+      "author": "MR <contact@bimframe.co>",
       "description": "An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.",
+      "categories": ["authentication", "account"],
       "registryDependencies": ["avatar", "@cantera/oauth-types", "@cantera/status-tokens"],
       "files": [
         {
           "path": "registry/ui/user-account-badge.tsx",
-          "type": "registry:component"
+          "type": "registry:ui"
         }
       ]
     },
@@ -147,12 +169,14 @@
       "name": "token-status",
       "type": "registry:component",
       "title": "Token Status",
+      "author": "MR <contact@bimframe.co>",
       "description": "Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.",
+      "categories": ["authentication", "status"],
       "registryDependencies": ["badge", "@cantera/status-tokens", "@cantera/oauth-types"],
       "files": [
         {
           "path": "registry/ui/token-status.tsx",
-          "type": "registry:component"
+          "type": "registry:ui"
         }
       ]
     },
@@ -160,7 +184,9 @@
       "name": "connection-card",
       "type": "registry:component",
       "title": "Connection Card",
+      "author": "MR <contact@bimframe.co>",
       "description": "A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions.",
+      "categories": ["authentication", "connections"],
       "dependencies": ["lucide-react"],
       "registryDependencies": [
         "button",
@@ -172,7 +198,7 @@
       "files": [
         {
           "path": "registry/ui/connection-card.tsx",
-          "type": "registry:component"
+          "type": "registry:ui"
         }
       ]
     },
@@ -180,7 +206,9 @@
       "name": "acc-sign-in",
       "type": "registry:block",
       "title": "ACC Sign-In",
+      "author": "MR <contact@bimframe.co>",
       "description": "Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.",
+      "categories": ["authentication", "login", "autodesk"],
       "dependencies": ["aec-auth"],
       "registryDependencies": [
         "@cantera/sign-in-card",
@@ -219,13 +247,22 @@
           "type": "registry:file",
           "target": "app/api/auth/signout/route.ts"
         }
-      ]
+      ],
+      "envVars": {
+        "APS_CLIENT_ID": "",
+        "APS_CLIENT_SECRET": "",
+        "SESSION_SECRET": "",
+        "APS_AUTH_BASE_URL": ""
+      },
+      "docs": "Installed: app/sign-in/page.tsx, the /api/auth/* route handlers, and lib/acc-auth.ts (aec-auth vault wiring).\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — HMAC key for the session cookie. Generate one with `openssl rand -base64 32`. In production the block fails closed without it: a shared default key would let anyone mint a session for any user.\n- APS_AUTH_BASE_URL — optional auth-origin override, absolute or relative (\"/emulate/aps\") for an embedded emulator. Leave it unset to talk to real APS.\n\nACC_AUTH_DEMO=1 is the escape hatch that allows the insecure fallback session secret in production. It exists for emulator-backed showcases only — never set it anywhere real accounts exist.\n\nThe default vault store is in-memory: correct for a demo, wrong for production. Swap in a durable VaultStore (see the aec-auth README) before you ship."
     },
     {
       "name": "connections-page",
       "type": "registry:block",
       "title": "Connections Page",
-      "description": "The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect \u2014 plus the designed empty, loading, and error states a real fetch needs.",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.",
+      "categories": ["authentication", "connections", "dashboard", "autodesk"],
       "dependencies": ["aec-auth", "lucide-react"],
       "registryDependencies": [
         "button",
@@ -258,6 +295,176 @@
           "path": "registry/blocks/connections-page/components/connections-manager.tsx",
           "type": "registry:component",
           "target": "components/connections-manager.tsx"
+        }
+      ],
+      "envVars": {
+        "APS_CLIENT_ID": "",
+        "APS_CLIENT_SECRET": "",
+        "SESSION_SECRET": "",
+        "APS_AUTH_BASE_URL": ""
+      },
+      "docs": "Installed: app/connections/page.tsx with its loading skeleton, plus ConnectionsView (presentational) and ConnectionsManager (wiring).\n\nThis block takes acc-sign-in as a registry dependency for the /api/auth/* routes and the aec-auth glue, so one environment configures both:\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — required in production; the block fails closed without it.\n- APS_AUTH_BASE_URL — optional auth-origin override for an emulator. Unset means real APS.\n\nACC_AUTH_DEMO=1 allows the insecure fallback session secret and must never be set where real accounts exist.\n\nConnectionsView never fetches — providers and connections in, callbacks out — so point it at any backend."
+    },
+    {
+      "name": "status-tokens-demo",
+      "type": "registry:example",
+      "title": "Status Tokens Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Status Tokens, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["theming", "status"],
+      "registryDependencies": ["@cantera/status-tokens"],
+      "files": [
+        {
+          "path": "registry/examples/status-tokens-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/status-tokens-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/status-tokens-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/status-tokens/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "provider-sign-in-button-demo",
+      "type": "registry:example",
+      "title": "Provider Sign-In Button Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Provider Sign-In Button, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["authentication", "buttons"],
+      "registryDependencies": [
+        "@cantera/aps-oauth-preset",
+        "@cantera/oauth-types",
+        "@cantera/provider-sign-in-button"
+      ],
+      "files": [
+        {
+          "path": "registry/examples/provider-sign-in-button-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/provider-sign-in-button-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/provider-sign-in-button-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/provider-sign-in-button/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "sign-in-card-demo",
+      "type": "registry:example",
+      "title": "Sign-In Card Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Sign-In Card, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["authentication", "login"],
+      "registryDependencies": [
+        "@cantera/aps-oauth-preset",
+        "@cantera/oauth-types",
+        "@cantera/sign-in-card"
+      ],
+      "files": [
+        {
+          "path": "registry/examples/sign-in-card-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/sign-in-card-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/sign-in-card-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/sign-in-card/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "scope-picker-demo",
+      "type": "registry:example",
+      "title": "Scope Picker Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Scope Picker, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["authentication", "permissions", "forms"],
+      "registryDependencies": ["@cantera/aps-oauth-preset", "@cantera/scope-picker"],
+      "files": [
+        {
+          "path": "registry/examples/scope-picker-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/scope-picker-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/scope-picker-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/scope-picker/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "user-account-badge-demo",
+      "type": "registry:example",
+      "title": "User Account Badge Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering User Account Badge, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["authentication", "account"],
+      "registryDependencies": ["@cantera/aps-oauth-preset", "@cantera/user-account-badge"],
+      "files": [
+        {
+          "path": "registry/examples/user-account-badge-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/user-account-badge-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/user-account-badge-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/user-account-badge/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "token-status-demo",
+      "type": "registry:example",
+      "title": "Token Status Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Token Status, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["authentication", "status"],
+      "registryDependencies": [
+        "@cantera/aps-oauth-preset",
+        "@cantera/oauth-types",
+        "@cantera/token-status"
+      ],
+      "files": [
+        {
+          "path": "registry/examples/token-status-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/token-status-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/token-status-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/token-status/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "connection-card-demo",
+      "type": "registry:example",
+      "title": "Connection Card Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Connection Card, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["authentication", "connections"],
+      "registryDependencies": [
+        "@cantera/aps-oauth-preset",
+        "@cantera/connection-card",
+        "@cantera/oauth-types"
+      ],
+      "files": [
+        {
+          "path": "registry/examples/connection-card-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/connection-card-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/connection-card-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/connection-card/page.tsx"
         }
       ]
     }

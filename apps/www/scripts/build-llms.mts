@@ -68,7 +68,8 @@ const TYPE_LABELS: Record<RegistryItem['type'], string> = {
   'registry:component': 'component',
   'registry:block': 'block',
   'registry:lib': 'lib',
-  'registry:item': 'tokens (CSS variables only, no files)',
+  'registry:item': 'tokens (CSS variables plus a typed accessor)',
+  'registry:example': 'example page',
 }
 
 /**
@@ -211,7 +212,7 @@ function buildSiteIndex(items: RegistryItem[]): string {
 }
 
 /** `public/llms-full.txt` — contracts plus the complete per-item API. */
-function buildFullReference(items: RegistryItem[]): string {
+function buildFullReference(items: RegistryItem[], examples: Set<string>): string {
   const header = [
     '# cantera — full reference',
     '',
@@ -247,6 +248,9 @@ function buildFullReference(items: RegistryItem[]): string {
       `Install: ${installCommandFor(item.name)}`,
       `Docs: ${docsUrl(item.name)}`,
       `Item: ${registryItemUrl(item.name)}`,
+      ...(examples.has(item.name)
+        ? [`Working example page: ${installCommandFor(`${item.name}-demo`)}`]
+        : []),
       ...itemDependencies(item),
       '',
       item.description,
@@ -274,15 +278,29 @@ function buildFullReference(items: RegistryItem[]): string {
 }
 
 async function main() {
+  // `--out-dir` lets the drift verifier rebuild into a scratch directory and
+  // compare, rather than trusting that the committed artifacts are current.
+  const outIndex = process.argv.indexOf('--out-dir')
+  const outDir = outIndex === -1 ? path.join(wwwRoot, 'public') : process.argv[outIndex + 1]
+
   const registry = JSON.parse(
     await readFile(path.join(wwwRoot, 'registry.json'), 'utf8'),
   ) as Registry
-  const items = registry.items
+  // Example items are v0 landing pages, not catalog entries: they carry no API
+  // of their own and would only pad an index an agent reads to choose an item.
+  const items = registry.items.filter((item) => item.type !== 'registry:example')
+  // Example items are not listed themselves; each one is named on the item it
+  // demonstrates, so an agent reading the reference knows a working page exists.
+  const examples = new Set(
+    registry.items
+      .filter((item) => item.type === 'registry:example')
+      .map((item) => item.name.replace(/-demo$/, '')),
+  )
 
   const outputs: [string, string][] = [
-    [path.join(wwwRoot, 'public/r/llms.txt'), buildRegistryIndex(items)],
-    [path.join(wwwRoot, 'public/llms.txt'), buildSiteIndex(items)],
-    [path.join(wwwRoot, 'public/llms-full.txt'), buildFullReference(items)],
+    [path.join(outDir, 'r/llms.txt'), buildRegistryIndex(items)],
+    [path.join(outDir, 'llms.txt'), buildSiteIndex(items)],
+    [path.join(outDir, 'llms-full.txt'), buildFullReference(items, examples)],
   ]
 
   for (const [file, contents] of outputs) {

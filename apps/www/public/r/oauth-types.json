@@ -2,6 +2,7 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "oauth-types",
   "title": "OAuth Types",
+  "author": "MR <contact@bimframe.co>",
   "description": "Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.",
   "files": [
     {
@@ -10,6 +11,10 @@
       "type": "registry:lib",
       "target": "lib/oauth-types.ts"
     }
+  ],
+  "categories": [
+    "authentication",
+    "types"
   ],
   "type": "registry:lib"
 }

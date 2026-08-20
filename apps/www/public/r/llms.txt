@@ -41,7 +41,7 @@ Item: https://canteraui.xyz/r/aps-oauth-preset.json
 ### status-tokens
 
 Title: Status Tokens
-Type: tokens (CSS variables only, no files)
+Type: tokens (CSS variables plus a typed accessor)
 Description: Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.
 Install: npx shadcn@latest add @cantera/status-tokens
 Docs: https://canteraui.xyz/components/status-tokens

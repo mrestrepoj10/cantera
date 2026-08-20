@@ -427,6 +427,24 @@ export const apiTables: Record<string, ApiTable[]> = {
         },
       ],
     },
+    {
+      caption: 'Exports',
+      nameHeader: 'Export',
+      rows: [
+        {
+          name: 'statusCssVars',
+          type: 'Record<StatusCssVar, string>',
+          description:
+            'The twelve tokens as typed var() strings — success, successForeground, successSurface, and the same three for warning, danger, and neutral. For the places a class cannot reach: an inline style, a chart series color, a canvas fill. Each value carries the same fallback chain the utilities use, so an unthemed project degrades instead of rendering invisible.',
+        },
+        {
+          name: 'StatusCssVar',
+          type: 'type',
+          description:
+            'The twelve token names, for a Record keyed by token or a prop that takes one.',
+        },
+      ],
+    },
   ],
   'connections-page': [
     {

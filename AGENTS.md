@@ -10,17 +10,19 @@ Use `pnpm` for everything. Before calling any change done, from the repo root:
 pnpm lint            # biome (single quotes, no semicolons, 100-col lines)
 pnpm typecheck
 pnpm registry:build  # required after touching apps/www/registry/** or registry.json;
-                     # also regenerates the llms.txt artifacts under apps/www/public
+                     # also regenerates the llms.txt artifacts, the example items,
+                     # and the agent skill under skills/cantera
+pnpm registry:verify # install closure, npm-dep coverage, drift vs a fresh build
 pnpm --filter www build
 pnpm e2e             # Playwright: OAuth flow, axe (WCAG A/AA, both themes), theme + pending contracts
 ```
 
-CI fails if `apps/www/public/r/`, `apps/www/public/llms.txt`, or `apps/www/public/llms-full.txt` drifts from the registry sources — the build output is committed. The generator (`apps/www/scripts/build-llms.mts`) reads `registry.json` and `components/site/props-tables.ts`, and every URL in it comes from `apps/www/lib/site.ts`, the one place the public origin is decided.
+CI fails if the committed build output drifts from the registry sources. `registry:build` generates, in order: the `registry:example` items and their page wrappers from the demo sources in `apps/www/registry/examples/` (`build-examples.mts`, which rewrites the example entries in `registry.json`), `apps/www/public/r/` (`shadcn build`), the llms.txt artifacts (`build-llms.mts`), and the agent skill at `skills/cantera/` (`build-skill.mts`). All of it is committed, all of it is derived from `registry.json` and `components/site/props-tables.ts`, and every URL comes from `apps/www/lib/site.ts`, the one place the public origin is decided. Generators stay deterministic — no timestamps, no unordered iteration — because `pnpm registry:verify` rebuilds everything into a scratch directory and compares byte for byte.
 
 ## The registry is the source of truth
 
-- All distributed code lives in `apps/www/registry/` (`ui/`, `lib/`, `blocks/`). The site imports it through tsconfig path fallbacks: `@/components/ui/*` resolves to `registry/ui/*` before `components/ui/*`, `@/components/*` walks the block component folders (`acc-sign-in`, then `connections-page`) before `components/`, and `@/lib/*` walks `registry/lib/*`, then the acc-sign-in block lib, then `lib/`. A new block with its own `components/` folder adds a path entry. Docs and demos therefore render exactly what consumers install. Never duplicate a registry file into `components/` or `lib/`.
-- Write imports in registry files as their INSTALLED specifiers (`@/components/ui/button`, `@/lib/oauth-types`), never as `@/registry/...`.
+- All distributed code lives in `apps/www/registry/` (`ui/`, `lib/`, `blocks/`). The site imports it through tsconfig path fallbacks: `@/components/ui/*` resolves to `registry/ui/*` before `components/ui/*`, `@/components/examples/*` resolves to `registry/examples/*` (the v0 demo sources), `@/components/*` walks the block component folders (`acc-sign-in`, then `connections-page`) before `components/`, and `@/lib/*` walks `registry/lib/*`, then the acc-sign-in block lib, then `lib/`. A new block with its own `components/` folder adds a path entry. Docs and demos therefore render exactly what consumers install. Never duplicate a registry file into `components/` or `lib/`.
+- Write imports in registry files as their INSTALLED specifiers (`@/components/ui/button`, `@/lib/oauth-types`), never as `@/registry/...`. The file `type` decides where the CLI writes it — `registry:ui` lands in `components/ui/`, `registry:component` in `components/`, `registry:lib` in `lib/` — so a file that siblings import as `@/components/ui/x` has to be a `registry:ui` file. `pnpm typecheck` cannot see this (the tsconfig fallbacks resolve it here); `pnpm registry:verify` checks it against installed paths.
 - Registry items reference siblings with namespaced deps (`@cantera/oauth-types`) and shadcn primitives by plain name (`button`) in `registry.json`.
 - Distributed components are data-agnostic and style-agnostic: plain typed props in, callbacks out, no fetching, built only on the consumer's shadcn primitives. New domains follow the locked pattern: generic types + provider adapters + wired blocks.
 

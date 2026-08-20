@@ -1,5 +1,6 @@
 import { ArrowUpRightIcon } from 'lucide-react'
 
+import { getExampleItem } from '@/components/site/registry'
 import { Button } from '@/components/ui/button'
 import { v0Url } from '@/lib/site'
 import { cn } from '@/lib/utils'
@@ -15,15 +16,20 @@ interface OpenInV0Props {
 /**
  * Hands a registry item to v0, which imports it into a new chat.
  *
+ * Prefers the item's generated example: a bare component lands in v0 with no
+ * page and no data, while the example item carries a self-contained demo plus a
+ * `registry:page` wrapper, so v0 opens something that renders.
+ *
  * Server-rendered on purpose: the href is built from the site origin, and the
  * Vercel production-domain env var only exists on the server (see lib/site).
  * Built on the Button primitive so it inherits the house press idiom, hover,
  * and the `focus-visible:border-ring` + full-alpha ring focus pattern.
  */
 function OpenInV0({ name, title, className }: OpenInV0Props) {
+  const target = getExampleItem(name)?.name ?? name
   return (
     <Button
-      render={<a href={v0Url(name)} target="_blank" rel="noreferrer" />}
+      render={<a href={v0Url(target)} target="_blank" rel="noreferrer" />}
       nativeButton={false}
       role="link"
       variant="outline"
