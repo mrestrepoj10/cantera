@@ -5,8 +5,11 @@ import { ThemeProvider as NextThemesProvider } from 'next-themes'
 /**
  * Class-strategy theming, matching the `@custom-variant dark (&:is(.dark *))`
  * in globals.css. next-themes writes the class from a blocking inline script
- * in <head>, so the first paint is already in the right appearance — no flash.
- * The default is `system`, and the toggle only ever moves off it deliberately.
+ * at the top of <body>; the root layout runs the same logic from <head> first,
+ * so the class is set before anything paintable exists — no flash. Keep the
+ * two in sync: this config's strategy, storage key, and default are what the
+ * layout's appearanceScript mirrors. The default is `system`, and the toggle
+ * only ever moves off it deliberately.
  */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
