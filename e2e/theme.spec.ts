@@ -47,21 +47,21 @@ test.describe('no flash of the wrong theme', () => {
   test.use({ colorScheme: 'dark' })
 
   test('the appearance class is set before the first paint on a hard load', async ({ page }) => {
-    // A parser-blocking inline script ahead of the first rendered element is
-    // what makes this possible; without it the document paints light and
-    // corrects itself after hydration. next-themes emits it at the top of
-    // <body>, so assert both that it is there and that nothing renders before it.
+    // A parser-blocking inline script in <head> is what makes this possible:
+    // it runs before <body> exists, so no paintable frame ever lacks the
+    // class. next-themes' own copy at the top of <body> is not early enough —
+    // a slow-streaming document can paint the body's background before
+    // reaching it — which is why the layout ships the head script this
+    // asserts. It must appear before <body>, not merely before the content.
     const response = await page.request.get('/components')
     const markup = await response.text()
-    const scriptAt = markup.search(
-      /<script>[^<]*document\.documentElement[^<]*prefers-color-scheme[^<]*<\/script>/,
-    )
+    const scriptAt = markup.search(/<script>[^<]*prefers-color-scheme[^<]*<\/script>/)
     expect(
       scriptAt,
       'the blocking appearance script is missing from the server markup',
     ).toBeGreaterThan(-1)
-    expect(scriptAt, 'the blocking appearance script renders after page content').toBeLessThan(
-      markup.indexOf('<header'),
+    expect(scriptAt, 'the blocking appearance script renders after <body> opens').toBeLessThan(
+      markup.indexOf('<body'),
     )
 
     // Record the class list inside the first animation frame in which <body>
