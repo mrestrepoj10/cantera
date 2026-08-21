@@ -4,15 +4,17 @@ import Link from 'next/link'
 
 import { APS_PROVIDER_ID, getTokenSource, openSession, SESSION_COOKIE } from '@/lib/acc-auth'
 import { type AccWorkflowData, loadAccWorkflow } from '@/lib/acc-workflow'
+import { type HubBrowserWorkflowData, loadHubBrowserWorkflow } from '@/lib/aps-browser-workflow'
 import { DEMO_LANDING_HUB_ID } from '@/lib/aps-demo-seed'
 import { AccSignIn } from '@/registry/blocks/acc-sign-in/page'
 
 import { AccWorkflowPanel } from './acc-workflow-panel'
+import { HubBrowserPanel } from './hub-browser-panel'
 
 export const metadata: Metadata = {
   title: 'Live demo',
   description:
-    'Sign in, switch hubs, pick a project, choose an issuance, read model translation status — the whole ACC workflow against an embedded APS emulator, no Autodesk account needed.',
+    'Sign in, browse Data Management, choose an issuance, and read model translation status — the whole ACC workflow against an embedded APS emulator, no Autodesk account needed.',
 }
 
 // The OAuth flow reads request cookies and headers on every visit, and the
@@ -41,11 +43,21 @@ const noGrant: AccWorkflowData = {
   hubsError: 'The Autodesk grant could not be refreshed — reconnect to load your projects.',
 }
 
+const noBrowserGrant: HubBrowserWorkflowData = {
+  path: [],
+  entries: [],
+  status: 'error',
+  error: 'The Autodesk grant could not be refreshed — reconnect to browse files.',
+  hasMore: false,
+  page: 0,
+}
+
 export default async function DemoPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const [params, cookieStore] = await Promise.all([searchParams, cookies()])
   const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)
 
   let workflow: AccWorkflowData | null = null
+  let browser: HubBrowserWorkflowData | null = null
   if (session) {
     const origin = await requestOrigin()
     try {
@@ -54,16 +66,28 @@ export default async function DemoPage({ searchParams }: { searchParams: Promise
         subject: { type: 'user', id: session.userId },
         scopes: session.scopes,
       })
-      workflow = await loadAccWorkflow(origin, token, {
-        hubId: one(params, 'hub'),
-        projectId: one(params, 'project'),
-        versionSetId: one(params, 'versionSet'),
-        fallbackHubId: DEMO_LANDING_HUB_ID,
-      })
+      const folders = one(params, 'browserFolders')?.split('|').filter(Boolean)
+      const requestedPage = Number(one(params, 'browserPage') ?? 0)
+      ;[workflow, browser] = await Promise.all([
+        loadAccWorkflow(origin, token, {
+          hubId: one(params, 'hub'),
+          projectId: one(params, 'project'),
+          versionSetId: one(params, 'versionSet'),
+          fallbackHubId: DEMO_LANDING_HUB_ID,
+        }),
+        loadHubBrowserWorkflow(origin, token, {
+          hubId: one(params, 'browserHub'),
+          projectId: one(params, 'browserProject'),
+          folderIds: folders,
+          page: Number.isFinite(requestedPage) ? requestedPage : 0,
+          versionsItemId: one(params, 'browserVersions'),
+        }),
+      ])
     } catch {
       // A lost or unrefreshable grant is the connection panel's story to tell;
       // the workflow says so plainly instead of throwing.
       workflow = noGrant
+      browser = noBrowserGrant
     }
   }
 
@@ -74,7 +98,7 @@ export default async function DemoPage({ searchParams }: { searchParams: Promise
         <p className="mt-3 text-muted-foreground text-sm">
           The whole ACC entry sequence, running for real: sign in with Autodesk, switch hubs, pick a
           project, choose a sheet issuance, read what has finished translating. The blocks are
-          exactly what <code className="font-mono">npx shadcn add @cantera/acc-sign-in</code>{' '}
+          exactly what <code className="font-mono">npx shadcn@latest add @cantera/acc-sign-in</code>{' '}
           installs, wired to aec-auth&apos;s vault and pointed at a stateful APS emulator embedded
           in this site. No Autodesk account, no credentials.
         </p>
@@ -95,6 +119,20 @@ export default async function DemoPage({ searchParams }: { searchParams: Promise
           {workflow && <AccWorkflowPanel data={workflow} />}
         </section>
       </div>
+
+      {browser && (
+        <section className="flex min-w-0 flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <h2 className="font-heading font-medium text-2xl tracking-tight">Hub browser</h2>
+            <p className="max-w-3xl text-muted-foreground text-sm">
+              Every level below comes from the emulator’s Data Management endpoints with the grant
+              you just made. Folder contents include tip versions, version history loads only when
+              asked for, and every payload crosses the server boundary through the APS adapters.
+            </p>
+          </div>
+          <HubBrowserPanel data={browser} />
+        </section>
+      )}
 
       <footer className="mx-auto flex max-w-2xl flex-col gap-3 text-center">
         <p className="text-muted-foreground text-xs">

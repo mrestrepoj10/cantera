@@ -28,6 +28,57 @@ export interface Project {
   hubId?: string
 }
 
+/** A level in the controlled hub → project → folder breadcrumb. */
+export interface BrowsePathSegment {
+  id: string
+  name: string
+  type: 'hub' | 'project' | 'folder'
+}
+
+/** A navigable folder-like row. Hub and Project are structurally compatible. */
+export interface Folder {
+  id: string
+  name: string
+  /** APS folder adapters set this; hubs and projects can omit it. */
+  type?: 'folder'
+  lastModifiedTime?: Date | string | number
+  modifiedBy?: string
+  objectCount?: number
+}
+
+/** One immutable version of a document item. */
+export interface ItemVersion {
+  id: string
+  versionNumber: number
+  displayName: string
+  createTime: Date | string | number
+  createdBy: string
+  storageSize: number
+  /** URL-safe Model Derivative URN, or null when this version is not translated. */
+  derivativeUrn: string | null
+}
+
+/** A file-like row inside a folder. */
+export interface Item {
+  id: string
+  name: string
+  type: 'item'
+  lastModifiedTime?: Date | string | number
+  modifiedBy?: string
+  /** Tip version when the provider included it with the item response. */
+  tip?: ItemVersion
+  /** Optional provider-normalized translation state for the tip. */
+  translationStatus?: ModelTranslationStatus
+}
+
+/** The rows a hub browser renders at its current controlled level. */
+export type FolderEntry = Folder | Item
+
+/** Narrow a folder entry to its file-like shape. */
+export function isItem(entry: FolderEntry): entry is Item {
+  return entry.type === 'item'
+}
+
 /**
  * Translation states a design goes through before it can be viewed. Mirrors
  * the Model Derivative manifest vocabulary; adapters normalize into it.

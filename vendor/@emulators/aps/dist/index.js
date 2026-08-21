@@ -7,6 +7,15 @@ var DEFAULT_USER_EMAIL = "testuser@autodesk.local";
 var DEFAULT_HUB_ID = "b.emulate-hub";
 var DEFAULT_PROJECT_ID = "b.emulate-project";
 var DEFAULT_MANIFEST_URN = "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6ZW11bGF0ZS1idWNrZXQvc2FtcGxlLnJ2dA";
+var DEFAULT_SECOND_MANIFEST_URN = "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6ZW11bGF0ZS1idWNrZXQvc3RydWN0dXJhbC5ydnQ";
+var DEFAULT_WEBHOOK_FOLDER_ID = "urn:adsk.wipprod:fs.folder:co.emulate-documents";
+var DEFAULT_WEBHOOK_CHILD_FOLDER_ID = "urn:adsk.wipprod:fs.folder:co.emulate-plans";
+var DEFAULT_COORDINATION_FOLDER_ID = "urn:adsk.wipprod:fs.folder:co.emulate-coordination";
+var DEFAULT_SHARED_FOLDER_ID = "urn:adsk.wipprod:fs.folder:co.emulate-shared";
+var DEFAULT_WEBHOOK_ITEM_ID = "urn:adsk.wipprod:dm.lineage:emulate-sample-model";
+var DEFAULT_WEBHOOK_VERSION_ID = "urn:adsk.wipprod:fs.file:vf.emulate-sample-model?version=1";
+var DEFAULT_SECOND_DOCUMENT_ITEM_ID = "urn:adsk.wipprod:dm.lineage:emulate-structural-model";
+var DEFAULT_SECOND_DOCUMENT_VERSION_ID = "urn:adsk.wipprod:fs.file:vf.emulate-structural-model?version=1";
 var SUPPORTED_SCOPES = [
   "user-profile:read",
   "user:read",
@@ -49,6 +58,20 @@ function generateUserId() {
 }
 function analyticsIdFor(userId2) {
   return createHash("sha256").update(userId2).digest("hex").slice(0, 32);
+}
+function isRecordObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+async function jsonObjectBody(c) {
+  try {
+    const body = await c.req.json();
+    return isRecordObject(body) ? body : null;
+  } catch {
+    return null;
+  }
+}
+function optionalString(value) {
+  return typeof value === "string" && value.trim() ? value : void 0;
 }
 function parseScope(scope) {
   return scope.split(/\s+/).map((part) => part.trim()).filter(Boolean);
@@ -108,7 +131,21 @@ function createDefaultUser() {
 }
 
 // src/config.ts
+var DEFAULT_MODEL_COORDINATION_TIMING = {
+  processing_ms: 25,
+  signed_url_ttl_ms: 6e4
+};
+var DEFAULT_WEBHOOK_TIMING = {
+  max_retries: 8,
+  retry_base_ms: 25,
+  retry_max_ms: 1e3,
+  failed_events_before_inactive: 5,
+  reactivate_after_ms: 1e3,
+  max_reactivation_cycles: 5,
+  delivery_timeout_ms: 6e3
+};
 var DEFAULT_DERIVATIVE_BASE = `urn:adsk.viewing:fs.file:${DEFAULT_MANIFEST_URN}/output`;
+var DEFAULT_SECOND_DERIVATIVE_BASE = `urn:adsk.viewing:fs.file:${DEFAULT_SECOND_MANIFEST_URN}/output`;
 var DEFAULT_ACC_TIMESTAMP = "2026-08-19T12:00:00.000Z";
 var DEFAULT_ISSUE_TYPE_ID = "11111111-1111-4111-8111-111111111111";
 var DEFAULT_ISSUE_SUBTYPE_ID = "22222222-2222-4222-8222-222222222222";
@@ -328,6 +365,165 @@ var DEFAULT_DATA_SEED = {
       updated_at: DEFAULT_ACC_TIMESTAMP
     }
   ],
+  document_folders: [
+    {
+      id: DEFAULT_WEBHOOK_FOLDER_ID,
+      project_id: DEFAULT_PROJECT_ID,
+      name: "Project Files",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    },
+    {
+      id: DEFAULT_WEBHOOK_CHILD_FOLDER_ID,
+      project_id: DEFAULT_PROJECT_ID,
+      parent_folder_id: DEFAULT_WEBHOOK_FOLDER_ID,
+      name: "Plans",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    },
+    {
+      id: DEFAULT_COORDINATION_FOLDER_ID,
+      project_id: DEFAULT_PROJECT_ID,
+      parent_folder_id: DEFAULT_WEBHOOK_CHILD_FOLDER_ID,
+      name: "Coordination",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    },
+    {
+      id: DEFAULT_SHARED_FOLDER_ID,
+      project_id: DEFAULT_PROJECT_ID,
+      parent_folder_id: DEFAULT_WEBHOOK_FOLDER_ID,
+      name: "Shared",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    },
+    {
+      id: "urn:adsk.wipprod:fs.folder:co.emulate-infrastructure-root",
+      project_id: "b.emulate-infrastructure",
+      name: "Project Files",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    },
+    {
+      id: "urn:adsk.wipprod:fs.folder:co.emulate-infrastructure-design",
+      project_id: "b.emulate-infrastructure",
+      parent_folder_id: "urn:adsk.wipprod:fs.folder:co.emulate-infrastructure-root",
+      name: "Design",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    },
+    {
+      id: "urn:adsk.wipprod:fs.folder:co.emulate-infrastructure-shared",
+      project_id: "b.emulate-infrastructure",
+      parent_folder_id: "urn:adsk.wipprod:fs.folder:co.emulate-infrastructure-root",
+      name: "Shared",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    }
+  ],
+  document_items: [
+    {
+      id: DEFAULT_WEBHOOK_ITEM_ID,
+      project_id: DEFAULT_PROJECT_ID,
+      folder_id: DEFAULT_COORDINATION_FOLDER_ID,
+      display_name: "sample.rvt",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    },
+    {
+      id: DEFAULT_SECOND_DOCUMENT_ITEM_ID,
+      project_id: DEFAULT_PROJECT_ID,
+      folder_id: DEFAULT_COORDINATION_FOLDER_ID,
+      display_name: "structural.rvt",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    },
+    {
+      id: "urn:adsk.wipprod:dm.lineage:emulate-coordination-report",
+      project_id: DEFAULT_PROJECT_ID,
+      folder_id: DEFAULT_WEBHOOK_CHILD_FOLDER_ID,
+      display_name: "coordination-report.pdf",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    },
+    {
+      id: "urn:adsk.wipprod:dm.lineage:emulate-road-model",
+      project_id: "b.emulate-infrastructure",
+      folder_id: "urn:adsk.wipprod:fs.folder:co.emulate-infrastructure-design",
+      display_name: "road-design.dwg",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    },
+    {
+      id: "urn:adsk.wipprod:dm.lineage:emulate-infrastructure-report",
+      project_id: "b.emulate-infrastructure",
+      folder_id: "urn:adsk.wipprod:fs.folder:co.emulate-infrastructure-shared",
+      display_name: "site-report.pdf",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    }
+  ],
+  document_versions: [
+    {
+      version_id: DEFAULT_WEBHOOK_VERSION_ID,
+      item_id: DEFAULT_WEBHOOK_ITEM_ID,
+      project_id: DEFAULT_PROJECT_ID,
+      version_number: 1,
+      display_name: "sample.rvt",
+      file_type: "rvt",
+      mime_type: "application/vnd.autodesk.revit",
+      storage_size: 4096,
+      storage_urn: "urn:adsk.objects:os.object:emulate-bucket/sample.rvt",
+      region: "US",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    },
+    {
+      version_id: DEFAULT_SECOND_DOCUMENT_VERSION_ID,
+      item_id: DEFAULT_SECOND_DOCUMENT_ITEM_ID,
+      project_id: DEFAULT_PROJECT_ID,
+      version_number: 1,
+      display_name: "structural.rvt",
+      file_type: "rvt",
+      mime_type: "application/vnd.autodesk.revit",
+      storage_size: 6144,
+      storage_urn: "urn:adsk.objects:os.object:emulate-bucket/structural.rvt",
+      region: "US",
+      bubble_urn: DEFAULT_SECOND_MANIFEST_URN,
+      viewable_id: "emulate-structural-3d-view",
+      viewable_guid: "14141414-1414-4141-8141-141414141414",
+      create_time: DEFAULT_ACC_TIMESTAMP
+    },
+    ...[1, 2, 3].map((version) => ({
+      version_id: `urn:adsk.wipprod:fs.file:vf.emulate-coordination-report?version=${version}`,
+      item_id: "urn:adsk.wipprod:dm.lineage:emulate-coordination-report",
+      project_id: DEFAULT_PROJECT_ID,
+      version_number: version,
+      display_name: "coordination-report.pdf",
+      file_type: "pdf",
+      mime_type: "application/pdf",
+      storage_size: 1024 * version,
+      storage_urn: `urn:adsk.objects:os.object:emulate-bucket/coordination-report-v${version}.pdf`,
+      region: "US",
+      bubble_urn: null,
+      create_time: `2026-08-${String(16 + version).padStart(2, "0")}T12:00:00.000Z`
+    })),
+    ...[1, 2].map((version) => ({
+      version_id: `urn:adsk.wipprod:fs.file:vf.emulate-road-model?version=${version}`,
+      item_id: "urn:adsk.wipprod:dm.lineage:emulate-road-model",
+      project_id: "b.emulate-infrastructure",
+      version_number: version,
+      display_name: "road-design.dwg",
+      file_type: "dwg",
+      mime_type: "application/acad",
+      storage_size: 2048 * version,
+      storage_urn: `urn:adsk.objects:os.object:emulate-bucket/road-design-v${version}.dwg`,
+      region: "US",
+      bubble_urn: null,
+      create_time: `2026-08-${String(17 + version).padStart(2, "0")}T12:00:00.000Z`
+    })),
+    {
+      version_id: "urn:adsk.wipprod:fs.file:vf.emulate-infrastructure-report?version=1",
+      item_id: "urn:adsk.wipprod:dm.lineage:emulate-infrastructure-report",
+      project_id: "b.emulate-infrastructure",
+      version_number: 1,
+      display_name: "site-report.pdf",
+      file_type: "pdf",
+      mime_type: "application/pdf",
+      storage_size: 1536,
+      storage_urn: "urn:adsk.objects:os.object:emulate-bucket/site-report.pdf",
+      region: "US",
+      bubble_urn: null,
+      create_time: DEFAULT_ACC_TIMESTAMP
+    }
+  ],
   manifests: {
     [DEFAULT_MANIFEST_URN]: {
       type: "manifest",
@@ -391,12 +587,307 @@ var DEFAULT_DATA_SEED = {
           ]
         }
       ]
+    },
+    [DEFAULT_SECOND_MANIFEST_URN]: {
+      type: "manifest",
+      hasThumbnail: "true",
+      status: "success",
+      progress: "complete",
+      region: "US",
+      version: "1.0",
+      derivatives: [
+        {
+          name: "structural.rvt",
+          hasThumbnail: "true",
+          status: "success",
+          progress: "complete",
+          outputType: "svf2",
+          children: [
+            {
+              guid: "15151515-1515-4151-8151-151515151515",
+              type: "resource",
+              role: "Autodesk.CloudPlatform.PropertyDatabase",
+              urn: `${DEFAULT_SECOND_DERIVATIVE_BASE}/Resource/model.sdb`,
+              mime: "application/autodesk-db",
+              status: "success"
+            },
+            {
+              guid: "14141414-1414-4141-8141-141414141414",
+              type: "geometry",
+              role: "3d",
+              name: "{3D}",
+              viewableID: "emulate-structural-3d-view",
+              status: "success",
+              hasThumbnail: "true",
+              progress: "complete",
+              children: [
+                {
+                  guid: "emulate-structural-3d-view",
+                  type: "view",
+                  role: "3d",
+                  name: "{3D}",
+                  status: "success",
+                  progress: "complete"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
-  }
+  },
+  model_sets: [
+    {
+      id: "13131313-1313-4131-8131-131313131313",
+      project_id: DEFAULT_PROJECT_ID,
+      name: "Sample Building Coordination",
+      description: "Architectural and structural coordination model set",
+      root_folder_urn: DEFAULT_WEBHOOK_FOLDER_ID,
+      folder_urns: [DEFAULT_COORDINATION_FOLDER_ID],
+      document_version_ids: [DEFAULT_WEBHOOK_VERSION_ID, DEFAULT_SECOND_DOCUMENT_VERSION_ID],
+      created_by: "testuser@autodesk.local",
+      created_time: DEFAULT_ACC_TIMESTAMP,
+      test_id: "16161616-1616-4161-8161-161616161616"
+    }
+  ]
 };
 
-// src/routes/data-management.ts
-import { randomUUID } from "crypto";
+// src/dm-tree.ts
+var DEFAULT_TIMESTAMP = "2026-08-19T12:00:00.000Z";
+function actorName(aps, actor, configuredName) {
+  if (configuredName) return configuredName;
+  return aps.users.findOneBy("email", actor)?.name ?? aps.users.findOneBy("user_id", actor)?.name ?? "Test User";
+}
+function projectFolderId(projectId) {
+  return `urn:adsk.wipprod:fs.folder:co.${Buffer.from(projectId).toString("base64url")}`;
+}
+function fileType(displayName) {
+  const separator = displayName.lastIndexOf(".");
+  return separator < 0 ? "" : displayName.slice(separator + 1).toLowerCase();
+}
+function mimeType(extension) {
+  switch (extension) {
+    case "dwg":
+      return "application/acad";
+    case "pdf":
+      return "application/pdf";
+    case "rvt":
+      return "application/vnd.autodesk.revit";
+    default:
+      return "application/octet-stream";
+  }
+}
+function versionNumber(versionId, configured) {
+  if (configured !== void 0) return configured;
+  const match = /[?&]version=(\d+)(?:&|$)/.exec(versionId);
+  return match ? Number(match[1]) : 1;
+}
+function insertFolder(aps, seed) {
+  const actor = seed.created_by ?? DEFAULT_USER_EMAIL;
+  const actorDisplayName = actorName(aps, actor, seed.created_by_name);
+  const created = seed.create_time ?? DEFAULT_TIMESTAMP;
+  const modifier = seed.last_modified_by ?? actor;
+  return aps.documentFolders.insert({
+    folder_id: seed.id,
+    project_id: seed.project_id,
+    parent_folder_id: seed.parent_folder_id ?? null,
+    name: seed.name,
+    hidden: seed.hidden ?? false,
+    created_by: actor,
+    created_by_name: actorDisplayName,
+    create_time: created,
+    last_modified_by: modifier,
+    last_modified_by_name: actorName(aps, modifier, seed.last_modified_by_name),
+    last_modified_time: seed.last_modified_time ?? created
+  });
+}
+function validateFolders(aps) {
+  for (const folder of aps.documentFolders.all()) {
+    if (!aps.projects.findOneBy("project_id", folder.project_id)) {
+      throw new Error(`APS document folder '${folder.folder_id}' references unknown project '${folder.project_id}'.`);
+    }
+    if (folder.parent_folder_id) {
+      const parent = aps.documentFolders.findOneBy("folder_id", folder.parent_folder_id);
+      if (!parent) {
+        throw new Error(`APS document folder '${folder.folder_id}' references unknown parent '${folder.parent_folder_id}'.`);
+      }
+      if (parent.project_id !== folder.project_id) {
+        throw new Error(`APS document folder '${folder.folder_id}' references a parent from another project.`);
+      }
+    }
+    folderAncestors(aps, folder.project_id, folder.folder_id);
+  }
+}
+function materializeLegacyFolders(aps, projectId, folderId, ancestorFolderIds) {
+  const configuredFolder = aps.documentFolders.findOneBy("folder_id", folderId);
+  if (ancestorFolderIds.length === 0 && configuredFolder?.project_id === projectId) return;
+  const lineage = [...ancestorFolderIds, folderId];
+  let parentFolderId;
+  lineage.forEach((id, index) => {
+    const existing = aps.documentFolders.findOneBy("folder_id", id);
+    if (existing) {
+      if (existing.project_id !== projectId) throw new Error(`APS document folder '${id}' belongs to another project.`);
+      if ((existing.parent_folder_id ?? void 0) !== parentFolderId) {
+        throw new Error(`APS legacy document lineage for folder '${id}' conflicts with the configured tree.`);
+      }
+    } else {
+      insertFolder(aps, {
+        id,
+        project_id: projectId,
+        parent_folder_id: parentFolderId,
+        name: index === lineage.length - 1 ? "Plans" : `Ancestor ${index + 1}`
+      });
+    }
+    parentFolderId = id;
+  });
+}
+function rootFolderForProject(aps, projectId) {
+  return aps.documentFolders.findBy("project_id", projectId).find((folder) => folder.parent_folder_id === null);
+}
+function folderAncestors(aps, projectId, folderId) {
+  const folder = aps.documentFolders.findOneBy("folder_id", folderId);
+  if (!folder || folder.project_id !== projectId) return [];
+  const ancestors = [];
+  const visited = /* @__PURE__ */ new Set([folder.folder_id]);
+  let parentId = folder.parent_folder_id;
+  while (parentId) {
+    if (visited.has(parentId)) throw new Error(`APS document folder tree contains a cycle at '${parentId}'.`);
+    visited.add(parentId);
+    const parent = aps.documentFolders.findOneBy("folder_id", parentId);
+    if (!parent || parent.project_id !== projectId) return [];
+    ancestors.unshift(parent);
+    parentId = parent.parent_folder_id;
+  }
+  return ancestors;
+}
+function documentItemForVersion(aps, version) {
+  const item = aps.documentItems.findOneBy("item_id", version.item_id);
+  return item?.project_id === version.project_id ? item : void 0;
+}
+function itemTip(aps, itemId) {
+  return aps.documentVersions.findBy("item_id", itemId).sort((left, right) => right.version_number - left.version_number)[0];
+}
+function seedDocumentTreeFromConfig(aps, config) {
+  for (const seed of config.document_folders ?? []) {
+    if (aps.documentFolders.findOneBy("folder_id", seed.id)) continue;
+    insertFolder(aps, seed);
+  }
+  for (const project of aps.projects.all()) {
+    if (aps.documentFolders.findBy("project_id", project.project_id).length > 0) continue;
+    insertFolder(aps, { id: projectFolderId(project.project_id), project_id: project.project_id, name: "Project Files" });
+  }
+  validateFolders(aps);
+  for (const seed of config.document_items ?? []) {
+    if (aps.documentItems.findOneBy("item_id", seed.id)) continue;
+    const folder = aps.documentFolders.findOneBy("folder_id", seed.folder_id);
+    if (!folder || folder.project_id !== seed.project_id) {
+      throw new Error(`APS document item '${seed.id}' references unknown folder '${seed.folder_id}'.`);
+    }
+    const actor = seed.created_by ?? DEFAULT_USER_EMAIL;
+    const created = seed.create_time ?? DEFAULT_TIMESTAMP;
+    const modifier = seed.last_modified_by ?? actor;
+    aps.documentItems.insert({
+      item_id: seed.id,
+      project_id: seed.project_id,
+      folder_id: seed.folder_id,
+      display_name: seed.display_name,
+      hidden: seed.hidden ?? false,
+      reserved: seed.reserved ?? false,
+      reserved_time: seed.reserved_time ?? null,
+      reserved_by: seed.reserved_by ?? null,
+      reserved_by_name: seed.reserved_by_name ?? null,
+      created_by: actor,
+      created_by_name: actorName(aps, actor, seed.created_by_name),
+      create_time: created,
+      last_modified_by: modifier,
+      last_modified_by_name: actorName(aps, modifier, seed.last_modified_by_name),
+      last_modified_time: seed.last_modified_time ?? created,
+      extension_type: seed.extension_type ?? "items:autodesk.bim360:File"
+    });
+  }
+  const versions = [...config.document_versions ?? [], ...config.webhook_dm_versions ?? []];
+  for (const seed of versions) {
+    if (aps.documentItems.findOneBy("item_id", seed.item_id)) continue;
+    if (!seed.folder_id) {
+      throw new Error(`APS document version '${seed.version_id}' references unknown item '${seed.item_id}'.`);
+    }
+    materializeLegacyFolders(aps, seed.project_id, seed.folder_id, seed.ancestor_folder_ids ?? []);
+    const displayName = seed.display_name ?? "model.rvt";
+    const actor = seed.created_by ?? DEFAULT_USER_EMAIL;
+    const created = seed.create_time ?? DEFAULT_TIMESTAMP;
+    const modifier = seed.last_modified_by ?? actor;
+    aps.documentItems.insert({
+      item_id: seed.item_id,
+      project_id: seed.project_id,
+      folder_id: seed.folder_id,
+      display_name: displayName,
+      hidden: false,
+      reserved: false,
+      reserved_time: null,
+      reserved_by: null,
+      reserved_by_name: null,
+      created_by: actor,
+      created_by_name: actorName(aps, actor, seed.created_by_name),
+      create_time: created,
+      last_modified_by: modifier,
+      last_modified_by_name: actorName(aps, modifier, seed.last_modified_by_name),
+      last_modified_time: seed.last_modified_time ?? created,
+      extension_type: "items:autodesk.bim360:File"
+    });
+  }
+  validateFolders(aps);
+  for (const seed of versions) {
+    if (aps.documentVersions.findOneBy("version_id", seed.version_id)) continue;
+    const item = aps.documentItems.findOneBy("item_id", seed.item_id);
+    if (!item || item.project_id !== seed.project_id) {
+      throw new Error(`APS document version '${seed.version_id}' references unknown item '${seed.item_id}'.`);
+    }
+    if (seed.folder_id && item.folder_id !== seed.folder_id) {
+      throw new Error(`APS document version '${seed.version_id}' conflicts with its item's folder.`);
+    }
+    const displayName = seed.display_name ?? item.display_name;
+    const extension = seed.file_type ?? fileType(displayName);
+    const number = versionNumber(seed.version_id, seed.version_number);
+    if (!Number.isInteger(number) || number < 1) {
+      throw new Error(`APS document version '${seed.version_id}' must have a positive integer version number.`);
+    }
+    if (aps.documentVersions.findBy("item_id", item.item_id).some((version) => version.version_number === number)) {
+      throw new Error(`APS document item '${item.item_id}' has more than one version numbered ${number}.`);
+    }
+    const bubbleUrn = seed.bubble_urn === void 0 ? DEFAULT_MANIFEST_URN : seed.bubble_urn;
+    if (bubbleUrn && !aps.manifests.findOneBy("urn", bubbleUrn)) {
+      throw new Error(`APS document version '${seed.version_id}' references unknown manifest '${bubbleUrn}'.`);
+    }
+    const actor = seed.created_by ?? DEFAULT_USER_EMAIL;
+    const created = seed.create_time ?? item.create_time;
+    const modifier = seed.last_modified_by ?? actor;
+    aps.documentVersions.insert({
+      version_id: seed.version_id,
+      item_id: seed.item_id,
+      project_id: seed.project_id,
+      version_number: number,
+      display_name: displayName,
+      file_type: extension,
+      mime_type: seed.mime_type ?? mimeType(extension),
+      storage_size: seed.storage_size ?? 0,
+      storage_urn: seed.storage_urn ?? `urn:adsk.objects:os.object:emulate-bucket/${encodeURIComponent(seed.version_id)}`,
+      region: (seed.region ?? "US").toUpperCase(),
+      bubble_urn: bubbleUrn,
+      viewable_id: seed.viewable_id ?? "emulate-3d-view",
+      viewable_guid: seed.viewable_guid ?? "d8e734a8-6e9e-4f4d-9a4f-000000000001",
+      created_by: actor,
+      created_by_name: actorName(aps, actor, seed.created_by_name),
+      create_time: created,
+      last_modified_by: modifier,
+      last_modified_by_name: actorName(aps, modifier, seed.last_modified_by_name),
+      last_modified_time: seed.last_modified_time ?? created
+    });
+  }
+}
+
+// src/model-coordination.ts
+import { createHash as createHash2, randomUUID } from "crypto";
+import { gzipSync } from "zlib";
 
 // src/auth.ts
 import { generateKeyPair, jwtVerify } from "jose";
@@ -462,172 +953,22 @@ async function accessTokenForRequest(c, store) {
   const token = bearerToken(c);
   return token ? findActiveAccessToken(store, token) : null;
 }
-function storedAccessToken(c, store) {
-  const token = c.get("authToken");
-  return token ? getAccessTokens(store).get(token) ?? null : null;
+function tokenGrantsScopes(record, scopes) {
+  const granted = parseScope(record.scope);
+  return scopes.every((scope) => granted.includes(scope));
 }
 function apsAuth(store, options) {
   return async (c, next) => {
-    const token = bearerToken(c);
-    const record = token ? await findActiveAccessToken(store, token) : null;
-    if (!token || !record) return invalidToken(c);
-    const grantedScopes = record.scope.split(/\s+/).filter(Boolean);
-    if (options.scopes.some((scope) => !grantedScopes.includes(scope))) {
+    const record = await accessTokenForRequest(c, store);
+    if (!record) return invalidToken(c);
+    if (!tokenGrantsScopes(record, options.scopes)) {
       return insufficientPrivilege(c);
     }
     if (options.requireUser && !record.apsUserId) {
       return insufficientPrivilege(c);
     }
-    c.set("authToken", token);
-    c.set("authScopes", grantedScopes);
     await next();
   };
-}
-
-// src/store.ts
-function getApsStore(store) {
-  return {
-    clients: store.collection("aps.clients", ["client_id"]),
-    users: store.collection("aps.users", ["user_id", "email"]),
-    hubs: store.collection("aps.hubs", ["hub_id"]),
-    projects: store.collection("aps.projects", ["project_id", "hub_id"]),
-    manifests: store.collection("aps.manifests", ["urn"]),
-    accProjectUsers: store.collection("aps.accProjectUsers", ["project_id", "user_id"]),
-    issueTypes: store.collection("aps.issueTypes", ["project_id", "issue_type_id"]),
-    issues: store.collection("aps.issues", ["project_id", "issue_id"]),
-    rfiTypes: store.collection("aps.rfiTypes", ["project_id", "rfi_type_id"]),
-    rfiAttributes: store.collection("aps.rfiAttributes", ["project_id", "attribute_id"]),
-    rfis: store.collection("aps.rfis", ["project_id", "rfi_id"]),
-    sheetCollections: store.collection("aps.sheetCollections", ["project_id", "collection_id"]),
-    sheetVersionSets: store.collection("aps.sheetVersionSets", ["project_id", "version_set_id"]),
-    sheets: store.collection("aps.sheets", ["project_id", "sheet_id"])
-  };
-}
-
-// src/routes/data-management.ts
-function hubPath(hubId) {
-  return `/project/v1/hubs/${encodeURIComponent(hubId)}`;
-}
-function projectPath(hubId, projectId) {
-  return `${hubPath(hubId)}/projects/${encodeURIComponent(projectId)}`;
-}
-function hubData(baseUrl, hub) {
-  const path = hubPath(hub.hub_id);
-  return {
-    type: "hubs",
-    id: hub.hub_id,
-    attributes: {
-      name: hub.name,
-      extension: {
-        type: "hubs:autodesk.bim360:Account",
-        version: "1.0",
-        schema: {
-          href: "https://developer.api.autodesk.com/schema/v1/versions/hubs%3Aautodesk.bim360%3AAccount-1.0"
-        },
-        data: {}
-      },
-      region: hub.region
-    },
-    links: { self: { href: `${baseUrl}${path}` } },
-    relationships: {
-      projects: { links: { related: { href: `${baseUrl}${path}/projects` } } }
-    }
-  };
-}
-function projectData(baseUrl, project) {
-  const path = projectPath(project.hub_id, project.project_id);
-  const hub = hubPath(project.hub_id);
-  const rootFolderId = `urn:adsk.wipprod:fs.folder:co.${Buffer.from(project.project_id).toString("base64url")}`;
-  return {
-    type: "projects",
-    id: project.project_id,
-    attributes: {
-      name: project.name,
-      scopes: ["global"],
-      extension: {
-        type: "projects:autodesk.bim360:Project",
-        version: "1.0",
-        schema: {
-          href: "https://developer.api.autodesk.com/schema/v1/versions/projects%3Aautodesk.bim360%3AProject-1.0"
-        },
-        data: { projectType: "ACC" }
-      }
-    },
-    links: { self: { href: `${baseUrl}${path}` } },
-    relationships: {
-      hub: {
-        data: { type: "hubs", id: project.hub_id },
-        links: { related: { href: `${baseUrl}${hub}` } }
-      },
-      rootFolder: {
-        data: { type: "folders", id: rootFolderId },
-        meta: {
-          link: {
-            href: `${baseUrl}/data/v1/projects/${encodeURIComponent(project.project_id)}/folders/${encodeURIComponent(rootFolderId)}`
-          }
-        }
-      },
-      topFolders: { links: { related: { href: `${baseUrl}${path}/topFolders` } } }
-    }
-  };
-}
-function jsonApiDocument(c, baseUrl, path, data) {
-  c.header("Content-Type", "application/vnd.api+json");
-  return c.json({
-    jsonapi: { version: "1.0" },
-    links: { self: { href: `${baseUrl}${path}` } },
-    data
-  });
-}
-function notFound(c, detail) {
-  c.header("Content-Type", "application/vnd.api+json");
-  return c.json(
-    {
-      jsonapi: { version: "1.0" },
-      errors: [{ id: randomUUID(), status: "404", code: "NOT_FOUND", detail }]
-    },
-    404
-  );
-}
-function dataManagementRoutes({ app, store, baseUrl }) {
-  const aps = getApsStore(store);
-  app.use("/project/v1/*", apsAuth(store, { scopes: ["data:read"], requireUser: true }));
-  app.get("/project/v1/hubs", (c) => {
-    const path = "/project/v1/hubs";
-    return jsonApiDocument(
-      c,
-      baseUrl,
-      path,
-      aps.hubs.all().map((hub) => hubData(baseUrl, hub))
-    );
-  });
-  app.get("/project/v1/hubs/:hubId", (c) => {
-    const hub = aps.hubs.findOneBy("hub_id", c.req.param("hubId"));
-    if (!hub) return notFound(c, `The hub ${c.req.param("hubId")} was not found.`);
-    const path = hubPath(hub.hub_id);
-    return jsonApiDocument(c, baseUrl, path, hubData(baseUrl, hub));
-  });
-  app.get("/project/v1/hubs/:hubId/projects", (c) => {
-    const hubId = c.req.param("hubId");
-    if (!aps.hubs.findOneBy("hub_id", hubId)) return notFound(c, `The hub ${hubId} was not found.`);
-    const path = `${hubPath(hubId)}/projects`;
-    return jsonApiDocument(
-      c,
-      baseUrl,
-      path,
-      aps.projects.findBy("hub_id", hubId).map((project) => projectData(baseUrl, project))
-    );
-  });
-  app.get("/project/v1/hubs/:hubId/projects/:projectId", (c) => {
-    const hubId = c.req.param("hubId");
-    if (!aps.hubs.findOneBy("hub_id", hubId)) return notFound(c, `The hub ${hubId} was not found.`);
-    const project = aps.projects.findOneBy("project_id", c.req.param("projectId"));
-    if (!project || project.hub_id !== hubId) {
-      return notFound(c, `The project ${c.req.param("projectId")} was not found in hub ${hubId}.`);
-    }
-    const path = projectPath(hubId, project.project_id);
-    return jsonApiDocument(c, baseUrl, path, projectData(baseUrl, project));
-  });
 }
 
 // src/acc.ts
@@ -639,9 +980,6 @@ function projectForAccId(aps, requestedProjectId, rule) {
   const bareId = bareProjectId(requestedProjectId);
   const project = aps.projects.all().find((candidate) => bareProjectId(candidate.project_id) === bareId);
   return project ? { kind: "found", project } : { kind: "missing" };
-}
-function findProjectResource(collection, projectId, idField, id) {
-  return collection.findBy("project_id", projectId).find((item) => item[idField] === id);
 }
 function integerValue(value) {
   if (typeof value === "number") return Number.isInteger(value) ? value : null;
@@ -663,30 +1001,30 @@ function parseOffsetPagination(limitValue, offsetValue, options) {
 function queryPagination(c, options) {
   return parseOffsetPagination(c.req.query("limit"), c.req.query("offset"), options);
 }
-function pageItems(items, pagination) {
-  return items.slice(pagination.offset, pagination.offset + pagination.limit);
+function pageItems(items, pagination2) {
+  return items.slice(pagination2.offset, pagination2.offset + pagination2.limit);
 }
-function offsetEnvelope(items, pagination, totalResults) {
+function offsetEnvelope(items, pagination2, totalResults) {
   return {
-    pagination: { ...pagination, totalResults },
+    pagination: { ...pagination2, totalResults },
     results: items
   };
 }
-function pageUrl(requestUrl, pagination, offset) {
+function pageUrl(requestUrl, pagination2, offset) {
   const url = new URL(requestUrl);
-  url.searchParams.set("limit", String(pagination.limit));
+  url.searchParams.set("limit", String(pagination2.limit));
   url.searchParams.set("offset", String(offset));
   return url.toString();
 }
-function sheetsEnvelope(items, pagination, totalResults, requestUrl) {
-  const previousOffset = Math.max(0, pagination.offset - pagination.limit);
-  const nextOffset = pagination.offset + pagination.limit;
+function sheetsEnvelope(items, pagination2, totalResults, requestUrl) {
+  const previousOffset = Math.max(0, pagination2.offset - pagination2.limit);
+  const nextOffset = pagination2.offset + pagination2.limit;
   return {
     results: items,
     pagination: {
-      ...pagination,
-      previousUrl: pagination.offset > 0 ? pageUrl(requestUrl, pagination, previousOffset) : "",
-      nextUrl: nextOffset < totalResults ? pageUrl(requestUrl, pagination, nextOffset) : "",
+      ...pagination2,
+      previousUrl: pagination2.offset > 0 ? pageUrl(requestUrl, pagination2, previousOffset) : "",
+      nextUrl: nextOffset < totalResults ? pageUrl(requestUrl, pagination2, nextOffset) : "",
       totalResults
     }
   };
@@ -705,24 +1043,1002 @@ async function readJsonObject(c) {
     return { ok: false, message: "The request body must contain valid JSON." };
   }
 }
-function resolveAccUser(c, store, aps) {
-  const requestedUserId = storedAccessToken(c, store)?.apsUserId ?? c.req.header("x-user-id");
-  if (!requestedUserId) return { kind: "app" };
-  const user = aps.users.findOneBy("user_id", requestedUserId);
-  return user ? { kind: "user", user } : { kind: "unknown-user" };
+async function userForApsRequest(c, store, aps, allowUserHeader) {
+  const token = await accessTokenForRequest(c, store);
+  if (!token) return null;
+  if (token.apsUserId) return aps.users.findOneBy("user_id", token.apsUserId) ?? null;
+  if (!allowUserHeader) return null;
+  const requestedUserId = c.req.header("x-user-id");
+  return requestedUserId ? aps.users.findOneBy("user_id", requestedUserId) ?? null : null;
 }
 function accProjectUser(aps, projectId, userId2) {
-  return findProjectResource(aps.accProjectUsers, projectId, "user_id", userId2) ?? null;
+  return aps.accProjectUsers.findBy("project_id", projectId).find((membership) => membership.user_id === userId2) ?? null;
 }
-function accMemberContext(c, store, aps, options) {
-  const projectResult = projectForAccId(aps, c.req.param("projectId"), options.idRule);
-  if (projectResult.kind === "invalid") return options.error(c, "invalid-project-id");
-  if (projectResult.kind === "missing") return options.error(c, "project-not-found");
-  const resolution = resolveAccUser(c, store, aps);
-  if (resolution.kind !== "user") return options.error(c, "user-required");
-  const member = accProjectUser(aps, projectResult.project.project_id, resolution.user.user_id);
-  if (!member) return options.error(c, "not-a-member");
-  return { project: projectResult.project, user: resolution.user, member };
+function issuesError(c, status, title, detail) {
+  return c.json({ title, detail }, status);
+}
+function rfiError(c, status, code, message) {
+  return c.json({ error: { code, message } }, status);
+}
+function sheetsError(c, status, errorCode, message) {
+  return c.json({ errorCode, message }, status);
+}
+
+// src/signed-blobs.ts
+import { createHmac, randomBytes as randomBytes2, timingSafeEqual } from "crypto";
+
+// src/problem.ts
+function problem(c, status, input) {
+  return c.json(
+    {
+      type: input.type,
+      title: input.title,
+      detail: input.detail,
+      errors: input.errors ?? []
+    },
+    status,
+    { "Content-Type": "application/problem+json" }
+  );
+}
+function badInput(c, field, detail) {
+  return problem(c, 400, {
+    type: "BadInput",
+    title: "One or more input values in the request were bad",
+    detail: `The following parameters are invalid: ${field}`,
+    errors: [{ field, title: "Invalid parameter", detail, type: "BadInput" }]
+  });
+}
+function notFound(c, resource) {
+  return problem(c, 404, {
+    type: "NotFound",
+    title: "The requested resource was not found",
+    detail: `${resource} was not found.`
+  });
+}
+function forbidden(c, detail) {
+  return problem(c, 403, {
+    type: "Forbidden",
+    title: "The request is forbidden",
+    detail
+  });
+}
+
+// src/store.ts
+function getApsStore(store) {
+  return {
+    clients: store.collection("aps.clients", ["client_id"]),
+    users: store.collection("aps.users", ["user_id", "email"]),
+    hubs: store.collection("aps.hubs", ["hub_id"]),
+    projects: store.collection("aps.projects", ["project_id", "hub_id"]),
+    manifests: store.collection("aps.manifests", ["urn"]),
+    accProjectUsers: store.collection("aps.accProjectUsers", ["project_id", "user_id"]),
+    issueTypes: store.collection("aps.issueTypes", ["project_id", "issue_type_id"]),
+    issues: store.collection("aps.issues", ["project_id", "issue_id"]),
+    rfiTypes: store.collection("aps.rfiTypes", ["project_id", "rfi_type_id"]),
+    rfiAttributes: store.collection("aps.rfiAttributes", ["project_id", "attribute_id"]),
+    rfis: store.collection("aps.rfis", ["project_id", "rfi_id"]),
+    sheetCollections: store.collection("aps.sheetCollections", ["project_id", "collection_id"]),
+    sheetVersionSets: store.collection("aps.sheetVersionSets", ["project_id", "version_set_id"]),
+    sheets: store.collection("aps.sheets", ["project_id", "sheet_id"]),
+    webhookHooks: store.collection("aps.webhookHooks", ["hook_id"]),
+    webhookSecrets: store.collection("aps.webhookSecrets", ["identity_key"]),
+    webhookDeliveries: store.collection("aps.webhookDeliveries"),
+    documentFolders: store.collection("aps.documentFolders", [
+      "folder_id",
+      "project_id",
+      "parent_folder_id"
+    ]),
+    documentItems: store.collection("aps.documentItems", ["item_id", "project_id", "folder_id"]),
+    documentVersions: store.collection("aps.documentVersions", ["version_id", "item_id"]),
+    modelSets: store.collection("aps.modelSets", ["project_id", "model_set_id"]),
+    modelSetVersions: store.collection("aps.modelSetVersions", ["model_set_id", "version"]),
+    modelSetViews: store.collection("aps.modelSetViews", ["model_set_id", "version"]),
+    clashTests: store.collection("aps.clashTests", ["project_id", "test_id", "model_set_id"]),
+    clashGroups: store.collection("aps.clashGroups", ["test_id", "disposition"]),
+    signedBlobs: store.collection("aps.signedBlobs", ["blob_id"])
+  };
+}
+
+// src/signed-blobs.ts
+var SIGNING_SECRET_KEY = "aps.signedBlobSecret";
+function signingSecret(store) {
+  const existing = store.getData(SIGNING_SECRET_KEY);
+  if (existing) return existing;
+  const secret = randomBytes2(32).toString("base64url");
+  store.setData(SIGNING_SECRET_KEY, secret);
+  return secret;
+}
+function signatureFor(store, blobId, expires, nonce) {
+  return createHmac("sha256", signingSecret(store)).update(`${blobId}
+${expires}
+${nonce}`).digest("base64url");
+}
+function signaturesMatch(actual, expected) {
+  const left = Buffer.from(actual);
+  const right = Buffer.from(expected);
+  return left.length === right.length && timingSafeEqual(left, right);
+}
+function putSignedBlob(aps, input) {
+  const data = {
+    blob_id: input.blobId,
+    filename: input.filename,
+    content_type: input.contentType,
+    content_base64: input.content.toString("base64")
+  };
+  const existing = aps.signedBlobs.findOneBy("blob_id", input.blobId);
+  if (existing) aps.signedBlobs.update(existing.id, data);
+  else aps.signedBlobs.insert(data);
+}
+function issueSignedBlobUrl(store, baseUrl, blobId, ttlMs) {
+  const expires = Date.now() + ttlMs;
+  const nonce = randomBytes2(12).toString("base64url");
+  const signature = signatureFor(store, blobId, expires, nonce);
+  const url = new URL(`/_aps/blobs/${encodeURIComponent(blobId)}`, baseUrl);
+  url.searchParams.set("expires", String(expires));
+  url.searchParams.set("nonce", nonce);
+  url.searchParams.set("signature", signature);
+  return { url: url.toString(), validUntil: new Date(expires).toISOString() };
+}
+function signedBlobRoutes({ app, store }) {
+  const aps = getApsStore(store);
+  app.get("/_aps/blobs/:blobId", (c) => {
+    const blobId = c.req.param("blobId");
+    const expiresValue = c.req.query("expires");
+    const nonce = c.req.query("nonce");
+    const signature = c.req.query("signature");
+    const expires = expiresValue ? Number(expiresValue) : Number.NaN;
+    if (!Number.isSafeInteger(expires) || !nonce || !signature || expires <= Date.now()) {
+      return forbidden(c, "The signed blob URL is invalid or has expired.");
+    }
+    const expected = signatureFor(store, blobId, expires, nonce);
+    if (!signaturesMatch(signature, expected)) {
+      return forbidden(c, "The signed blob URL is invalid or has expired.");
+    }
+    const blob = aps.signedBlobs.findOneBy("blob_id", blobId);
+    if (!blob) return notFound(c, "The requested blob");
+    return new Response(Buffer.from(blob.content_base64, "base64"), {
+      status: 200,
+      headers: {
+        "Content-Type": blob.content_type,
+        "Content-Disposition": `attachment; filename="${blob.filename}"`
+      }
+    });
+  });
+}
+
+// src/model-coordination.ts
+var TIMING_KEY = "aps.modelCoordinationTiming";
+var IDENTITY_TRANSFORM = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+var CLASH_RESOURCE_TYPES = [
+  "scope-version-clash.2.0.0",
+  "scope-version-clash-instance.2.0.0",
+  "scope-version-document.2.0.0"
+];
+var CANNED_CLASHES = [
+  { id: 1, clash: [0, 1], dist: 0.125, status: "New" },
+  { id: 2, clash: [0, 1], dist: 0.25, status: "Existing" },
+  { id: 3, clash: [0, 1], dist: 0.5, status: "Resolved" }
+];
+var RESOLVED_CLASH_IDS = CANNED_CLASHES.filter((clash) => clash.status === "Resolved").map((clash) => clash.id);
+var UNRESOLVED_CLASH_IDS = CANNED_CLASHES.filter((clash) => clash.status !== "Resolved").map((clash) => clash.id);
+function getModelCoordinationTiming(store) {
+  return store.getData(TIMING_KEY) ?? { ...DEFAULT_MODEL_COORDINATION_TIMING };
+}
+function setModelCoordinationTiming(store, timing) {
+  const next = { ...getModelCoordinationTiming(store), ...timing };
+  if (!Number.isFinite(next.processing_ms) || next.processing_ms < 0) {
+    throw new Error("APS Model Coordination processing_ms must be a non-negative number.");
+  }
+  if (!Number.isFinite(next.signed_url_ttl_ms) || next.signed_url_ttl_ms < 1) {
+    throw new Error("APS Model Coordination signed_url_ttl_ms must be a positive number.");
+  }
+  store.setData(TIMING_KEY, next);
+}
+function checksum(value) {
+  return createHash2("sha256").update(value).digest("hex");
+}
+function modelSetDocument(aps, version) {
+  const item = documentItemForVersion(aps, version);
+  if (!item) throw new Error(`APS document version '${version.version_id}' references an unknown item.`);
+  if (!version.bubble_urn) throw new Error(`APS document version '${version.version_id}' has no translated manifest.`);
+  const tip = itemTip(aps, item.item_id);
+  return {
+    stableDocumentId: version.item_id,
+    unstableDocumentId: version.version_id,
+    documentLineage: {
+      lineageUrn: version.item_id,
+      parentFolderUrn: item.folder_id,
+      isAligned: true,
+      tipVersionUrn: tip?.version_id ?? version.version_id
+    },
+    alignment: {
+      transform: [...IDENTITY_TRANSFORM],
+      checksum: checksum(`${version.version_id}:alignment`),
+      upAxis: [0, 0, 1],
+      distanceUnit: "feet"
+    },
+    isTipVersion: tip?.version_id === version.version_id,
+    documentStatus: "Succeeded",
+    forgeType: "versions:autodesk.bim360:Document",
+    versionUrn: version.version_id,
+    displayName: version.display_name,
+    revision: String(version.version_number),
+    viewableName: "{3D}",
+    createUserId: version.created_by,
+    createTime: version.create_time,
+    viewableGuid: version.viewable_guid,
+    viewableId: version.viewable_id,
+    viewableMime: "application/autodesk-svf2",
+    bubbleUrn: version.bubble_urn,
+    isSvf2Supported: true,
+    originalSeedFileVersionSize: version.storage_size,
+    originalSeedFileVersionUrn: version.storage_urn,
+    originalSeedFileVersionName: version.display_name
+  };
+}
+function clashTestPayload(test) {
+  return {
+    id: test.test_id,
+    ...test.completed_on ? { completedOn: test.completed_on } : {},
+    modelSetId: test.model_set_id,
+    modelSetVersion: test.model_set_version,
+    status: test.status
+  };
+}
+function modelSetVersionPayload(version) {
+  return {
+    modelSetId: version.model_set_id,
+    version: version.version,
+    createTime: version.create_time,
+    status: version.status,
+    documentVersions: structuredClone(version.document_versions)
+  };
+}
+function modelSetSummaryPayload(modelSet) {
+  return {
+    modifiedBy: modelSet.modified_by,
+    modifiedTime: modelSet.modified_time,
+    modelSetId: modelSet.model_set_id,
+    containerId: bareProjectId(modelSet.project_id),
+    name: modelSet.name,
+    description: modelSet.description,
+    createdBy: modelSet.created_by,
+    createdTime: modelSet.created_time,
+    isDisabled: modelSet.disabled,
+    isDeleted: modelSet.deleted,
+    includedFolderCount: modelSet.folder_urns.length,
+    rootFolder: { folderUrn: modelSet.root_folder_urn },
+    hasContentFilters: false,
+    clashEngineVersion: "2.0.0",
+    isDocumentLimitReached: false
+  };
+}
+function latestModelSetVersion(aps, modelSetId) {
+  return aps.modelSetVersions.findBy("model_set_id", modelSetId).sort((left, right) => right.version - left.version)[0];
+}
+function modelSetPayload(aps, modelSet) {
+  const tipVersion = latestModelSetVersion(aps, modelSet.model_set_id)?.version ?? 0;
+  return {
+    ...modelSetSummaryPayload(modelSet),
+    modelSetType: "ProjectFiles",
+    folders: modelSet.folder_urns.map((folderUrn) => ({ folderUrn })),
+    includedFolders: modelSet.folder_urns.map((folderUrn) => {
+      const folder = aps.documentFolders.findOneBy("folder_id", folderUrn);
+      return {
+        folderUrn,
+        folderName: folder?.name ?? "",
+        parentFolderUrn: folder?.parent_folder_id ?? modelSet.root_folder_urn
+      };
+    }),
+    accessedTime: modelSet.modified_time,
+    isInactive: false,
+    tipVersion,
+    permission: "Edit",
+    contentFilters: [],
+    checksum: checksum(`${modelSet.model_set_id}:${tipVersion}`)
+  };
+}
+function clashResourceBlobId(testId, type) {
+  return `${testId}.${type}`;
+}
+function writeClashArtifacts(aps, version, test) {
+  const documents = version.document_versions.map((document, id) => ({ id, urn: document.versionUrn }));
+  const instances = CANNED_CLASHES.map((clash, index) => ({
+    cid: clash.id,
+    ldid: 0,
+    loid: 1001 + index,
+    lvid: 1,
+    rdid: 1,
+    roid: 2001 + index,
+    rvid: 1
+  }));
+  const values = {
+    "scope-version-clash.2.0.0": CANNED_CLASHES,
+    "scope-version-clash-instance.2.0.0": instances,
+    "scope-version-document.2.0.0": documents
+  };
+  for (const type of CLASH_RESOURCE_TYPES) {
+    putSignedBlob(aps, {
+      blobId: clashResourceBlobId(test.test_id, type),
+      filename: `${type}.json.gz`,
+      contentType: "application/gzip",
+      content: gzipSync(JSON.stringify(values[type]))
+    });
+  }
+}
+function seedClashTest(aps, modelSet, version, testId) {
+  const test = aps.clashTests.insert({
+    project_id: modelSet.project_id,
+    test_id: testId,
+    model_set_id: modelSet.model_set_id,
+    model_set_version: version.version,
+    status: "Success",
+    completed_on: version.create_time
+  });
+  aps.clashGroups.insert({
+    test_id: test.test_id,
+    disposition: "assigned",
+    group_id: "17171717-1717-4171-8171-171717171717",
+    original_clash_test_id: test.test_id,
+    created_at_version: version.version,
+    existing: [...UNRESOLVED_CLASH_IDS],
+    resolved: [...RESOLVED_CLASH_IDS]
+  });
+  aps.clashGroups.insert({
+    test_id: test.test_id,
+    disposition: "closed",
+    group_id: "18181818-1818-4181-8181-181818181818",
+    original_clash_test_id: test.test_id,
+    created_at_version: version.version,
+    existing: [],
+    resolved: [...RESOLVED_CLASH_IDS]
+  });
+}
+function seedModelCoordinationFromConfig(aps, store, config) {
+  if (config.model_coordination_timing) setModelCoordinationTiming(store, config.model_coordination_timing);
+  for (const seed of config.model_sets ?? []) {
+    if (aps.modelSets.findOneBy("model_set_id", seed.id)) continue;
+    const project = aps.projects.findOneBy("project_id", seed.project_id);
+    if (!project) throw new Error(`APS model set '${seed.id}' references unknown project '${seed.project_id}'.`);
+    const documentIds = seed.document_version_ids ?? [];
+    const documents = documentIds.map((id) => {
+      const document = aps.documentVersions.findOneBy("version_id", id);
+      if (!document) throw new Error(`APS model set '${seed.id}' references unknown document version '${id}'.`);
+      if (document.project_id !== project.project_id) {
+        throw new Error(`APS model set '${seed.id}' references a document version from another project.`);
+      }
+      if (!document.bubble_urn || !aps.manifests.findOneBy("urn", document.bubble_urn)) {
+        throw new Error(`APS document version '${id}' references unknown manifest '${document.bubble_urn}'.`);
+      }
+      return document;
+    });
+    if (documents.length < 2) throw new Error(`APS model set '${seed.id}' requires at least two document versions.`);
+    const createdTime = seed.created_time ?? (/* @__PURE__ */ new Date()).toISOString();
+    const actor = seed.created_by ?? DEFAULT_USER_EMAIL;
+    const documentItems = documents.map((document) => documentItemForVersion(aps, document));
+    if (documentItems.some((item) => !item)) {
+      throw new Error(`APS model set '${seed.id}' references a document with no item.`);
+    }
+    const firstItem = documentItems[0];
+    const rootFolderUrn = seed.root_folder_urn ?? folderAncestors(aps, project.project_id, firstItem.folder_id)[0]?.folder_id ?? firstItem.folder_id;
+    const folderUrns = seed.folder_urns ?? [...new Set(documentItems.map((item) => item.folder_id))];
+    for (const folderUrn of [rootFolderUrn, ...folderUrns]) {
+      const folder = aps.documentFolders.findOneBy("folder_id", folderUrn);
+      if (!folder || folder.project_id !== project.project_id) {
+        throw new Error(`APS model set '${seed.id}' references unknown folder '${folderUrn}'.`);
+      }
+    }
+    const modelSet = aps.modelSets.insert({
+      project_id: project.project_id,
+      model_set_id: seed.id,
+      name: seed.name,
+      description: seed.description ?? "",
+      root_folder_urn: rootFolderUrn,
+      folder_urns: [...folderUrns],
+      created_by: actor,
+      created_time: createdTime,
+      modified_by: actor,
+      modified_time: createdTime,
+      disabled: seed.disabled ?? false,
+      deleted: seed.deleted ?? false
+    });
+    const version = aps.modelSetVersions.insert({
+      model_set_id: modelSet.model_set_id,
+      version: 1,
+      create_time: createdTime,
+      status: "Successful",
+      document_versions: documents.map((document) => modelSetDocument(aps, document))
+    });
+    aps.modelSetViews.insert({
+      model_set_id: modelSet.model_set_id,
+      version: version.version,
+      view_id: "19191919-1919-4191-8191-191919191919",
+      document_versions: version.document_versions.map((document) => document.versionUrn)
+    });
+    seedClashTest(aps, modelSet, version, seed.test_id ?? randomUUID());
+  }
+}
+function addModelSetVersion(aps, store, modelSet, overrides) {
+  const previous = latestModelSetVersion(aps, modelSet.model_set_id);
+  if (!previous) throw new Error(`APS model set '${modelSet.model_set_id}' has no source version.`);
+  const createTime = (/* @__PURE__ */ new Date()).toISOString();
+  const version = aps.modelSetVersions.insert({
+    model_set_id: modelSet.model_set_id,
+    version: previous.version + 1,
+    create_time: createTime,
+    status: "Pending",
+    document_versions: structuredClone(previous.document_versions)
+  });
+  aps.modelSetViews.insert({
+    model_set_id: modelSet.model_set_id,
+    version: version.version,
+    view_id: randomUUID(),
+    document_versions: version.document_versions.map((document) => document.versionUrn)
+  });
+  const test = aps.clashTests.insert({
+    project_id: modelSet.project_id,
+    test_id: randomUUID(),
+    model_set_id: modelSet.model_set_id,
+    model_set_version: version.version,
+    status: "Pending",
+    completed_on: null
+  });
+  aps.modelSets.update(modelSet.id, { modified_time: createTime });
+  const processingMs = overrides?.processingMs ?? getModelCoordinationTiming(store).processing_ms;
+  setTimeout(() => {
+    aps.modelSetVersions.update(version.id, { status: "Processing" });
+    aps.clashTests.update(test.id, { status: "Processing" });
+    setTimeout(() => {
+      aps.modelSetVersions.update(version.id, { status: "Successful" });
+      aps.clashTests.update(test.id, { status: "Success", completed_on: (/* @__PURE__ */ new Date()).toISOString() });
+    }, processingMs);
+  }, processingMs);
+  return { version, test };
+}
+
+// src/routes/data-management.ts
+import { randomUUID as randomUUID2 } from "crypto";
+var JSON_API_TYPE = "application/vnd.api+json";
+var FOLDER_EXTENSION_TYPE = "folders:autodesk.bim360:Folder";
+var VERSION_EXTENSION_TYPE = "versions:autodesk.bim360:File";
+function hubPath(hubId) {
+  return `/project/v1/hubs/${encodeURIComponent(hubId)}`;
+}
+function projectPath(hubId, projectId) {
+  return `${hubPath(hubId)}/projects/${encodeURIComponent(projectId)}`;
+}
+function dataProjectPath(projectId) {
+  return `/data/v1/projects/${encodeURIComponent(projectId)}`;
+}
+function folderPath(projectId, folderId) {
+  return `${dataProjectPath(projectId)}/folders/${encodeURIComponent(folderId)}`;
+}
+function itemPath(projectId, itemId) {
+  return `${dataProjectPath(projectId)}/items/${encodeURIComponent(itemId)}`;
+}
+function versionPath(projectId, versionId) {
+  return `${dataProjectPath(projectId)}/versions/${encodeURIComponent(versionId)}`;
+}
+function requestHref(c, baseUrl) {
+  const requestUrl = new URL(c.req.url);
+  return `${baseUrl}${requestUrl.pathname}${requestUrl.search}`;
+}
+function routeId(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+function schemaHref(type) {
+  return `https://developer.api.autodesk.com/schema/v1/versions/${encodeURIComponent(type)}-1.0`;
+}
+function hubData(baseUrl, hub) {
+  const path = hubPath(hub.hub_id);
+  return {
+    type: "hubs",
+    id: hub.hub_id,
+    attributes: {
+      name: hub.name,
+      extension: {
+        type: "hubs:autodesk.bim360:Account",
+        version: "1.0",
+        schema: { href: schemaHref("hubs:autodesk.bim360:Account") },
+        data: {}
+      },
+      region: hub.region
+    },
+    links: { self: { href: `${baseUrl}${path}` } },
+    relationships: { projects: { links: { related: { href: `${baseUrl}${path}/projects` } } } }
+  };
+}
+function projectData(baseUrl, aps, project) {
+  const path = projectPath(project.hub_id, project.project_id);
+  const hub = hubPath(project.hub_id);
+  const rootFolder = rootFolderForProject(aps, project.project_id);
+  return {
+    type: "projects",
+    id: project.project_id,
+    attributes: {
+      name: project.name,
+      scopes: ["global"],
+      extension: {
+        type: "projects:autodesk.bim360:Project",
+        version: "1.0",
+        schema: { href: schemaHref("projects:autodesk.bim360:Project") },
+        data: { projectType: "ACC" }
+      }
+    },
+    links: { self: { href: `${baseUrl}${path}` } },
+    relationships: {
+      hub: {
+        data: { type: "hubs", id: project.hub_id },
+        links: { related: { href: `${baseUrl}${hub}` } }
+      },
+      ...rootFolder ? {
+        rootFolder: {
+          data: { type: "folders", id: rootFolder.folder_id },
+          meta: { link: { href: `${baseUrl}${folderPath(project.project_id, rootFolder.folder_id)}` } }
+        }
+      } : {},
+      topFolders: { links: { related: { href: `${baseUrl}${path}/topFolders` } } }
+    }
+  };
+}
+function folderData(baseUrl, aps, folder) {
+  const path = folderPath(folder.project_id, folder.folder_id);
+  const objectCount = aps.documentFolders.findBy("parent_folder_id", folder.folder_id).length + aps.documentItems.findBy("folder_id", folder.folder_id).length;
+  const parent = folder.parent_folder_id ? aps.documentFolders.findOneBy("folder_id", folder.parent_folder_id) : void 0;
+  return {
+    type: "folders",
+    id: folder.folder_id,
+    attributes: {
+      name: folder.name,
+      displayName: folder.name,
+      objectCount,
+      createTime: folder.create_time,
+      createUserId: folder.created_by,
+      createUserName: folder.created_by_name,
+      lastModifiedTime: folder.last_modified_time,
+      lastModifiedUserId: folder.last_modified_by,
+      lastModifiedUserName: folder.last_modified_by_name,
+      lastModifiedTimeRollup: folder.last_modified_time,
+      hidden: folder.hidden,
+      extension: {
+        type: FOLDER_EXTENSION_TYPE,
+        version: "1.0",
+        schema: { href: schemaHref(FOLDER_EXTENSION_TYPE) },
+        data: {
+          allowedTypes: ["folders", "items:autodesk.bim360:File"],
+          visibleTypes: ["folders", "items:autodesk.bim360:File"],
+          namingStandardIds: []
+        }
+      }
+    },
+    links: {
+      self: { href: `${baseUrl}${path}` },
+      webView: { href: `https://acc.autodesk.com/docs/files/projects/${encodeURIComponent(folder.project_id)}` }
+    },
+    relationships: {
+      ...parent ? {
+        parent: {
+          data: { type: "folders", id: parent.folder_id },
+          links: { related: { href: `${baseUrl}${folderPath(folder.project_id, parent.folder_id)}` } }
+        }
+      } : {},
+      contents: { links: { related: { href: `${baseUrl}${path}/contents` } } }
+    }
+  };
+}
+function itemData(baseUrl, aps, item) {
+  const path = itemPath(item.project_id, item.item_id);
+  const tip = itemTip(aps, item.item_id);
+  return {
+    type: "items",
+    id: item.item_id,
+    attributes: {
+      displayName: item.display_name,
+      createTime: item.create_time,
+      createUserId: item.created_by,
+      createUserName: item.created_by_name,
+      lastModifiedTime: item.last_modified_time,
+      lastModifiedUserId: item.last_modified_by,
+      lastModifiedUserName: item.last_modified_by_name,
+      hidden: item.hidden,
+      reserved: item.reserved,
+      ...item.reserved_time ? { reservedTime: item.reserved_time } : {},
+      ...item.reserved_by ? { reservedUserId: item.reserved_by } : {},
+      ...item.reserved_by_name ? { reservedUserName: item.reserved_by_name } : {},
+      extension: {
+        type: item.extension_type,
+        version: "1.0",
+        schema: { href: schemaHref(item.extension_type) },
+        data: { sourceFileName: item.display_name }
+      }
+    },
+    links: {
+      self: { href: `${baseUrl}${path}` },
+      webView: { href: `https://acc.autodesk.com/docs/files/projects/${encodeURIComponent(item.project_id)}` }
+    },
+    relationships: {
+      parent: {
+        data: { type: "folders", id: item.folder_id },
+        links: { related: { href: `${baseUrl}${folderPath(item.project_id, item.folder_id)}` } }
+      },
+      ...tip ? {
+        tip: {
+          data: { type: "versions", id: tip.version_id },
+          links: { related: { href: `${baseUrl}${path}/tip` } }
+        }
+      } : {},
+      versions: { links: { related: { href: `${baseUrl}${path}/versions` } } }
+    }
+  };
+}
+function versionData(baseUrl, version) {
+  const path = versionPath(version.project_id, version.version_id);
+  return {
+    type: "versions",
+    id: version.version_id,
+    attributes: {
+      name: version.display_name,
+      displayName: version.display_name,
+      createTime: version.create_time,
+      createUserId: version.created_by,
+      createUserName: version.created_by_name,
+      lastModifiedTime: version.last_modified_time,
+      lastModifiedUserId: version.last_modified_by,
+      lastModifiedUserName: version.last_modified_by_name,
+      versionNumber: version.version_number,
+      mimeType: version.mime_type,
+      fileType: version.file_type,
+      storageSize: version.storage_size,
+      extension: {
+        type: VERSION_EXTENSION_TYPE,
+        version: "1.0",
+        schema: { href: schemaHref(VERSION_EXTENSION_TYPE) },
+        data: {
+          tempUrn: null,
+          properties: {},
+          storageUrn: version.storage_urn,
+          storageType: "OSS",
+          conformingStatus: "NONE"
+        }
+      }
+    },
+    links: {
+      self: { href: `${baseUrl}${path}` },
+      webView: { href: `https://acc.autodesk.com/docs/files/projects/${encodeURIComponent(version.project_id)}` }
+    },
+    relationships: {
+      item: {
+        data: { type: "items", id: version.item_id },
+        links: { related: { href: `${baseUrl}${itemPath(version.project_id, version.item_id)}` } }
+      },
+      storage: { data: { type: "objects", id: version.storage_urn } },
+      ...version.bubble_urn ? {
+        derivatives: {
+          data: { type: "derivatives", id: version.bubble_urn },
+          meta: {
+            link: {
+              href: `${baseUrl}/modelderivative/v2/designdata/${encodeURIComponent(version.bubble_urn)}/manifest`
+            }
+          }
+        }
+      } : {}
+    }
+  };
+}
+function jsonApiDocument(c, selfHref, data, options) {
+  c.header("Content-Type", JSON_API_TYPE);
+  return c.json({
+    jsonapi: { version: "1.0" },
+    links: options?.links ?? { self: { href: selfHref } },
+    data,
+    ...options?.included ? { included: options.included } : {}
+  });
+}
+function jsonApiError(c, status, code, detail) {
+  c.header("Content-Type", JSON_API_TYPE);
+  return c.json(
+    { jsonapi: { version: "1.0" }, errors: [{ id: randomUUID2(), status: String(status), code, detail }] },
+    status
+  );
+}
+function notFound2(c, detail) {
+  return jsonApiError(c, 404, "NOT_FOUND", detail);
+}
+function projectForDataRoute(aps, projectId) {
+  return aps.projects.findOneBy("project_id", routeId(projectId));
+}
+function queryValues(c, name) {
+  return (c.req.queries(name) ?? []).flatMap((value) => value.split(",")).filter(Boolean);
+}
+function pagination(c) {
+  const numberValue = c.req.query("page[number]") ?? "0";
+  const limitValue = c.req.query("page[limit]") ?? "200";
+  if (!/^\d+$/.test(numberValue)) return "page[number] must be a non-negative integer.";
+  if (!/^\d+$/.test(limitValue)) return "page[limit] must be an integer from 1 through 200.";
+  const number = Number(numberValue);
+  const limit = Number(limitValue);
+  if (limit < 1 || limit > 200) return "page[limit] must be an integer from 1 through 200.";
+  return { number, limit };
+}
+function pageLinks(c, baseUrl, number, limit, total) {
+  const href = (pageNumber) => {
+    const url = new URL(requestHref(c, baseUrl));
+    url.searchParams.set("page[number]", String(pageNumber));
+    url.searchParams.set("page[limit]", String(limit));
+    return { href: url.toString() };
+  };
+  const last = Math.max(0, Math.ceil(total / limit) - 1);
+  return {
+    self: { href: requestHref(c, baseUrl) },
+    first: href(0),
+    ...number > 0 ? { prev: href(number - 1) } : {},
+    ...number < last ? { next: href(number + 1) } : {}
+  };
+}
+function dataManagementRoutes({ app, store, baseUrl }) {
+  const aps = getApsStore(store);
+  const auth = apsAuth(store, { scopes: ["data:read"], requireUser: true });
+  app.use("/project/v1/*", auth);
+  app.use("/data/v1/*", auth);
+  app.get(
+    "/project/v1/hubs",
+    (c) => jsonApiDocument(c, `${baseUrl}/project/v1/hubs`, aps.hubs.all().map((hub) => hubData(baseUrl, hub)))
+  );
+  app.get("/project/v1/hubs/:hubId", (c) => {
+    const hub = aps.hubs.findOneBy("hub_id", routeId(c.req.param("hubId")));
+    if (!hub) return notFound2(c, `The hub ${c.req.param("hubId")} was not found.`);
+    return jsonApiDocument(c, `${baseUrl}${hubPath(hub.hub_id)}`, hubData(baseUrl, hub));
+  });
+  app.get("/project/v1/hubs/:hubId/projects", (c) => {
+    const hubId = routeId(c.req.param("hubId"));
+    if (!aps.hubs.findOneBy("hub_id", hubId)) return notFound2(c, `The hub ${hubId} was not found.`);
+    const path = `${hubPath(hubId)}/projects`;
+    return jsonApiDocument(
+      c,
+      `${baseUrl}${path}`,
+      aps.projects.findBy("hub_id", hubId).map((project) => projectData(baseUrl, aps, project))
+    );
+  });
+  app.get("/project/v1/hubs/:hubId/projects/:projectId", (c) => {
+    const hubId = routeId(c.req.param("hubId"));
+    if (!aps.hubs.findOneBy("hub_id", hubId)) return notFound2(c, `The hub ${hubId} was not found.`);
+    const projectId = routeId(c.req.param("projectId"));
+    const project = aps.projects.findOneBy("project_id", projectId);
+    if (!project || project.hub_id !== hubId) return notFound2(c, `The project ${projectId} was not found in hub ${hubId}.`);
+    return jsonApiDocument(c, `${baseUrl}${projectPath(hubId, project.project_id)}`, projectData(baseUrl, aps, project));
+  });
+  app.get("/project/v1/hubs/:hubId/projects/:projectId/topFolders", (c) => {
+    const hubId = routeId(c.req.param("hubId"));
+    const projectId = routeId(c.req.param("projectId"));
+    const project = aps.projects.findOneBy("project_id", projectId);
+    if (!project || project.hub_id !== hubId) return notFound2(c, `The project ${projectId} was not found in hub ${hubId}.`);
+    const folders = aps.documentFolders.findBy("project_id", project.project_id).filter((folder) => folder.parent_folder_id === null && !folder.hidden);
+    return jsonApiDocument(c, requestHref(c, baseUrl), folders.map((folder) => folderData(baseUrl, aps, folder)));
+  });
+  app.get("/data/v1/projects/:projectId/folders/:folderId", (c) => {
+    const project = projectForDataRoute(aps, c.req.param("projectId"));
+    const folderId = routeId(c.req.param("folderId"));
+    const folder = aps.documentFolders.findOneBy("folder_id", folderId);
+    if (!project || !folder || folder.project_id !== project.project_id) {
+      return notFound2(c, `The folder ${folderId} was not found in project ${c.req.param("projectId")}.`);
+    }
+    return jsonApiDocument(c, requestHref(c, baseUrl), folderData(baseUrl, aps, folder));
+  });
+  app.get("/data/v1/projects/:projectId/folders/:folderId/contents", (c) => {
+    const project = projectForDataRoute(aps, c.req.param("projectId"));
+    const folderId = routeId(c.req.param("folderId"));
+    const folder = aps.documentFolders.findOneBy("folder_id", folderId);
+    if (!project || !folder || folder.project_id !== project.project_id) {
+      return notFound2(c, `The folder ${folderId} was not found in project ${c.req.param("projectId")}.`);
+    }
+    const parsedPage = pagination(c);
+    if (typeof parsedPage === "string") return jsonApiError(c, 400, "BAD_INPUT", parsedPage);
+    const types = queryValues(c, "filter[type]");
+    if (types.some((type) => type !== "folders" && type !== "items")) {
+      return jsonApiError(c, 400, "BAD_INPUT", "filter[type] accepts only folders and items.");
+    }
+    const extensions = queryValues(c, "filter[extension.type]");
+    const includeHidden = c.req.query("includeHidden") === "true";
+    const children = aps.documentFolders.findBy("parent_folder_id", folder.folder_id).filter((child) => includeHidden || !child.hidden).filter(() => types.length === 0 || types.includes("folders")).filter(() => extensions.length === 0 || extensions.includes(FOLDER_EXTENSION_TYPE)).map((child) => ({ kind: "folder", value: child }));
+    const items = aps.documentItems.findBy("folder_id", folder.folder_id).filter((item) => includeHidden || !item.hidden).filter(() => types.length === 0 || types.includes("items")).filter((item) => extensions.length === 0 || extensions.includes(item.extension_type)).map((item) => ({ kind: "item", value: item }));
+    const resources = [...children, ...items];
+    const start = parsedPage.number * parsedPage.limit;
+    const page = resources.slice(start, start + parsedPage.limit);
+    const included = page.filter((entry) => entry.kind === "item").map((entry) => itemTip(aps, entry.value.item_id)).filter((version) => Boolean(version)).map((version) => versionData(baseUrl, version));
+    return jsonApiDocument(
+      c,
+      requestHref(c, baseUrl),
+      page.map((entry) => entry.kind === "folder" ? folderData(baseUrl, aps, entry.value) : itemData(baseUrl, aps, entry.value)),
+      { included, links: pageLinks(c, baseUrl, parsedPage.number, parsedPage.limit, resources.length) }
+    );
+  });
+  app.get("/data/v1/projects/:projectId/items/:itemId", (c) => {
+    const project = projectForDataRoute(aps, c.req.param("projectId"));
+    const itemId = routeId(c.req.param("itemId"));
+    const item = aps.documentItems.findOneBy("item_id", itemId);
+    if (!project || !item || item.project_id !== project.project_id) {
+      return notFound2(c, `The item ${itemId} was not found in project ${c.req.param("projectId")}.`);
+    }
+    const tip = itemTip(aps, item.item_id);
+    return jsonApiDocument(c, requestHref(c, baseUrl), itemData(baseUrl, aps, item), {
+      included: tip ? [versionData(baseUrl, tip)] : []
+    });
+  });
+  app.get("/data/v1/projects/:projectId/items/:itemId/versions", (c) => {
+    const project = projectForDataRoute(aps, c.req.param("projectId"));
+    const itemId = routeId(c.req.param("itemId"));
+    const item = aps.documentItems.findOneBy("item_id", itemId);
+    if (!project || !item || item.project_id !== project.project_id) {
+      return notFound2(c, `The item ${itemId} was not found in project ${c.req.param("projectId")}.`);
+    }
+    const parsedPage = pagination(c);
+    if (typeof parsedPage === "string") return jsonApiError(c, 400, "BAD_INPUT", parsedPage);
+    const extensions = queryValues(c, "filter[extension.type]");
+    const versionNumbers = queryValues(c, "filter[versionNumber]");
+    const versions = aps.documentVersions.findBy("item_id", item.item_id).filter(() => extensions.length === 0 || extensions.includes(VERSION_EXTENSION_TYPE)).filter((version) => versionNumbers.length === 0 || versionNumbers.includes(String(version.version_number))).sort((left, right) => right.version_number - left.version_number);
+    const start = parsedPage.number * parsedPage.limit;
+    return jsonApiDocument(
+      c,
+      requestHref(c, baseUrl),
+      versions.slice(start, start + parsedPage.limit).map((version) => versionData(baseUrl, version)),
+      { links: pageLinks(c, baseUrl, parsedPage.number, parsedPage.limit, versions.length) }
+    );
+  });
+  app.get("/data/v1/projects/:projectId/items/:itemId/tip", (c) => {
+    const project = projectForDataRoute(aps, c.req.param("projectId"));
+    const itemId = routeId(c.req.param("itemId"));
+    const item = aps.documentItems.findOneBy("item_id", itemId);
+    const tip = item ? itemTip(aps, item.item_id) : void 0;
+    if (!project || !item || item.project_id !== project.project_id || !tip) {
+      return notFound2(c, `The tip for item ${itemId} was not found in project ${c.req.param("projectId")}.`);
+    }
+    return jsonApiDocument(c, requestHref(c, baseUrl), versionData(baseUrl, tip));
+  });
+  app.get("/data/v1/projects/:projectId/versions/:versionId", (c) => {
+    const project = projectForDataRoute(aps, c.req.param("projectId"));
+    const versionId = routeId(c.req.param("versionId"));
+    const version = aps.documentVersions.findOneBy("version_id", versionId);
+    if (!project || !version || version.project_id !== project.project_id) {
+      return notFound2(c, `The version ${versionId} was not found in project ${c.req.param("projectId")}.`);
+    }
+    return jsonApiDocument(c, requestHref(c, baseUrl), versionData(baseUrl, version));
+  });
+}
+
+// src/model-coordination-http.ts
+function coordinationProject(c, aps) {
+  const containerId = c.req.param("containerId");
+  const result = projectForAccId(aps, containerId, "bare");
+  if (result.kind === "invalid") {
+    return badInput(c, "containerId", `The value '${containerId}' must not include the 'b.' prefix.`);
+  }
+  if (result.kind === "missing") return notFound(c, "The requested container");
+  return result.project;
+}
+function modelSetForProject(c, aps, project) {
+  const modelSet = aps.modelSets.findOneBy("model_set_id", c.req.param("modelSetId"));
+  if (!modelSet || modelSet.project_id !== project.project_id) return notFound(c, "The requested model set");
+  return modelSet;
+}
+function continuationToken(offset) {
+  return Buffer.from(String(offset)).toString("base64url");
+}
+function continuationOffset(token) {
+  if (!token) return 0;
+  try {
+    const decoded = Buffer.from(token, "base64url").toString("utf8");
+    if (!/^\d+$/.test(decoded)) return null;
+    const offset = Number(decoded);
+    return Number.isSafeInteger(offset) ? offset : null;
+  } catch {
+    return null;
+  }
+}
+function coordinationPage(c, items) {
+  const limitValue = c.req.query("pageLimit");
+  const limit = limitValue === void 0 ? 20 : Number(limitValue);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 20) {
+    return badInput(c, "pageLimit", `The value '${limitValue ?? ""}' must be an integer from 1 through 20.`);
+  }
+  const token = c.req.query("continuationToken");
+  const offset = continuationOffset(token);
+  if (offset === null) return badInput(c, "continuationToken", `The value '${token}' is not valid.`);
+  const nextOffset = offset + limit;
+  return {
+    items: items.slice(offset, nextOffset),
+    page: nextOffset < items.length ? { continuationToken: continuationToken(nextOffset) } : {}
+  };
+}
+function booleanQuery(c, name, fallback) {
+  const value = c.req.query(name);
+  if (value === void 0) return fallback;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return badInput(c, name, `The value '${value}' must be true or false.`);
+}
+function queryValues2(c, name) {
+  return (c.req.queries(name) ?? []).flatMap(commaSeparated);
+}
+
+// src/routes/clash.ts
+var TEST_STATUSES = ["Pending", "Processing", "Success", "Failed"];
+function clashTestForProject(c, aps, project) {
+  const test = aps.clashTests.findOneBy("test_id", c.req.param("testId"));
+  if (!test || test.project_id !== project.project_id) return notFound(c, "The requested clash test");
+  return test;
+}
+function clashRoutes({ app, store, baseUrl }) {
+  const aps = getApsStore(store);
+  app.use("/bim360/clash/v3/*", apsAuth(store, { scopes: ["data:read"], requireUser: true }));
+  app.get("/bim360/clash/v3/containers/:containerId/modelsets/:modelSetId/tests", (c) => {
+    const project = coordinationProject(c, aps);
+    if (project instanceof Response) return project;
+    const modelSet = modelSetForProject(c, aps, project);
+    if (modelSet instanceof Response) return modelSet;
+    const statuses = queryValues2(c, "status");
+    const invalidStatus = statuses.find((status) => !TEST_STATUSES.includes(status));
+    if (invalidStatus) return badInput(c, "status", `The value '${invalidStatus}' is not valid.`);
+    const tests = aps.clashTests.findBy("model_set_id", modelSet.model_set_id).filter((test) => statuses.length === 0 || statuses.includes(test.status)).sort((left, right) => right.model_set_version - left.model_set_version);
+    const page = coordinationPage(c, tests);
+    if (page instanceof Response) return page;
+    return c.json({ page: page.page, tests: page.items.map(clashTestPayload) });
+  });
+  app.get("/bim360/clash/v3/containers/:containerId/tests/:testId", (c) => {
+    const project = coordinationProject(c, aps);
+    if (project instanceof Response) return project;
+    const test = clashTestForProject(c, aps, project);
+    if (test instanceof Response) return test;
+    return c.json(clashTestPayload(test));
+  });
+  app.get("/bim360/clash/v3/containers/:containerId/tests/:testId/resources", (c) => {
+    const project = coordinationProject(c, aps);
+    if (project instanceof Response) return project;
+    const test = clashTestForProject(c, aps, project);
+    if (test instanceof Response) return test;
+    if (test.status !== "Success") {
+      return problem(c, 409, {
+        type: "Conflict",
+        title: "The clash test is not complete",
+        detail: "Clash resources are available only after the clash test succeeds."
+      });
+    }
+    const version = aps.modelSetVersions.findBy("model_set_id", test.model_set_id).find((candidate) => candidate.version === test.model_set_version);
+    if (!version) return notFound(c, "The clash test model set version");
+    writeClashArtifacts(aps, version, test);
+    const ttl = getModelCoordinationTiming(store).signed_url_ttl_ms;
+    const resources = CLASH_RESOURCE_TYPES.map((type) => {
+      const signed = issueSignedBlobUrl(store, baseUrl, clashResourceBlobId(test.test_id, type), ttl);
+      return { type, extension: "json.gz", url: signed.url, headers: {}, validUntil: signed.validUntil };
+    });
+    return c.json({ page: {}, resources });
+  });
+  for (const disposition of ["assigned", "closed"]) {
+    app.get(`/bim360/clash/v3/containers/:containerId/tests/:testId/clashes/${disposition}`, (c) => {
+      const project = coordinationProject(c, aps);
+      if (project instanceof Response) return project;
+      const test = clashTestForProject(c, aps, project);
+      if (test instanceof Response) return test;
+      const groups = aps.clashGroups.findBy("test_id", test.test_id).filter((group) => group.disposition === disposition);
+      const page = coordinationPage(c, groups);
+      if (page instanceof Response) return page;
+      return c.json({
+        page: page.page,
+        modelSetId: test.model_set_id,
+        modelSetVersion: test.model_set_version,
+        groups: page.items.map((group) => ({
+          id: group.group_id,
+          originalClashTestId: group.original_clash_test_id,
+          createdAtVersion: group.created_at_version,
+          existing: [...group.existing],
+          resolved: [...group.resolved]
+        }))
+      });
+    });
+  }
 }
 
 // src/routes/issues.ts
@@ -752,20 +2068,19 @@ var ISSUE_ATTRIBUTES = [
   "watchers",
   "customAttributes"
 ];
-function issuesError(c, status, title, detail) {
-  return c.json({ title, detail }, status);
-}
-function issuesRequestError(c, kind) {
-  switch (kind) {
-    case "invalid-project-id":
-      return issuesError(c, 400, "Bad Request", "Issues project IDs must not include the 'b.' prefix.");
-    case "project-not-found":
-      return issuesError(c, 404, "Not Found", "The requested project was not found.");
-    case "user-required":
-      return issuesError(c, 403, "Forbidden", "User context is required.");
-    case "not-a-member":
-      return issuesError(c, 403, "Forbidden", "The user is not a member of this project.");
+async function requestContext(c, route, aps) {
+  const projectResult = projectForAccId(aps, c.req.param("projectId"), "bare");
+  if (projectResult.kind === "invalid") {
+    return issuesError(c, 400, "Bad Request", "Issues project IDs must not include the 'b.' prefix.");
   }
+  if (projectResult.kind === "missing") {
+    return issuesError(c, 404, "Not Found", "The requested project was not found.");
+  }
+  const user = await userForApsRequest(c, route.store, aps, false);
+  if (!user) return issuesError(c, 403, "Forbidden", "User context is required.");
+  const member = accProjectUser(aps, projectResult.project.project_id, user.user_id);
+  if (!member) return issuesError(c, 403, "Forbidden", "The user is not a member of this project.");
+  return { project: projectResult.project, user, member };
 }
 function canManageIssues(member) {
   return member.role === "project_admin" || member.issue_permission === "manage";
@@ -787,7 +2102,7 @@ function issuePermissions(member, status) {
 function issuePayload(issue, member) {
   return {
     ...structuredClone(issue.payload),
-    ...issuePermissions(member, issue.payload.status)
+    ...issuePermissions(member, issue.status)
   };
 }
 function matchesAny(value, candidates) {
@@ -802,44 +2117,44 @@ function filterIssues(c, issues) {
   const displayIds = commaSeparated(c.req.query("filter[displayId]"));
   const search = c.req.query("filter[search]")?.trim().toLocaleLowerCase();
   const deletedFilter = c.req.query("filter[deleted]");
-  return issues.filter(({ payload }) => {
-    if (!matchesAny(payload.id, ids)) return false;
-    if (!matchesAny(payload.issueTypeId, typeIds)) return false;
-    if (!matchesAny(payload.issueSubtypeId, subtypeIds)) return false;
-    if (!matchesAny(payload.status, statuses)) return false;
-    if (!matchesAny(payload.assignedTo, assignees)) return false;
-    if (displayIds.length > 0 && !displayIds.includes(String(payload.displayId))) return false;
-    if (deletedFilter === "true" && !payload.deleted) return false;
-    if ((deletedFilter === void 0 || deletedFilter === "false") && payload.deleted) return false;
-    if (search && !payload.title.toLocaleLowerCase().includes(search) && !String(payload.displayId).includes(search)) {
+  let filtered = issues.filter((issue) => {
+    if (!matchesAny(issue.issue_id, ids)) return false;
+    if (!matchesAny(issue.issue_type_id, typeIds)) return false;
+    if (!matchesAny(issue.issue_subtype_id, subtypeIds)) return false;
+    if (!matchesAny(issue.status, statuses)) return false;
+    if (!matchesAny(issue.assigned_to, assignees)) return false;
+    if (displayIds.length > 0 && !displayIds.includes(String(issue.display_id))) return false;
+    if (deletedFilter === "true" && !issue.deleted) return false;
+    if ((deletedFilter === void 0 || deletedFilter === "false") && issue.deleted) return false;
+    if (search && !issue.title.toLocaleLowerCase().includes(search) && !String(issue.display_id).includes(search)) {
       return false;
     }
     return true;
   });
-}
-function sortIssues(issues, sortBy) {
-  const requestedSort = commaSeparated(sortBy)[0];
-  if (!requestedSort) return issues;
+  const requestedSort = commaSeparated(c.req.query("sortBy"))[0];
+  if (!requestedSort) return filtered;
   const descending = requestedSort.startsWith("-");
   const field = descending ? requestedSort.slice(1) : requestedSort;
   const valueFor = (issue) => {
-    if (field === "displayId") return issue.payload.displayId;
+    if (field === "displayId") return issue.display_id;
+    if (field === "title") return issue.title;
+    if (field === "status") return issue.status;
     return String(issue.payload[field] ?? "");
   };
-  return [...issues].sort((left, right) => {
+  filtered = [...filtered].sort((left, right) => {
     const a = valueFor(left);
     const b = valueFor(right);
     const result = typeof a === "number" && typeof b === "number" ? a - b : String(a).localeCompare(String(b));
     return descending ? -result : result;
   });
+  return filtered;
 }
 function issueRoutes(route) {
   const { app, store } = route;
   const aps = getApsStore(store);
-  const requestContext = (c) => accMemberContext(c, store, aps, { idRule: "bare", error: issuesRequestError });
   app.use("/construction/issues/v1/*", apsAuth(store, { scopes: ["data:read"], requireUser: true }));
-  app.get("/construction/issues/v1/projects/:projectId/users/me", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/issues/v1/projects/:projectId/users/me", async (c) => {
+    const context = await requestContext(c, route, aps);
     if (context instanceof Response) return context;
     const manageable = canManageIssues(context.member);
     const permittedStatuses = manageable ? ISSUE_STATUSES : ["open", "closed"];
@@ -851,8 +2166,6 @@ function issueRoutes(route) {
       canManageTemplates: manageable,
       issues: {
         new: {
-          // Both casings are emitted deliberately until the shape is verified
-          // against the live Issues API; clients have been seen reading either.
           permittedActions: permittedActions2,
           permittedAttributes,
           permittedStatuses,
@@ -865,36 +2178,34 @@ function issueRoutes(route) {
       permissionLevels: [context.member.issue_permission]
     });
   });
-  app.get("/construction/issues/v1/projects/:projectId/issue-types", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/issues/v1/projects/:projectId/issue-types", async (c) => {
+    const context = await requestContext(c, route, aps);
     if (context instanceof Response) return context;
-    const pagination = queryPagination(c, { defaultLimit: 200, maxLimit: 200 });
-    if (!pagination.ok) return issuesError(c, 400, "Bad Request", pagination.message);
+    const pagination2 = queryPagination(c, { defaultLimit: 200, maxLimit: 200 });
+    if (!pagination2.ok) return issuesError(c, 400, "Bad Request", pagination2.message);
     const isActive = c.req.query("filter[isActive]");
     const includeSubtypes = commaSeparated(c.req.query("include")).includes("subtypes");
-    const resources = aps.issueTypes.findBy("project_id", context.project.project_id).filter((issueType) => isActive === void 0 || issueType.payload.isActive === (isActive === "true"));
-    const results = pageItems(resources, pagination.value).map((issueType) => {
-      const { subtypes, ...summary } = structuredClone(issueType.payload);
-      return includeSubtypes ? { ...summary, subtypes } : summary;
+    const resources = aps.issueTypes.findBy("project_id", context.project.project_id).filter((issueType) => isActive === void 0 || issueType.is_active === (isActive === "true"));
+    const results = pageItems(resources, pagination2.value).map((issueType) => {
+      const payload = structuredClone(issueType.payload);
+      if (!includeSubtypes) delete payload.subtypes;
+      return payload;
     });
-    return c.json(offsetEnvelope(results, pagination.value, resources.length));
+    return c.json(offsetEnvelope(results, pagination2.value, resources.length));
   });
-  app.get("/construction/issues/v1/projects/:projectId/issues", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/issues/v1/projects/:projectId/issues", async (c) => {
+    const context = await requestContext(c, route, aps);
     if (context instanceof Response) return context;
-    const pagination = queryPagination(c, { defaultLimit: 100, maxLimit: 100 });
-    if (!pagination.ok) return issuesError(c, 400, "Bad Request", pagination.message);
-    const filtered = sortIssues(
-      filterIssues(c, aps.issues.findBy("project_id", context.project.project_id)),
-      c.req.query("sortBy")
-    );
-    const results = pageItems(filtered, pagination.value).map((issue) => issuePayload(issue, context.member));
-    return c.json(offsetEnvelope(results, pagination.value, filtered.length));
+    const pagination2 = queryPagination(c, { defaultLimit: 100, maxLimit: 100 });
+    if (!pagination2.ok) return issuesError(c, 400, "Bad Request", pagination2.message);
+    const filtered = filterIssues(c, aps.issues.findBy("project_id", context.project.project_id));
+    const results = pageItems(filtered, pagination2.value).map((issue) => issuePayload(issue, context.member));
+    return c.json(offsetEnvelope(results, pagination2.value, filtered.length));
   });
-  app.get("/construction/issues/v1/projects/:projectId/issues/:issueId", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/issues/v1/projects/:projectId/issues/:issueId", async (c) => {
+    const context = await requestContext(c, route, aps);
     if (context instanceof Response) return context;
-    const issue = findProjectResource(aps.issues, context.project.project_id, "issue_id", c.req.param("issueId"));
+    const issue = aps.issues.findBy("project_id", context.project.project_id).find((candidate) => candidate.issue_id === c.req.param("issueId"));
     if (!issue) return issuesError(c, 404, "Not Found", "The requested issue was not found.");
     return c.json(issuePayload(issue, context.member));
   });
@@ -1097,8 +2408,103 @@ function modelDerivativeRoutes({ app, store }) {
   });
 }
 
+// src/routes/modelset.ts
+var VERSION_STATUSES = ["Pending", "Processing", "Successful", "Partial", "Failed"];
+function versionForModelSet(c, aps, modelSet, requestedVersion) {
+  const version = Number(requestedVersion);
+  if (!Number.isInteger(version) || version < 1) {
+    return badInput(c, "version", `The value '${requestedVersion}' must be a positive integer.`);
+  }
+  const result = aps.modelSetVersions.findBy("model_set_id", modelSet.model_set_id).find((candidate) => candidate.version === version);
+  return result ?? notFound(c, "The requested model set version");
+}
+function modelSetRoutes({ app, store }) {
+  const aps = getApsStore(store);
+  app.use("/bim360/modelset/v3/*", apsAuth(store, { scopes: ["data:read"], requireUser: true }));
+  app.get("/bim360/modelset/v3/containers/:containerId/modelsets", (c) => {
+    const project = coordinationProject(c, aps);
+    if (project instanceof Response) return project;
+    const includeDisabled = booleanQuery(c, "includeDisabled", false);
+    if (includeDisabled instanceof Response) return includeDisabled;
+    const includeDeleted = booleanQuery(c, "includeDeleted", false);
+    if (includeDeleted instanceof Response) return includeDeleted;
+    const name = c.req.query("name")?.trim().toLocaleLowerCase();
+    const folderUrn = c.req.query("folderUrn")?.trim();
+    const modelSets = aps.modelSets.findBy("project_id", project.project_id).filter((modelSet) => includeDisabled || !modelSet.disabled).filter((modelSet) => includeDeleted || !modelSet.deleted).filter((modelSet) => !name || modelSet.name.toLocaleLowerCase().includes(name)).filter(
+      (modelSet) => !folderUrn || modelSet.root_folder_urn === folderUrn || modelSet.folder_urns.includes(folderUrn)
+    ).sort((left, right) => left.name.localeCompare(right.name));
+    const page = coordinationPage(c, modelSets);
+    if (page instanceof Response) return page;
+    return c.json({ page: page.page, modelSets: page.items.map(modelSetSummaryPayload) });
+  });
+  app.get("/bim360/modelset/v3/containers/:containerId/modelsets/:modelSetId", (c) => {
+    const project = coordinationProject(c, aps);
+    if (project instanceof Response) return project;
+    const modelSet = modelSetForProject(c, aps, project);
+    if (modelSet instanceof Response) return modelSet;
+    return c.json(modelSetPayload(aps, modelSet));
+  });
+  app.get("/bim360/modelset/v3/containers/:containerId/modelsets/:modelSetId/versions", (c) => {
+    const project = coordinationProject(c, aps);
+    if (project instanceof Response) return project;
+    const modelSet = modelSetForProject(c, aps, project);
+    if (modelSet instanceof Response) return modelSet;
+    const statuses = queryValues2(c, "status");
+    const invalidStatus = statuses.find((status) => !VERSION_STATUSES.includes(status));
+    if (invalidStatus) return badInput(c, "status", `The value '${invalidStatus}' is not valid.`);
+    const versions = aps.modelSetVersions.findBy("model_set_id", modelSet.model_set_id).filter((version) => statuses.length === 0 || statuses.includes(version.status)).sort((left, right) => right.version - left.version);
+    const page = coordinationPage(c, versions);
+    if (page instanceof Response) return page;
+    return c.json({
+      page: page.page,
+      modelSetVersions: page.items.map((version) => ({
+        version: version.version,
+        createTime: version.create_time,
+        status: version.status
+      }))
+    });
+  });
+  app.get("/bim360/modelset/v3/containers/:containerId/modelsets/:modelSetId/versions/latest", (c) => {
+    const project = coordinationProject(c, aps);
+    if (project instanceof Response) return project;
+    const modelSet = modelSetForProject(c, aps, project);
+    if (modelSet instanceof Response) return modelSet;
+    const version = latestModelSetVersion(aps, modelSet.model_set_id);
+    return version ? c.json(modelSetVersionPayload(version)) : notFound(c, "The requested model set version");
+  });
+  app.get("/bim360/modelset/v3/containers/:containerId/modelsets/:modelSetId/versions/:version", (c) => {
+    const project = coordinationProject(c, aps);
+    if (project instanceof Response) return project;
+    const modelSet = modelSetForProject(c, aps, project);
+    if (modelSet instanceof Response) return modelSet;
+    const version = versionForModelSet(c, aps, modelSet, c.req.param("version"));
+    if (version instanceof Response) return version;
+    return c.json(modelSetVersionPayload(version));
+  });
+  app.get("/bim360/modelset/v3/containers/:containerId/modelsets/:modelSetId/versions/:version/views", (c) => {
+    const project = coordinationProject(c, aps);
+    if (project instanceof Response) return project;
+    const modelSet = modelSetForProject(c, aps, project);
+    if (modelSet instanceof Response) return modelSet;
+    const version = versionForModelSet(c, aps, modelSet, c.req.param("version"));
+    if (version instanceof Response) return version;
+    const views = aps.modelSetViews.findBy("model_set_id", modelSet.model_set_id).filter((view) => view.version === version.version);
+    const page = coordinationPage(c, views);
+    if (page instanceof Response) return page;
+    return c.json({
+      page: page.page,
+      modelSetViewVersions: page.items.map((view) => ({
+        viewId: view.view_id,
+        modelSetId: view.model_set_id,
+        documentVersions: [...view.document_versions],
+        version: view.version
+      }))
+    });
+  });
+}
+
 // src/routes/oauth.ts
-import { createHash as createHash2, randomBytes as randomBytes2 } from "crypto";
+import { createHash as createHash3, randomBytes as randomBytes3 } from "crypto";
 import { SignJWT, exportJWK } from "jose";
 
 // ../core/dist/index.js
@@ -1106,7 +2512,7 @@ import { jwtVerify as jwtVerify2 } from "jose";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { timingSafeEqual } from "crypto";
+import { timingSafeEqual as timingSafeEqual2 } from "crypto";
 function createErrorHandler(documentationUrl) {
   return async (c, next) => {
     if (documentationUrl) {
@@ -1506,7 +2912,7 @@ function constantTimeSecretEqual(a, b) {
   const bufA = Buffer.from(a, "utf-8");
   const bufB = Buffer.from(b, "utf-8");
   if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
+  return timingSafeEqual2(bufA, bufB);
 }
 function bodyStr(v) {
   if (typeof v === "string") return v;
@@ -1857,7 +3263,7 @@ function oauthRoutes({ app, store, baseUrl, tokenMap }) {
         if (!codeVerifier) {
           return oauthError(c, 400, "invalid_request", "The request is missing a required parameter 'code_verifier'.");
         }
-        const expected = createHash2("sha256").update(codeVerifier).digest("base64url");
+        const expected = createHash3("sha256").update(codeVerifier).digest("base64url");
         if (expected !== pending.codeChallenge) {
           return oauthError(c, 400, "invalid_grant", "PKCE verification failed.");
         }
@@ -1869,7 +3275,7 @@ function oauthRoutes({ app, store, baseUrl, tokenMap }) {
       pendingCodes.delete(code);
       const now = Math.floor(Date.now() / 1e3);
       const scope = pending.scope || "data:read";
-      const familyId = randomBytes2(16).toString("hex");
+      const familyId = randomBytes3(16).toString("hex");
       const accessToken = await signAccessToken(store, {
         clientId: client.client_id,
         scope,
@@ -2128,20 +3534,19 @@ function oauthRoutes({ app, store, baseUrl, tokenMap }) {
 }
 
 // src/routes/rfis.ts
-function rfiError(c, status, code, message) {
-  return c.json({ error: { code, message } }, status);
-}
-function rfiRequestError(c, kind) {
-  switch (kind) {
-    case "invalid-project-id":
-      return rfiError(c, 400, "BAD_INPUT", "RFI project IDs must not include the 'b.' prefix.");
-    case "project-not-found":
-      return rfiError(c, 404, "NOT_FOUND", "The requested project was not found.");
-    case "user-required":
-      return rfiError(c, 403, "FORBIDDEN", "User context is required.");
-    case "not-a-member":
-      return rfiError(c, 403, "FORBIDDEN", "The user is not a member of this project.");
+async function requestContext2(c, route, aps) {
+  const projectResult = projectForAccId(aps, c.req.param("projectId"), "bare");
+  if (projectResult.kind === "invalid") {
+    return rfiError(c, 400, "BAD_INPUT", "RFI project IDs must not include the 'b.' prefix.");
   }
+  if (projectResult.kind === "missing") {
+    return rfiError(c, 404, "NOT_FOUND", "The requested project was not found.");
+  }
+  const user = await userForApsRequest(c, route.store, aps, false);
+  if (!user) return rfiError(c, 403, "FORBIDDEN", "User context is required.");
+  const member = accProjectUser(aps, projectResult.project.project_id, user.user_id);
+  if (!member) return rfiError(c, 403, "FORBIDDEN", "The user is not a member of this project.");
+  return { project: projectResult.project, user, member };
 }
 function canManageRfis(member) {
   return member.role === "project_admin" || member.rfi_roles.some((role) => role !== "reviewer");
@@ -2159,10 +3564,6 @@ function transition(status, userId2) {
     ]
   };
 }
-function workflowStatuses(statuses, userId2) {
-  const transitions = statuses.map((value) => transition(value, userId2));
-  return { wfUS: transitions, wfEU: transitions };
-}
 function permittedActions(member, userId2, status) {
   const manageable = canManageRfis(member);
   const statuses = manageable ? ["draft", "submitted", "open", "answered", "closed"] : [status];
@@ -2170,7 +3571,10 @@ function permittedActions(member, userId2, status) {
     share: manageable,
     nudge: manageable,
     updateRfi: {
-      permittedStatuses: workflowStatuses(statuses, userId2),
+      permittedStatuses: {
+        wfUS: statuses.map((value) => transition(value, userId2)),
+        wfEU: statuses.map((value) => transition(value, userId2))
+      },
       permittedAttributes: manageable ? [
         { name: "title" },
         { name: "question" },
@@ -2188,9 +3592,17 @@ function permittedActions(member, userId2, status) {
   };
 }
 function rfiPayload(rfi, member, userId2, includeDetail) {
-  const { responses, draftResponses, ...summary } = structuredClone(rfi.payload);
-  const common = { ...summary, permittedActions: permittedActions(member, userId2, rfi.payload.status) };
-  return includeDetail ? { ...common, responses, draftResponses, maxAssignees: 10 } : common;
+  const payload = {
+    ...structuredClone(rfi.payload),
+    permittedActions: permittedActions(member, userId2, rfi.status)
+  };
+  if (!includeDetail) {
+    delete payload.responses;
+    delete payload.draftResponses;
+  } else {
+    payload.maxAssignees = 10;
+  }
+  return payload;
 }
 function stringArray(value) {
   if (Array.isArray(value)) return value.filter((item) => typeof item === "string");
@@ -2215,15 +3627,16 @@ function filterRfis(rfis, body) {
   const rfiTypeIds = stringArray(filter.rfiTypeId);
   const references = stringArray(filter.reference);
   const priorities = stringArray(filter.priority);
-  let results = rfis.filter(({ payload }) => {
-    if (ids.length > 0 && !ids.includes(payload.id)) return false;
-    if (statuses.length > 0 && !statuses.includes(payload.status)) return false;
-    if (rfiTypeIds.length > 0 && !rfiTypeIds.includes(payload.rfiTypeId)) return false;
-    if (references.length > 0 && !references.includes(payload.reference)) return false;
-    if (priorities.length > 0 && !priorities.includes(payload.priority)) return false;
-    if (assignees.length > 0 && !payload.assignedTo.some((actor) => assignees.includes(actor.id))) return false;
+  let results = rfis.filter((rfi) => {
+    if (ids.length > 0 && !ids.includes(rfi.rfi_id)) return false;
+    if (statuses.length > 0 && !statuses.includes(rfi.status)) return false;
+    if (rfiTypeIds.length > 0 && !rfiTypeIds.includes(rfi.rfi_type_id)) return false;
+    if (references.length > 0 && !references.includes(rfi.reference)) return false;
+    if (priorities.length > 0 && !priorities.includes(rfi.priority)) return false;
+    if (assignees.length > 0 && !assignees.some((id) => rfi.assigned_to.includes(id))) return false;
     if (search) {
-      if (!payload.title.toLocaleLowerCase().includes(search) && !payload.customIdentifier.toLocaleLowerCase().includes(search) && !payload.question.toLocaleLowerCase().includes(search)) {
+      const question = String(rfi.payload.question ?? "").toLocaleLowerCase();
+      if (!rfi.title.toLocaleLowerCase().includes(search) && !rfi.custom_identifier.toLocaleLowerCase().includes(search) && !question.includes(search)) {
         return false;
       }
     }
@@ -2246,10 +3659,8 @@ function filterRfis(rfis, body) {
 }
 function nextCustomIdentifier(rfis) {
   if (rfis.length === 0) return { current: null, next: "1" };
-  const sorted = [...rfis].sort(
-    (left, right) => left.payload.customIdentifier.localeCompare(right.payload.customIdentifier, void 0, { numeric: true })
-  );
-  const current = sorted.at(-1)?.payload.customIdentifier ?? "0";
+  const sorted = [...rfis].sort((left, right) => left.custom_identifier.localeCompare(right.custom_identifier));
+  const current = sorted.at(-1)?.custom_identifier ?? "0";
   const match = current.match(/^(.*?)(\d+)$/);
   if (!match) return { current, next: `${current}-1` };
   const prefix = match[1];
@@ -2259,13 +3670,11 @@ function nextCustomIdentifier(rfis) {
 function rfiRoutes(route) {
   const { app, store } = route;
   const aps = getApsStore(store);
-  const requestContext = (c) => accMemberContext(c, store, aps, { idRule: "bare", error: rfiRequestError });
   app.use("/construction/rfis/v3/*", apsAuth(store, { scopes: ["data:read"], requireUser: true }));
-  app.get("/construction/rfis/v3/projects/:projectId/users/me", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/rfis/v3/projects/:projectId/users/me", async (c) => {
+    const context = await requestContext2(c, route, aps);
     if (context instanceof Response) return context;
-    const defaultType = aps.rfiTypes.findBy("project_id", context.project.project_id).find((candidate) => candidate.payload.isDefault);
-    const createStatuses = canManageRfis(context.member) ? ["draft", "open"] : [];
+    const defaultType = aps.rfiTypes.findBy("project_id", context.project.project_id).find((candidate) => candidate.payload.isDefault === true);
     return c.json({
       user: {
         id: context.user.user_id,
@@ -2274,7 +3683,10 @@ function rfiRoutes(route) {
       },
       permittedActions: {
         createRfi: {
-          permittedStatuses: workflowStatuses(createStatuses, context.user.user_id)
+          permittedStatuses: {
+            wfUS: canManageRfis(context.member) ? [transition("draft", context.user.user_id), transition("open", context.user.user_id)] : [],
+            wfEU: canManageRfis(context.member) ? [transition("draft", context.user.user_id), transition("open", context.user.user_id)] : []
+          }
         }
       },
       workflow: { roles: context.member.rfi_roles, type: "US" },
@@ -2283,8 +3695,8 @@ function rfiRoutes(route) {
       maintenanceEndDate: null
     });
   });
-  app.get("/construction/rfis/v3/projects/:projectId/workflow", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/rfis/v3/projects/:projectId/workflow", async (c) => {
+    const context = await requestContext2(c, route, aps);
     if (context instanceof Response) return context;
     return c.json({
       workflowType: "US",
@@ -2295,37 +3707,37 @@ function rfiRoutes(route) {
       }))
     });
   });
-  app.get("/construction/rfis/v3/projects/:projectId/rfi-types", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/rfis/v3/projects/:projectId/rfi-types", async (c) => {
+    const context = await requestContext2(c, route, aps);
     if (context instanceof Response) return context;
-    const pagination = queryPagination(c, { defaultLimit: 100, maxLimit: 200 });
-    if (!pagination.ok) return rfiError(c, 400, "BAD_INPUT", pagination.message);
+    const pagination2 = queryPagination(c, { defaultLimit: 100, maxLimit: 200 });
+    if (!pagination2.ok) return rfiError(c, 400, "BAD_INPUT", pagination2.message);
     const status = c.req.query("filter[status]");
-    const resources = aps.rfiTypes.findBy("project_id", context.project.project_id).filter((candidate) => !status || candidate.payload.status === status);
-    const results = pageItems(resources, pagination.value).map((candidate) => structuredClone(candidate.payload));
-    return c.json(offsetEnvelope(results, pagination.value, resources.length));
+    const resources = aps.rfiTypes.findBy("project_id", context.project.project_id).filter((candidate) => !status || candidate.status === status);
+    const results = pageItems(resources, pagination2.value).map((candidate) => structuredClone(candidate.payload));
+    return c.json(offsetEnvelope(results, pagination2.value, resources.length));
   });
-  app.get("/construction/rfis/v3/projects/:projectId/attributes", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/rfis/v3/projects/:projectId/attributes", async (c) => {
+    const context = await requestContext2(c, route, aps);
     if (context instanceof Response) return context;
-    const pagination = queryPagination(c, { defaultLimit: 100, maxLimit: 200 });
-    if (!pagination.ok) return rfiError(c, 400, "BAD_INPUT", pagination.message);
+    const pagination2 = queryPagination(c, { defaultLimit: 100, maxLimit: 200 });
+    if (!pagination2.ok) return rfiError(c, 400, "BAD_INPUT", pagination2.message);
     const status = c.req.query("filter[status]");
-    const resources = aps.rfiAttributes.findBy("project_id", context.project.project_id).filter((candidate) => !status || candidate.payload.status === status);
-    const results = pageItems(resources, pagination.value).map((candidate) => structuredClone(candidate.payload));
-    return c.json(offsetEnvelope(results, pagination.value, resources.length));
+    const resources = aps.rfiAttributes.findBy("project_id", context.project.project_id).filter((candidate) => !status || candidate.status === status);
+    const results = pageItems(resources, pagination2.value).map((candidate) => structuredClone(candidate.payload));
+    return c.json(offsetEnvelope(results, pagination2.value, resources.length));
   });
-  app.get("/construction/rfis/v3/projects/:projectId/rfis/custom-identifier", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/rfis/v3/projects/:projectId/rfis/custom-identifier", async (c) => {
+    const context = await requestContext2(c, route, aps);
     if (context instanceof Response) return context;
     return c.json(nextCustomIdentifier(aps.rfis.findBy("project_id", context.project.project_id)));
   });
   app.post("/construction/rfis/v3/projects/:projectId/search:rfis", async (c) => {
-    const context = requestContext(c);
+    const context = await requestContext2(c, route, aps);
     if (context instanceof Response) return context;
     const body = await readJsonObject(c);
     if (!body.ok) return rfiError(c, 400, "BAD_INPUT", body.message);
-    const pagination = parseOffsetPagination(
+    const pagination2 = parseOffsetPagination(
       body.value.limit ?? c.req.query("limit"),
       body.value.offset ?? c.req.query("offset"),
       {
@@ -2333,25 +3745,38 @@ function rfiRoutes(route) {
         maxLimit: 200
       }
     );
-    if (!pagination.ok) return rfiError(c, 400, "BAD_INPUT", pagination.message);
+    if (!pagination2.ok) return rfiError(c, 400, "BAD_INPUT", pagination2.message);
     const filtered = filterRfis(aps.rfis.findBy("project_id", context.project.project_id), body.value);
-    const results = pageItems(filtered, pagination.value).map(
+    const results = pageItems(filtered, pagination2.value).map(
       (rfi) => rfiPayload(rfi, context.member, context.user.user_id, false)
     );
-    return c.json(offsetEnvelope(results, pagination.value, filtered.length));
+    return c.json(offsetEnvelope(results, pagination2.value, filtered.length));
   });
-  app.get("/construction/rfis/v3/projects/:projectId/rfis/:rfiId", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/rfis/v3/projects/:projectId/rfis/:rfiId", async (c) => {
+    const context = await requestContext2(c, route, aps);
     if (context instanceof Response) return context;
-    const rfi = findProjectResource(aps.rfis, context.project.project_id, "rfi_id", c.req.param("rfiId"));
+    const rfi = aps.rfis.findBy("project_id", context.project.project_id).find((candidate) => candidate.rfi_id === c.req.param("rfiId"));
     if (!rfi) return rfiError(c, 404, "NOT_FOUND", "The requested RFI was not found.");
     return c.json(rfiPayload(rfi, context.member, context.user.user_id, true));
   });
 }
 
 // src/routes/sheets.ts
-function sheetsError(c, status, errorCode, message) {
-  return c.json({ errorCode, message }, status);
+async function requestContext3(c, route, aps) {
+  const projectResult = projectForAccId(aps, c.req.param("projectId"), "bare-or-prefixed");
+  if (projectResult.kind !== "found") {
+    return sheetsError(c, 404, "ERR_RESOURCE_NOT_EXIST", "The requested project was not found.");
+  }
+  const token = await accessTokenForRequest(c, route.store);
+  const user = await userForApsRequest(c, route.store, aps, true);
+  if (!token) return sheetsError(c, 401, "ERR_AUTHENTICATED_ERROR", "Authentication header is not correct.");
+  if (!token.apsUserId && c.req.header("x-user-id") && !user) {
+    return sheetsError(c, 403, "ERR_NOT_ALLOWED", "The x-user-id does not identify a seeded user.");
+  }
+  if (user && !accProjectUser(aps, projectResult.project.project_id, user.user_id)) {
+    return sheetsError(c, 403, "ERR_NOT_ALLOWED", "The user is not a member of this project.");
+  }
+  return { project: projectResult.project };
 }
 function filterSheets(c, sheets) {
   const versionSetIds = commaSeparated(c.req.query("filter[versionSetId]"));
@@ -2360,15 +3785,15 @@ function filterSheets(c, sheets) {
   const collectionId = c.req.query("collectionId");
   const currentOnly = c.req.query("currentOnly") === "true";
   const isDeleted = c.req.query("isDeleted");
-  return sheets.filter(({ payload }) => {
-    if (versionSetIds.length > 0 && !versionSetIds.includes(payload.versionSet.id)) return false;
-    if (tags.length > 0 && !tags.some((tag) => payload.tags.includes(tag))) return false;
-    if (currentOnly && !payload.isCurrent) return false;
-    if (isDeleted === "true" && !payload.deleted) return false;
-    if ((isDeleted === void 0 || isDeleted === "false") && payload.deleted) return false;
-    if (collectionId && collectionId !== "*" && payload.collection?.id !== collectionId) return false;
+  return sheets.filter((sheet) => {
+    if (versionSetIds.length > 0 && !versionSetIds.includes(sheet.version_set_id)) return false;
+    if (tags.length > 0 && !tags.some((tag) => sheet.tags.includes(tag))) return false;
+    if (currentOnly && !sheet.is_current) return false;
+    if (isDeleted === "true" && !sheet.deleted) return false;
+    if ((isDeleted === void 0 || isDeleted === "false") && sheet.deleted) return false;
+    if (collectionId && collectionId !== "*" && sheet.collection_id !== collectionId) return false;
     if (searchTerms.length > 0 && !searchTerms.some(
-      (term) => payload.title.toLocaleLowerCase().includes(term) || payload.number.toLocaleLowerCase().includes(term)
+      (term) => sheet.title.toLocaleLowerCase().includes(term) || sheet.number.toLocaleLowerCase().includes(term)
     )) {
       return false;
     }
@@ -2379,31 +3804,17 @@ function sheetRoutes(route) {
   const { app, store } = route;
   const aps = getApsStore(store);
   app.use("/construction/sheets/v1/*", apsAuth(store, { scopes: ["data:read"] }));
-  function requestContext(c) {
-    const projectResult = projectForAccId(aps, c.req.param("projectId"), "bare-or-prefixed");
-    if (projectResult.kind !== "found") {
-      return sheetsError(c, 404, "ERR_RESOURCE_NOT_EXIST", "The requested project was not found.");
-    }
-    const resolution = resolveAccUser(c, store, aps);
-    if (resolution.kind === "unknown-user") {
-      return sheetsError(c, 403, "ERR_NOT_ALLOWED", "The x-user-id does not identify a seeded user.");
-    }
-    if (resolution.kind === "user" && !accProjectUser(aps, projectResult.project.project_id, resolution.user.user_id)) {
-      return sheetsError(c, 403, "ERR_NOT_ALLOWED", "The user is not a member of this project.");
-    }
-    return { project: projectResult.project };
-  }
-  app.get("/construction/sheets/v1/projects/:projectId/sheets", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/sheets/v1/projects/:projectId/sheets", async (c) => {
+    const context = await requestContext3(c, route, aps);
     if (context instanceof Response) return context;
-    const pagination = queryPagination(c, { defaultLimit: 100, maxLimit: 200 });
-    if (!pagination.ok) return sheetsError(c, 400, "ERR_BAD_INPUT", pagination.message);
+    const pagination2 = queryPagination(c, { defaultLimit: 100, maxLimit: 200 });
+    if (!pagination2.ok) return sheetsError(c, 400, "ERR_BAD_INPUT", pagination2.message);
     const filtered = filterSheets(c, aps.sheets.findBy("project_id", context.project.project_id));
-    const results = pageItems(filtered, pagination.value).map((sheet) => structuredClone(sheet.payload));
-    return c.json(sheetsEnvelope(results, pagination.value, filtered.length, c.req.url));
+    const results = pageItems(filtered, pagination2.value).map((sheet) => structuredClone(sheet.payload));
+    return c.json(sheetsEnvelope(results, pagination2.value, filtered.length, c.req.url));
   });
   app.post("/construction/sheets/v1/projects/:projectId/sheets:batch-get", async (c) => {
-    const context = requestContext(c);
+    const context = await requestContext3(c, route, aps);
     if (context instanceof Response) return context;
     const body = await readJsonObject(c);
     if (!body.ok) return sheetsError(c, 400, "ERR_BAD_INPUT", body.message);
@@ -2418,40 +3829,957 @@ function sheetRoutes(route) {
     });
     return c.json({ results });
   });
-  app.get("/construction/sheets/v1/projects/:projectId/version-sets", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/sheets/v1/projects/:projectId/version-sets", async (c) => {
+    const context = await requestContext3(c, route, aps);
     if (context instanceof Response) return context;
-    const pagination = queryPagination(c, { defaultLimit: 100, maxLimit: 200 });
-    if (!pagination.ok) return sheetsError(c, 400, "ERR_BAD_INPUT", pagination.message);
+    const pagination2 = queryPagination(c, { defaultLimit: 100, maxLimit: 200 });
+    if (!pagination2.ok) return sheetsError(c, 400, "ERR_BAD_INPUT", pagination2.message);
     const collectionId = c.req.query("collectionId");
-    const resources = aps.sheetVersionSets.findBy("project_id", context.project.project_id).filter(
-      (versionSet) => !collectionId || collectionId === "*" || versionSet.payload.collection?.id === collectionId
-    );
-    const results = pageItems(resources, pagination.value).map((versionSet) => structuredClone(versionSet.payload));
-    return c.json(sheetsEnvelope(results, pagination.value, resources.length, c.req.url));
+    const resources = aps.sheetVersionSets.findBy("project_id", context.project.project_id).filter((versionSet) => !collectionId || collectionId === "*" || versionSet.collection_id === collectionId);
+    const results = pageItems(resources, pagination2.value).map((versionSet) => structuredClone(versionSet.payload));
+    return c.json(sheetsEnvelope(results, pagination2.value, resources.length, c.req.url));
   });
-  app.get("/construction/sheets/v1/projects/:projectId/collections", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/sheets/v1/projects/:projectId/collections", async (c) => {
+    const context = await requestContext3(c, route, aps);
     if (context instanceof Response) return context;
-    const pagination = queryPagination(c, { defaultLimit: 100, maxLimit: 200 });
-    if (!pagination.ok) return sheetsError(c, 400, "ERR_BAD_INPUT", pagination.message);
+    const pagination2 = queryPagination(c, { defaultLimit: 100, maxLimit: 200 });
+    if (!pagination2.ok) return sheetsError(c, 400, "ERR_BAD_INPUT", pagination2.message);
     const resources = aps.sheetCollections.findBy("project_id", context.project.project_id);
-    const results = pageItems(resources, pagination.value).map((collection) => structuredClone(collection.payload));
-    return c.json(sheetsEnvelope(results, pagination.value, resources.length, c.req.url));
+    const results = pageItems(resources, pagination2.value).map((collection) => structuredClone(collection.payload));
+    return c.json(sheetsEnvelope(results, pagination2.value, resources.length, c.req.url));
   });
-  app.get("/construction/sheets/v1/projects/:projectId/collections/:collectionId", (c) => {
-    const context = requestContext(c);
+  app.get("/construction/sheets/v1/projects/:projectId/collections/:collectionId", async (c) => {
+    const context = await requestContext3(c, route, aps);
     if (context instanceof Response) return context;
-    const collection = findProjectResource(
-      aps.sheetCollections,
-      context.project.project_id,
-      "collection_id",
-      c.req.param("collectionId")
-    );
+    const collection = aps.sheetCollections.findBy("project_id", context.project.project_id).find((candidate) => candidate.collection_id === c.req.param("collectionId"));
     if (!collection) {
       return sheetsError(c, 404, "ERR_RESOURCE_NOT_EXIST", "The collection does not exist.");
     }
     return c.json(structuredClone(collection.payload));
+  });
+}
+
+// src/webhook-events.ts
+var APS_WEBHOOK_REGIONS = ["US", "EMEA", "AUS", "CAN", "DEU", "IND", "JPN", "GBR"];
+var REGION_SET = new Set(APS_WEBHOOK_REGIONS);
+function parseWebhookRegion(value) {
+  const normalized = value.toUpperCase();
+  return REGION_SET.has(normalized) ? normalized : null;
+}
+var APS_WEBHOOK_EVENTS = {
+  data: [
+    "dm.version.added",
+    "dm.version.modified",
+    "dm.version.deleted",
+    "dm.version.moved",
+    "dm.version.moved.out",
+    "dm.version.copied",
+    "dm.version.copied.out",
+    "dm.lineage.reserved",
+    "dm.lineage.unreserved",
+    "dm.lineage.updated",
+    "dm.folder.added",
+    "dm.folder.modified",
+    "dm.folder.deleted",
+    "dm.folder.purged",
+    "dm.folder.moved",
+    "dm.folder.moved.out",
+    "dm.folder.copied",
+    "dm.folder.copied.out",
+    "dm.operation.started",
+    "dm.operation.completed"
+  ],
+  derivative: ["extraction.finished", "extraction.updated"],
+  "adsk.c4r": ["model.sync", "model.publish"],
+  "adsk.flc.production": [
+    "item.clone",
+    "item.create",
+    "item.lock",
+    "item.release",
+    "item.unlock",
+    "item.update",
+    "workflow.transition"
+  ],
+  "autodesk.construction.cost": [
+    "budget.created-1.0",
+    "budget.updated-1.0",
+    "budget.deleted-1.0",
+    "budgetPayment.created-1.0",
+    "budgetPayment.updated-1.0",
+    "budgetPayment.deleted-1.0",
+    "contract.created-1.0",
+    "contract.updated-1.0",
+    "contract.deleted-1.0",
+    "cor.created-1.0",
+    "cor.updated-1.0",
+    "cor.deleted-1.0",
+    "costPayment.created-1.0",
+    "costPayment.updated-1.0",
+    "costPayment.deleted-1.0",
+    "expense.created-1.0",
+    "expense.updated-1.0",
+    "expense.deleted-1.0",
+    "expenseItem.created-1.0",
+    "expenseItem.updated-1.0",
+    "expenseItem.deleted-1.0",
+    "mainContract.created-1.0",
+    "mainContract.updated-1.0",
+    "mainContract.deleted-1.0",
+    "mainContractItem.created-1.0",
+    "mainContractItem.updated-1.0",
+    "mainContractItem.deleted-1.0",
+    "oco.created-1.0",
+    "oco.updated-1.0",
+    "oco.deleted-1.0",
+    "pco.created-1.0",
+    "pco.updated-1.0",
+    "pco.deleted-1.0",
+    "project.initialized-1.0",
+    "rfq.created-1.0",
+    "rfq.updated-1.0",
+    "rfq.deleted-1.0",
+    "scheduleOfValue.created-1.0",
+    "scheduleOfValue.updated-1.0",
+    "scheduleOfValue.deleted-1.0",
+    "sco.created-1.0",
+    "sco.updated-1.0",
+    "sco.deleted-1.0",
+    "segmentValue.created-1.0",
+    "segmentValue.updated-1.0",
+    "segmentValue.deleted-1.0"
+  ],
+  "autodesk.construction.bc": [
+    "bid.created",
+    "opportunity.comment.created",
+    "opportunity.comment.deleted",
+    "opportunity.comment.updated",
+    "opportunity.created",
+    "opportunity.status.updated"
+  ],
+  "autodesk.construction.issues": [
+    "issue.created-1.0",
+    "issue.updated-1.0",
+    "issue.deleted-1.0",
+    "issue.restored-1.0",
+    "issue.unlinked-1.0"
+  ],
+  "autodesk.construction.reviews": ["review.created-1.0", "review.closed-1.0"],
+  "adsk.tandem": ["dt.alert", "dt.mutation", "dt.applyTemplate", "dt.removeTemplate"]
+};
+
+// src/webhooks.ts
+import { createHmac as createHmac2, randomUUID as randomUUID3 } from "crypto";
+
+// src/webhook-filter.ts
+function splitTopLevel(value, delimiter) {
+  const parts = [];
+  let quote = null;
+  let bracketDepth = 0;
+  let start = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    if (quote) {
+      if (char === "\\") index += 1;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === "'" || char === '"') quote = char;
+    else if (char === "[") bracketDepth += 1;
+    else if (char === "]") bracketDepth -= 1;
+    else if (bracketDepth === 0 && value.slice(index, index + delimiter.length) === delimiter) {
+      parts.push(value.slice(start, index).trim());
+      start = index + delimiter.length;
+      index += delimiter.length - 1;
+    }
+  }
+  parts.push(value.slice(start).trim());
+  return parts;
+}
+function parseScalar(value) {
+  const trimmed = value.trim();
+  if (/^'(?:[^'\\]|\\.)*'$/.test(trimmed) || /^"(?:[^"\\]|\\.)*"$/.test(trimmed)) {
+    const inner = trimmed.slice(1, -1);
+    return inner.replace(/\\(['"\\])/g, "$1");
+  }
+  if (/^-?(?:\d+\.?\d*|\.\d+)$/.test(trimmed)) return Number(trimmed);
+  if (trimmed === "true") return true;
+  if (trimmed === "false") return false;
+  if (trimmed === "null") return null;
+  return void 0;
+}
+function parseArray(value) {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) return null;
+  const body = trimmed.slice(1, -1).trim();
+  if (!body) return [];
+  const result = [];
+  for (const part of splitTopLevel(body, ",")) {
+    const scalar = parseScalar(part);
+    if (scalar === void 0) return null;
+    result.push(scalar);
+  }
+  return result;
+}
+function valueAtPath(payload, path) {
+  let value = payload;
+  for (const part of path.split(".")) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return void 0;
+    value = value[part];
+  }
+  return value;
+}
+function evaluateClause(payload, clause) {
+  const match = clause.match(/^@\.([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*(==|!=|>=|<=|>|<|in)\s*(.+)$/);
+  if (!match) return null;
+  const [, path, operator, rawExpected] = match;
+  const actual = valueAtPath(payload, path);
+  if (operator === "in") {
+    const expected2 = parseArray(rawExpected);
+    return expected2 ? expected2.some((candidate) => candidate === actual) : null;
+  }
+  const expected = parseScalar(rawExpected);
+  if (expected === void 0) return null;
+  if (operator === "==") return actual === expected;
+  if (operator === "!=") return actual !== expected;
+  if ((typeof actual !== "number" || typeof expected !== "number") && (typeof actual !== "string" || typeof expected !== "string")) {
+    return false;
+  }
+  if (operator === ">") return actual > expected;
+  if (operator === ">=") return actual >= expected;
+  if (operator === "<") return actual < expected;
+  return actual <= expected;
+}
+function evaluateFilterString(filter, payload) {
+  const trimmed = filter.trim();
+  if (!trimmed.startsWith("$[?(") || !trimmed.endsWith(")]")) return null;
+  const expression = trimmed.slice(4, -2).trim();
+  if (!expression) return null;
+  const orGroups = splitTopLevel(expression, "||");
+  let valid = true;
+  let result = false;
+  for (const group of orGroups) {
+    const clauses = splitTopLevel(group, "&&");
+    let groupMatches = true;
+    for (const clause of clauses) {
+      const clauseResult = evaluateClause(payload, clause);
+      if (clauseResult === null) valid = false;
+      if (clauseResult !== true) groupMatches = false;
+    }
+    if (groupMatches) result = true;
+  }
+  return valid ? result : null;
+}
+function validateWebhookFilter(filter) {
+  const filters = Array.isArray(filter) ? filter : [filter];
+  return filters.length > 0 && filters.every((candidate) => evaluateFilterString(candidate, {}) !== null);
+}
+function webhookFilterMatches(filter, payload) {
+  if (filter === null) return true;
+  const filters = Array.isArray(filter) ? filter : [filter];
+  return filters.every((candidate) => evaluateFilterString(candidate, payload) === true);
+}
+
+// src/webhooks.ts
+var TIMING_STORE_KEY = "aps.webhooks.timing";
+var MAX_DELIVERIES = 1e3;
+async function sendWebhookRequest(request) {
+  const start = Date.now();
+  try {
+    const response = await fetch(request.url, {
+      method: "POST",
+      headers: request.headers,
+      body: request.body,
+      signal: AbortSignal.timeout(request.timeoutMs)
+    });
+    return { status_code: response.status, duration: Date.now() - start, success: response.ok };
+  } catch {
+    return { status_code: null, duration: Date.now() - start, success: false };
+  }
+}
+function userIdentity(userId2) {
+  return { key: `user:${userId2}`, createdBy: userId2, creatorType: "O2User" };
+}
+function appIdentity(clientId) {
+  return { key: `app:${clientId}`, createdBy: clientId, creatorType: "Application" };
+}
+function getWebhookTiming(store) {
+  return { ...DEFAULT_WEBHOOK_TIMING, ...store.getData(TIMING_STORE_KEY) ?? {} };
+}
+function setWebhookTiming(store, timing) {
+  store.setData(TIMING_STORE_KEY, { ...getWebhookTiming(store), ...timing });
+}
+function canonicalWebhookScope(scope) {
+  return JSON.stringify(Object.entries(scope).sort(([left], [right]) => left.localeCompare(right)));
+}
+function createWebhookRecord(aps, input) {
+  return aps.webhookHooks.insert({
+    hook_id: randomUUID3(),
+    // APS derives a hook's tenant from its scope value when none is supplied.
+    tenant: input.tenant ?? Object.values(input.scope)[0] ?? "",
+    callback_url: input.callbackUrl,
+    created_by: input.identity.createdBy,
+    creator_type: input.identity.creatorType,
+    identity_key: input.identity.key,
+    event: input.event,
+    system: input.system,
+    status: input.status ?? "active",
+    auto_reactivate_hook: input.autoReactivateHook ?? false,
+    hook_expiry: input.hookExpiry ?? null,
+    hook_attribute: structuredClone(input.hookAttribute ?? null),
+    filter: structuredClone(input.filter ?? null),
+    scope: structuredClone(input.scope),
+    hub_id: input.hubId ?? null,
+    project_id: input.projectId ?? null,
+    token: input.token ?? null,
+    region: input.region,
+    failed_event_count: 0,
+    inactive_at: input.status === "inactive" ? (/* @__PURE__ */ new Date()).toISOString() : null,
+    reactivation_count: 0
+  });
+}
+function findDuplicateHook(aps, input) {
+  const canonical = canonicalWebhookScope(input.scope);
+  return aps.webhookHooks.all().find(
+    (hook) => hook.identity_key === input.identity.key && hook.region === input.region && hook.system === input.system && hook.event === input.event && hook.callback_url === input.callbackUrl && canonicalWebhookScope(hook.scope) === canonical
+  );
+}
+function findWebhookSecret(aps, identityKey, region) {
+  return aps.webhookSecrets.findBy("identity_key", identityKey).find((secret) => secret.region === region);
+}
+function webhookDetails(hook) {
+  const details = {
+    hookId: hook.hook_id,
+    tenant: hook.tenant,
+    callbackUrl: hook.callback_url,
+    createdBy: hook.created_by,
+    event: hook.event,
+    createdDate: hook.created_at,
+    lastUpdatedDate: hook.updated_at,
+    system: hook.system,
+    creatorType: hook.creator_type,
+    status: hook.status,
+    autoReactivateHook: hook.auto_reactivate_hook,
+    scope: structuredClone(hook.scope),
+    urn: `urn:adsk.webhooks:events.hook:${hook.hook_id}`,
+    __self__: `/systems/${encodeURIComponent(hook.system)}/events/${encodeURIComponent(hook.event)}/hooks/${encodeURIComponent(hook.hook_id)}`
+  };
+  if (hook.hook_expiry !== null) details.hookExpiry = hook.hook_expiry;
+  if (hook.hook_attribute !== null) details.hookAttribute = structuredClone(hook.hook_attribute);
+  if (hook.filter !== null) details.filter = structuredClone(hook.filter);
+  if (hook.hub_id !== null) details.hubId = hook.hub_id;
+  if (hook.project_id !== null) details.projectId = hook.project_id;
+  return details;
+}
+function webhookEventMatches(pattern, event) {
+  if (pattern === "*") return true;
+  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".+");
+  return new RegExp(`^${escaped}$`).test(event);
+}
+function eventScopeCandidates(input) {
+  const eventScope = input.scope ?? {};
+  const ancestors = input.folderAncestors ?? [];
+  const anyKey = input.scopeValue !== void 0 ? [input.scopeValue] : [];
+  const byName = new Map(Object.entries(eventScope).map(([name, value]) => [name, [value]]));
+  byName.set("folder", [...byName.get("folder") ?? [], ...ancestors]);
+  const tenants = [
+    ...input.tenant !== void 0 ? [input.tenant] : [],
+    ...anyKey,
+    ...Object.values(eventScope),
+    ...ancestors
+  ];
+  return { byName, anyKey, tenants };
+}
+function webhookScopeMatches(hook, candidates) {
+  const scopeMatches = Object.entries(hook.scope).every(
+    ([name, value]) => (candidates.byName.get(name) ?? []).includes(value) || candidates.anyKey.includes(value)
+  );
+  if (!scopeMatches) return false;
+  return !hook.tenant || candidates.tenants.includes(hook.tenant);
+}
+function skippedDelivery(hook, reason) {
+  return {
+    hookId: hook.hook_id,
+    matched: false,
+    delivered: false,
+    statusCode: null,
+    attempts: 0,
+    signaturePresent: false,
+    reason
+  };
+}
+function webhookStatusAllowsDelivery(store, hook, now = Date.now()) {
+  if (hook.status === "active" || hook.status === "reactivated") return true;
+  const inactiveAt = hook.inactive_at ? Date.parse(hook.inactive_at) : Number.NaN;
+  const timing = getWebhookTiming(store);
+  return hook.auto_reactivate_hook && Number.isFinite(inactiveAt) && now - inactiveAt >= timing.reactivate_after_ms && hook.reactivation_count < timing.max_reactivation_cycles;
+}
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+function addDelivery(aps, data) {
+  aps.webhookDeliveries.insert(data);
+  for (const delivery of aps.webhookDeliveries.all().slice(0, -MAX_DELIVERIES)) {
+    aps.webhookDeliveries.delete(delivery.id);
+  }
+}
+async function attemptDelivery(aps, hook, input, token, timeoutMs, attempt) {
+  const envelope = {
+    version: "1.0",
+    resourceUrn: input.resourceUrn,
+    hook: webhookDetails(hook),
+    payload: input.payload
+  };
+  const body = JSON.stringify(envelope);
+  const deliveryId = randomUUID3();
+  const headers = {
+    "Content-Type": "application/json",
+    "x-adsk-delivery-id": deliveryId
+  };
+  if (token) {
+    headers["x-adsk-signature"] = `sha1hash=${createHmac2("sha1", token).update(body).digest("hex")}`;
+  }
+  const result = await sendWebhookRequest({ url: hook.callback_url, headers, body, timeoutMs });
+  addDelivery(aps, {
+    delivery_id: deliveryId,
+    hook_id: hook.hook_id,
+    system: input.system,
+    event: input.event,
+    attempt,
+    envelope,
+    status_code: result.status_code,
+    duration: result.duration,
+    success: result.success,
+    signature_present: Boolean(token)
+  });
+  return { success: result.success, statusCode: result.status_code, signaturePresent: Boolean(token) };
+}
+function identityToken(aps, hook) {
+  return hook.token ?? findWebhookSecret(aps, hook.identity_key, hook.region)?.token ?? null;
+}
+async function deliverMatchingHook(aps, store, hook, input) {
+  const timing = getWebhookTiming(store);
+  let current = hook;
+  let reactivationTrial = current.status === "reactivated";
+  if (current.status === "inactive") {
+    if (!webhookStatusAllowsDelivery(store, current)) return skippedDelivery(current, "inactive");
+    current = aps.webhookHooks.update(current.id, {
+      status: "reactivated",
+      reactivation_count: current.reactivation_count + 1
+    });
+    reactivationTrial = true;
+  }
+  const token = identityToken(aps, current);
+  const maxAttempts = reactivationTrial ? 1 : timing.max_retries + 1;
+  let lastStatus = null;
+  let signaturePresent = false;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const result = await attemptDelivery(aps, current, input, token, timing.delivery_timeout_ms, attempt);
+    lastStatus = result.statusCode;
+    signaturePresent = result.signaturePresent;
+    if (result.success) {
+      aps.webhookHooks.update(current.id, {
+        status: "active",
+        failed_event_count: 0,
+        inactive_at: null
+      });
+      return {
+        hookId: current.hook_id,
+        matched: true,
+        delivered: true,
+        statusCode: lastStatus,
+        attempts: attempt,
+        signaturePresent
+      };
+    }
+    if (attempt < maxAttempts) {
+      await delay(Math.min(timing.retry_base_ms * 2 ** (attempt - 1), timing.retry_max_ms));
+    }
+  }
+  if (reactivationTrial) {
+    const permanent = current.reactivation_count >= timing.max_reactivation_cycles;
+    aps.webhookHooks.update(current.id, {
+      status: "inactive",
+      inactive_at: (/* @__PURE__ */ new Date()).toISOString(),
+      auto_reactivate_hook: permanent ? false : current.auto_reactivate_hook
+    });
+  } else {
+    const failedEventCount = current.failed_event_count + 1;
+    const inactive = failedEventCount >= timing.failed_events_before_inactive;
+    aps.webhookHooks.update(current.id, {
+      failed_event_count: failedEventCount,
+      status: inactive ? "inactive" : current.status,
+      inactive_at: inactive ? (/* @__PURE__ */ new Date()).toISOString() : current.inactive_at
+    });
+  }
+  return {
+    hookId: current.hook_id,
+    matched: true,
+    delivered: false,
+    statusCode: lastStatus,
+    attempts: maxAttempts,
+    signaturePresent,
+    reason: "delivery_failed"
+  };
+}
+function deleteExpiredHooks(aps, now = Date.now()) {
+  for (const hook of aps.webhookHooks.all()) {
+    if (hook.hook_expiry !== null && Date.parse(hook.hook_expiry) <= now) aps.webhookHooks.delete(hook.id);
+  }
+}
+async function simulateWebhookEvent(aps, store, input) {
+  deleteExpiredHooks(aps);
+  const candidates = eventScopeCandidates(input);
+  const hooks = aps.webhookHooks.all().filter((hook) => hook.region === input.region && hook.system === input.system);
+  const reports = await Promise.all(
+    hooks.map((hook) => {
+      if (!webhookEventMatches(hook.event, input.event)) return skippedDelivery(hook, "event");
+      if (!webhookScopeMatches(hook, candidates)) return skippedDelivery(hook, "scope");
+      if (!webhookStatusAllowsDelivery(store, hook)) return skippedDelivery(hook, "inactive");
+      if (!webhookFilterMatches(hook.filter, input.payload)) return skippedDelivery(hook, "filter");
+      return deliverMatchingHook(aps, store, hook, input);
+    })
+  );
+  return { system: input.system, event: input.event, resourceUrn: input.resourceUrn, deliveries: reports };
+}
+function validWebhookStatus(value) {
+  return value === "active" || value === "inactive" || value === "reactivated";
+}
+
+// src/routes/simulate.ts
+function simulatorError(c, message, status = 400) {
+  return c.json({ error: message }, status);
+}
+function stringRecord(value) {
+  if (!isRecordObject(value)) return void 0;
+  const entries = Object.entries(value);
+  if (entries.some(([, item]) => typeof item !== "string")) return void 0;
+  return Object.fromEntries(entries);
+}
+function simulateRoutes({ app, store }) {
+  const aps = getApsStore(store);
+  app.post("/_aps/simulate/modelset-version-added", async (c) => {
+    const body = await jsonObjectBody(c);
+    if (!body) return simulatorError(c, "The request body must be a JSON object.");
+    const requestedModelSetId = optionalString(body.modelSetId);
+    const modelSet = requestedModelSetId ? aps.modelSets.findOneBy("model_set_id", requestedModelSetId) : aps.modelSets.all()[0];
+    if (!modelSet) return simulatorError(c, "The seeded model set was not found.", 404);
+    const processingMs = body.processingMs;
+    if (processingMs !== void 0 && (typeof processingMs !== "number" || !Number.isFinite(processingMs) || processingMs < 0)) {
+      return simulatorError(c, "processingMs must be a non-negative number.");
+    }
+    const result = addModelSetVersion(aps, store, modelSet, { processingMs });
+    return c.json({
+      modelSetVersion: modelSetVersionPayload(result.version),
+      clashTest: clashTestPayload(result.test)
+    });
+  });
+  app.post("/_aps/simulate/event", async (c) => {
+    const body = await jsonObjectBody(c);
+    if (!body) return simulatorError(c, "The request body must be a JSON object.");
+    const system = optionalString(body.system);
+    const event = optionalString(body.event);
+    const region = parseWebhookRegion(optionalString(body.region) ?? "US");
+    if (!system || !event || !region) return simulatorError(c, "system, event, and a valid region are required.");
+    if (body.payload !== void 0 && !isRecordObject(body.payload))
+      return simulatorError(c, "payload must be an object.");
+    const scope = body.scope === void 0 ? void 0 : stringRecord(body.scope);
+    if (body.scope !== void 0 && !scope) return simulatorError(c, "scope values must be strings.");
+    if (body.folderAncestors !== void 0 && (!Array.isArray(body.folderAncestors) || body.folderAncestors.some((item) => typeof item !== "string"))) {
+      return simulatorError(c, "folderAncestors must contain strings.");
+    }
+    const resourceUrn = optionalString(body.resourceUrn) ?? `urn:adsk.webhooks:resource:${encodeURIComponent(system)}:${encodeURIComponent(event)}`;
+    const report = await simulateWebhookEvent(aps, store, {
+      system,
+      event,
+      resourceUrn,
+      region,
+      payload: body.payload ?? {},
+      tenant: optionalString(body.tenant),
+      scopeValue: optionalString(body.scopeValue),
+      scope,
+      folderAncestors: body.folderAncestors
+    });
+    return c.json(report);
+  });
+  app.post("/_aps/simulate/dm-version-added", async (c) => {
+    const body = await jsonObjectBody(c);
+    if (!body) return simulatorError(c, "The request body must be a JSON object.");
+    const requestedVersionId = optionalString(body.versionId);
+    const version = requestedVersionId ? aps.documentVersions.findOneBy("version_id", requestedVersionId) : aps.documentVersions.all()[0];
+    if (!version) return simulatorError(c, "The seeded Data Management version was not found.", 404);
+    const item = documentItemForVersion(aps, version);
+    if (!item) return simulatorError(c, "The seeded Data Management item was not found.", 404);
+    const folder = aps.documentFolders.findOneBy("folder_id", item.folder_id);
+    if (!folder) return simulatorError(c, "The seeded Data Management folder was not found.", 404);
+    const ancestors = folderAncestors(aps, version.project_id, folder.folder_id);
+    const projectId = bareProjectId(version.project_id);
+    const payload = {
+      ext: version.file_type,
+      modifiedTime: version.last_modified_time,
+      creator: version.created_by,
+      lineageUrn: version.item_id,
+      sizeInBytes: version.storage_size,
+      hidden: item.hidden,
+      indexable: true,
+      project: projectId,
+      source: version.version_id,
+      version: String(version.version_number),
+      user_info: { id: version.created_by },
+      name: version.display_name,
+      createdTime: version.create_time,
+      modifiedBy: version.last_modified_by,
+      state: "CONTENT_AVAILABLE",
+      parentFolderUrn: folder.folder_id,
+      ancestors: [...ancestors, folder].map((ancestor) => ({ urn: ancestor.folder_id, name: ancestor.name })),
+      tenant: projectId
+    };
+    const report = await simulateWebhookEvent(aps, store, {
+      system: "data",
+      event: "dm.version.added",
+      resourceUrn: version.version_id,
+      region: version.region,
+      scope: { folder: folder.folder_id, project: version.project_id },
+      folderAncestors: ancestors.map((ancestor) => ancestor.folder_id),
+      payload
+    });
+    return c.json(report);
+  });
+  app.post("/_aps/simulate/extraction-finished", async (c) => {
+    const body = await jsonObjectBody(c);
+    if (!body) return simulatorError(c, "The request body must be a JSON object.");
+    const urn = optionalString(body.urn) ?? DEFAULT_MANIFEST_URN;
+    const manifest = aps.manifests.findOneBy("urn", urn);
+    if (!manifest) return simulatorError(c, "The seeded manifest was not found.", 404);
+    const workflow = optionalString(body.workflow) ?? "emulate-translation";
+    const payload = {
+      TimeStamp: Date.now(),
+      URN: manifest.urn,
+      EventType: "EXTRACTION_FINISHED",
+      Payload: {
+        status: manifest.status,
+        scope: workflow,
+        registerKey: []
+      }
+    };
+    const report = await simulateWebhookEvent(aps, store, {
+      system: "derivative",
+      event: "extraction.finished",
+      resourceUrn: manifest.urn,
+      region: manifest.region,
+      scope: { workflow },
+      payload
+    });
+    return c.json(report);
+  });
+  app.post("/_aps/simulate/issue-created", async (c) => {
+    const body = await jsonObjectBody(c);
+    if (!body) return simulatorError(c, "The request body must be a JSON object.");
+    const requestedProjectId = optionalString(body.projectId) ?? bareProjectId(DEFAULT_PROJECT_ID);
+    const project = aps.projects.all().find((candidate) => bareProjectId(candidate.project_id) === requestedProjectId);
+    if (!project) return simulatorError(c, "The seeded project was not found.", 404);
+    const requestedIssueId = optionalString(body.issueId);
+    const issue = requestedIssueId ? aps.issues.findBy("project_id", project.project_id).find((candidate) => candidate.issue_id === requestedIssueId) : aps.issues.findBy("project_id", project.project_id)[0];
+    if (!issue) return simulatorError(c, "The seeded issue was not found.", 404);
+    const projectId = bareProjectId(project.project_id);
+    const payload = {
+      ...structuredClone(issue.payload),
+      projectId
+    };
+    const report = await simulateWebhookEvent(aps, store, {
+      system: "autodesk.construction.issues",
+      event: "issue.created-1.0",
+      resourceUrn: `urn:adsk.issues:issues.issue:${issue.issue_id}`,
+      region: "US",
+      scope: { project: projectId },
+      payload
+    });
+    return c.json(report);
+  });
+}
+
+// src/routes/webhooks.ts
+import { randomUUID as randomUUID4 } from "crypto";
+var PAGE_SIZE = 200;
+var SCOPE_QUOTA = 1e3;
+var READ_SCOPES = ["data:read"];
+var WRITE_SCOPES = ["data:read", "data:write"];
+function webhookError(c, status) {
+  return c.json({ id: randomUUID4() }, status);
+}
+async function webhookContext(c, store, aps, scopes, appOnly = false) {
+  const token = await accessTokenForRequest(c, store);
+  if (!token) return webhookError(c, 401);
+  if (!tokenGrantsScopes(token, scopes)) return webhookError(c, 403);
+  if (appOnly && token.apsUserId) return webhookError(c, 403);
+  const region = parseWebhookRegion(
+    c.req.header("region") ?? c.req.header("x-ads-region") ?? c.req.query("region") ?? "US"
+  );
+  if (!region) return webhookError(c, 400);
+  deleteExpiredHooks(aps);
+  const identity = token.apsUserId ? userIdentity(token.apsUserId) : appIdentity(token.clientId);
+  return { identity, region };
+}
+var INVALID = /* @__PURE__ */ Symbol("invalid");
+function optional(parse) {
+  return (value) => value === void 0 ? void 0 : parse(value);
+}
+function nullable(parse) {
+  return (value) => value === null ? null : parse(value);
+}
+function asString(value) {
+  return typeof value === "string" && value.trim() ? value : INVALID;
+}
+function asBoolean(value) {
+  return typeof value === "boolean" ? value : INVALID;
+}
+function asHookAttribute(value) {
+  return isRecordObject(value) && Buffer.byteLength(JSON.stringify(value), "utf8") < 1024 ? value : INVALID;
+}
+function asFilter(value) {
+  const filter = typeof value === "string" || Array.isArray(value) && value.every((item) => typeof item === "string") ? value : void 0;
+  return filter !== void 0 && validateWebhookFilter(filter) ? filter : INVALID;
+}
+function asExpiry(value) {
+  return typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : INVALID;
+}
+var optString = optional(asString);
+var optBoolean = optional(asBoolean);
+var optAttribute = optional(asHookAttribute);
+var optNullableAttribute = optional(nullable(asHookAttribute));
+var optFilter = optional(nullable(asFilter));
+var optExpiry = optional(nullable(asExpiry));
+function parseHookScope(value) {
+  if (!isRecordObject(value)) return null;
+  const entries = Object.entries(value);
+  if (!entries.length || entries.some(([, item]) => typeof item !== "string" || !item.trim())) return null;
+  return Object.fromEntries(entries);
+}
+function parseHookPayload(body) {
+  const callbackUrl = optString(body.callbackUrl);
+  const scope = parseHookScope(body.scope);
+  const tenant = optString(body.tenant);
+  const autoReactivateHook = optBoolean(body.autoReactivateHook);
+  const hookAttribute = optAttribute(body.hookAttribute);
+  const filter = optFilter(body.filter);
+  const hookExpiry = optExpiry(body.hookExpiry);
+  const token = optString(body.token);
+  const hubId = optString(body.hubId);
+  const projectId = optString(body.projectId);
+  if (callbackUrl === void 0 || callbackUrl === INVALID || !scope || tenant === INVALID || autoReactivateHook === INVALID || hookAttribute === INVALID || filter === INVALID || hookExpiry === INVALID || token === INVALID || hubId === INVALID || projectId === INVALID) {
+    return null;
+  }
+  return {
+    callbackUrl,
+    scope,
+    tenant,
+    autoReactivateHook,
+    hookExpiry,
+    hookAttribute: hookAttribute ?? null,
+    filter: filter ?? null,
+    token: token ?? null,
+    hubId: hubId ?? null,
+    projectId: projectId ?? null
+  };
+}
+function parseHookUpdate(body, hook) {
+  const status = body.status === void 0 || body.status === "active" || body.status === "inactive" ? body.status : INVALID;
+  const autoReactivateHook = optBoolean(body.autoReactivateHook);
+  const filter = optFilter(body.filter);
+  const hookAttribute = optNullableAttribute(body.hookAttribute);
+  const token = optString(body.token);
+  const hookExpiry = optExpiry(body.hookExpiry);
+  if (status === INVALID || autoReactivateHook === INVALID || filter === INVALID || hookAttribute === INVALID || token === INVALID || hookExpiry === INVALID) {
+    return null;
+  }
+  const update = {};
+  if (status !== void 0) {
+    update.status = status;
+    update.failed_event_count = status === "active" ? 0 : hook.failed_event_count;
+    update.inactive_at = status === "inactive" ? (/* @__PURE__ */ new Date()).toISOString() : null;
+  }
+  if (autoReactivateHook !== void 0) update.auto_reactivate_hook = autoReactivateHook;
+  if (filter !== void 0) update.filter = filter;
+  if (hookAttribute !== void 0) update.hook_attribute = hookAttribute;
+  if (token !== void 0) update.token = token;
+  if (hookExpiry !== void 0) update.hook_expiry = hookExpiry;
+  return update;
+}
+function identityHooks(aps, { identity, region }) {
+  return aps.webhookHooks.all().filter((hook) => hook.identity_key === identity.key && hook.region === region);
+}
+function overQuota(aps, context, scope, additional) {
+  const canonical = canonicalWebhookScope(scope);
+  const count = identityHooks(aps, context).filter((hook) => canonicalWebhookScope(hook.scope) === canonical).length;
+  return count + additional > SCOPE_QUOTA;
+}
+function visibleHook(aps, context, c) {
+  const hook = aps.webhookHooks.findOneBy("hook_id", c.req.param("hookId"));
+  return hook && hook.identity_key === context.identity.key && hook.region === context.region && hook.system === c.req.param("system") && hook.event === c.req.param("event") ? hook : void 0;
+}
+function encodePageState(offset) {
+  return Buffer.from(`aps-webhooks:${offset}`, "utf8").toString("base64");
+}
+function decodePageState(value) {
+  if (!value) return 0;
+  try {
+    const decoded = Buffer.from(value, "base64").toString("utf8");
+    const match = decoded.match(/^aps-webhooks:(\d+)$/);
+    return match ? Number(match[1]) : null;
+  } catch {
+    return null;
+  }
+}
+function listResponse(c, hooks) {
+  const offset = decodePageState(c.req.query("pageState"));
+  if (offset === null) return webhookError(c, 400);
+  if (!hooks.length || offset >= hooks.length) return c.body(null, 204);
+  const data = hooks.slice(offset, offset + PAGE_SIZE).map(webhookDetails);
+  const links = {};
+  if (offset + PAGE_SIZE < hooks.length) {
+    const url = new URL(c.req.url);
+    url.searchParams.set("pageState", encodePageState(offset + PAGE_SIZE));
+    const relativePath = url.pathname.replace(/^\/webhooks\/v1/, "") || "/";
+    links.next = `${relativePath}?${url.searchParams.toString()}`;
+  }
+  return c.json({ links, data });
+}
+function filterStatus(c, hooks) {
+  const status = c.req.query("status");
+  if (status !== void 0 && !validWebhookStatus(status)) return null;
+  return status ? hooks.filter((hook) => hook.status === status) : hooks;
+}
+function webhookRoutes({ app, store }) {
+  const aps = getApsStore(store);
+  app.post("/webhooks/v1/systems/:system/events/:event/hooks", async (c) => {
+    const context = await webhookContext(c, store, aps, WRITE_SCOPES);
+    if (context instanceof Response) return context;
+    const body = await jsonObjectBody(c);
+    const payload = body ? parseHookPayload(body) : null;
+    if (!payload) return webhookError(c, 400);
+    const system = c.req.param("system");
+    const event = c.req.param("event");
+    const input = { ...payload, identity: context.identity, region: context.region, system, event };
+    if (findDuplicateHook(aps, input)) return webhookError(c, 409);
+    if (overQuota(aps, context, payload.scope, 1)) return webhookError(c, 400);
+    const hook = createWebhookRecord(aps, input);
+    c.header(
+      "Location",
+      `/webhooks/v1/systems/${encodeURIComponent(system)}/events/${encodeURIComponent(event)}/hooks/${encodeURIComponent(hook.hook_id)}`
+    );
+    return c.body(null, 201);
+  });
+  app.get("/webhooks/v1/systems/:system/events/:event/hooks", async (c) => {
+    const context = await webhookContext(c, store, aps, READ_SCOPES);
+    if (context instanceof Response) return context;
+    let hooks = identityHooks(aps, context).filter(
+      (hook) => hook.system === c.req.param("system") && hook.event === c.req.param("event")
+    );
+    const scopeName = c.req.query("scopeName");
+    const scopeValue = c.req.query("scopeValue");
+    if (scopeName) hooks = hooks.filter((hook) => scopeName in hook.scope);
+    if (scopeName && scopeValue) hooks = hooks.filter((hook) => hook.scope[scopeName] === scopeValue);
+    const filtered = filterStatus(c, hooks);
+    return filtered ? listResponse(c, filtered) : webhookError(c, 400);
+  });
+  app.get("/webhooks/v1/systems/:system/events/:event/hooks/:hookId", async (c) => {
+    const context = await webhookContext(c, store, aps, READ_SCOPES);
+    if (context instanceof Response) return context;
+    const hook = visibleHook(aps, context, c);
+    return hook ? c.json(webhookDetails(hook)) : webhookError(c, 404);
+  });
+  app.patch("/webhooks/v1/systems/:system/events/:event/hooks/:hookId", async (c) => {
+    const context = await webhookContext(c, store, aps, WRITE_SCOPES);
+    if (context instanceof Response) return context;
+    const body = await jsonObjectBody(c);
+    if (!body) return webhookError(c, 400);
+    const hook = visibleHook(aps, context, c);
+    if (!hook) return webhookError(c, 404);
+    const update = parseHookUpdate(body, hook);
+    if (!update) return webhookError(c, 400);
+    aps.webhookHooks.update(hook.id, update);
+    return c.body(null, 200);
+  });
+  app.delete("/webhooks/v1/systems/:system/events/:event/hooks/:hookId", async (c) => {
+    const context = await webhookContext(c, store, aps, WRITE_SCOPES);
+    if (context instanceof Response) return context;
+    const hook = visibleHook(aps, context, c);
+    if (!hook) return webhookError(c, 404);
+    aps.webhookHooks.delete(hook.id);
+    return c.body(null, 204);
+  });
+  app.post("/webhooks/v1/systems/:system/hooks", async (c) => {
+    const context = await webhookContext(c, store, aps, WRITE_SCOPES);
+    if (context instanceof Response) return context;
+    const body = await jsonObjectBody(c);
+    const payload = body ? parseHookPayload(body) : null;
+    if (!payload) return webhookError(c, 400);
+    const system = c.req.param("system");
+    const events = APS_WEBHOOK_EVENTS[system] ?? ["*"];
+    const inputs = events.map((event) => ({
+      ...payload,
+      identity: context.identity,
+      region: context.region,
+      system,
+      event
+    }));
+    if (inputs.some((input) => findDuplicateHook(aps, input))) return webhookError(c, 409);
+    if (overQuota(aps, context, payload.scope, events.length)) return webhookError(c, 400);
+    const hooks = inputs.map((input) => createWebhookRecord(aps, input));
+    return c.json({ hooks: hooks.map(webhookDetails) }, 201);
+  });
+  app.get("/webhooks/v1/systems/:system/hooks", async (c) => {
+    const context = await webhookContext(c, store, aps, READ_SCOPES);
+    if (context instanceof Response) return context;
+    const hooks = identityHooks(aps, context).filter((hook) => hook.system === c.req.param("system"));
+    const filtered = filterStatus(c, hooks);
+    return filtered ? listResponse(c, filtered) : webhookError(c, 400);
+  });
+  app.get("/webhooks/v1/hooks", async (c) => {
+    const context = await webhookContext(c, store, aps, READ_SCOPES);
+    if (context instanceof Response) return context;
+    const filtered = filterStatus(c, identityHooks(aps, context));
+    return filtered ? listResponse(c, filtered) : webhookError(c, 400);
+  });
+  app.get("/webhooks/v1/app/hooks", async (c) => {
+    const context = await webhookContext(c, store, aps, READ_SCOPES, true);
+    if (context instanceof Response) return context;
+    const sort = c.req.query("sort") ?? "desc";
+    if (sort !== "asc" && sort !== "desc") return webhookError(c, 400);
+    const hooks = identityHooks(aps, context).sort((left, right) => {
+      const comparison = Date.parse(left.updated_at) - Date.parse(right.updated_at);
+      return sort === "asc" ? comparison : -comparison;
+    });
+    const filtered = filterStatus(c, hooks);
+    return filtered ? listResponse(c, filtered) : webhookError(c, 400);
+  });
+  app.post("/webhooks/v1/tokens", async (c) => {
+    const context = await webhookContext(c, store, aps, WRITE_SCOPES);
+    if (context instanceof Response) return context;
+    const body = await jsonObjectBody(c);
+    const token = body ? optString(body.token) : void 0;
+    if (token === void 0 || token === INVALID) return webhookError(c, 400);
+    if (findWebhookSecret(aps, context.identity.key, context.region)) return webhookError(c, 400);
+    aps.webhookSecrets.insert({ identity_key: context.identity.key, region: context.region, token });
+    return c.json({ status: 200, detail: [`Token created successfully for client: ${context.identity.createdBy}`] });
+  });
+  app.put("/webhooks/v1/tokens/@me", async (c) => {
+    const context = await webhookContext(c, store, aps, WRITE_SCOPES);
+    if (context instanceof Response) return context;
+    const body = await jsonObjectBody(c);
+    const token = body ? optString(body.token) : void 0;
+    if (token === void 0 || token === INVALID) return webhookError(c, 400);
+    const existing = findWebhookSecret(aps, context.identity.key, context.region);
+    if (!existing) return webhookError(c, 404);
+    aps.webhookSecrets.update(existing.id, { token });
+    return c.body(null, 204);
+  });
+  app.delete("/webhooks/v1/tokens/@me", async (c) => {
+    const context = await webhookContext(c, store, aps, WRITE_SCOPES);
+    if (context instanceof Response) return context;
+    const existing = findWebhookSecret(aps, context.identity.key, context.region);
+    if (!existing) return webhookError(c, 404);
+    aps.webhookSecrets.delete(existing.id);
+    return c.body(null, 204);
   });
 }
 
@@ -2470,21 +4798,8 @@ function userId(aps, value) {
 function actors(aps, values) {
   return (values ?? []).map((actor) => ({ id: userId(aps, actor.id), type: actor.type ?? "user" }));
 }
-function auditFields(aps, seed, now) {
-  const createdAt = seed.created_at ?? now;
-  return {
-    createdBy: userId(aps, seed.created_by),
-    createdAt,
-    updatedBy: userId(aps, seed.updated_by ?? seed.created_by),
-    updatedAt: seed.updated_at ?? createdAt
-  };
-}
-function namedAuditFields(aps, seed, now) {
-  return {
-    ...auditFields(aps, seed, now),
-    createdByName: seed.created_by_name ?? "",
-    updatedByName: seed.updated_by_name ?? seed.created_by_name ?? ""
-  };
+function resourceExists(resources, projectId, identifier, id) {
+  return resources.some((resource) => resource.project_id === projectId && identifier(resource) === id);
 }
 function seedAccFromConfig(aps, config) {
   const now = (/* @__PURE__ */ new Date()).toISOString();
@@ -2494,7 +4809,9 @@ function seedAccFromConfig(aps, config) {
     if (!user) {
       throw new Error(`APS ACC project user references unknown user '${member.user_email}'.`);
     }
-    if (findProjectResource(aps.accProjectUsers, projectId, "user_id", user.user_id)) continue;
+    if (resourceExists(aps.accProjectUsers.all(), projectId, (candidate) => candidate.user_id, user.user_id)) {
+      continue;
+    }
     aps.accProjectUsers.insert({
       project_id: projectId,
       user_id: user.user_id,
@@ -2505,9 +4822,10 @@ function seedAccFromConfig(aps, config) {
   }
   for (const issueType of config.issue_types ?? []) {
     const projectId = seedProjectId(aps, issueType.project_id);
-    if (findProjectResource(aps.issueTypes, projectId, "issue_type_id", issueType.id)) continue;
+    if (resourceExists(aps.issueTypes.all(), projectId, (candidate) => candidate.issue_type_id, issueType.id)) {
+      continue;
+    }
     const createdBy = aps.accProjectUsers.findBy("project_id", projectId)[0]?.user_id ?? "";
-    const isActive = issueType.is_active ?? true;
     const subtypes = (issueType.subtypes ?? []).map((subtype) => ({
       id: subtype.id,
       issueTypeId: issueType.id,
@@ -2528,11 +4846,12 @@ function seedAccFromConfig(aps, config) {
     aps.issueTypes.insert({
       project_id: projectId,
       issue_type_id: issueType.id,
+      is_active: issueType.is_active ?? true,
       payload: {
         id: issueType.id,
         containerId: bareProjectId(projectId),
         title: issueType.title,
-        isActive,
+        isActive: issueType.is_active ?? true,
         orderIndex: issueType.order_index ?? 1,
         permittedActions: ["edit"],
         permittedAttributes: ["title"],
@@ -2549,22 +4868,34 @@ function seedAccFromConfig(aps, config) {
   }
   for (const issue of config.issues ?? []) {
     const projectId = seedProjectId(aps, issue.project_id);
-    if (findProjectResource(aps.issues, projectId, "issue_id", issue.id)) continue;
-    const issueType = findProjectResource(aps.issueTypes, projectId, "issue_type_id", issue.issue_type_id);
-    if (!issueType || !issueType.payload.subtypes.some((subtype) => subtype.id === issue.issue_subtype_id)) {
+    if (resourceExists(aps.issues.all(), projectId, (candidate) => candidate.issue_id, issue.id)) continue;
+    const issueType = aps.issueTypes.findBy("project_id", projectId).find((candidate) => candidate.issue_type_id === issue.issue_type_id);
+    const subtypes = issueType?.payload.subtypes ?? [];
+    if (!issueType || !subtypes.some((subtype) => subtype.id === issue.issue_subtype_id)) {
       throw new Error(`APS issue '${issue.id}' references an unknown issue type or subtype.`);
     }
     const assignedTo = issue.assigned_to ? userId(aps, issue.assigned_to) : null;
-    const audit = auditFields(aps, issue, now);
+    const createdBy = userId(aps, issue.created_by);
+    const updatedBy = userId(aps, issue.updated_by ?? issue.created_by);
+    const createdAt = issue.created_at ?? now;
+    const updatedAt = issue.updated_at ?? createdAt;
     const status = issue.status ?? "open";
+    const deleted = issue.deleted ?? false;
     const displayId = issue.display_id ?? aps.issues.findBy("project_id", projectId).length + 1;
     aps.issues.insert({
       project_id: projectId,
       issue_id: issue.id,
+      issue_type_id: issue.issue_type_id,
+      issue_subtype_id: issue.issue_subtype_id,
+      display_id: displayId,
+      title: issue.title,
+      status,
+      assigned_to: assignedTo,
+      deleted,
       payload: {
         id: issue.id,
         containerId: bareProjectId(projectId),
-        deleted: issue.deleted ?? false,
+        deleted,
         deletedAt: null,
         deletedBy: null,
         displayId,
@@ -2589,11 +4920,14 @@ function seedAccFromConfig(aps, config) {
         published: issue.published ?? true,
         commentCount: 0,
         attachmentCount: 0,
-        openedBy: audit.createdBy,
-        openedAt: audit.createdAt,
-        closedBy: status === "closed" ? audit.updatedBy : null,
-        closedAt: status === "closed" ? audit.updatedAt : null,
-        ...audit,
+        openedBy: createdBy,
+        openedAt: createdAt,
+        closedBy: status === "closed" ? updatedBy : null,
+        closedAt: status === "closed" ? updatedAt : null,
+        createdBy,
+        createdAt,
+        updatedBy,
+        updatedAt,
         watchers: [],
         customAttributes: [],
         gpsCoordinates: null,
@@ -2603,15 +4937,19 @@ function seedAccFromConfig(aps, config) {
   }
   for (const rfiType of config.rfi_types ?? []) {
     const projectId = seedProjectId(aps, rfiType.project_id);
-    if (findProjectResource(aps.rfiTypes, projectId, "rfi_type_id", rfiType.id)) continue;
+    if (resourceExists(aps.rfiTypes.all(), projectId, (candidate) => candidate.rfi_type_id, rfiType.id)) {
+      continue;
+    }
+    const status = rfiType.status ?? "active";
     aps.rfiTypes.insert({
       project_id: projectId,
       rfi_type_id: rfiType.id,
+      status,
       payload: {
         id: rfiType.id,
         name: rfiType.name,
         wfType: rfiType.workflow_type ?? "US",
-        status: rfiType.status ?? "active",
+        status,
         isDefault: rfiType.is_default ?? false,
         projectReviewer: actors(aps, rfiType.reviewers),
         projectCoordinator: actors(aps, rfiType.manager),
@@ -2631,16 +4969,20 @@ function seedAccFromConfig(aps, config) {
   }
   for (const attribute of config.rfi_attributes ?? []) {
     const projectId = seedProjectId(aps, attribute.project_id);
-    if (findProjectResource(aps.rfiAttributes, projectId, "attribute_id", attribute.id)) continue;
+    if (resourceExists(aps.rfiAttributes.all(), projectId, (candidate) => candidate.attribute_id, attribute.id)) {
+      continue;
+    }
+    const status = attribute.status ?? "active";
     aps.rfiAttributes.insert({
       project_id: projectId,
       attribute_id: attribute.id,
+      status,
       payload: {
         id: attribute.id,
         name: attribute.name,
         type: attribute.type ?? "text",
         description: attribute.description ?? "",
-        status: attribute.status ?? "active",
+        status,
         multipleChoice: attribute.multiple_choice ?? false,
         possibleValues: structuredClone(attribute.possible_values ?? [])
       }
@@ -2648,15 +4990,28 @@ function seedAccFromConfig(aps, config) {
   }
   for (const rfi of config.rfis ?? []) {
     const projectId = seedProjectId(aps, rfi.project_id);
-    if (findProjectResource(aps.rfis, projectId, "rfi_id", rfi.id)) continue;
-    if (!findProjectResource(aps.rfiTypes, projectId, "rfi_type_id", rfi.rfi_type_id)) {
+    if (resourceExists(aps.rfis.all(), projectId, (candidate) => candidate.rfi_id, rfi.id)) continue;
+    if (!aps.rfiTypes.findBy("project_id", projectId).some((candidate) => candidate.rfi_type_id === rfi.rfi_type_id)) {
       throw new Error(`APS RFI '${rfi.id}' references unknown RFI type '${rfi.rfi_type_id}'.`);
     }
-    const audit = auditFields(aps, rfi, now);
+    const assignedTo = actors(aps, rfi.assigned_to);
     const status = rfi.status ?? "draft";
+    const createdBy = userId(aps, rfi.created_by);
+    const updatedBy = userId(aps, rfi.updated_by ?? rfi.created_by);
+    const createdAt = rfi.created_at ?? now;
+    const updatedAt = rfi.updated_at ?? createdAt;
+    const reference = rfi.reference ?? rfi.custom_identifier;
+    const priority = rfi.priority ?? "Normal";
     aps.rfis.insert({
       project_id: projectId,
       rfi_id: rfi.id,
+      rfi_type_id: rfi.rfi_type_id,
+      custom_identifier: rfi.custom_identifier,
+      title: rfi.title,
+      status,
+      assigned_to: assignedTo.map((actor) => actor.id),
+      reference,
+      priority,
       payload: {
         id: rfi.id,
         customIdentifier: rfi.custom_identifier,
@@ -2666,7 +5021,7 @@ function seedAccFromConfig(aps, config) {
         status,
         previousStatus: rfi.previous_status ?? null,
         workflowType: rfi.workflow_type ?? "US",
-        assignedTo: actors(aps, rfi.assigned_to),
+        assignedTo,
         managerId: userId(aps, rfi.manager_id),
         constructionManagerId: null,
         architects: [],
@@ -2681,9 +5036,12 @@ function seedAccFromConfig(aps, config) {
         officialResponseEditByManagerState: false,
         respondedAt: null,
         respondedBy: null,
-        ...audit,
-        closedAt: status === "closed" ? audit.updatedAt : null,
-        closedBy: status === "closed" ? audit.updatedBy : null,
+        createdBy,
+        createdAt,
+        updatedBy,
+        updatedAt,
+        closedAt: status === "closed" ? updatedAt : null,
+        closedBy: status === "closed" ? updatedBy : null,
         containerId: bareProjectId(projectId),
         projectId: bareProjectId(projectId),
         suggestedAnswer: null,
@@ -2693,10 +5051,10 @@ function seedAccFromConfig(aps, config) {
         answeredBy: null,
         costImpact: "Unknown",
         scheduleImpact: "Unknown",
-        priority: rfi.priority ?? "Normal",
+        priority,
         discipline: structuredClone(rfi.discipline ?? []),
         category: structuredClone(rfi.category ?? []),
-        reference: rfi.reference ?? rfi.custom_identifier,
+        reference,
         customAttributes: [],
         rfiTypeId: rfi.rfi_type_id,
         bridgedSource: null,
@@ -2710,68 +5068,100 @@ function seedAccFromConfig(aps, config) {
   }
   for (const collection of config.sheet_collections ?? []) {
     const projectId = seedProjectId(aps, collection.project_id);
-    if (findProjectResource(aps.sheetCollections, projectId, "collection_id", collection.id)) continue;
+    if (resourceExists(aps.sheetCollections.all(), projectId, (candidate) => candidate.collection_id, collection.id)) {
+      continue;
+    }
+    const createdAt = collection.created_at ?? now;
     aps.sheetCollections.insert({
       project_id: projectId,
       collection_id: collection.id,
       payload: {
         id: collection.id,
         name: collection.name,
-        ...namedAuditFields(aps, collection, now)
+        createdAt,
+        createdBy: userId(aps, collection.created_by),
+        createdByName: collection.created_by_name ?? "",
+        updatedAt: collection.updated_at ?? createdAt,
+        updatedBy: userId(aps, collection.updated_by ?? collection.created_by),
+        updatedByName: collection.updated_by_name ?? collection.created_by_name ?? ""
       }
     });
   }
   for (const versionSet of config.sheet_version_sets ?? []) {
     const projectId = seedProjectId(aps, versionSet.project_id);
-    if (findProjectResource(aps.sheetVersionSets, projectId, "version_set_id", versionSet.id)) continue;
-    const collection = versionSet.collection_id ? findProjectResource(aps.sheetCollections, projectId, "collection_id", versionSet.collection_id) : void 0;
+    if (resourceExists(aps.sheetVersionSets.all(), projectId, (candidate) => candidate.version_set_id, versionSet.id)) {
+      continue;
+    }
+    const collection = versionSet.collection_id ? aps.sheetCollections.findBy("project_id", projectId).find((candidate) => candidate.collection_id === versionSet.collection_id) : void 0;
     if (versionSet.collection_id && !collection) {
       throw new Error(`APS Sheet version set '${versionSet.id}' references unknown collection.`);
     }
+    const createdAt = versionSet.created_at ?? now;
     aps.sheetVersionSets.insert({
       project_id: projectId,
       version_set_id: versionSet.id,
+      collection_id: versionSet.collection_id ?? null,
+      issuance_date: versionSet.issuance_date,
       payload: {
         id: versionSet.id,
         name: versionSet.name,
         issuanceDate: versionSet.issuance_date,
-        ...namedAuditFields(aps, versionSet, now),
+        createdAt,
+        createdBy: userId(aps, versionSet.created_by),
+        createdByName: versionSet.created_by_name ?? "",
+        updatedAt: versionSet.updated_at ?? createdAt,
+        updatedBy: userId(aps, versionSet.updated_by ?? versionSet.created_by),
+        updatedByName: versionSet.updated_by_name ?? versionSet.created_by_name ?? "",
         collection: collection ? { id: collection.collection_id, name: collection.payload.name } : null
       }
     });
   }
   for (const sheet of config.sheets ?? []) {
     const projectId = seedProjectId(aps, sheet.project_id);
-    if (findProjectResource(aps.sheets, projectId, "sheet_id", sheet.id)) continue;
-    const versionSet = findProjectResource(aps.sheetVersionSets, projectId, "version_set_id", sheet.version_set_id);
+    if (resourceExists(aps.sheets.all(), projectId, (candidate) => candidate.sheet_id, sheet.id)) continue;
+    const versionSet = aps.sheetVersionSets.findBy("project_id", projectId).find((candidate) => candidate.version_set_id === sheet.version_set_id);
     if (!versionSet) {
       throw new Error(`APS Sheet '${sheet.id}' references unknown version set '${sheet.version_set_id}'.`);
     }
-    const collectionId = sheet.collection_id ?? versionSet.payload.collection?.id;
-    const collection = collectionId ? findProjectResource(aps.sheetCollections, projectId, "collection_id", collectionId) : void 0;
+    const collectionId = sheet.collection_id ?? versionSet.collection_id;
+    const collection = collectionId ? aps.sheetCollections.findBy("project_id", projectId).find((candidate) => candidate.collection_id === collectionId) : void 0;
     if (collectionId && !collection) {
       throw new Error(`APS Sheet '${sheet.id}' references unknown collection '${collectionId}'.`);
     }
+    const createdAt = sheet.created_at ?? now;
+    const deleted = sheet.deleted ?? false;
     aps.sheets.insert({
       project_id: projectId,
       sheet_id: sheet.id,
+      version_set_id: sheet.version_set_id,
+      collection_id: collectionId ?? null,
+      number: sheet.number,
+      title: sheet.title,
+      tags: structuredClone(sheet.tags ?? []),
+      is_current: sheet.is_current ?? true,
+      deleted,
       payload: {
         id: sheet.id,
         number: sheet.number,
         versionSet: {
           id: versionSet.version_set_id,
           name: versionSet.payload.name,
-          issuanceDate: versionSet.payload.issuanceDate,
+          issuanceDate: versionSet.issuance_date,
           deleted: false
         },
-        ...namedAuditFields(aps, sheet, now),
+        createdAt,
+        createdBy: userId(aps, sheet.created_by),
+        createdByName: sheet.created_by_name ?? "",
+        updatedAt: sheet.updated_at ?? createdAt,
+        updatedBy: userId(aps, sheet.updated_by ?? sheet.created_by),
+        updatedByName: sheet.updated_by_name ?? sheet.created_by_name ?? "",
         title: sheet.title,
         uploadFileName: sheet.upload_file_name ?? "",
         uploadId: sheet.upload_id ?? "",
         tags: structuredClone(sheet.tags ?? []),
         paperSize: structuredClone(sheet.paper_size ?? [0, 0]),
         isCurrent: sheet.is_current ?? true,
-        deleted: sheet.deleted ?? false,
+        deleted,
         deletedAt: null,
         deletedBy: null,
         deletedByName: null,
@@ -2870,6 +5260,38 @@ function seedFromConfig(store, _baseUrl, config) {
       });
     }
   }
+  if (config.webhook_timing) setWebhookTiming(store, config.webhook_timing);
+  seedDocumentTreeFromConfig(aps, config);
+  seedModelCoordinationFromConfig(aps, store, config);
+  for (const hook of config.webhooks ?? []) {
+    const user = hook.creator_user_email ? aps.users.findOneBy("email", hook.creator_user_email) : void 0;
+    const clientId = hook.creator_client_id ?? DEFAULT_CONFIDENTIAL_CLIENT_ID;
+    if (hook.creator_user_email && !user) {
+      throw new Error(`APS webhook references unknown user '${hook.creator_user_email}'.`);
+    }
+    if (!user && !aps.clients.findOneBy("client_id", clientId)) {
+      throw new Error(`APS webhook references unknown client '${clientId}'.`);
+    }
+    const input = {
+      system: hook.system,
+      event: hook.event,
+      callbackUrl: hook.callback_url,
+      scope: hook.scope,
+      tenant: hook.tenant,
+      identity: user ? userIdentity(user.user_id) : appIdentity(clientId),
+      region: (hook.region ?? "US").toUpperCase(),
+      status: hook.status,
+      autoReactivateHook: hook.auto_reactivate_hook,
+      hookExpiry: hook.hook_expiry,
+      hookAttribute: hook.hook_attribute,
+      filter: hook.filter,
+      token: hook.token,
+      hubId: hook.hub_id,
+      projectId: hook.project_id
+    };
+    if (findDuplicateHook(aps, input)) continue;
+    createWebhookRecord(aps, input);
+  }
 }
 var apsPlugin = {
   name: "aps",
@@ -2878,9 +5300,14 @@ var apsPlugin = {
     oauthRoutes(ctx);
     dataManagementRoutes(ctx);
     modelDerivativeRoutes(ctx);
+    modelSetRoutes(ctx);
+    clashRoutes(ctx);
     issueRoutes(ctx);
     rfiRoutes(ctx);
     sheetRoutes(ctx);
+    webhookRoutes(ctx);
+    signedBlobRoutes(ctx);
+    simulateRoutes(ctx);
   },
   seed(store, baseUrl) {
     seedDefaults(store, baseUrl);
@@ -2889,9 +5316,17 @@ var apsPlugin = {
 var index_default = apsPlugin;
 export {
   DEFAULT_DATA_SEED,
+  DEFAULT_MODEL_COORDINATION_TIMING,
+  DEFAULT_WEBHOOK_TIMING,
   apsPlugin,
   index_default as default,
   getApsStore,
-  seedFromConfig
+  getModelCoordinationTiming,
+  getWebhookTiming,
+  seedFromConfig,
+  setModelCoordinationTiming,
+  setWebhookTiming,
+  simulateWebhookEvent,
+  webhookDetails
 };
 //# sourceMappingURL=index.js.map

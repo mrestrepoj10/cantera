@@ -1,0 +1,252 @@
+'use client'
+
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react'
+import { APSViewerContext } from '@/components/ui/aps-viewer/context'
+import {
+  acquireViewerRuntime,
+  releaseViewerRuntime,
+  toDocumentId,
+} from '@/components/ui/aps-viewer/loader'
+import { ViewerStore } from '@/components/ui/aps-viewer/store'
+import type {
+  APSDocument,
+  APSModel,
+  APSViewer3D,
+  APSViewerStatus,
+  GetAccessToken,
+} from '@/lib/viewer-types'
+
+export interface APSViewerProps {
+  /**
+   * Model Derivative URN (base64), with or without the `urn:` prefix.
+   * Omit to mount an empty viewer and load models imperatively via
+   * `onViewerReady` / `useAPSViewer`.
+   */
+  urn?: string
+  /** Fetches an OAuth token from your backend. Must be referentially stable
+   * or the value at first mount wins (the SDK initializer is global). */
+  getAccessToken: GetAccessToken
+  /** SDK version (default '7.*') */
+  version?: string
+  /** Initializer env (default 'AutodeskProduction2') */
+  env?: string
+  /** Initializer api (default 'streamingV2') */
+  api?: string
+  /** Extension ids to load once the viewer starts */
+  extensions?: string[]
+  /** Extra config passed to the GuiViewer3D constructor */
+  viewerConfig?: Record<string, unknown>
+  /** Native GuiViewer3D toolbar, or the toolbar-less core Viewer3D. */
+  toolbar?: 'native' | 'none'
+  /** Force one appearance. Omit to follow the app's light/dark appearance live. */
+  theme?: 'light' | 'dark'
+  /** Observe the viewer container and resize the WebGL canvas. Default true. */
+  autoResize?: boolean
+  /** Shut the whole SDK runtime down when the last viewer unmounts.
+   * Default false: keeps the runtime warm across route changes. */
+  shutdownOnUnmount?: boolean
+  onViewerReady?: (viewer: APSViewer3D) => void
+  onModelLoaded?: (model: APSModel, doc: APSDocument) => void
+  onError?: (error: Error) => void
+  className?: string
+  style?: CSSProperties
+  /** Overlay UI. Rendered inside the provider, absolutely positioned children
+   * can sit on top of the canvas and use every hook. */
+  children?: ReactNode
+}
+
+/**
+ * APS Viewer container. Renders a plain positioned <div> on the
+ * server (SSR-safe: no window access until effects run), then on the client:
+ *
+ *  1. loads the SDK script/CSS from the Autodesk CDN exactly once,
+ *  2. runs the global Initializer exactly once,
+ *  3. instantiates a viewer bound to this component's lifetime,
+ *  4. tears everything down on unmount — including under React Strict Mode's
+ *     mount → unmount → remount cycle, which is where naive wrappers leak
+ *     WebGL contexts.
+ */
+export function APSViewer({
+  urn,
+  getAccessToken,
+  version,
+  env,
+  api,
+  extensions,
+  viewerConfig,
+  toolbar = 'native',
+  theme,
+  autoResize = true,
+  shutdownOnUnmount = false,
+  onViewerReady,
+  onModelLoaded,
+  onError,
+  className,
+  style,
+  children,
+}: APSViewerProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [store] = useState(() => new ViewerStore())
+  const [status, setStatus] = useState<APSViewerStatus>('idle')
+  const viewerRef = useRef<APSViewer3D | null>(null)
+
+  // Latest-callback refs so effect deps stay minimal and consumers can pass
+  // inline closures without recreating the viewer.
+  const callbacksRef = useRef({ getAccessToken, onViewerReady, onModelLoaded, onError })
+  callbacksRef.current = { getAccessToken, onViewerReady, onModelLoaded, onError }
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: viewerConfig and extensions are intentionally captured at creation time
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    let disposed = false
+    let viewer: APSViewer3D | null = null
+
+    setStatus('loading-runtime')
+    acquireViewerRuntime({
+      getAccessToken: () => callbacksRef.current.getAccessToken(),
+      version,
+      env,
+      api,
+    })
+      .then((autodesk) => {
+        // Strict Mode: the first effect's cleanup may already have run.
+        if (disposed) return
+        const Ctor = toolbar === 'none' ? autodesk.Viewing.Viewer3D : autodesk.Viewing.GuiViewer3D
+        viewer = new Ctor(container, viewerConfig)
+        const startCode = viewer.start()
+        if (startCode > 0) {
+          throw new Error(`cantera aps-viewer: viewer.start() failed with code ${startCode}`)
+        }
+        viewerRef.current = viewer
+        store.attach(viewer)
+        for (const id of extensions ?? []) {
+          viewer.loadExtension(id).catch((error) => {
+            console.error(`cantera aps-viewer: failed to load extension "${id}"`, error)
+          })
+        }
+        setStatus('ready')
+        callbacksRef.current.onViewerReady?.(viewer)
+      })
+      .catch((error: Error) => {
+        if (disposed) return
+        setStatus('error')
+        callbacksRef.current.onError?.(error)
+      })
+
+    return () => {
+      disposed = true
+      store.detach()
+      if (viewer) {
+        viewer.finish()
+        viewer = null
+        viewerRef.current = null
+      }
+      releaseViewerRuntime({ shutdown: shutdownOnUnmount })
+      setStatus('idle')
+    }
+  }, [version, env, api, toolbar, shutdownOnUnmount, store])
+
+  // Appearance is deliberately separate from viewer lifetime: a theme switch
+  // calls setTheme in place and never burns a second WebGL context.
+  useEffect(() => {
+    if (status !== 'ready') return
+    const viewer = viewerRef.current
+    if (!viewer || typeof window === 'undefined') return
+
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const apply = () => {
+      const root = document.documentElement
+      const dark = theme
+        ? theme === 'dark'
+        : root.classList.contains('dark') || (!root.classList.contains('light') && media.matches)
+      viewer.setTheme(dark ? 'dark-theme' : 'light-theme')
+    }
+    apply()
+    if (theme) return
+
+    const observer = new MutationObserver(apply)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    media.addEventListener('change', apply)
+    return () => {
+      observer.disconnect()
+      media.removeEventListener('change', apply)
+    }
+  }, [status, theme])
+
+  useEffect(() => {
+    if (!autoResize || status !== 'ready' || typeof ResizeObserver === 'undefined') return
+    const viewer = viewerRef.current
+    if (!viewer) return
+    const observer = new ResizeObserver(() => viewer.resize())
+    observer.observe(viewer.container)
+    return () => observer.disconnect()
+  }, [autoResize, status])
+
+  // Model loading is a separate concern from viewer lifetime: swapping `urn`
+  // reuses the live viewer instead of recreating the WebGL context.
+  useEffect(() => {
+    const viewer = viewerRef.current
+    const autodesk = typeof window !== 'undefined' ? window.Autodesk : undefined
+    if (status !== 'ready' || !viewer || !autodesk) return
+    if (!urn) return
+
+    let cancelled = false
+    let loadedModel: APSModel | null = null
+
+    autodesk.Viewing.Document.load(
+      toDocumentId(urn),
+      (doc) => {
+        if (cancelled) return
+        const geometry = doc.getRoot().getDefaultGeometry()
+        if (!geometry) {
+          callbacksRef.current.onError?.(
+            new Error('cantera aps-viewer: document has no viewable geometry'),
+          )
+          return
+        }
+        viewer
+          .loadDocumentNode(doc, geometry)
+          .then((model) => {
+            if (cancelled) return
+            loadedModel = model
+            callbacksRef.current.onModelLoaded?.(model, doc)
+          })
+          .catch((error: Error) => {
+            if (!cancelled) callbacksRef.current.onError?.(error)
+          })
+      },
+      (code, message) => {
+        if (cancelled) return
+        callbacksRef.current.onError?.(
+          new Error(`cantera aps-viewer: Document.load failed (${code}): ${message}`),
+        )
+      },
+    )
+
+    return () => {
+      cancelled = true
+      if (loadedModel && viewerRef.current) {
+        try {
+          viewerRef.current.unloadModel(loadedModel)
+        } catch {
+          // viewer may already be finished; unloading is best-effort
+        }
+      }
+    }
+  }, [status, urn])
+
+  return (
+    <APSViewerContext.Provider value={store}>
+      <div
+        className={className}
+        style={{ position: 'relative', ...style }}
+        data-aps-viewer=""
+        data-aps-viewer-status={status}
+      >
+        <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
+        {children}
+      </div>
+    </APSViewerContext.Provider>
+  )
+}

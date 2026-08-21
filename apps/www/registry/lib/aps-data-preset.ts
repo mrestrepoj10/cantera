@@ -1,5 +1,8 @@
 import type {
+  Folder,
   Hub,
+  Item,
+  ItemVersion,
   ModelTranslation,
   ModelTranslationStatus,
   Project,
@@ -18,6 +21,28 @@ import type {
  * emulator's.
  */
 
+interface ApsNamedResource {
+  id: string
+  attributes?: {
+    name?: string
+    displayName?: string
+  }
+}
+
+/** JSON:API resources are inconsistent about `name` versus `displayName`. */
+function resourceName(resource: ApsNamedResource): string {
+  return resource.attributes?.displayName ?? resource.attributes?.name ?? resource.id
+}
+
+interface ApsRelationship {
+  data?: { id?: string } | null
+}
+
+/** Read the related resource id without coupling adapters to links or metadata. */
+function relationshipId(relationship: ApsRelationship | undefined): string | undefined {
+  return relationship?.data?.id
+}
+
 /** Subset of a Data Management hub resource (`GET /project/v1/hubs`). */
 export interface ApsHubDoc {
   id: string
@@ -31,7 +56,7 @@ export interface ApsHubDoc {
 export function fromApsHub(doc: ApsHubDoc): Hub {
   return {
     id: doc.id,
-    name: doc.attributes?.name ?? doc.id,
+    name: resourceName(doc),
     region: doc.attributes?.region,
   }
 }
@@ -55,8 +80,87 @@ export interface ApsProjectDoc {
 export function fromApsProject(doc: ApsProjectDoc): Project {
   return {
     id: doc.id,
-    name: doc.attributes?.name ?? doc.id,
-    hubId: doc.relationships?.hub?.data?.id,
+    name: resourceName(doc),
+    hubId: relationshipId(doc.relationships?.hub),
+  }
+}
+
+/** Subset of a Data Management folder resource. */
+export interface ApsFolderDoc extends ApsNamedResource {
+  attributes?: ApsNamedResource['attributes'] & {
+    lastModifiedTime?: string
+    lastModifiedUserName?: string
+    lastModifiedUserId?: string
+    objectCount?: number
+  }
+}
+
+/** Translate a Data Management folder resource into a navigable Folder. */
+export function fromApsFolder(doc: ApsFolderDoc): Folder {
+  return {
+    id: doc.id,
+    name: resourceName(doc),
+    type: 'folder',
+    lastModifiedTime: doc.attributes?.lastModifiedTime,
+    modifiedBy: doc.attributes?.lastModifiedUserName ?? doc.attributes?.lastModifiedUserId,
+    objectCount: doc.attributes?.objectCount,
+  }
+}
+
+/** Subset of a Data Management version resource. */
+export interface ApsVersionDoc extends ApsNamedResource {
+  attributes?: ApsNamedResource['attributes'] & {
+    versionNumber?: number
+    createTime?: string
+    createUserName?: string
+    createUserId?: string
+    storageSize?: number
+  }
+  relationships?: {
+    derivatives?: ApsRelationship
+  }
+}
+
+/** Translate one immutable APS item version, including its derivative URN. */
+export function fromApsVersion(doc: ApsVersionDoc): ItemVersion {
+  return {
+    id: doc.id,
+    versionNumber: doc.attributes?.versionNumber ?? 1,
+    displayName: resourceName(doc),
+    createTime: doc.attributes?.createTime ?? 0,
+    createdBy: doc.attributes?.createUserName ?? doc.attributes?.createUserId ?? 'Unknown user',
+    storageSize: doc.attributes?.storageSize ?? 0,
+    derivativeUrn: relationshipId(doc.relationships?.derivatives) ?? null,
+  }
+}
+
+/** Subset of a Data Management item resource. */
+export interface ApsItemDoc extends ApsNamedResource {
+  attributes?: ApsNamedResource['attributes'] & {
+    lastModifiedTime?: string
+    lastModifiedUserName?: string
+    lastModifiedUserId?: string
+  }
+  relationships?: {
+    tip?: ApsRelationship
+  }
+}
+
+/**
+ * Translate an APS item. Pass the tip resource from a JSON:API `included`
+ * array when available; it is ignored if it does not match the item relation.
+ */
+export function fromApsItem(doc: ApsItemDoc, tipDoc?: ApsVersionDoc): Item {
+  const tipId = relationshipId(doc.relationships?.tip)
+  const tip = tipDoc && (!tipId || tipDoc.id === tipId) ? fromApsVersion(tipDoc) : undefined
+  return {
+    id: doc.id,
+    name: resourceName(doc),
+    type: 'item',
+    lastModifiedTime: doc.attributes?.lastModifiedTime,
+    modifiedBy: doc.attributes?.lastModifiedUserName ?? doc.attributes?.lastModifiedUserId,
+    tip,
+    translationStatus: tip ? (tip.derivativeUrn ? 'success' : 'pending') : undefined,
   }
 }
 

@@ -2,7 +2,7 @@
 
 **Construction UI. shadcn-native.** Components for AEC data — ACC-ready, source-agnostic. Install with the shadcn CLI, own the code.
 
-cantera is a [shadcn registry](https://ui.shadcn.com/docs/registry), not an npm package: `npx shadcn add` copies the source into your project. Components are built on your project's shadcn primitives and inherit your theme, base, and style. They take plain typed props — data in, callbacks out — so they work with data from Autodesk Construction Cloud, Procore, or anywhere else. Provider-specific presets and adapters translate real APIs into those props.
+cantera is a [shadcn registry](https://ui.shadcn.com/docs/registry), not an npm package: `npx shadcn@latest add` copies the source into your project. Components are built on your project's shadcn primitives and inherit your theme, base, and style. They take plain typed props — data in, callbacks out — so they work with data from Autodesk Construction Cloud, Procore, or anywhere else. Provider-specific presets and adapters translate real APIs into those props.
 
 - Site and live demo: [canteraui.xyz](https://canteraui.xyz)
 - Token layer companion: [aec-auth](https://github.com/mrestrepoj10/aec-auth)
@@ -48,12 +48,21 @@ Agents: install the skill with `npx skills add mrestrepoj10/cantera` for the reg
 | `connection-card` | component | A provider connection at a glance, with disconnect / reconnect. |
 | `acc-sign-in` | block | Complete Autodesk sign-in flow on [aec-auth](https://github.com/mrestrepoj10/aec-auth): consent redirect, code exchange, vault-managed single-use refresh, signed session, live connection panel. |
 | `connections-page` | block | The manage-grants page: one card per provider connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states. |
+| `project-types` | lib | Generic hubs, projects, folders, items, immutable versions, model translations, and sheet issuances. |
+| `aps-data-preset` | lib | Data Management, Model Derivative, and ACC Sheets adapters into the generic project types. |
+| `hub-browser` | component | Controlled hub-to-file browser with breadcrumbs, pagination, translation status, and on-demand version selection. |
+| `file-picker-dialog` | component | The hub browser in a dialog, returning an item tip or an exact version. |
+| `viewer-types` | lib | Structural types for the public Autodesk Viewer global runtime. |
+| `aps-viewer` | component | Strict-Mode-safe Viewer host with deduplicated runtime loading, live theme changes, URN swaps, resize, and hooks. |
+| `viewer-native-toolbar` | component | Public Viewer extension for edge docking and 44px native toolbar controls. |
 
 Components are data-agnostic by design: they never fetch. The pattern every future domain (issues, RFIs, submittals, model viewers) follows is **types + adapters + blocks** — generic types as props, adapters per provider, blocks for the batteries-included path.
 
+`aps-viewer` follows the same boundary: pass a Model Derivative URN and a promise-based `getAccessToken` callback. It never ships credentials or a route. The site’s live playground uses the showcase-only `/api/viewer-token` route with `viewables:read`; configure it through `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, and `APS_VIEWER_DEMO_URN` in the root `.env` (see `.env.example`).
+
 ## The acc-sign-in block
 
-`npx shadcn add @cantera/acc-sign-in` installs a working `/sign-in` page, `/api/auth/*` route handlers, and the auth wiring on aec-auth's vault. Configure with environment variables:
+`npx shadcn@latest add @cantera/acc-sign-in` installs a working `/sign-in` page, `/api/auth/*` route handlers, and the auth wiring on aec-auth's vault. Configure with environment variables:
 
 | Variable | Meaning |
 | --- | --- |
@@ -66,7 +75,7 @@ The default vault store is in-memory. For production, swap in a durable `VaultSt
 
 ## The connections-page block
 
-`npx shadcn add @cantera/connections-page` installs a `/connections` page, its streamed `loading.tsx`, and two components: `ConnectionsView` (presentational — providers and connections in, callbacks out) and `ConnectionsManager` (the wiring). It depends on `acc-sign-in` for the routes and the aec-auth glue, so the same environment variables above configure both.
+`npx shadcn@latest add @cantera/connections-page` installs a `/connections` page, its streamed `loading.tsx`, and two components: `ConnectionsView` (presentational — providers and connections in, callbacks out) and `ConnectionsManager` (the wiring). It depends on `acc-sign-in` for the routes and the aec-auth glue, so the same environment variables above configure both.
 
 The block ships all four states, each exported so adapting the page keeps them:
 
@@ -88,7 +97,7 @@ pnpm lint             # biome
 pnpm typecheck
 pnpm registry:build   # example items + apps/www/public/r/*.json + llms.txt artifacts + skills/cantera (all committed)
 pnpm registry:verify  # install closure, npm-dep coverage, and drift against a fresh build
-pnpm e2e              # Playwright: full OAuth flow through the embedded emulator
+pnpm e2e              # Playwright: OAuth, axe, pending contracts, and live Viewer toolbar screenshots
 ```
 
 ### Repo layout

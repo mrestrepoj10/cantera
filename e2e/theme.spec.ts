@@ -41,6 +41,24 @@ test.describe('theme toggle', () => {
     await page.reload()
     await expect(html).not.toHaveClass(/\bdark\b/)
   })
+
+  test('updates the APS Viewer theme without recreating its WebGL canvas', async ({ page }) => {
+    await page.goto('/components/aps-viewer')
+    await waitForHydration(page)
+
+    const viewer = page.locator('[data-aps-viewer-status]')
+    await expect(viewer).toHaveAttribute('data-aps-viewer-status', 'ready', { timeout: 30_000 })
+    const canvas = viewer.locator('canvas').first()
+    const canvasHandle = await canvas.elementHandle()
+    await expect(viewer.locator('.adsk-viewing-viewer')).toHaveClass(/light-theme/)
+
+    await page.getByRole('button', { name: 'Switch to dark theme' }).click()
+
+    await expect(viewer.locator('.adsk-viewing-viewer')).toHaveClass(/dark-theme/)
+    expect(
+      await canvasHandle?.evaluate((node, live) => node === live, await canvas.elementHandle()),
+    ).toBe(true)
+  })
 })
 
 test.describe('no flash of the wrong theme', () => {

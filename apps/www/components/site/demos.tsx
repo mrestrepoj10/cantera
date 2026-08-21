@@ -1,8 +1,11 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import type { ComponentType } from 'react'
 import { useEffect, useState } from 'react'
 import { ConnectionsView } from '@/components/connections-view'
+import { FilePickerDialogDemo } from '@/components/examples/file-picker-dialog-demo'
+import { HubBrowserDemo } from '@/components/examples/hub-browser-demo'
 import {
   fieldlinkProvider,
   procoreProvider,
@@ -30,6 +33,10 @@ import { apsProvider, apsScopeCatalog, apsScopePresets } from '@/lib/aps-oauth-p
 import type { OAuthConnection } from '@/lib/oauth-types'
 import type { Hub, ModelTranslation, Project, SheetVersionSet } from '@/lib/project-types'
 import { cn } from '@/lib/utils'
+
+const APSViewerDemo = dynamic(() =>
+  import('@/components/site/aps-viewer-demo').then((module) => module.APSViewerDemo),
+)
 
 /**
  * Live demos for the docs pages and the landing preview strip. All state is
@@ -643,10 +650,15 @@ const demos: Record<string, ComponentType> = {
   'project-picker': ProjectPickerDemo,
   'version-set-select': VersionSetSelectDemo,
   'model-status-card': ModelStatusCardDemo,
+  'hub-browser': HubBrowserDemo,
+  'file-picker-dialog': FilePickerDialogDemo,
 }
 
 /** Docs-page entry point: renders the demo for a registry item, or nothing for lib items. */
-export function ComponentDemo({ name }: { name: string }) {
+export function ComponentDemo({ name, viewerUrn }: { name: string; viewerUrn?: string }) {
+  if (name === 'aps-viewer' || name === 'viewer-native-toolbar') {
+    return <APSViewerDemo urn={viewerUrn} />
+  }
   const Demo = demos[name]
   if (!Demo) return null
   return <Demo />

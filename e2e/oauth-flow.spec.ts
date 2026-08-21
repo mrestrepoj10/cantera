@@ -41,6 +41,10 @@ test('full sign-in flow through the embedded APS emulator', async ({ page }) => 
   // document, so wait for hydration before the first client interaction — a
   // click that races it lands on a picker with no handlers yet.
   await waitForHydration(page)
+  await expect(page.locator('[data-slot="acc-workflow-panel"]')).toHaveAttribute(
+    'data-hydrated',
+    'true',
+  )
   await page.getByRole('combobox', { name: 'Project' }).click()
   await page.getByRole('option', { name: 'Cedar Mill Campus' }).click()
   await expect(page.getByRole('combobox', { name: 'Version set' })).toContainText('IFC 2026-05')

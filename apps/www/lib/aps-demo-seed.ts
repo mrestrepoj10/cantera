@@ -369,6 +369,110 @@ const sheets: NonNullable<ApsSeedConfig['sheets']> = demoProjects.flatMap((proje
   ),
 )
 
+function documentId(value: string): string {
+  return value.replaceAll(/[^a-zA-Z0-9]+/g, '-').replaceAll(/^-|-$/g, '')
+}
+
+function projectFolderId(projectId: string, name: 'root' | 'design' | 'published'): string {
+  return `urn:adsk.wipprod:fs.folder:co.cantera-${documentId(projectId)}-${name}`
+}
+
+function projectDesigns(project: DemoProject): string[] {
+  return [
+    ...new Set(
+      project.versionSets.flatMap((versionSet) => versionSet.sheets.map((sheet) => sheet.design)),
+    ),
+  ]
+}
+
+function documentItemId(projectId: string, displayName: string): string {
+  return `urn:adsk.wipprod:dm.lineage:cantera-${documentId(projectId)}-${documentId(displayName)}`
+}
+
+function documentVersionId(projectId: string, displayName: string, version: number): string {
+  return `urn:adsk.wipprod:fs.file:vf.cantera-${documentId(projectId)}-${documentId(displayName)}?version=${version}`
+}
+
+const documentFolders: NonNullable<ApsSeedConfig['document_folders']> = demoProjects.flatMap(
+  (project) => {
+    const root = projectFolderId(project.id, 'root')
+    return [
+      {
+        id: root,
+        project_id: project.id,
+        name: 'Project Files',
+        created_by: DEMO_USER_EMAILS[0],
+        created_by_name: 'Maria Renteria',
+        create_time: '2025-08-12T14:00:00.000Z',
+        last_modified_time: '2026-08-21T14:20:00.000Z',
+      },
+      {
+        id: projectFolderId(project.id, 'design'),
+        project_id: project.id,
+        parent_folder_id: root,
+        name: 'Design',
+        created_by: DEMO_USER_EMAILS[0],
+        created_by_name: 'Maria Renteria',
+        create_time: '2025-08-12T14:05:00.000Z',
+        last_modified_by: DEMO_USER_EMAILS[1],
+        last_modified_by_name: 'Sam Ito',
+        last_modified_time: '2026-08-21T13:10:00.000Z',
+      },
+      {
+        id: projectFolderId(project.id, 'published'),
+        project_id: project.id,
+        parent_folder_id: root,
+        name: 'Published Sheets',
+        created_by: DEMO_USER_EMAILS[0],
+        created_by_name: 'Maria Renteria',
+        create_time: '2025-08-12T14:10:00.000Z',
+        last_modified_time: '2026-08-20T18:05:00.000Z',
+      },
+    ]
+  },
+)
+
+const documentItems: NonNullable<ApsSeedConfig['document_items']> = demoProjects.flatMap(
+  (project) =>
+    projectDesigns(project).map((displayName, index) => ({
+      id: documentItemId(project.id, displayName),
+      project_id: project.id,
+      folder_id: projectFolderId(project.id, displayName.endsWith('.pdf') ? 'published' : 'design'),
+      display_name: displayName,
+      created_by: index % 2 === 0 ? DEMO_USER_EMAILS[0] : DEMO_USER_EMAILS[1],
+      created_by_name: index % 2 === 0 ? 'Maria Renteria' : 'Sam Ito',
+      create_time: `2026-08-${String(10 + index).padStart(2, '0')}T12:00:00.000Z`,
+      last_modified_by: DEMO_USER_EMAILS[index % 2],
+      last_modified_by_name: index % 2 === 0 ? 'Maria Renteria' : 'Sam Ito',
+      last_modified_time: `2026-08-${String(18 + index).padStart(2, '0')}T14:20:00.000Z`,
+    })),
+)
+
+const documentVersions: NonNullable<ApsSeedConfig['document_versions']> = demoProjects.flatMap(
+  (project) =>
+    projectDesigns(project).flatMap((displayName, itemIndex) => {
+      const count = itemIndex === 0 ? 3 : itemIndex === 1 ? 2 : 1
+      const urn = designUrns[displayName]
+      const translated = urn != null && demoManifests[urn] != null
+      return Array.from({ length: count }, (_, index) => {
+        const versionNumber = index + 1
+        return {
+          version_id: documentVersionId(project.id, displayName, versionNumber),
+          item_id: documentItemId(project.id, displayName),
+          project_id: project.id,
+          version_number: versionNumber,
+          display_name: displayName,
+          storage_size: 24_000_000 + itemIndex * 8_500_000 + versionNumber * 1_200_000,
+          bubble_urn: translated ? urn : null,
+          created_by: versionNumber % 2 === 0 ? DEMO_USER_EMAILS[1] : DEMO_USER_EMAILS[0],
+          created_by_name: versionNumber % 2 === 0 ? 'Sam Ito' : 'Maria Renteria',
+          create_time: `2026-08-${String(15 + versionNumber + itemIndex).padStart(2, '0')}T13:10:00.000Z`,
+          last_modified_time: `2026-08-${String(15 + versionNumber + itemIndex).padStart(2, '0')}T13:10:00.000Z`,
+        }
+      })
+    }),
+)
+
 /**
  * The full seed handed to the emulator. The emulator seeds its own defaults
  * first (an "Emulate Construction Hub" with two sample projects), so this adds
@@ -382,8 +486,11 @@ export const apsDemoSeed = {
   clients: [
     {
       name: 'cantera demo',
-      client_id: 'cantera-demo-client',
-      client_secret: 'cantera-demo-secret',
+      // When the showcase has real APS credentials for the Viewer demo, seed
+      // those same values into the embedded OAuth emulator. The sign-in flow
+      // still stays local, while the token route talks to real APS.
+      client_id: process.env.APS_CLIENT_ID ?? 'cantera-demo-client',
+      client_secret: process.env.APS_CLIENT_SECRET ?? 'cantera-demo-secret',
       redirect_uris: ['/api/auth/callback/aps'],
     },
   ],
@@ -397,4 +504,7 @@ export const apsDemoSeed = {
   sheet_version_sets: sheetVersionSets,
   sheets,
   manifests: demoManifests,
+  document_folders: documentFolders,
+  document_items: documentItems,
+  document_versions: documentVersions,
 } satisfies ApsSeedConfig

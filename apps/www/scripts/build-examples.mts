@@ -60,6 +60,10 @@ const PAGE_WIDTH: Record<string, string> = {
   'project-picker': 'max-w-md',
   'version-set-select': 'max-w-sm',
   'model-status-card': 'max-w-md',
+  'hub-browser': 'max-w-3xl',
+  'file-picker-dialog': 'max-w-sm',
+  'aps-viewer': 'max-w-6xl',
+  'viewer-native-toolbar': 'max-w-6xl',
 }
 
 const DEFAULT_PAGE_WIDTH = 'max-w-md'
