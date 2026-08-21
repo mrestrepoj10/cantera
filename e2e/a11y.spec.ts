@@ -51,7 +51,11 @@ function isDark(page: Page) {
   return page.evaluate(() => document.documentElement.classList.contains('dark'))
 }
 
-for (const appearance of ['light', 'dark'] as const) {
+// CI scans the full matrix. Locally only the light palette runs — the dark
+// half doubles the wall clock and CI blocks the merge on it either way.
+const appearances = process.env.CI ? (['light', 'dark'] as const) : (['light'] as const)
+
+for (const appearance of appearances) {
   test.describe(`axe — ${appearance}`, () => {
     // next-themes defaults to `system`, so emulating the media query drives the
     // appearance through the same path a user on a dark OS takes.
@@ -59,6 +63,12 @@ for (const appearance of ['light', 'dark'] as const) {
 
     for (const route of sitePages) {
       test(`${route} has no WCAG A/AA violations`, async ({ page }) => {
+        // The viewer docs pages load a real model from the Autodesk CDN in the
+        // background of the scan — same opt-in as the viewer specs.
+        test.skip(
+          VIEWER_DOCS_ROUTES.has(route) && !process.env.CI && !process.env.APS_E2E,
+          'viewer docs pages load the real Autodesk CDN and model; opt in locally with APS_E2E=1',
+        )
         await page.goto(route)
         await waitForHydration(page)
         // Guard against a green scan of the wrong palette.

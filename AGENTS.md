@@ -14,7 +14,9 @@ pnpm registry:build  # required after touching apps/www/registry/** or registry.
                      # and the agent skill under skills/cantera
 pnpm registry:verify # install closure, npm-dep coverage, drift vs a fresh build
 pnpm --filter www build
-pnpm e2e             # Playwright: OAuth flow, axe (WCAG A/AA, both themes), theme + pending contracts
+pnpm e2e             # Playwright. Locally this is the light pass: light-theme axe only, viewer
+                     # specs skipped (opt in with APS_E2E=1 — they load the real Autodesk CDN).
+                     # CI runs the full matrix (both themes, viewer + screenshots) on every PR.
 ```
 
 CI fails if the committed build output drifts from the registry sources. `registry:build` generates, in order: the `registry:example` items and their page wrappers from the demo sources in `apps/www/registry/examples/` (`build-examples.mts`, which rewrites the example entries in `registry.json`), `apps/www/public/r/` (`shadcn build`), the llms.txt artifacts (`build-llms.mts`), and the agent skill at `skills/cantera/` (`build-skill.mts`). All of it is committed, all of it is derived from `registry.json` and `components/site/props-tables.ts`, and every URL comes from `apps/www/lib/site.ts`, the one place the public origin is decided. Generators stay deterministic — no timestamps, no unordered iteration — because `pnpm registry:verify` rebuilds everything into a scratch directory and compares byte for byte.
