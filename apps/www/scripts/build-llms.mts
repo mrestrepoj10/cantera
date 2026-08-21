@@ -78,13 +78,7 @@ const TYPE_LABELS: Record<RegistryItem['type'], string> = {
  * semantics that live in a prose contract rather than in a type signature.
  * Canonical text: `apps/www/lib/design-contracts.ts`.
  */
-const contracts = designContracts(registryNamespace)
-const DESIGN_CONTRACTS = [
-  contracts.statusVocabulary,
-  contracts.asyncPending,
-  contracts.fieldDensity,
-  contracts.motionGrammar,
-]
+const DESIGN_CONTRACTS = Object.values(designContracts(registryNamespace))
   .map((contract) => `### ${contract.title}\n\n${contract.body}`)
   .join('\n\n')
 

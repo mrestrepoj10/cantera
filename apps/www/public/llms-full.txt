@@ -39,6 +39,14 @@ This UI is used with gloves, on a tablet, on site. Primary actions carry a 44px 
 
 Exactly four moves: (1) icon and spinner crossfade, about 150ms ease-out; (2) press feedback, delegated to the primitive's `active:translate-y-px`; (3) status color transitions, via `transition-colors`; (4) a rare, user-initiated progressive-disclosure reveal may transition height at about 200ms, always gated behind `prefers-reduced-motion` — never on content a user toggles repeatedly. That is the whole vocabulary. No entrance animations on data-dense content — a connections list does not stagger in.
 
+### Installed specifiers
+
+Distributed files import what the install produces: `@/components/ui/connection-card`, `@/lib/oauth-types`. Never `@/registry/...` — that path exists only in the cantera repo and installs broken.
+
+### Icon sizing
+
+Preset provider marks carry their own `className="size-4"`, so one renders correctly wherever it is dropped. A `[&_svg]:size-*` wrapper still wins on specificity where a surface wants another size — use the wrapper, not a rewritten mark, and keep `aria-hidden` on decorative marks.
+
 ## Items
 
 ### OAuth Types (`@cantera/oauth-types`)
