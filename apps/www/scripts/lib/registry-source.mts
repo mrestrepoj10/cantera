@@ -77,15 +77,22 @@ const LINE_WIDTH = 100
 export function formatRegistry(registry: Registry): string {
   const expanded = `${JSON.stringify(registry, null, 2)}\n`
   return expanded.replace(
-    /( *)("[^"\n]*": )?\[\n((?:[^[\]{}\n]*\n)*?)( *)\]/g,
-    (match, indent: string, key: string | undefined, body: string) => {
+    /^( *)("[^"\n]*": )?\[\n((?:[^[\]{}\n]*\n)*?)( *)\](,?)/gm,
+    (
+      match,
+      indent: string,
+      key: string | undefined,
+      body: string,
+      _closing: string,
+      comma: string,
+    ) => {
       const elements = body
         .split('\n')
         .map((line) => line.trim())
         .filter((line) => line.length > 0)
         .map((line) => line.replace(/,$/, ''))
       if (elements.length === 0) return match
-      const line = `${indent}${key ?? ''}[${elements.join(', ')}]`
+      const line = `${indent}${key ?? ''}[${elements.join(', ')}]${comma}`
       return line.length <= LINE_WIDTH ? line : match
     },
   )

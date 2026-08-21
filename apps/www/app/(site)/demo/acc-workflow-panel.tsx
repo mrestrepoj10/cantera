@@ -2,7 +2,7 @@
 
 import { LoaderCircleIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useId, useState, useTransition } from 'react'
+import { useEffect, useId, useState, useTransition } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { HubSwitcher } from '@/components/ui/hub-switcher'
@@ -90,8 +90,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function AccWorkflowPanel({ data }: { data: AccWorkflowData }) {
   const router = useRouter()
+  const [hydrated, setHydrated] = useState(false)
   const [touched, setTouched] = useState<WorkflowField | 'all'>()
   const [isPending, startTransition] = useTransition()
+
+  // The showcase has an end-to-end OAuth contract that lands on a fresh
+  // document. Mark this exact client island ready so the test never mistakes
+  // the already-hydrated app shell for an interactive project picker.
+  useEffect(() => setHydrated(true), [])
 
   // Changing one field invalidates everything after it, so the fields
   // downstream of the touched one are pending too — they are being replaced.
@@ -126,7 +132,11 @@ function AccWorkflowPanel({ data }: { data: AccWorkflowData }) {
   const listError = data.hubsError ?? data.projectsError
 
   return (
-    <div className="flex flex-col gap-6">
+    <div
+      className="flex flex-col gap-6"
+      data-slot="acc-workflow-panel"
+      data-hydrated={hydrated || undefined}
+    >
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-4 sm:flex-row">
           <Field label="Hub">

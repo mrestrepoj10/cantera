@@ -15,11 +15,11 @@ import { sitePages } from './pages'
 
 const WCAG_AA = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
 
-/**
- * Nodes excluded from the scan, each with the reason it cannot be fixed here.
- * Keep this list empty unless a violation is genuinely outside our own code.
- */
-const EXCLUDED_SELECTORS: string[] = []
+const VIEWER_DOCS_ROUTES = new Set(['/components/aps-viewer', '/components/viewer-native-toolbar'])
+// Autodesk Viewer 7.* owns and injects this subtree. Cantera cannot repair its
+// roles or contrast; the docs state this inherited limitation. Everything we
+// render around and over the canvas remains in the scan.
+const AUTODESK_VIEWER_SELECTOR = '[data-aps-viewer] .adsk-viewing-viewer'
 
 interface AxeViolation {
   id: string
@@ -37,10 +37,10 @@ function formatViolations(violations: AxeViolation[]): string {
     .join('\n')
 }
 
-async function scan(page: Page) {
+async function scan(page: Page, route: string) {
   let builder = new AxeBuilder({ page }).withTags(WCAG_AA)
-  for (const selector of EXCLUDED_SELECTORS) {
-    builder = builder.exclude(selector)
+  if (VIEWER_DOCS_ROUTES.has(route)) {
+    builder = builder.exclude(AUTODESK_VIEWER_SELECTOR)
   }
   const { violations } = await builder.analyze()
   return violations as AxeViolation[]
@@ -64,7 +64,7 @@ for (const appearance of ['light', 'dark'] as const) {
         // Guard against a green scan of the wrong palette.
         await expect.poll(() => isDark(page)).toBe(appearance === 'dark')
 
-        const violations = await scan(page)
+        const violations = await scan(page, route)
         // Assert on the rule ids so a failure diff stays readable; the full
         // node-by-node detail rides along in the message.
         expect(

@@ -34,126 +34,71 @@ interface ApsAccProjectUser extends Entity {
     issue_permission: ApsIssuePermission;
     rfi_roles: string[];
 }
-interface ApsActorRef {
-    id: string;
-    type: string;
-}
-/**
- * ACC entities store the full API response document as a typed `payload`.
- * The payload is the single source of truth: the fields routes filter or sort
- * on are declared explicitly, the long tail of response-only fields rides
- * along through the index signature. Entities add only the store's lookup
- * keys next to the payload — never a second copy of payload data.
- */
-interface ApsIssueSubtypeDoc extends Record<string, unknown> {
-    id: string;
-}
-interface ApsIssueTypeDoc extends Record<string, unknown> {
-    id: string;
-    isActive: boolean;
-    subtypes: ApsIssueSubtypeDoc[];
-}
 interface ApsIssueType extends Entity {
     project_id: string;
     issue_type_id: string;
-    payload: ApsIssueTypeDoc;
-}
-interface ApsIssueDoc extends Record<string, unknown> {
-    id: string;
-    displayId: number;
-    title: string;
-    status: string;
-    issueTypeId: string;
-    issueSubtypeId: string;
-    assignedTo: string | null;
-    deleted: boolean;
+    is_active: boolean;
+    payload: Record<string, unknown>;
 }
 interface ApsIssue extends Entity {
     project_id: string;
     issue_id: string;
-    payload: ApsIssueDoc;
-}
-interface ApsRfiTypeDoc extends Record<string, unknown> {
-    id: string;
+    issue_type_id: string;
+    issue_subtype_id: string;
+    display_id: number;
+    title: string;
     status: string;
-    isDefault: boolean;
+    assigned_to: string | null;
+    deleted: boolean;
+    payload: Record<string, unknown>;
 }
 interface ApsRfiType extends Entity {
     project_id: string;
     rfi_type_id: string;
-    payload: ApsRfiTypeDoc;
-}
-interface ApsRfiAttributeDoc extends Record<string, unknown> {
-    id: string;
     status: string;
+    payload: Record<string, unknown>;
 }
 interface ApsRfiAttribute extends Entity {
     project_id: string;
     attribute_id: string;
-    payload: ApsRfiAttributeDoc;
-}
-interface ApsRfiDoc extends Record<string, unknown> {
-    id: string;
-    customIdentifier: string;
-    title: string;
-    question: string;
     status: string;
-    assignedTo: ApsActorRef[];
-    rfiTypeId: string;
-    reference: string;
-    priority: string;
-    responses: unknown[];
-    draftResponses: unknown[];
+    payload: Record<string, unknown>;
 }
 interface ApsRfi extends Entity {
     project_id: string;
     rfi_id: string;
-    payload: ApsRfiDoc;
-}
-interface ApsSheetCollectionDoc extends Record<string, unknown> {
-    id: string;
-    name: string;
+    rfi_type_id: string;
+    custom_identifier: string;
+    title: string;
+    status: string;
+    assigned_to: string[];
+    reference: string;
+    priority: string;
+    payload: Record<string, unknown>;
 }
 interface ApsSheetCollection extends Entity {
     project_id: string;
     collection_id: string;
-    payload: ApsSheetCollectionDoc;
-}
-interface ApsSheetCollectionRef {
-    id: string;
-    name: string;
-}
-interface ApsSheetVersionSetDoc extends Record<string, unknown> {
-    id: string;
-    name: string;
-    issuanceDate: string;
-    collection: ApsSheetCollectionRef | null;
+    payload: Record<string, unknown>;
 }
 interface ApsSheetVersionSet extends Entity {
     project_id: string;
     version_set_id: string;
-    payload: ApsSheetVersionSetDoc;
-}
-interface ApsSheetVersionSetRef {
-    id: string;
-    name: string;
-    issuanceDate: string;
-    deleted: boolean;
-}
-interface ApsSheetDoc extends Record<string, unknown> {
-    id: string;
-    number: string;
-    title: string;
-    tags: string[];
-    isCurrent: boolean;
-    deleted: boolean;
-    versionSet: ApsSheetVersionSetRef;
-    collection: ApsSheetCollectionRef | null;
+    collection_id: string | null;
+    issuance_date: string;
+    payload: Record<string, unknown>;
 }
 interface ApsSheet extends Entity {
     project_id: string;
     sheet_id: string;
-    payload: ApsSheetDoc;
+    version_set_id: string;
+    collection_id: string | null;
+    number: string;
+    title: string;
+    tags: string[];
+    is_current: boolean;
+    deleted: boolean;
+    payload: Record<string, unknown>;
 }
 type ApsManifestDerivative = Record<string, unknown>;
 interface ApsManifest extends Entity {
@@ -166,10 +111,244 @@ interface ApsManifest extends Entity {
     version: string;
     derivatives: ApsManifestDerivative[];
 }
+type ApsWebhookStatus = "active" | "inactive" | "reactivated";
+type ApsWebhookCreatorType = "Application" | "O2User";
+type ApsWebhookFilter = string | string[];
+interface ApsWebhookHook extends Entity {
+    hook_id: string;
+    tenant: string;
+    callback_url: string;
+    created_by: string;
+    creator_type: ApsWebhookCreatorType;
+    identity_key: string;
+    event: string;
+    system: string;
+    status: ApsWebhookStatus;
+    auto_reactivate_hook: boolean;
+    hook_expiry: string | null;
+    hook_attribute: Record<string, unknown> | null;
+    filter: ApsWebhookFilter | null;
+    scope: Record<string, string>;
+    hub_id: string | null;
+    project_id: string | null;
+    token: string | null;
+    region: string;
+    failed_event_count: number;
+    inactive_at: string | null;
+    reactivation_count: number;
+}
+interface ApsWebhookSecret extends Entity {
+    identity_key: string;
+    region: string;
+    token: string;
+}
+interface ApsWebhookDelivery extends Entity {
+    delivery_id: string;
+    hook_id: string;
+    system: string;
+    event: string;
+    attempt: number;
+    envelope: Record<string, unknown>;
+    status_code: number | null;
+    duration: number;
+    success: boolean;
+    signature_present: boolean;
+}
+interface ApsDocumentFolder extends Entity {
+    folder_id: string;
+    project_id: string;
+    parent_folder_id: string | null;
+    name: string;
+    hidden: boolean;
+    created_by: string;
+    created_by_name: string;
+    create_time: string;
+    last_modified_by: string;
+    last_modified_by_name: string;
+    last_modified_time: string;
+}
+interface ApsDocumentItem extends Entity {
+    item_id: string;
+    project_id: string;
+    folder_id: string;
+    display_name: string;
+    hidden: boolean;
+    reserved: boolean;
+    reserved_time: string | null;
+    reserved_by: string | null;
+    reserved_by_name: string | null;
+    created_by: string;
+    created_by_name: string;
+    create_time: string;
+    last_modified_by: string;
+    last_modified_by_name: string;
+    last_modified_time: string;
+    extension_type: string;
+}
+interface ApsDocumentVersion extends Entity {
+    version_id: string;
+    item_id: string;
+    project_id: string;
+    version_number: number;
+    display_name: string;
+    file_type: string;
+    mime_type: string;
+    storage_size: number;
+    storage_urn: string;
+    region: string;
+    bubble_urn: string | null;
+    viewable_id: string;
+    viewable_guid: string;
+    created_by: string;
+    created_by_name: string;
+    create_time: string;
+    last_modified_by: string;
+    last_modified_by_name: string;
+    last_modified_time: string;
+}
+type ApsModelSetVersionStatus = "Pending" | "Processing" | "Successful" | "Partial" | "Failed";
+type ApsClashTestStatus = "Pending" | "Processing" | "Success" | "Failed";
+interface ApsModelSetDocumentVersion {
+    stableDocumentId: string;
+    unstableDocumentId: string;
+    documentLineage: {
+        lineageUrn: string;
+        parentFolderUrn: string;
+        isAligned: boolean;
+        tipVersionUrn: string;
+    };
+    alignment: {
+        transform: number[];
+        checksum: string;
+        upAxis: number[];
+        distanceUnit: string;
+    };
+    isTipVersion: boolean;
+    documentStatus: "Succeeded" | "Failed" | "Running" | "Skipped";
+    forgeType: "versions:autodesk.bim360:Document" | "versions:autodesk.bim360:File";
+    versionUrn: string;
+    displayName: string;
+    revision: string;
+    viewableName: string;
+    createUserId: string;
+    createTime: string;
+    viewableGuid: string;
+    viewableId: string;
+    viewableMime: string;
+    bubbleUrn: string;
+    isSvf2Supported: boolean;
+    originalSeedFileVersionSize: number;
+    originalSeedFileVersionUrn: string;
+    originalSeedFileVersionName: string;
+}
+interface ApsModelSet extends Entity {
+    project_id: string;
+    model_set_id: string;
+    name: string;
+    description: string;
+    root_folder_urn: string;
+    folder_urns: string[];
+    created_by: string;
+    created_time: string;
+    modified_by: string;
+    modified_time: string;
+    disabled: boolean;
+    deleted: boolean;
+}
+interface ApsModelSetVersion extends Entity {
+    model_set_id: string;
+    version: number;
+    create_time: string;
+    status: ApsModelSetVersionStatus;
+    document_versions: ApsModelSetDocumentVersion[];
+}
+interface ApsModelSetView extends Entity {
+    model_set_id: string;
+    version: number;
+    view_id: string;
+    document_versions: string[];
+}
+interface ApsClashTest extends Entity {
+    project_id: string;
+    test_id: string;
+    model_set_id: string;
+    model_set_version: number;
+    status: ApsClashTestStatus;
+    completed_on: string | null;
+}
+interface ApsClashGroup extends Entity {
+    test_id: string;
+    disposition: "assigned" | "closed";
+    group_id: string;
+    original_clash_test_id: string;
+    created_at_version: number;
+    existing: number[];
+    resolved: number[];
+}
+interface ApsSignedBlob extends Entity {
+    blob_id: string;
+    filename: string;
+    content_type: string;
+    content_base64: string;
+}
 
 interface ApsAccActorSeed {
     id: string;
     type?: "user" | "role" | "company";
+}
+interface ApsDocumentVersionSeed {
+    version_id: string;
+    item_id: string;
+    folder_id?: string;
+    ancestor_folder_ids?: string[];
+    project_id: string;
+    version_number?: number;
+    display_name?: string;
+    file_type?: string;
+    mime_type?: string;
+    storage_size?: number;
+    storage_urn?: string;
+    region?: string;
+    bubble_urn?: string | null;
+    viewable_id?: string;
+    viewable_guid?: string;
+    created_by?: string;
+    created_by_name?: string;
+    create_time?: string;
+    last_modified_by?: string;
+    last_modified_by_name?: string;
+    last_modified_time?: string;
+}
+interface ApsDocumentFolderSeed {
+    id: string;
+    project_id: string;
+    parent_folder_id?: string;
+    name: string;
+    hidden?: boolean;
+    created_by?: string;
+    created_by_name?: string;
+    create_time?: string;
+    last_modified_by?: string;
+    last_modified_by_name?: string;
+    last_modified_time?: string;
+}
+interface ApsDocumentItemSeed {
+    id: string;
+    project_id: string;
+    folder_id: string;
+    display_name: string;
+    hidden?: boolean;
+    reserved?: boolean;
+    reserved_time?: string;
+    reserved_by?: string;
+    reserved_by_name?: string;
+    extension_type?: string;
+    created_by?: string;
+    created_by_name?: string;
+    create_time?: string;
+    last_modified_by?: string;
+    last_modified_by_name?: string;
+    last_modified_time?: string;
 }
 interface ApsSeedConfig {
     clients?: Array<{
@@ -345,7 +524,61 @@ interface ApsSeedConfig {
         version?: string;
         derivatives?: ApsManifestDerivative[];
     }>;
+    webhook_timing?: Partial<ApsWebhookTimingConfig>;
+    model_coordination_timing?: Partial<ApsModelCoordinationTimingConfig>;
+    document_folders?: ApsDocumentFolderSeed[];
+    document_items?: ApsDocumentItemSeed[];
+    document_versions?: ApsDocumentVersionSeed[];
+    /** @deprecated Use document_versions. */
+    webhook_dm_versions?: ApsDocumentVersionSeed[];
+    model_sets?: Array<{
+        id: string;
+        project_id: string;
+        name: string;
+        description?: string;
+        root_folder_urn?: string;
+        folder_urns?: string[];
+        document_version_ids?: string[];
+        created_by?: string;
+        created_time?: string;
+        disabled?: boolean;
+        deleted?: boolean;
+        test_id?: string;
+    }>;
+    webhooks?: Array<{
+        system: string;
+        event: string;
+        callback_url: string;
+        scope: Record<string, string>;
+        tenant?: string;
+        creator_client_id?: string;
+        creator_user_email?: string;
+        region?: string;
+        status?: "active" | "inactive";
+        auto_reactivate_hook?: boolean;
+        hook_expiry?: string | null;
+        hook_attribute?: Record<string, unknown>;
+        filter?: string | string[];
+        token?: string;
+        hub_id?: string;
+        project_id?: string;
+    }>;
 }
+interface ApsWebhookTimingConfig {
+    max_retries: number;
+    retry_base_ms: number;
+    retry_max_ms: number;
+    failed_events_before_inactive: number;
+    reactivate_after_ms: number;
+    max_reactivation_cycles: number;
+    delivery_timeout_ms: number;
+}
+interface ApsModelCoordinationTimingConfig {
+    processing_ms: number;
+    signed_url_ttl_ms: number;
+}
+declare const DEFAULT_MODEL_COORDINATION_TIMING: ApsModelCoordinationTimingConfig;
+declare const DEFAULT_WEBHOOK_TIMING: ApsWebhookTimingConfig;
 declare const DEFAULT_DATA_SEED: {
     hubs: {
         id: string;
@@ -517,6 +750,70 @@ declare const DEFAULT_DATA_SEED: {
         updated_by_name: string;
         updated_at: string;
     }[];
+    document_folders: ({
+        id: string;
+        project_id: string;
+        name: string;
+        create_time: string;
+        parent_folder_id?: undefined;
+    } | {
+        id: string;
+        project_id: string;
+        parent_folder_id: string;
+        name: string;
+        create_time: string;
+    })[];
+    document_items: {
+        id: string;
+        project_id: string;
+        folder_id: string;
+        display_name: string;
+        create_time: string;
+    }[];
+    document_versions: ({
+        version_id: string;
+        item_id: string;
+        project_id: string;
+        version_number: number;
+        display_name: string;
+        file_type: string;
+        mime_type: string;
+        storage_size: number;
+        storage_urn: string;
+        region: string;
+        bubble_urn: null;
+        create_time: string;
+    } | {
+        version_id: string;
+        item_id: string;
+        project_id: string;
+        version_number: number;
+        display_name: string;
+        file_type: string;
+        mime_type: string;
+        storage_size: number;
+        storage_urn: string;
+        region: string;
+        create_time: string;
+        bubble_urn?: undefined;
+        viewable_id?: undefined;
+        viewable_guid?: undefined;
+    } | {
+        version_id: string;
+        item_id: string;
+        project_id: string;
+        version_number: number;
+        display_name: string;
+        file_type: string;
+        mime_type: string;
+        storage_size: number;
+        storage_urn: string;
+        region: string;
+        bubble_urn: string;
+        viewable_id: string;
+        viewable_guid: string;
+        create_time: string;
+    })[];
     manifests: {
         dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6ZW11bGF0ZS1idWNrZXQvc2FtcGxlLnJ2dA: {
             type: string;
@@ -580,7 +877,66 @@ declare const DEFAULT_DATA_SEED: {
                 hasThumbnail?: undefined;
             })[];
         };
+        dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6ZW11bGF0ZS1idWNrZXQvc3RydWN0dXJhbC5ydnQ: {
+            type: string;
+            hasThumbnail: string;
+            status: string;
+            progress: string;
+            region: string;
+            version: string;
+            derivatives: {
+                name: string;
+                hasThumbnail: string;
+                status: string;
+                progress: string;
+                outputType: string;
+                children: ({
+                    guid: string;
+                    type: string;
+                    role: string;
+                    urn: string;
+                    mime: string;
+                    status: string;
+                    name?: undefined;
+                    viewableID?: undefined;
+                    hasThumbnail?: undefined;
+                    progress?: undefined;
+                    children?: undefined;
+                } | {
+                    guid: string;
+                    type: string;
+                    role: string;
+                    name: string;
+                    viewableID: string;
+                    status: string;
+                    hasThumbnail: string;
+                    progress: string;
+                    children: {
+                        guid: string;
+                        type: string;
+                        role: string;
+                        name: string;
+                        status: string;
+                        progress: string;
+                    }[];
+                    urn?: undefined;
+                    mime?: undefined;
+                })[];
+            }[];
+        };
     };
+    model_sets: {
+        id: string;
+        project_id: string;
+        name: string;
+        description: string;
+        root_folder_urn: string;
+        folder_urns: string[];
+        document_version_ids: string[];
+        created_by: string;
+        created_time: string;
+        test_id: string;
+    }[];
 };
 
 interface ApsStore {
@@ -598,10 +954,56 @@ interface ApsStore {
     sheetCollections: Collection<ApsSheetCollection>;
     sheetVersionSets: Collection<ApsSheetVersionSet>;
     sheets: Collection<ApsSheet>;
+    webhookHooks: Collection<ApsWebhookHook>;
+    webhookSecrets: Collection<ApsWebhookSecret>;
+    webhookDeliveries: Collection<ApsWebhookDelivery>;
+    documentFolders: Collection<ApsDocumentFolder>;
+    documentItems: Collection<ApsDocumentItem>;
+    documentVersions: Collection<ApsDocumentVersion>;
+    modelSets: Collection<ApsModelSet>;
+    modelSetVersions: Collection<ApsModelSetVersion>;
+    modelSetViews: Collection<ApsModelSetView>;
+    clashTests: Collection<ApsClashTest>;
+    clashGroups: Collection<ApsClashGroup>;
+    signedBlobs: Collection<ApsSignedBlob>;
 }
 declare function getApsStore(store: Store): ApsStore;
+
+declare function getModelCoordinationTiming(store: Store): ApsModelCoordinationTimingConfig;
+declare function setModelCoordinationTiming(store: Store, timing: Partial<ApsModelCoordinationTimingConfig>): void;
+
+interface ApsWebhookEventInput {
+    system: string;
+    event: string;
+    resourceUrn: string;
+    payload: Record<string, unknown>;
+    region: string;
+    tenant?: string;
+    scopeValue?: string;
+    scope?: Record<string, string>;
+    folderAncestors?: string[];
+}
+interface ApsWebhookDeliveryReport {
+    hookId: string;
+    matched: boolean;
+    delivered: boolean;
+    statusCode: number | null;
+    attempts: number;
+    signaturePresent: boolean;
+    reason?: string;
+}
+interface ApsWebhookSimulationReport {
+    system: string;
+    event: string;
+    resourceUrn: string;
+    deliveries: ApsWebhookDeliveryReport[];
+}
+declare function getWebhookTiming(store: Store): ApsWebhookTimingConfig;
+declare function setWebhookTiming(store: Store, timing: Partial<ApsWebhookTimingConfig>): void;
+declare function webhookDetails(hook: ApsWebhookHook): Record<string, unknown>;
+declare function simulateWebhookEvent(aps: ApsStore, store: Store, input: ApsWebhookEventInput): Promise<ApsWebhookSimulationReport>;
 
 declare function seedFromConfig(store: Store, _baseUrl: string, config: ApsSeedConfig): void;
 declare const apsPlugin: ServicePlugin;
 
-export { type ApsAccProjectUser, type ApsActorRef, type ApsClient, type ApsClientType, type ApsHub, type ApsIssue, type ApsIssueDoc, type ApsIssuePermission, type ApsIssueSubtypeDoc, type ApsIssueType, type ApsIssueTypeDoc, type ApsManifest, type ApsManifestDerivative, type ApsProject, type ApsRfi, type ApsRfiAttribute, type ApsRfiAttributeDoc, type ApsRfiDoc, type ApsRfiType, type ApsRfiTypeDoc, type ApsSeedConfig, type ApsSheet, type ApsSheetCollection, type ApsSheetCollectionDoc, type ApsSheetCollectionRef, type ApsSheetDoc, type ApsSheetVersionSet, type ApsSheetVersionSetDoc, type ApsSheetVersionSetRef, type ApsStore, type ApsUser, DEFAULT_DATA_SEED, apsPlugin, apsPlugin as default, getApsStore, seedFromConfig };
+export { type ApsAccProjectUser, type ApsClashGroup, type ApsClashTest, type ApsClashTestStatus, type ApsClient, type ApsClientType, type ApsDocumentFolder, type ApsDocumentFolderSeed, type ApsDocumentItem, type ApsDocumentItemSeed, type ApsDocumentVersion, type ApsDocumentVersionSeed, type ApsHub, type ApsIssue, type ApsIssuePermission, type ApsIssueType, type ApsManifest, type ApsManifestDerivative, type ApsModelCoordinationTimingConfig, type ApsModelSet, type ApsModelSetDocumentVersion, type ApsModelSetVersion, type ApsModelSetVersionStatus, type ApsModelSetView, type ApsProject, type ApsRfi, type ApsRfiAttribute, type ApsRfiType, type ApsSeedConfig, type ApsSheet, type ApsSheetCollection, type ApsSheetVersionSet, type ApsSignedBlob, type ApsStore, type ApsUser, type ApsWebhookCreatorType, type ApsWebhookDelivery, type ApsWebhookFilter, type ApsWebhookHook, type ApsWebhookSecret, type ApsWebhookStatus, type ApsWebhookTimingConfig, DEFAULT_DATA_SEED, DEFAULT_MODEL_COORDINATION_TIMING, DEFAULT_WEBHOOK_TIMING, apsPlugin, apsPlugin as default, getApsStore, getModelCoordinationTiming, getWebhookTiming, seedFromConfig, setModelCoordinationTiming, setWebhookTiming, simulateWebhookEvent, webhookDetails };

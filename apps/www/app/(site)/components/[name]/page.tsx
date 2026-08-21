@@ -11,6 +11,7 @@ import { PageHandoff } from '@/components/site/page-handoff'
 import { type ApiTable, apiTables, libUsage } from '@/components/site/props-tables'
 import {
   getExampleItem,
+  getPreviewFrameClassName,
   getRegistryItem,
   installCommandFor,
   registryItems,
@@ -139,8 +140,15 @@ export default async function ComponentPage({ params }: PageProps) {
       ) : (
         <section className="flex flex-col gap-3">
           <h2 className="font-medium text-sm">Preview</h2>
-          <div className="flex min-h-64 items-center justify-center rounded-lg border border-border p-8 sm:p-12">
-            <ComponentDemo name={item.name} />
+          <div className={getPreviewFrameClassName(item.name)}>
+            <ComponentDemo
+              name={item.name}
+              viewerUrn={
+                item.name === 'aps-viewer' || item.name === 'viewer-native-toolbar'
+                  ? process.env.APS_VIEWER_DEMO_URN
+                  : undefined
+              }
+            />
           </div>
         </section>
       )}

@@ -37,7 +37,7 @@ export function apsApiBaseUrl(origin: string): string {
   return configured.startsWith('/') ? `${origin}${configured}` : configured
 }
 
-async function apsGet<T>(url: string, token: AccessToken): Promise<T> {
+export async function apsGet<T>(url: string, token: AccessToken): Promise<T> {
   const response = await fetch(url, {
     headers: { ...authHeaders(token), Accept: 'application/json' },
     // A demo whose selection changes per request has nothing to gain from a
@@ -56,11 +56,11 @@ async function apsGet<T>(url: string, token: AccessToken): Promise<T> {
  * restore it — percent-encoded colons make the URL legal but unrecognizable to
  * anything matching on the decoded path.
  */
-function segment(value: string): string {
+export function segment(value: string): string {
   return encodeURIComponent(value).replaceAll('%3A', ':')
 }
 
-function failureMessage(error: unknown, subject: string): string {
+export function failureMessage(error: unknown, subject: string): string {
   const detail = error instanceof Error ? error.message : String(error)
   return `${subject} could not be loaded (${detail}).`
 }

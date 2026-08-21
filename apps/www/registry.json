@@ -310,7 +310,7 @@
       "type": "registry:lib",
       "title": "Project Types",
       "author": "MR <contact@bimframe.co>",
-      "description": "Generic project-context types for cantera components: hubs, projects, model translations, sheet version sets. The lingua franca adapters translate into.",
+      "description": "Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into.",
       "categories": ["projects", "types"],
       "files": [
         {
@@ -325,7 +325,7 @@
       "type": "registry:lib",
       "title": "APS Data Preset",
       "author": "MR <contact@bimframe.co>",
-      "description": "Autodesk Platform Services (ACC) data preset: adapters from Data Management, Model Derivative, and ACC Sheets payloads into cantera's project types.",
+      "description": "Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.",
       "categories": ["projects", "providers", "autodesk"],
       "registryDependencies": ["@cantera/project-types"],
       "files": [
@@ -389,6 +389,125 @@
           "type": "registry:ui"
         }
       ]
+    },
+    {
+      "name": "hub-browser",
+      "type": "registry:component",
+      "title": "Hub Browser",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics.",
+      "categories": ["projects", "files", "navigation", "autodesk"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "badge",
+        "breadcrumb",
+        "button",
+        "popover",
+        "scroll-area",
+        "skeleton",
+        "@cantera/project-types",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/hub-browser.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "docs": "HubBrowser is fully controlled and never fetches. An empty path renders the hub list; each callback advances or rewinds the consumer-owned path and entries. Activating the Hubs breadcrumb passes ROOT_BROWSE_SEGMENT — the exported empty-id sentinel — to onNavigate.\n\nVersion history is on demand: onRequestVersions receives one item id, and the consumer feeds the single-item versions prop back. Picking a row calls onItemOpen(item); picking history calls onItemOpen(item, version). Status badges use @cantera/status-tokens."
+    },
+    {
+      "name": "file-picker-dialog",
+      "type": "registry:component",
+      "title": "File Picker Dialog",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Hub Browser inside a dialog, with tip-or-version selection and an explicit cancel action.",
+      "categories": ["projects", "files", "dialogs", "autodesk"],
+      "registryDependencies": [
+        "button",
+        "dialog",
+        "@cantera/hub-browser",
+        "@cantera/project-types"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/file-picker-dialog.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "viewer-types",
+      "type": "registry:lib",
+      "title": "Viewer Types",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Zero-dependency structural types for the Autodesk Viewer global runtime, documents, models, extensions, and promise-based token callbacks.",
+      "categories": ["viewer", "types", "autodesk"],
+      "files": [
+        {
+          "path": "registry/lib/viewer-types.ts",
+          "type": "registry:lib",
+          "target": "lib/viewer-types.ts"
+        }
+      ]
+    },
+    {
+      "name": "aps-viewer",
+      "type": "registry:component",
+      "title": "APS Viewer",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme changes, URN swaps, automatic resize, and composable hooks.",
+      "categories": ["viewer", "models", "autodesk"],
+      "registryDependencies": ["@cantera/viewer-types"],
+      "files": [
+        {
+          "path": "registry/ui/aps-viewer/aps-viewer.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/aps-viewer.tsx"
+        },
+        {
+          "path": "registry/ui/aps-viewer/context.ts",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/context.ts"
+        },
+        {
+          "path": "registry/ui/aps-viewer/hooks.ts",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/hooks.ts"
+        },
+        {
+          "path": "registry/ui/aps-viewer/loader.ts",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/loader.ts"
+        },
+        {
+          "path": "registry/ui/aps-viewer/store.ts",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/store.ts"
+        },
+        {
+          "path": "registry/ui/aps-viewer/index.ts",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/index.ts"
+        }
+      ],
+      "docs": "APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance changes call setTheme in place. toolbar=none uses the core Viewer3D and omits Autodesk's native GUI.\n\nAutodesk Viewer 7.* renders third-party DOM that cantera cannot repair. The docs accessibility suite excludes only the subtree rooted inside the viewer canvas; controls you add around or over the viewer remain in scope. Audit the inherited Autodesk controls against your own product requirements."
+    },
+    {
+      "name": "viewer-native-toolbar",
+      "type": "registry:component",
+      "title": "Viewer Native Toolbar",
+      "author": "MR <contact@bimframe.co>",
+      "description": "An Autodesk Viewer extension that docks the native toolbar on any edge and offers a 44px touch-target scale without replacing Autodesk controls.",
+      "categories": ["viewer", "navigation", "autodesk"],
+      "registryDependencies": ["@cantera/aps-viewer", "@cantera/viewer-types"],
+      "files": [
+        {
+          "path": "registry/ui/viewer-native-toolbar.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "docs": "Render ViewerNativeToolbar inside APSViewer, or register VIEWER_NATIVE_TOOLBAR_EXTENSION_ID and load it directly. position chooses bottom, top, left, or right; left and right derive a vertical layout. scale=lg raises native buttons to a 44px minimum touch target.\n\nThe extension uses only viewer.toolbar.container and the public extension manager, and cleans up its classes and stylesheet in unload. Its CSS targets Autodesk LMV 7.* native toolbar, tooltip, and flyout class names. Those DOM selectors are not a published stable contract, so positioning is best-effort and should be checked when you change the Viewer major version."
     },
     {
       "name": "model-status-card",
@@ -636,6 +755,94 @@
           "path": "registry/examples/pages/version-set-select-demo-page.tsx",
           "type": "registry:page",
           "target": "app/examples/version-set-select/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "hub-browser-demo",
+      "type": "registry:example",
+      "title": "Hub Browser Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Hub Browser, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "files", "navigation", "autodesk"],
+      "registryDependencies": ["@cantera/hub-browser", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/examples/hub-browser-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/hub-browser-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/hub-browser-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/hub-browser/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "file-picker-dialog-demo",
+      "type": "registry:example",
+      "title": "File Picker Dialog Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering File Picker Dialog, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "files", "dialogs", "autodesk"],
+      "registryDependencies": ["button", "@cantera/file-picker-dialog", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/examples/file-picker-dialog-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/file-picker-dialog-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/file-picker-dialog-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/file-picker-dialog/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "aps-viewer-demo",
+      "type": "registry:example",
+      "title": "APS Viewer Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering APS Viewer, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["viewer", "models", "autodesk"],
+      "registryDependencies": ["@cantera/aps-viewer", "@cantera/viewer-types"],
+      "files": [
+        {
+          "path": "registry/examples/aps-viewer-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/aps-viewer-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/aps-viewer-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/aps-viewer/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "viewer-native-toolbar-demo",
+      "type": "registry:example",
+      "title": "Viewer Native Toolbar Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Viewer Native Toolbar, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["viewer", "navigation", "autodesk"],
+      "registryDependencies": [
+        "@cantera/aps-viewer",
+        "@cantera/viewer-native-toolbar",
+        "@cantera/viewer-types"
+      ],
+      "files": [
+        {
+          "path": "registry/examples/viewer-native-toolbar-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/viewer-native-toolbar-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/viewer-native-toolbar-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/viewer-native-toolbar/page.tsx"
         }
       ]
     },

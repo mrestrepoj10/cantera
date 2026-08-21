@@ -47,6 +47,21 @@ export function getRegistryItem(name: string): RegistryItem | undefined {
   return registryItems.find((item) => item.name === name)
 }
 
+const previewFrameClasses: Record<string, string> = {
+  'hub-browser': 'flex min-h-64 items-stretch rounded-lg border border-border p-4 sm:p-6',
+  'aps-viewer': 'flex min-h-[36rem] items-stretch overflow-hidden rounded-lg border border-border',
+  'viewer-native-toolbar':
+    'flex min-h-[36rem] items-stretch overflow-hidden rounded-lg border border-border',
+}
+
+/** Docs previews default to centered component scale; canvas-like items opt into a full frame. */
+export function getPreviewFrameClassName(name: string): string {
+  return (
+    previewFrameClasses[name] ??
+    'flex min-h-64 items-center justify-center rounded-lg border border-border p-8 sm:p-12'
+  )
+}
+
 /** A titled section of the catalog: one kind of registry item, in registry.json order. */
 export interface RegistryGroup {
   /** Stable slug — used for React keys and heading ids. */

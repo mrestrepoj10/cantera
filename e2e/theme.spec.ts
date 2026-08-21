@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import { waitForHydration } from './hydration'
+import { gotoViewerDemo, waitForViewerModel } from './viewer'
 
 /**
  * Dark mode is a shipping surface, not a nicety: the components are
@@ -40,6 +41,22 @@ test.describe('theme toggle', () => {
     await expect(html).not.toHaveClass(/\bdark\b/)
     await page.reload()
     await expect(html).not.toHaveClass(/\bdark\b/)
+  })
+
+  test('updates the APS Viewer theme without recreating its WebGL canvas', async ({ page }) => {
+    await gotoViewerDemo(page, '/components/aps-viewer')
+
+    const viewer = await waitForViewerModel(page)
+    const canvas = viewer.locator('canvas').first()
+    const canvasHandle = await canvas.elementHandle()
+    await expect(viewer.locator('.adsk-viewing-viewer')).toHaveClass(/light-theme/)
+
+    await page.getByRole('button', { name: 'Switch to dark theme' }).click()
+
+    await expect(viewer.locator('.adsk-viewing-viewer')).toHaveClass(/dark-theme/)
+    expect(
+      await canvasHandle?.evaluate((node, live) => node === live, await canvas.elementHandle()),
+    ).toBe(true)
   })
 })
 

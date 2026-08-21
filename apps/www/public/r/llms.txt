@@ -123,7 +123,7 @@ Item: https://canteraui.xyz/r/connections-page.json
 
 Title: Project Types
 Type: lib
-Description: Generic project-context types for cantera components: hubs, projects, model translations, sheet version sets. The lingua franca adapters translate into.
+Description: Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into.
 Install: npx shadcn@latest add @cantera/project-types
 Docs: https://canteraui.xyz/components/project-types
 Item: https://canteraui.xyz/r/project-types.json
@@ -132,7 +132,7 @@ Item: https://canteraui.xyz/r/project-types.json
 
 Title: APS Data Preset
 Type: lib
-Description: Autodesk Platform Services (ACC) data preset: adapters from Data Management, Model Derivative, and ACC Sheets payloads into cantera's project types.
+Description: Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.
 Install: npx shadcn@latest add @cantera/aps-data-preset
 Docs: https://canteraui.xyz/components/aps-data-preset
 Item: https://canteraui.xyz/r/aps-data-preset.json
@@ -163,6 +163,51 @@ Description: Which issuance of the construction sheets to read from, every optio
 Install: npx shadcn@latest add @cantera/version-set-select
 Docs: https://canteraui.xyz/components/version-set-select
 Item: https://canteraui.xyz/r/version-set-select.json
+
+### hub-browser
+
+Title: Hub Browser
+Type: component
+Description: A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics.
+Install: npx shadcn@latest add @cantera/hub-browser
+Docs: https://canteraui.xyz/components/hub-browser
+Item: https://canteraui.xyz/r/hub-browser.json
+
+### file-picker-dialog
+
+Title: File Picker Dialog
+Type: component
+Description: Hub Browser inside a dialog, with tip-or-version selection and an explicit cancel action.
+Install: npx shadcn@latest add @cantera/file-picker-dialog
+Docs: https://canteraui.xyz/components/file-picker-dialog
+Item: https://canteraui.xyz/r/file-picker-dialog.json
+
+### viewer-types
+
+Title: Viewer Types
+Type: lib
+Description: Zero-dependency structural types for the Autodesk Viewer global runtime, documents, models, extensions, and promise-based token callbacks.
+Install: npx shadcn@latest add @cantera/viewer-types
+Docs: https://canteraui.xyz/components/viewer-types
+Item: https://canteraui.xyz/r/viewer-types.json
+
+### aps-viewer
+
+Title: APS Viewer
+Type: component
+Description: A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme changes, URN swaps, automatic resize, and composable hooks.
+Install: npx shadcn@latest add @cantera/aps-viewer
+Docs: https://canteraui.xyz/components/aps-viewer
+Item: https://canteraui.xyz/r/aps-viewer.json
+
+### viewer-native-toolbar
+
+Title: Viewer Native Toolbar
+Type: component
+Description: An Autodesk Viewer extension that docks the native toolbar on any edge and offers a 44px touch-target scale without replacing Autodesk controls.
+Install: npx shadcn@latest add @cantera/viewer-native-toolbar
+Docs: https://canteraui.xyz/components/viewer-native-toolbar
+Item: https://canteraui.xyz/r/viewer-native-toolbar.json
 
 ### model-status-card
 

@@ -30,3 +30,6 @@ jobs:
           pnpm e2e
         env:
           CI: true
+          APS_CLIENT_ID: ${{ secrets.APS_CLIENT_ID }}
+          APS_CLIENT_SECRET: ${{ secrets.APS_CLIENT_SECRET }}
+          APS_VIEWER_DEMO_URN: ${{ secrets.APS_VIEWER_DEMO_URN }}

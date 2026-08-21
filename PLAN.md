@@ -11,7 +11,7 @@ This plan is the output of a grill session (2026-08-18). Every section below rec
 - Name: **cantera**. Registry namespace: **`@cantera`**. Domain: **canteraui.xyz** (bought; connected via Vercel CLI at M4).
 - Pitch: open-source, copy-paste-owned components for construction data. Compatible with ACC APIs (OAuth, Issues, Model Derivative, …) but never constrained to them — any user with data can use every component.
 - Ecosystem: cantera is the UI layer over [`aec-auth`](https://github.com/mrestrepoj10/aec-auth) (token layer, npm) and demos against the [emulate fork](https://github.com/mrestrepoj10/emulate)'s APS emulator. cantera itself is **pure registry — no npm package**. Release model: latest-wins registry items, git tags + CHANGELOG for history.
-- cantera *is* the "shadcn-style init scaffolder" from aec-auth's roadmap: `npx shadcn add @cantera/acc-sign-in`.
+- cantera *is* the "shadcn-style init scaffolder" from aec-auth's roadmap: `npx shadcn@latest add @cantera/acc-sign-in`.
 
 ## 2. Architecture decisions
 
@@ -69,7 +69,7 @@ Showcase pages import from `@/registry/*` so demos render the exact distributed 
 
 ### `registry:item`
 
-- **`status-tokens`** — the semantic status palette: `--status-success` / `-warning` / `-danger` / `-neutral`, each with a `-foreground` (ink on the solid fill) and a `-surface` (soft background) companion, in light and dark. Shipped as `cssVars` rather than a file, so `npx shadcn add @cantera/status-tokens` merges the variables and the `@theme inline` mappings straight into the consumer's CSS. Every component that renders status declares it as a `registryDependency`; the `@theme` mappings carry `var(--token, var(--fallback))` defaults so a theme that drops the variables degrades instead of rendering invisible.
+- **`status-tokens`** — the semantic status palette: `--status-success` / `-warning` / `-danger` / `-neutral`, each with a `-foreground` (ink on the solid fill) and a `-surface` (soft background) companion, in light and dark. Shipped as `cssVars` rather than a file, so `npx shadcn@latest add @cantera/status-tokens` merges the variables and the `@theme inline` mappings straight into the consumer's CSS. Every component that renders status declares it as a `registryDependency`; the `@theme` mappings carry `var(--token, var(--fallback))` defaults so a theme that drops the variables degrades instead of rendering invisible.
 
 ### `registry:component` (pure, controlled, data-in-props)
 
@@ -98,7 +98,7 @@ APIs are the working contract — props get refined in implementation; shape and
 
 ## 6. apps/www (v1 scope: minimal, code-driven)
 
-- **`/`** — one screen that is the pitch: hero ("Construction UI. shadcn-native."), copyable install command (`npx shadcn add @cantera/sign-in-card`), the live OAuth demo inline, component grid, and an ecosystem strip linking aec-auth + emulate.
+- **`/`** — one screen that is the pitch: hero ("Construction UI. shadcn-native."), copyable install command (`npx shadcn@latest add @cantera/sign-in-card`), the live OAuth demo inline, component grid, and an ecosystem strip linking aec-auth + emulate.
 - **`/components/[name]`** — live preview, install command, source view, props table — rendered from registry source, no MDX engine (prose guides post-v1).
 - **`/demo`** — the full wired `acc-sign-in` flow against the embedded emulator.
 - Aesthetic: emulate-`apps/web` school — Geist fonts, mostly monochrome, generous whitespace. Quality bar: vercel-labs `web-interface-guidelines`. Next.js patterns reference: `next-beats`.
@@ -111,13 +111,13 @@ APIs are the working contract — props get refined in implementation; shape and
 4. **M3 Live demo** — embedded emulator + `acc-sign-in` block + `/demo` + Playwright smoke test.
 5. **M4 Launch** — connect canteraui.xyz via Vercel CLI + README. **Nothing else.**
 
-**"v1 launched"** = M4 complete: any shadcn project can `npx shadcn add @cantera/sign-in-card` from canteraui.xyz, and the site demos the full OAuth flow credential-free.
+**"v1 launched"** = M4 complete: any shadcn project can `npx shadcn@latest add @cantera/sign-in-card` from canteraui.xyz, and the site demos the full OAuth flow credential-free.
 
 ## 8. Post-v1 (deliberately out of scope)
 
 - shadcn registry directory/index submission — **after we review the live registry**, not part of v1.
 - cantera theme item; MDX prose guides; dynamic registry routes (search/auth).
-- `apps/app` — dashboards for construction data: issues, RFIs, submittals, model viewers (APS Viewer via aps-viewer-react learnings). Each new domain follows the locked pattern: **types + adapters + blocks**. Domain schemas get designed when their slice starts, not before.
+- `apps/app` — dashboards for construction data: issues, RFIs, and submittals. The pure APS Viewer surface now lives in the registry; its wired `model-viewer-page` block remains deferred. Each new domain follows the locked pattern: **types + adapters + blocks**. Domain schemas get designed when their slice starts, not before.
 - Procore preset (`procore-oauth-preset`) once aec-auth ships Procore support.
 
 ## 9. Design roadmap (from the 2026-08-19 design review)
@@ -133,6 +133,10 @@ Design work from the review. Each item is a contract for whoever picks it up; no
 
   The presentational component stays data-agnostic — `providers` plus `connections` in, callbacks out, no fetching — and `resolveConnections` is exported as the data model: one row per provider in catalog order, a disconnected placeholder where no grant exists, unknown grants appended rather than dropped. The block adds no token mechanics: it takes `acc-sign-in`'s `lib/acc-auth.ts` and `/api/auth/*` routes as registry dependencies.
 - **Done — provider icon sizing contract.** Settled on the default: preset marks carry their own `className="size-4"`, so one renders correctly wherever it is dropped, and a `[&_svg]:size-*` wrapper still wins on specificity where a surface wants another size. Documented on `OAuthProvider.icon` in `oauth-types`. The original contract: preset icons (`apsProvider.icon` and every future provider mark) are unsized SVGs: they inherit size only inside a `[&_svg]:size-*` wrapper, so dropping one into arbitrary markup renders it at the intrinsic or collapsed size. Settle this one of two ways and document the choice in `oauth-types`: either every consumer surface declares a `[&_svg]:size-*` wrapper (documented on `OAuthProvider.icon`), or preset icons carry a default `className="size-4"` that a wrapper can still override. Prefer the default — it fails visibly correct rather than invisibly wrong — and keep the wrapper pattern working either way.
+- **Done — APS Data Management browser domain.** `project-types` now carries the provider-neutral folder, item, version, and breadcrumb shapes; `aps-data-preset` adapts the JSON:API resources. `hub-browser` is fully controlled from the hub list through folder contents, with promise-driven or consumer-driven stable pending controls, pagination, and on-demand version cherry-picking. `file-picker-dialog` composes that same browser without adding fetching. The showcase seeds and queries the complete emulator tree through a server workflow, while the registry items remain data-agnostic.
+- **Done — React APS Viewer domain.** `viewer-types` describes only the public Autodesk global surface cantera touches. `aps-viewer` owns deduplicated CDN loading, one global Initializer, reference-counted release, Strict Mode teardown, automatic resize, and a model-load effect keyed by URN. Theme changes are deliberately outside viewer creation and call `setTheme` live, so an appearance toggle never burns a second WebGL context. `toolbar="native" | "none"` chooses `GuiViewer3D` or the core `Viewer3D`; the token source stays a consumer callback.
+- **Done — native Viewer toolbar positioning.** `viewer-native-toolbar` is an Autodesk extension, not a replacement toolbar. It registers through `theExtensionManager`, waits for `onToolbarCreated`, touches only `viewer.toolbar.container`, and removes its classes and stylesheet in `unload`. Bottom and top stay horizontal; left and right derive a vertical layout; `lg` raises native buttons to the 44px field target. The CSS includes known LMV 7.* tooltip and flyout selectors, documented as best-effort because Autodesk does not publish that DOM as a stable contract.
+- **Done — live Viewer documentation boundary.** The registry Viewer remains pure and ships no route. The showcase alone exposes a client-credentials token endpoint through aec-auth with only `viewables:read`, and reads the real model URN from `APS_VIEWER_DEMO_URN`. Leva exists only in the docs playground. Axe excludes only Autodesk-owned Viewer DOM on the two Viewer docs pages; cantera overlays and surrounding controls remain under the shipping bar. A future `model-viewer-page` block will own the distributed token route and complete file-browser-to-viewer wiring.
 
 ## 10. Risks & watch items
 

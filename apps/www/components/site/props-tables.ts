@@ -747,6 +747,29 @@ export const apiTables: Record<string, ApiTable[]> = {
           description: 'One project: id, name, and the hubId pickers group by when present.',
         },
         {
+          name: 'BrowsePathSegment',
+          type: 'interface',
+          description:
+            "One controlled breadcrumb level: id, name, and type 'hub' | 'project' | 'folder'.",
+        },
+        {
+          name: 'Folder / Item / FolderEntry',
+          type: 'interface / union',
+          description:
+            'Folder-like navigation rows and file-like item rows. FolderEntry is their rendering union; Hub and Project are structurally compatible with Folder.',
+        },
+        {
+          name: 'ItemVersion',
+          type: 'interface',
+          description:
+            'An immutable file version: id, version number, display name, creator/time, storage size, and nullable derivative URN.',
+        },
+        {
+          name: 'isItem',
+          type: '(entry: FolderEntry) => entry is Item',
+          description: 'Narrows a browser row to its file-like Item shape.',
+        },
+        {
           name: 'ModelTranslationStatus',
           type: 'type',
           description: "'pending' | 'inprogress' | 'success' | 'failed' | 'timeout'.",
@@ -794,6 +817,24 @@ export const apiTables: Record<string, ApiTable[]> = {
             'Adapter from a Data Management project resource into a cantera Project, hub relationship included.',
         },
         {
+          name: 'fromApsFolder',
+          type: '(doc: ApsFolderDoc) => Folder',
+          description:
+            'Adapter from a Data Management folder resource, including modified metadata and object count.',
+        },
+        {
+          name: 'fromApsItem',
+          type: '(doc: ApsItemDoc, tip?: ApsVersionDoc) => Item',
+          description:
+            'Adapter from an item resource plus its optional JSON:API included tip version.',
+        },
+        {
+          name: 'fromApsVersion',
+          type: '(doc: ApsVersionDoc) => ItemVersion',
+          description:
+            'Adapter from a version resource, reading the nullable Model Derivative URN from the derivatives relationship.',
+        },
+        {
           name: 'fromApsManifest',
           type: '(doc: ApsManifestDoc) => ModelTranslation',
           description:
@@ -811,7 +852,7 @@ export const apiTables: Record<string, ApiTable[]> = {
           description: 'Adapter from an ACC Sheets version set into a cantera SheetVersionSet.',
         },
         {
-          name: 'ApsHubDoc / ApsProjectDoc / ApsManifestDoc / AccVersionSetDoc',
+          name: 'ApsHubDoc / ApsProjectDoc / ApsFolderDoc / ApsItemDoc / ApsVersionDoc / ApsManifestDoc / AccVersionSetDoc',
           type: 'interface',
           description:
             'The structural subsets of the API responses each adapter reads — any payload with these fields adapts, the APS emulator included.',
@@ -1025,6 +1066,298 @@ export const apiTables: Record<string, ApiTable[]> = {
       ],
     },
   ],
+  'hub-browser': [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'path',
+          type: 'BrowsePathSegment[]',
+          description:
+            'Controlled hub → project → folder breadcrumb. An empty array is the hub list.',
+        },
+        {
+          name: 'entries',
+          type: 'FolderEntry[]',
+          description:
+            'Rows at the current level. Hub and Project arrays fit structurally at their levels.',
+        },
+        {
+          name: 'status',
+          type: "'ready' | 'loading' | 'error'",
+          defaultValue: "'ready'",
+          description:
+            'Loading keeps a still row skeleton and one announced spinner; error renders the supplied message.',
+        },
+        {
+          name: 'error',
+          type: 'string',
+          description: 'Human-readable current-level failure, shown when status is error.',
+        },
+        {
+          name: 'onNavigate',
+          type: '(segment: BrowsePathSegment) => void | Promise<void>',
+          description:
+            'Folder-row and breadcrumb navigation. The Hubs crumb passes ROOT_BROWSE_SEGMENT, whose id is empty.',
+        },
+        {
+          name: 'onItemOpen',
+          type: '(item: Item, version?: ItemVersion) => void | Promise<void>',
+          description:
+            'Opens the tip when version is absent, or the exact version picked from history.',
+        },
+        {
+          name: 'pending',
+          type: '{ navigatingTo?: string; openingItem?: string; loadingMore?: boolean }',
+          description:
+            'Consumer-driven pending, including pagination for handlers that return void (a server action or a transition). Controls stay mounted, keep their labels, spin, and remain focusable.',
+        },
+        {
+          name: 'versions',
+          type: "{ itemId: string; status: 'loading' | 'ready' | 'error'; versions: ItemVersion[] }",
+          description:
+            'The one item whose on-demand history is currently loaded. A single-item shape prevents stale histories from crossing rows.',
+        },
+        {
+          name: 'onRequestVersions',
+          type: '(itemId: string) => void | Promise<void>',
+          description:
+            'Called when a row version affordance opens; feed the result back through versions.',
+        },
+        {
+          name: 'hasMore / onLoadMore',
+          type: 'boolean / () => void | Promise<void>',
+          defaultValue: 'false / undefined',
+          description: 'Controlled pagination rendered as a final Load more row.',
+        },
+        {
+          name: 'locale',
+          type: 'string',
+          defaultValue: 'runtime locale',
+          description:
+            'BCP 47 locale for relative modified times. Undefined delegates to Intl — nothing is hardcoded to English.',
+        },
+        {
+          name: 'title / titleAs',
+          type: "string / 'h2' | 'h3' | 'h4'",
+          defaultValue: "'Browse files' / 'h2'",
+          description: 'Visible real heading and the level it occupies in the surrounding outline.',
+        },
+      ],
+    },
+  ],
+  'file-picker-dialog': [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: '...HubBrowserProps',
+          type: 'HubBrowserProps',
+          description:
+            'The same controlled path, entries, status, pending, pagination, and version-history props.',
+        },
+        {
+          name: 'open / defaultOpen / onOpenChange',
+          type: 'boolean / boolean / (open: boolean) => void',
+          description: 'Controlled or uncontrolled dialog visibility.',
+        },
+        {
+          name: 'trigger',
+          type: 'ReactElement',
+          description: 'Optional element enhanced as the dialog trigger without an extra wrapper.',
+        },
+        {
+          name: 'onSelect',
+          type: '(item: Item, version?: ItemVersion) => void | Promise<void>',
+          description: 'Selection callback for the tip or exact version.',
+        },
+        {
+          name: 'onCancel',
+          type: '() => void',
+          description: 'Called from the explicit Cancel action.',
+        },
+        {
+          name: 'title / description',
+          type: 'string / string',
+          defaultValue: "'Choose a file' / browser guidance",
+          description: 'Accessible dialog title and description.',
+        },
+      ],
+    },
+  ],
+  'viewer-types': [
+    {
+      caption: 'Exports',
+      nameHeader: 'Export',
+      rows: [
+        {
+          name: 'GetAccessToken',
+          type: '() => Promise<{ accessToken: string; expiresInSeconds: number }>',
+          description:
+            'Promise-based backend token supplier adapted by APSViewer to the Autodesk callback contract.',
+        },
+        {
+          name: 'APSViewer3D / APSModel / APSDocument',
+          type: 'interface',
+          description:
+            'Structural subsets of the Viewer global objects used by the component and hooks.',
+        },
+        {
+          name: 'APSViewerExtension / APSViewingNamespace / AutodeskGlobal',
+          type: 'interface',
+          description:
+            'Public extension and global-runtime surfaces, including the extension manager and toolbar lifecycle.',
+        },
+        {
+          name: 'APSCameraState / APSPropertyResult / APSContextMenuItem',
+          type: 'interface',
+          description: 'Typed values returned by the camera, property, and context-menu hooks.',
+        },
+      ],
+    },
+  ],
+  'aps-viewer': [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'urn',
+          type: 'string',
+          description:
+            'Model Derivative URN with or without the urn: prefix. Changes reuse the live WebGL viewer.',
+        },
+        {
+          name: 'getAccessToken',
+          type: 'GetAccessToken',
+          description:
+            'Fetches a short-lived token from your backend. APS credentials must never enter the browser.',
+        },
+        {
+          name: 'toolbar',
+          type: "'native' | 'none'",
+          defaultValue: "'native'",
+          description:
+            'Chooses GuiViewer3D with Autodesk controls or the toolbar-less core Viewer3D.',
+        },
+        {
+          name: 'theme',
+          type: "'light' | 'dark'",
+          defaultValue: 'app appearance',
+          description:
+            'Optional forced appearance. Undefined follows the document class and system preference live.',
+        },
+        {
+          name: 'autoResize',
+          type: 'boolean',
+          defaultValue: 'true',
+          description: 'ResizeObserver keeps the WebGL canvas matched to its container.',
+        },
+        {
+          name: 'version / env / api',
+          type: 'string',
+          defaultValue: "'7.*' / 'AutodeskProduction2' / 'streamingV2'",
+          description:
+            'Viewer CDN and Initializer settings. The first mounted runtime consumer wins.',
+        },
+        {
+          name: 'extensions / viewerConfig',
+          type: 'string[] / Record<string, unknown>',
+          description:
+            'Extension ids and extra constructor configuration captured when the viewer mounts.',
+        },
+        {
+          name: 'shutdownOnUnmount',
+          type: 'boolean',
+          defaultValue: 'false',
+          description:
+            'Shuts down the global SDK only after its last consumer releases; false keeps it warm across routes.',
+        },
+        {
+          name: 'onViewerReady / onModelLoaded / onError',
+          type: 'callbacks',
+          description: 'Lifecycle callbacks. Inline functions do not recreate the viewer.',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description:
+            'Overlay UI inside the viewer context. Descendants can use every exported APS hook.',
+        },
+      ],
+    },
+    {
+      caption: 'Hooks and runtime exports',
+      nameHeader: 'Export',
+      rows: [
+        {
+          name: 'useAPSViewer / useAPSModelLoaded',
+          type: 'hooks',
+          description: 'Live viewer identity and model-geometry readiness.',
+        },
+        {
+          name: 'useAPSSelection / useAPSCamera / useAPSProperties',
+          type: 'hooks',
+          description: 'Event-driven selection, camera, and cancellable property state.',
+        },
+        {
+          name: 'useAPSViewerEvent / useAPSContextMenu / useAPSExtension',
+          type: 'hooks',
+          description: 'Raw event, context-menu, and extension lifecycle escape hatches.',
+        },
+        {
+          name: 'acquireViewerRuntime / releaseViewerRuntime / loadViewerScript',
+          type: 'functions',
+          description:
+            'Deduplicated CDN and Initializer lifecycle, exposed for advanced imperative composition.',
+        },
+      ],
+    },
+  ],
+  'viewer-native-toolbar': [
+    {
+      caption: 'Props and exports',
+      nameHeader: 'Prop or export',
+      showDefault: true,
+      rows: [
+        {
+          name: 'position',
+          type: "'bottom' | 'top' | 'left' | 'right'",
+          defaultValue: "'bottom'",
+          description: 'Docking edge. Left and right derive the vertical native-toolbar layout.',
+        },
+        {
+          name: 'scale',
+          type: "'md' | 'lg'",
+          defaultValue: "'md'",
+          description:
+            'Autodesk stock size, or a 44px minimum native control target for touch use.',
+        },
+        {
+          name: 'useViewerNativeToolbar',
+          type: '(options?: ViewerNativeToolbarOptions) => void',
+          description: 'Hook form of the declarative component. Use inside APSViewer.',
+        },
+        {
+          name: 'registerViewerNativeToolbar',
+          type: '(autodesk: AutodeskGlobal) => void',
+          description:
+            'Idempotently registers the extension against an initialized Viewer runtime.',
+        },
+        {
+          name: 'VIEWER_NATIVE_TOOLBAR_EXTENSION_ID',
+          type: 'string',
+          defaultValue: "'Cantera.ViewerNativeToolbar'",
+          description: 'Extension id for direct viewer.loadExtension usage.',
+        },
+      ],
+    },
+  ],
   'model-status-card': [
     {
       caption: 'Props',
@@ -1112,26 +1445,42 @@ const scope = withRequiredScopes(apsScopeCatalog, selected).join(' ')`,
   },
   'project-types': {
     intro:
-      'The lingua franca for project context — hubs, projects, model translations, sheet version sets. The pickers take these shapes as props and never fetch; adapters translate provider payloads into them, so ACC, Procore, or your own backend renders with the same components.',
-    example: `import type { Hub, Project } from '@/lib/project-types'
+      'The lingua franca for project context — hubs, projects, browsable folders and items, immutable versions, model translations, and sheet version sets. Components take these shapes as props and never fetch; adapters translate provider payloads into them.',
+    example: `import type { FolderEntry, Hub, ItemVersion, Project } from '@/lib/project-types'
 
 const hub: Hub = { id: 'b.ridgeline-us', name: 'Ridgeline Builders', region: 'US' }
 
 const projects: Project[] = [
   { id: 'b.summit-tower', name: 'Summit Tower', hubId: hub.id },
   { id: 'b.cedar-mill', name: 'Cedar Mill Campus', hubId: hub.id },
-]`,
+]
+
+const entries: FolderEntry[] = [{ id: 'folder-1', name: 'Project Files', type: 'folder' }]
+const versions: ItemVersion[] = []`,
   },
   'aps-data-preset': {
     intro:
       'Everything ACC-data-specific in one data-only item: adapters from the Data Management, Model Derivative, and ACC Sheets payloads into cantera project types. Each input interface is the structural subset the adapter actually reads, so any payload with those fields adapts — the APS emulator included. Fetching and tokens stay in your auth layer.',
-    example: `import { fromApsHub, fromApsProject } from '@/lib/aps-data-preset'
+    example: `import { fromApsFolder, fromApsHub, fromApsItem, fromApsProject } from '@/lib/aps-data-preset'
 import { ProjectPicker } from '@/components/ui/project-picker'
 
 // GET /project/v1/hubs and /project/v1/hubs/{hub}/projects, fetched by you.
 const hubs = hubsResponse.data.map(fromApsHub)
 const projects = projectsResponse.data.map(fromApsProject)
+const folders = topFoldersResponse.data.map(fromApsFolder)
+const items = contentsResponse.data.map((item) => fromApsItem(item, includedTips.get(item.id)))
 
 <ProjectPicker hubs={hubs} projects={projects} onValueChange={setProjectId} />`,
+  },
+  'viewer-types': {
+    intro:
+      'The Autodesk Viewer ships as a browser global rather than an ESM package. These zero-dependency structural types describe only the public surface cantera touches, so your callback, extension, and hook code stays typed without coupling to a separate runtime package.',
+    example: `import type { GetAccessToken } from '@/lib/viewer-types'
+
+const getAccessToken: GetAccessToken = async () => {
+  const response = await fetch('/api/viewer-token')
+  if (!response.ok) throw new Error('Viewer token unavailable')
+  return response.json()
+}`,
   },
 }
