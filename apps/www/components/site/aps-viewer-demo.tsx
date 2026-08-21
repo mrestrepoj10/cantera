@@ -107,7 +107,7 @@ function ControlGroup<T extends string>({
     <fieldset
       aria-describedby={(disabled ? describedBy : undefined) ?? (hint ? hintId : undefined)}
     >
-      <legend className="mb-1.5 font-medium text-muted-foreground text-xs">{label}</legend>
+      <legend className="mb-1 font-medium text-muted-foreground text-xs">{label}</legend>
       <div
         className={cn(
           'grid gap-0.5 rounded-lg border border-border bg-muted/60 p-0.5',
@@ -122,7 +122,7 @@ function ControlGroup<T extends string>({
               type="button"
               variant="ghost"
               className={cn(
-                'h-9 justify-center rounded-md px-1.5 text-muted-foreground text-sm transition-colors hover:bg-background/60 hover:text-foreground focus-visible:border-ring aria-disabled:opacity-50',
+                'h-8 justify-center rounded-md px-1.5 text-muted-foreground text-xs transition-colors hover:bg-background/60 hover:text-foreground focus-visible:border-ring aria-disabled:opacity-50',
                 selected &&
                   'bg-background text-foreground shadow-sm hover:bg-background dark:bg-input/70',
               )}
@@ -137,7 +137,7 @@ function ControlGroup<T extends string>({
         })}
       </div>
       {description && (
-        <p id={hintId} className="mt-1.5 text-muted-foreground text-xs leading-snug">
+        <p id={hintId} className="mt-1 text-muted-foreground text-xs leading-snug">
           {description}
         </p>
       )}
@@ -199,23 +199,23 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
   }
 
   return (
-    <div className="grid min-h-[36rem] w-full grid-rows-[auto_1fr] bg-background sm:grid-cols-[15rem_1fr] sm:grid-rows-1">
+    <div className="grid min-h-[36rem] w-full grid-rows-[auto_1fr] bg-background sm:grid-cols-[13rem_1fr] sm:grid-rows-1">
       <aside
         aria-labelledby={headingId}
         className="flex flex-col border-border border-b bg-muted/40 sm:border-r sm:border-b-0"
       >
-        <div className="flex items-center gap-2 border-border border-b px-4 py-2.5">
-          <SlidersHorizontalIcon aria-hidden className="size-4 text-muted-foreground" />
-          <h3 id={headingId} className="font-medium text-sm">
+        <div className="flex items-center gap-2 border-border border-b px-3 py-2">
+          <SlidersHorizontalIcon aria-hidden className="size-3.5 text-muted-foreground" />
+          <h3 id={headingId} className="font-medium text-xs">
             Viewer controls
           </h3>
         </div>
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          <div className="flex flex-col gap-1.5">
+        <div className="flex flex-1 flex-col gap-3 p-3">
+          <div className="flex flex-col gap-1">
             <span className="font-medium text-muted-foreground text-xs">Toolbar</span>
             <label
               // The checkbox primitive hooks its focus styles off this group.
-              className="group/field-label flex min-h-9 cursor-pointer items-center justify-between gap-3 text-sm"
+              className="group/field-label flex min-h-8 cursor-pointer items-center justify-between gap-3 text-xs"
               htmlFor={toolbarFieldId}
             >
               <span id={toolbarLabelId}>Native toolbar</span>

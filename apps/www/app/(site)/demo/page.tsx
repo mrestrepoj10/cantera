@@ -104,21 +104,27 @@ export default async function DemoPage({ searchParams }: { searchParams: Promise
         </p>
       </header>
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:items-start">
-        <AccSignIn nextPath="/demo" headingLevel="h2" />
+      {workflow ? (
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:items-start">
+          <AccSignIn nextPath="/demo" headingLevel="h2" />
 
-        <section className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <h2 className="font-heading font-medium text-2xl tracking-tight">Project workflow</h2>
-            <p className="text-muted-foreground text-sm">
-              {workflow
-                ? 'Every selection below is a query parameter. Changing one re-reads the emulator’s Data Management, ACC Sheets, and Model Derivative endpoints on the server with your own bearer token — the pickers hold their pending state until that render commits.'
-                : 'Connect an account and this section fills with live data: hubs and projects from Data Management, issuances from ACC Sheets, translation status from Model Derivative — all read on the server with the grant you just made.'}
-            </p>
-          </div>
-          {workflow && <AccWorkflowPanel data={workflow} />}
+          <section className="flex min-w-0 flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <h2 className="font-heading font-medium text-2xl tracking-tight">Project workflow</h2>
+              <p className="text-muted-foreground text-sm">
+                Every selection below is a query parameter. Changing one re-reads the emulator’s
+                Data Management, ACC Sheets, and Model Derivative endpoints on the server with your
+                own bearer token — the pickers hold their pending state until that render commits.
+              </p>
+            </div>
+            <AccWorkflowPanel data={workflow} />
+          </section>
+        </div>
+      ) : (
+        <section aria-label="Start the live demo" className="mx-auto w-full max-w-sm">
+          <AccSignIn nextPath="/demo" headingLevel="h2" />
         </section>
-      </div>
+      )}
 
       {browser && (
         <section className="flex min-w-0 flex-col gap-4">
