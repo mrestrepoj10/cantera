@@ -92,7 +92,7 @@ Point `ConnectionsView` at any backend — it never fetches.
 
 ```sh
 pnpm install
-pnpm dev              # apps/www on :3000 — landing, docs, registry, live demo
+pnpm dev              # apps/www on :3456 — landing, docs, registry, live demo
 pnpm lint             # biome
 pnpm typecheck
 pnpm registry:build   # example items + apps/www/public/r/*.json + llms.txt artifacts + skills/cantera (all committed)
