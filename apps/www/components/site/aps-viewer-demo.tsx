@@ -74,40 +74,60 @@ interface ControlGroupProps<T extends string> {
   value: T
   options: { value: T; label: string }[]
   columns?: 1 | 2 | 3
-  /** Reason the group does not apply right now, shown next to the label. */
-  inactiveNote?: string
+  /** Describes the group; wired with aria-describedby, never left as prose. */
+  hint?: string
+  /** Inert, because something else in the panel turned it off. */
+  disabled?: boolean
+  /** Id of the one node explaining why, shared by every group it disables. */
+  describedBy?: string
   onChange: (value: T) => void
 }
 
 /**
- * A segmented group of real buttons — `aria-pressed` carries the selection, so
- * the state is exposed without a custom widget role to get wrong.
+ * A segmented control: one bordered track, a raised thumb for the selection,
+ * and real buttons underneath — `aria-pressed` carries the state, so nothing
+ * depends on color alone and there is no widget role to get wrong.
  */
 function ControlGroup<T extends string>({
   label,
   value,
   options,
   columns = 2,
-  inactiveNote,
+  hint,
+  disabled = false,
+  describedBy,
   onChange,
 }: ControlGroupProps<T>) {
+  const hintId = useId()
+  // A disabled group's own hint describes behaviour it does not currently
+  // have, so the shared reason takes over — one sentence, referenced by each
+  // group it applies to.
+  const description = disabled ? undefined : hint
   return (
-    <fieldset>
-      <legend className="mb-2 flex flex-wrap items-baseline gap-x-2 font-medium text-muted-foreground text-xs">
-        {label}
-        {inactiveNote && <span className="font-normal">{inactiveNote}</span>}
-      </legend>
-      <div className={cn('grid gap-1.5', columnClasses[columns])}>
+    <fieldset
+      aria-describedby={(disabled ? describedBy : undefined) ?? (hint ? hintId : undefined)}
+    >
+      <legend className="mb-1.5 font-medium text-muted-foreground text-xs">{label}</legend>
+      <div
+        className={cn(
+          'grid gap-0.5 rounded-lg border border-border bg-muted/60 p-0.5',
+          columnClasses[columns],
+        )}
+      >
         {options.map((option) => {
           const selected = option.value === value
           return (
             <Button
               key={option.value}
               type="button"
-              variant={selected ? 'default' : 'outline'}
-              className="min-h-11 justify-center px-2 text-sm focus-visible:border-ring aria-disabled:opacity-50"
+              variant="ghost"
+              className={cn(
+                'h-9 justify-center rounded-md px-1.5 text-muted-foreground text-sm transition-colors hover:bg-background/60 hover:text-foreground focus-visible:border-ring aria-disabled:opacity-50',
+                selected &&
+                  'bg-background text-foreground shadow-sm hover:bg-background dark:bg-input/70',
+              )}
               aria-pressed={selected}
-              disabled={Boolean(inactiveNote)}
+              disabled={disabled}
               focusableWhenDisabled
               onClick={() => onChange(option.value)}
             >
@@ -116,6 +136,11 @@ function ControlGroup<T extends string>({
           )
         })}
       </div>
+      {description && (
+        <p id={hintId} className="mt-1.5 text-muted-foreground text-xs leading-snug">
+          {description}
+        </p>
+      )}
     </fieldset>
   )
 }
@@ -142,6 +167,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
   const headingId = useId()
   const toolbarFieldId = useId()
   const toolbarLabelId = `${toolbarFieldId}-label`
+  const toolbarOffId = useId()
   const [settings, setSettings] = useState<ViewerDemoSettings>(DEFAULT_SETTINGS)
   const [error, setError] = useState<string | null>(null)
 
@@ -178,17 +204,18 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
         aria-labelledby={headingId}
         className="flex flex-col border-border border-b bg-muted/40 sm:border-r sm:border-b-0"
       >
-        <div className="flex items-center gap-2 border-border border-b px-4 py-3">
+        <div className="flex items-center gap-2 border-border border-b px-4 py-2.5">
           <SlidersHorizontalIcon aria-hidden className="size-4 text-muted-foreground" />
           <h3 id={headingId} className="font-medium text-sm">
             Viewer controls
           </h3>
         </div>
-        <div className="flex flex-1 flex-col gap-5 p-4">
-          <div className="flex flex-col gap-2">
+        <div className="flex flex-1 flex-col gap-4 p-4">
+          <div className="flex flex-col gap-1.5">
             <span className="font-medium text-muted-foreground text-xs">Toolbar</span>
             <label
-              className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md border border-border px-3 text-sm has-[:focus-visible]:border-ring"
+              // The checkbox primitive hooks its focus styles off this group.
+              className="group/field-label flex min-h-9 cursor-pointer items-center justify-between gap-3 text-sm"
               htmlFor={toolbarFieldId}
             >
               <span id={toolbarLabelId}>Native toolbar</span>
@@ -203,20 +230,27 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                 }
               />
             </label>
+            {!settings.toolbar && (
+              <p id={toolbarOffId} className="text-muted-foreground text-xs leading-snug">
+                Position and density apply to the native toolbar.
+              </p>
+            )}
           </div>
           <ControlGroup
             label="Position"
             value={settings.position}
             options={positionOptions}
-            inactiveNote={settings.toolbar ? undefined : 'toolbar off'}
+            disabled={!settings.toolbar}
+            describedBy={toolbarOffId}
             onChange={(position) => setSettings((previous) => ({ ...previous, position }))}
           />
           <ControlGroup
             label="Density"
             value={settings.scale}
             options={scaleOptions}
-            columns={1}
-            inactiveNote={settings.toolbar ? undefined : 'toolbar off'}
+            hint="Gloved raises every toolbar button to a 44px target."
+            disabled={!settings.toolbar}
+            describedBy={toolbarOffId}
             onChange={(scale) => setSettings((previous) => ({ ...previous, scale }))}
           />
           <ControlGroup
@@ -226,10 +260,6 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
             columns={3}
             onChange={(theme) => setSettings((previous) => ({ ...previous, theme }))}
           />
-          <p className="mt-auto border-border border-t pt-4 text-muted-foreground text-xs">
-            Gloved density raises every toolbar button to a 44px target. Appearance follows the page
-            unless you pin it.
-          </p>
         </div>
       </aside>
       <APSViewer

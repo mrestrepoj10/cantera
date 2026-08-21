@@ -75,14 +75,18 @@ test('HubBrowser keeps navigation and version controls stable while their promis
   ).toBeVisible({
     timeout: 5000,
   })
+  // The visible token is part of the name, so voice control can reach the
+  // control by what it reads.
   const versions = browser.getByRole('button', {
-    name: 'Choose version of Summit Tower Coordination.rvt',
+    name: 'v7, choose a version of Summit Tower Coordination.rvt',
   })
   const versionsHandle = await versions.elementHandle()
   await versions.click()
 
   await expect(versions).toHaveAttribute('aria-busy', 'true')
-  await expect(versions).toHaveAccessibleName('Choose version of Summit Tower Coordination.rvt')
+  await expect(versions).toHaveAccessibleName(
+    'v7, choose a version of Summit Tower Coordination.rvt',
+  )
   await expect(versions).toContainText('7')
   await expect(versions.locator('.animate-spin')).toBeVisible()
   expect(

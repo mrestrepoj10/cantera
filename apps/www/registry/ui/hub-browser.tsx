@@ -1,7 +1,6 @@
 'use client'
 
 import {
-  CheckIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   FileIcon,
@@ -248,12 +247,6 @@ interface VersionPickerProps {
   locale?: string
 }
 
-/** The version line under a version row: when it was cut, and by whom. */
-function versionMeta(version: ItemVersion, locale?: string): string {
-  const created = relativeTime(version.createTime, locale)
-  return [created, version.createdBy].filter(Boolean).join(' · ')
-}
-
 function VersionPicker({
   item,
   versions,
@@ -278,21 +271,29 @@ function VersionPicker({
         render={
           <Button
             type="button"
-            variant="outline"
-            // Stretches to the row it belongs to, so the version reads as part
-            // of the file rather than a control parked beside it.
-            className="min-h-14 shrink-0 gap-1.5 self-stretch px-2.5 focus-visible:border-ring"
+            variant="ghost"
+            // A version is a secondary affordance next to the row's own
+            // action, so it carries no box: the pseudo-element restores a
+            // 56px hit target — the row's full height — around a 32px
+            // control, without the mass.
+            className="relative shrink-0 gap-1 self-center px-2 after:absolute after:-inset-x-1 after:-inset-y-3 focus-visible:border-ring"
             disabled={loading || opening}
             focusableWhenDisabled
             aria-busy={loading || opening || undefined}
-            aria-label={`Choose version of ${item.name}`}
+            // The visible token is part of the name, so voice control can
+            // reach the control by what it reads (WCAG 2.5.3).
+            aria-label={
+              item.tip
+                ? `v${item.tip.versionNumber}, choose a version of ${item.name}`
+                : `Choose a version of ${item.name}`
+            }
           />
         }
       >
-        <span aria-hidden className="grid min-w-7 place-items-center">
+        <span aria-hidden className="grid w-7 place-items-center">
           <LoaderCircleIcon
             className={cn(
-              'col-start-1 row-start-1 size-4 animate-spin transition-[opacity,scale,filter] duration-150 ease-out motion-reduce:transition-none',
+              'col-start-1 row-start-1 size-3.5 animate-spin transition-[opacity,scale,filter] duration-150 ease-out motion-reduce:transition-none',
               loading ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
             )}
           />
@@ -305,11 +306,11 @@ function VersionPicker({
             {item.tip ? `v${item.tip.versionNumber}` : '—'}
           </span>
         </span>
-        <ChevronDownIcon aria-hidden className="size-3.5 text-muted-foreground" />
+        <ChevronDownIcon aria-hidden className="size-3 text-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="w-[25rem] max-w-[calc(100vw-2rem)] data-closed:animate-none data-open:animate-none"
+        className="w-80 max-w-[calc(100vw-2rem)] data-closed:animate-none data-open:animate-none"
         aria-describedby={descriptionId}
       >
         <PopoverHeader>
@@ -340,17 +341,24 @@ function VersionPicker({
           <ul className="-mx-1 flex max-h-72 flex-col overflow-y-auto">
             {active.versions.map((version) => {
               const current = version.versionNumber === item.tip?.versionNumber
-              const meta = versionMeta(version, locale)
+              const created = relativeTime(version.createTime, locale)
               // The popover header already names the file, so a displayName
-              // that repeats it earns no line of its own.
+              // that repeats it earns no line of its own — when it does, the
+              // version's age leads instead.
               const title = version.displayName === item.name ? undefined : version.displayName
+              const primary = title ?? created ?? `Version ${version.versionNumber}`
+              // Two lines every row, always: a wrapping line would make the
+              // list ragged, and the badge widths already vary.
+              const secondary = [title && created, version.createdBy, current && 'Current']
+                .filter(Boolean)
+                .join(' · ')
               const status: ModelTranslationStatus = version.derivativeUrn ? 'success' : 'pending'
               return (
                 <li key={version.id}>
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-14 w-full justify-start gap-3 px-2 py-2 text-left whitespace-normal focus-visible:border-ring"
+                    className="min-h-11 w-full justify-start gap-2.5 px-2 py-1.5 text-left whitespace-normal focus-visible:border-ring"
                     disabled={opening}
                     focusableWhenDisabled
                     aria-busy={opening || undefined}
@@ -361,7 +369,8 @@ function VersionPicker({
                       `Version ${version.versionNumber}`,
                       current && 'current',
                       title,
-                      meta,
+                      created,
+                      version.createdBy && `by ${version.createdBy}`,
                       translationLabels[status],
                     ]
                       .filter(Boolean)
@@ -370,24 +379,19 @@ function VersionPicker({
                   >
                     <span
                       aria-hidden
-                      className="grid size-9 shrink-0 place-items-center rounded-md bg-muted font-medium text-xs tabular-nums"
+                      className={cn(
+                        'w-7 shrink-0 text-left font-medium text-xs tabular-nums',
+                        current ? 'text-foreground' : 'text-muted-foreground',
+                      )}
                     >
                       v{version.versionNumber}
                     </span>
                     <span aria-hidden className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        <span className="min-w-0 truncate font-medium text-sm">
-                          {title ?? meta ?? `Version ${version.versionNumber}`}
+                      <span className="min-w-0 truncate font-medium text-sm">{primary}</span>
+                      {secondary && (
+                        <span className="min-w-0 truncate text-muted-foreground text-xs">
+                          {secondary}
                         </span>
-                        {current && (
-                          <span className="flex shrink-0 items-center gap-1 text-muted-foreground text-xs">
-                            <CheckIcon aria-hidden className="size-3" />
-                            Current
-                          </span>
-                        )}
-                      </span>
-                      {title && meta && (
-                        <span className="truncate text-muted-foreground text-xs">{meta}</span>
                       )}
                     </span>
                     <TranslationBadge status={status} />
@@ -439,7 +443,7 @@ function HubBrowserList({
         return (
           <li
             key={`${item ? 'item' : 'container'}:${entry.id}`}
-            className="flex items-stretch gap-1"
+            className="flex items-stretch gap-2"
           >
             <Button
               type="button"
