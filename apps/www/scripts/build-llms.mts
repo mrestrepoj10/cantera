@@ -26,6 +26,7 @@ import path from 'node:path'
 
 import { type ApiTable, apiTables, libUsage } from '../components/site/props-tables.ts'
 import type { RegistryItem } from '../components/site/registry.ts'
+import { designContracts } from '../lib/design-contracts.ts'
 import {
   docsUrl,
   installCommandFor,
@@ -74,37 +75,12 @@ const TYPE_LABELS: Record<RegistryItem['type'], string> = {
 
 /**
  * The contracts an agent has to know to use a component correctly — the
- * semantics that live in AGENTS.md rather than in a type signature.
+ * semantics that live in a prose contract rather than in a type signature.
+ * Canonical text: `apps/www/lib/design-contracts.ts`.
  */
-const DESIGN_CONTRACTS = `### Status vocabulary
-
-Every status renders from the \`${registryNamespace}/status-tokens\` CSS variables: \`--status-success\`,
-\`--status-warning\`, \`--status-danger\`, \`--status-neutral\`, each with a \`-foreground\` companion
-(ink on the solid fill) and a \`-surface\` companion (soft background, which always carries
-\`text-status-*\` ink, never the \`-foreground\` ink). One color, one meaning: success is healthy,
-warning is recoverable and needs attention, danger is a failure the user must act on, neutral is
-absence. Recoverable states — expired, expiring soon — are warning, not danger. Never substitute a
-generic badge variant for a status: \`secondary\` reads as gray nothing, and \`destructive\` collapses
-"expired" and "broken" into one color. Status uses solid fills, not low-alpha tints.
-
-### Async-pending contract
-
-Every component with an async callback exposes a pending state, and pending means
-disabled-with-spinner-while-keeping-the-label — never a label swapped for "Loading…", never a
-collapsed control. A pressed control is never unmounted and never changes element type mid-action.
-Pending is both a prop the consumer drives (\`loading\`, \`disconnectPending\`, \`reconnectPending\`,
-\`loadingProvider\` — for server actions, where no promise comes back) and an internal state: a
-callback that returns a promise drives it automatically. Disabled controls render \`aria-disabled\`,
-not the native attribute, so they stay focusable and a screen reader user can still find them.
-
-### Field density and a11y
-
-This UI is used with gloves, on a tablet, on site. Primary actions carry a 44px minimum touch
-target; comfortable density is the default and compact is opt-in. 12px is the text floor — there is
-no \`text-[10px]\` anywhere in the registry. Focus indicators are 3:1 against their surroundings
-(\`focus-visible:border-ring\` plus a full-alpha ring). Every block ships a real heading, every
-description is wired with \`aria-describedby\`, and \`Intl\` formatting is locale-neutral
-(\`Intl.RelativeTimeFormat(undefined, ...)\`, with an optional \`locale\` prop).`
+const DESIGN_CONTRACTS = Object.values(designContracts(registryNamespace))
+  .map((contract) => `### ${contract.title}\n\n${contract.body}`)
+  .join('\n\n')
 
 interface Registry {
   items: RegistryItem[]
