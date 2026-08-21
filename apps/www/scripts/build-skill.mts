@@ -23,6 +23,7 @@
 import { mkdir, readdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
+import { designContracts } from '../lib/design-contracts.ts'
 import { itemMarkdown, typeLabelFor } from '../lib/item-markdown.ts'
 import { installCommandFor, registryConfigSnippet } from '../lib/site.ts'
 import {
@@ -56,49 +57,14 @@ primitives. If a component needs data, the consumer fetches it and passes it in.
 Token handling — refresh, storage, rotation — belongs to
 [aec-auth](https://github.com/mrestrepoj10/aec-auth), never to a component.`
 
+// Canonical text: `apps/www/lib/design-contracts.ts`.
 const CONTRACTS = `## Binding contracts
 
 These are not style preferences. Code that breaks them is wrong here.
 
-**Status vocabulary.** Every status renders from the \`${namespace}/status-tokens\`
-variables: \`--status-success\`, \`--status-warning\`, \`--status-danger\`,
-\`--status-neutral\`, each with a \`-foreground\` companion (ink on the solid fill)
-and a \`-surface\` companion (soft background, which always carries \`text-status-*\`
-ink, never the \`-foreground\` ink). One color, one meaning: success is healthy,
-warning is recoverable and needs attention, danger is a failure the user must act
-on, neutral is absence. Expired and expiring soon are **warning** — a refresh
-away, not a failure. Never substitute a generic badge variant: \`secondary\` reads
-as gray nothing and \`destructive\` collapses "expired" into "broken". Status uses
-solid fills, not low-alpha tints. \`statusCssVars\` (from \`lib/status-tokens.ts\`)
-gives the same twelve tokens as typed \`var()\` strings for inline styles, chart
-series, and canvas fills — never hand-type a variable name.
-
-**Async pending.** Every component with an async callback exposes a pending
-state, and pending means disabled-with-spinner-while-keeping-the-label — never a
-label swapped for "Loading…", never a collapsed control. A pressed control is
-never unmounted and never changes element type mid-action. Pending is both a prop
-the consumer drives (\`loading\`, \`disconnectPending\`, \`reconnectPending\`,
-\`loadingProvider\` — for server actions, where no promise comes back) and an
-internal state: a callback that returns a promise drives it automatically.
-Disabled controls render \`aria-disabled\`, not the native attribute, so they stay
-focusable.
-
-**Field density and a11y.** This UI is used with gloves, on a tablet, on site.
-Primary actions carry a 44px minimum touch target; comfortable density is the
-default and compact is opt-in. 12px is the text floor — there is no
-\`text-[10px]\` anywhere in the registry. Focus indicators are 3:1 against their
-surroundings (\`focus-visible:border-ring\` plus a full-alpha ring). Every block
-ships a real heading, every description is wired with \`aria-describedby\`, and
-\`Intl\` formatting is locale-neutral.
-
-**Installed specifiers.** Distributed files import what the install produces:
-\`@/components/ui/connection-card\`, \`@/lib/oauth-types\`. Never \`@/registry/...\`
-— that path exists only in the cantera repo and installs broken.
-
-**Icon sizing.** Preset provider marks carry their own \`className="size-4"\`, so
-one renders correctly wherever it is dropped. A \`[&_svg]:size-*\` wrapper still
-wins on specificity where a surface wants another size — use the wrapper, not a
-rewritten mark, and keep \`aria-hidden\` on decorative marks.`
+${Object.values(designContracts(namespace))
+  .map((contract) => `**${contract.title}.** ${contract.body}`)
+  .join('\n\n')}`
 
 function skillFor(items: RegistryItem[], examples: Map<string, RegistryItem>): string {
   const rows = items.map(
