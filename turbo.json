@@ -1,18 +1,25 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [".env"],
+  "globalPassThroughEnv": ["APS_E2E"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "env": [
+        "APS_CLIENT_ID",
+        "APS_CLIENT_SECRET",
+        "APS_VIEWER_DEMO_URN",
+        "APS_AUTH_BASE_URL",
+        "SESSION_SECRET",
+        "ACC_AUTH_DEMO"
+      ],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "registry:build": {
-      "outputs": ["public/r/**", "public/llms.txt", "public/llms-full.txt"]
+      "cache": false
     },
     "registry:verify": {
       "cache": false
-    },
-    "test": {
-      "dependsOn": ["^build"]
     },
     "typecheck": {},
     "dev": {

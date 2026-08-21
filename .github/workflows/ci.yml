@@ -15,6 +15,11 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
@@ -23,7 +28,12 @@ jobs:
           pnpm registry:build
           pnpm registry:verify
           git diff --exit-code apps/www/registry.json apps/www/registry apps/www/public/r apps/www/public/llms.txt apps/www/public/llms-full.txt skills
-      - run: pnpm --filter www build
+      - name: Build (turbo-cached; e2e serves this output via next start)
+        run: pnpm build --filter www
+        env:
+          APS_CLIENT_ID: ${{ secrets.APS_CLIENT_ID }}
+          APS_CLIENT_SECRET: ${{ secrets.APS_CLIENT_SECRET }}
+          APS_VIEWER_DEMO_URN: ${{ secrets.APS_VIEWER_DEMO_URN }}
       - name: E2E (OAuth flow, axe a11y in both themes, theme and pending contracts)
         run: |
           pnpm exec playwright install --with-deps chromium
