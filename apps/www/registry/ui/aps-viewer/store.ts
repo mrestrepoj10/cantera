@@ -48,6 +48,18 @@ export class ViewerStore {
     this.emit()
   }
 
+  /**
+   * Drops the model-loaded snapshot without tearing the viewer down. A URN
+   * swap reuses the same store, so the flag has to fall back to false while
+   * the next document loads — otherwise overlays keyed off
+   * `useAPSModelLoaded()` disappear before there is anything to look at.
+   */
+  resetModel(): void {
+    if (!this.modelLoaded) return
+    this.modelLoaded = false
+    this.emit()
+  }
+
   detach(): void {
     if (this.viewer) {
       for (const [type, handler] of this.handlers) {

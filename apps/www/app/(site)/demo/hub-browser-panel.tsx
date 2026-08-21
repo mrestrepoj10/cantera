@@ -34,6 +34,7 @@ function HubBrowserPanel({ data }: { data: HubBrowserWorkflowData }) {
   const router = useRouter()
   const [navigatingTo, setNavigatingTo] = useState<string>()
   const [requestingVersions, setRequestingVersions] = useState<string>()
+  const [loadingMore, setLoadingMore] = useState(false)
   const [opened, setOpened] = useState('Open a file to see the selected tip or version.')
   const [isPending, startTransition] = useTransition()
 
@@ -43,6 +44,7 @@ function HubBrowserPanel({ data }: { data: HubBrowserWorkflowData }) {
       router.replace(query ? `/demo?${query}` : '/demo', { scroll: false })
       setNavigatingTo(undefined)
       setRequestingVersions(undefined)
+      setLoadingMore(false)
     })
   }
 
@@ -88,6 +90,9 @@ function HubBrowserPanel({ data }: { data: HubBrowserWorkflowData }) {
   }
 
   function loadMore(): void {
+    // A transition returns void, so the browser cannot infer the pending
+    // state from a promise: the flag is driven through the pending prop.
+    setLoadingMore(true)
     const search = currentSearch()
     search.set('browserPage', String(data.page + 1))
     replace(search)
@@ -107,7 +112,10 @@ function HubBrowserPanel({ data }: { data: HubBrowserWorkflowData }) {
         error={data.error}
         title="Data Management browser"
         titleAs="h3"
-        pending={{ navigatingTo: isPending ? navigatingTo : undefined }}
+        pending={{
+          navigatingTo: isPending ? navigatingTo : undefined,
+          loadingMore: isPending && loadingMore,
+        }}
         versions={versions}
         hasMore={data.hasMore}
         onNavigate={navigate}

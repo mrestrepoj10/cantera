@@ -12,10 +12,19 @@ if (existsSync(repositoryEnv)) process.loadEnvFile?.(repositoryEnv)
 
 // Showcase-only emulator defaults. Production deployments replace these with
 // platform environment variables; none are exposed through NEXT_PUBLIC_*.
-process.env.APS_CLIENT_ID ??= 'cantera-demo-client'
-process.env.APS_CLIENT_SECRET ??= 'cantera-demo-secret'
-process.env.APS_AUTH_BASE_URL ??= '/emulate/aps'
-process.env.ACC_AUTH_DEMO ??= '1'
+//
+// An empty string counts as unset, not as an override: CI hands every job the
+// APS secrets, and on a fork-originated pull request GitHub hands those
+// through as empty strings. `??=` would keep the empty value and take the
+// emulator's own sign-in flow down with it.
+function envDefault(key: string, value: string): void {
+  if (!process.env[key]) process.env[key] = value
+}
+
+envDefault('APS_CLIENT_ID', 'cantera-demo-client')
+envDefault('APS_CLIENT_SECRET', 'cantera-demo-secret')
+envDefault('APS_AUTH_BASE_URL', '/emulate/aps')
+envDefault('ACC_AUTH_DEMO', '1')
 
 const nextConfig: NextConfig = {
   async rewrites() {

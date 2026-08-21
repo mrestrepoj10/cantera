@@ -28,7 +28,7 @@ Version history is on demand: onRequestVersions receives one item id, and the co
 - `error` (`string`) — Human-readable current-level failure, shown when status is error.
 - `onNavigate` (`(segment: BrowsePathSegment) => void | Promise<void>`) — Folder-row and breadcrumb navigation. The Hubs crumb passes ROOT_BROWSE_SEGMENT, whose id is empty.
 - `onItemOpen` (`(item: Item, version?: ItemVersion) => void | Promise<void>`) — Opens the tip when version is absent, or the exact version picked from history.
-- `pending` (`{ navigatingTo?: string; openingItem?: string }`) — Consumer-driven single-id pending. Controls stay mounted, keep their labels, spin, and remain focusable.
+- `pending` (`{ navigatingTo?: string; openingItem?: string; loadingMore?: boolean }`) — Consumer-driven pending, including pagination for handlers that return void (a server action or a transition). Controls stay mounted, keep their labels, spin, and remain focusable.
 - `versions` (`{ itemId: string; status: 'loading' | 'ready' | 'error'; versions: ItemVersion[] }`) — The one item whose on-demand history is currently loaded. A single-item shape prevents stale histories from crossing rows.
 - `onRequestVersions` (`(itemId: string) => void | Promise<void>`) — Called when a row version affordance opens; feed the result back through versions.
 - `hasMore / onLoadMore` (`boolean / () => void | Promise<void>`, default `false / undefined`) — Controlled pagination rendered as a final Load more row.

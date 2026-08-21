@@ -88,7 +88,9 @@ test('HubBrowser keeps navigation and version controls stable while their promis
   expect(
     await versionsHandle?.evaluate((node, live) => node === live, await versions.elementHandle()),
   ).toBe(true)
-  await expect(page.getByRole('button', { name: /v6 summit tower coordination/i })).toBeVisible({
+  // The version rows name themselves explicitly — the number is a chip and the
+  // translation state a badge, neither of which reads as a sentence.
+  await expect(page.getByRole('button', { name: /^Version 6,/ })).toBeVisible({
     timeout: 5000,
   })
 })

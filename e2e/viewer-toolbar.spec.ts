@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-import { waitForHydration } from './hydration'
+import { gotoViewerDemo, waitForViewerModel } from './viewer'
 
 const positions = ['bottom', 'top', 'left', 'right'] as const
 const scales = ['md', 'lg'] as const
@@ -17,14 +17,11 @@ test.describe('Viewer native toolbar', () => {
   for (const position of positions) {
     for (const scale of scales) {
       test(`${position} at ${scale} scale against the live model`, async ({ page }) => {
-        await page.goto(`/components/aps-viewer?viewerPosition=${position}&viewerScale=${scale}`)
-        await waitForHydration(page)
-
-        const viewer = page.locator('[data-aps-viewer-status]')
-        await expect(viewer).toHaveAttribute('data-aps-viewer-status', 'ready', {
-          timeout: 30_000,
-        })
-        await expect(viewer.getByText('Loading model')).toBeHidden({ timeout: 30_000 })
+        await gotoViewerDemo(
+          page,
+          `/components/aps-viewer?viewerPosition=${position}&viewerScale=${scale}`,
+        )
+        const viewer = await waitForViewerModel(page)
 
         const toolbar = viewer.locator(
           `.adsk-toolbar.cantera-toolbar--${position}.cantera-toolbar--${scale}`,

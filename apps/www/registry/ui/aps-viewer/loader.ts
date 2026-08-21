@@ -16,6 +16,31 @@ export interface ViewerRuntimeOptions {
 let scriptPromise: Promise<AutodeskGlobal> | null = null
 let runtimePromise: Promise<AutodeskGlobal> | null = null
 let activeConsumers = 0
+const tokenErrorListeners = new Set<(error: Error) => void>()
+
+/**
+ * Subscribes to token-supplier failures. The SDK's `getAccessToken` callback
+ * has no rejection path — a backend that is down or a grant that expired would
+ * otherwise leave the SDK waiting forever with nothing to report — so the
+ * failure is broadcast here and `<APSViewer>` turns it into `onError`.
+ * Returns an unsubscribe function.
+ */
+export function onViewerTokenError(listener: (error: Error) => void): () => void {
+  tokenErrorListeners.add(listener)
+  return () => {
+    tokenErrorListeners.delete(listener)
+  }
+}
+
+function reportTokenError(cause: unknown): void {
+  const error = new Error('cantera aps-viewer: getAccessToken failed', { cause })
+  if (tokenErrorListeners.size === 0) {
+    // Nobody is listening: still fail loudly rather than silently.
+    console.error(error, cause)
+    return
+  }
+  for (const listener of tokenErrorListeners) listener(error)
+}
 
 function assertBrowser(): void {
   if (typeof window === 'undefined') {
@@ -109,11 +134,7 @@ export function acquireViewerRuntime(options: ViewerRuntimeOptions): Promise<Aut
                 .then(({ accessToken, expiresInSeconds }) =>
                   onTokenReady(accessToken, expiresInSeconds),
                 )
-                .catch((error) => {
-                  // Surface token failures loudly — the viewer would otherwise
-                  // fail with an opaque 401 deep inside the SDK.
-                  console.error('cantera aps-viewer: getAccessToken failed', error)
-                })
+                .catch(reportTokenError)
             },
           },
           () => resolve(autodesk),
@@ -144,6 +165,7 @@ export function __resetLoaderStateForTests(): void {
   scriptPromise = null
   runtimePromise = null
   activeConsumers = 0
+  tokenErrorListeners.clear()
 }
 
 /** Normalizes a Model Derivative URN into the `urn:` documentId form. */

@@ -4,6 +4,7 @@ import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 
 import { APSViewerContext } from '@/components/ui/aps-viewer/context'
 import {
   acquireViewerRuntime,
+  onViewerTokenError,
   releaseViewerRuntime,
   toDocumentId,
 } from '@/components/ui/aps-viewer/loader'
@@ -53,6 +54,16 @@ export interface APSViewerProps {
   /** Overlay UI. Rendered inside the provider, absolutely positioned children
    * can sit on top of the canvas and use every hook. */
   children?: ReactNode
+}
+
+/** Unloading is best-effort: the viewer may already be finished. */
+function unloadModel(viewer: APSViewer3D | null, model: APSModel | null): void {
+  if (!viewer || !model) return
+  try {
+    viewer.unloadModel(model)
+  } catch {
+    // the viewer is gone; the model went with it
+  }
 }
 
 /**
@@ -174,6 +185,18 @@ export function APSViewer({
     }
   }, [status, theme])
 
+  // The SDK's token callback cannot reject, so the loader broadcasts token
+  // failures instead: without this the viewer would sit at "loading" forever
+  // with nothing reported to the consumer.
+  useEffect(
+    () =>
+      onViewerTokenError((error) => {
+        setStatus((previous) => (previous === 'ready' ? previous : 'error'))
+        callbacksRef.current.onError?.(error)
+      }),
+    [],
+  )
+
   useEffect(() => {
     if (!autoResize || status !== 'ready' || typeof ResizeObserver === 'undefined') return
     const viewer = viewerRef.current
@@ -193,6 +216,9 @@ export function APSViewer({
 
     let cancelled = false
     let loadedModel: APSModel | null = null
+    // A URN swap reuses this store, so the previous model's snapshot has to
+    // go before the next document starts loading.
+    store.resetModel()
 
     autodesk.Viewing.Document.load(
       toDocumentId(urn),
@@ -208,7 +234,13 @@ export function APSViewer({
         viewer
           .loadDocumentNode(doc, geometry)
           .then((model) => {
-            if (cancelled) return
+            // Cancelled while this request was in flight: the cleanup below
+            // has already run and never saw this model, so unload it here or
+            // it stays in the viewer next to the model that replaced it.
+            if (cancelled) {
+              unloadModel(viewerRef.current, model)
+              return
+            }
             loadedModel = model
             callbacksRef.current.onModelLoaded?.(model, doc)
           })
@@ -226,15 +258,10 @@ export function APSViewer({
 
     return () => {
       cancelled = true
-      if (loadedModel && viewerRef.current) {
-        try {
-          viewerRef.current.unloadModel(loadedModel)
-        } catch {
-          // viewer may already be finished; unloading is best-effort
-        }
-      }
+      unloadModel(viewerRef.current, loadedModel)
+      store.resetModel()
     }
-  }, [status, urn])
+  }, [status, urn, store])
 
   return (
     <APSViewerContext.Provider value={store}>

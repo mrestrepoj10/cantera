@@ -1110,9 +1110,9 @@ export const apiTables: Record<string, ApiTable[]> = {
         },
         {
           name: 'pending',
-          type: '{ navigatingTo?: string; openingItem?: string }',
+          type: '{ navigatingTo?: string; openingItem?: string; loadingMore?: boolean }',
           description:
-            'Consumer-driven single-id pending. Controls stay mounted, keep their labels, spin, and remain focusable.',
+            'Consumer-driven pending, including pagination for handlers that return void (a server action or a transition). Controls stay mounted, keep their labels, spin, and remain focusable.',
         },
         {
           name: 'versions',

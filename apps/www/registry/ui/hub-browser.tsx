@@ -1,6 +1,8 @@
 'use client'
 
 import {
+  CheckIcon,
+  ChevronDownIcon,
   ChevronRightIcon,
   FileIcon,
   FolderIcon,
@@ -50,6 +52,8 @@ interface HubBrowserVersions {
 interface HubBrowserPending {
   navigatingTo?: string
   openingItem?: string
+  /** Drives the Load more control while the consumer paginates. */
+  loadingMore?: boolean
 }
 
 interface HubBrowserProps extends React.ComponentProps<'section'> {
@@ -241,6 +245,13 @@ interface VersionPickerProps {
   onRequestVersions?: (itemId: string) => void | Promise<void>
   onChoose: (version: ItemVersion) => void
   opening: boolean
+  locale?: string
+}
+
+/** The version line under a version row: when it was cut, and by whom. */
+function versionMeta(version: ItemVersion, locale?: string): string {
+  const created = relativeTime(version.createTime, locale)
+  return [created, version.createdBy].filter(Boolean).join(' · ')
 }
 
 function VersionPicker({
@@ -249,6 +260,7 @@ function VersionPicker({
   onRequestVersions,
   onChoose,
   opening,
+  locale,
 }: VersionPickerProps) {
   const [requestPending, setRequestPending] = useState(false)
   const descriptionId = useId()
@@ -267,7 +279,9 @@ function VersionPicker({
           <Button
             type="button"
             variant="outline"
-            className="min-h-11 min-w-14 gap-1.5 px-2 focus-visible:border-ring"
+            // Stretches to the row it belongs to, so the version reads as part
+            // of the file rather than a control parked beside it.
+            className="min-h-14 shrink-0 gap-1.5 self-stretch px-2.5 focus-visible:border-ring"
             disabled={loading || opening}
             focusableWhenDisabled
             aria-busy={loading || opening || undefined}
@@ -275,27 +289,27 @@ function VersionPicker({
           />
         }
       >
-        <span aria-hidden className="grid size-3.5 place-items-center">
+        <span aria-hidden className="grid min-w-7 place-items-center">
           <LoaderCircleIcon
             className={cn(
-              'col-start-1 row-start-1 size-3.5 animate-spin transition-[opacity,scale,filter] duration-150 ease-out motion-reduce:transition-none',
+              'col-start-1 row-start-1 size-4 animate-spin transition-[opacity,scale,filter] duration-150 ease-out motion-reduce:transition-none',
               loading ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
             )}
           />
           <span
             className={cn(
-              'col-start-1 row-start-1 transition-opacity duration-150 ease-out motion-reduce:transition-none',
+              'col-start-1 row-start-1 font-medium text-sm tabular-nums transition-opacity duration-150 ease-out motion-reduce:transition-none',
               loading ? 'opacity-0' : 'opacity-100',
             )}
           >
-            v
+            {item.tip ? `v${item.tip.versionNumber}` : '—'}
           </span>
         </span>
-        {item.tip ? item.tip.versionNumber : '—'}
+        <ChevronDownIcon aria-hidden className="size-3.5 text-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="data-closed:animate-none data-open:animate-none"
+        className="w-[25rem] max-w-[calc(100vw-2rem)] data-closed:animate-none data-open:animate-none"
         aria-describedby={descriptionId}
       >
         <PopoverHeader>
@@ -323,24 +337,65 @@ function VersionPicker({
           <p className="py-2 text-muted-foreground">No versions available.</p>
         )}
         {active?.status === 'ready' && active.versions.length > 0 && (
-          <div className="flex max-h-72 flex-col overflow-y-auto">
-            {active.versions.map((version) => (
-              <Button
-                key={version.id}
-                type="button"
-                variant="ghost"
-                className="min-h-11 justify-start gap-3 px-2"
-                disabled={opening}
-                focusableWhenDisabled
-                aria-busy={opening || undefined}
-                onClick={() => onChoose(version)}
-              >
-                <span className="w-8 shrink-0 font-mono text-xs">v{version.versionNumber}</span>
-                <span className="min-w-0 flex-1 truncate text-left">{version.displayName}</span>
-                <TranslationBadge status={version.derivativeUrn ? 'success' : 'pending'} />
-              </Button>
-            ))}
-          </div>
+          <ul className="-mx-1 flex max-h-72 flex-col overflow-y-auto">
+            {active.versions.map((version) => {
+              const current = version.versionNumber === item.tip?.versionNumber
+              const meta = versionMeta(version, locale)
+              // The popover header already names the file, so a displayName
+              // that repeats it earns no line of its own.
+              const title = version.displayName === item.name ? undefined : version.displayName
+              const status: ModelTranslationStatus = version.derivativeUrn ? 'success' : 'pending'
+              return (
+                <li key={version.id}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="min-h-14 w-full justify-start gap-3 px-2 py-2 text-left whitespace-normal focus-visible:border-ring"
+                    disabled={opening}
+                    focusableWhenDisabled
+                    aria-busy={opening || undefined}
+                    aria-current={current || undefined}
+                    // The number lives in a chip and the state in a badge, so
+                    // the name is spelled out rather than left to concatenation.
+                    aria-label={[
+                      `Version ${version.versionNumber}`,
+                      current && 'current',
+                      title,
+                      meta,
+                      translationLabels[status],
+                    ]
+                      .filter(Boolean)
+                      .join(', ')}
+                    onClick={() => onChoose(version)}
+                  >
+                    <span
+                      aria-hidden
+                      className="grid size-9 shrink-0 place-items-center rounded-md bg-muted font-medium text-xs tabular-nums"
+                    >
+                      v{version.versionNumber}
+                    </span>
+                    <span aria-hidden className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="min-w-0 truncate font-medium text-sm">
+                          {title ?? meta ?? `Version ${version.versionNumber}`}
+                        </span>
+                        {current && (
+                          <span className="flex shrink-0 items-center gap-1 text-muted-foreground text-xs">
+                            <CheckIcon aria-hidden className="size-3" />
+                            Current
+                          </span>
+                        )}
+                      </span>
+                      {title && meta && (
+                        <span className="truncate text-muted-foreground text-xs">{meta}</span>
+                      )}
+                    </span>
+                    <TranslationBadge status={status} />
+                  </Button>
+                </li>
+              )
+            })}
+          </ul>
         )}
       </PopoverContent>
     </Popover>
@@ -448,6 +503,7 @@ function HubBrowserList({
             {item && (onRequestVersions || versions?.itemId === item.id) && (
               <VersionPicker
                 item={item}
+                locale={locale}
                 versions={versions}
                 onRequestVersions={onRequestVersions}
                 opening={openingId === item.id}
@@ -488,9 +544,12 @@ function HubBrowser({
   const Heading = titleAs
   const [localNavigating, setLocalNavigating] = useState<string>()
   const [localOpening, setLocalOpening] = useState<string>()
-  const [loadingMore, setLoadingMore] = useState(false)
+  const [localLoadingMore, setLocalLoadingMore] = useState(false)
   const navigatingId = pending?.navigatingTo ?? localNavigating
   const openingId = pending?.openingItem ?? localOpening
+  // Pagination that runs through a server action returns void, so the
+  // consumer drives the flag; a promise-returning handler drives it locally.
+  const loadingMore = pending?.loadingMore ?? localLoadingMore
 
   return (
     <section
@@ -534,7 +593,7 @@ function HubBrowser({
             disabled={loadingMore}
             focusableWhenDisabled
             aria-busy={loadingMore || undefined}
-            onClick={() => runPending(onLoadMore, setLoadingMore)}
+            onClick={() => runPending(onLoadMore, setLocalLoadingMore)}
           >
             <LoaderCircleIcon
               aria-hidden

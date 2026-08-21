@@ -23,6 +23,7 @@ export {
 export {
   acquireViewerRuntime,
   loadViewerScript,
+  onViewerTokenError,
   releaseViewerRuntime,
   toDocumentId,
   type ViewerRuntimeOptions,
