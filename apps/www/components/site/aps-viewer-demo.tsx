@@ -251,7 +251,10 @@ interface ExtensionRowProps {
 function ExtensionRow({ id, info, checked, status = 'idle', onToggle }: ExtensionRowProps) {
   const fieldId = useId()
   const labelId = `${fieldId}-label`
+  const errorId = `${fieldId}-error`
   const toggleable = onToggle !== undefined
+  const loading = checked === true && status === 'loading'
+  const failed = checked === true && status === 'error'
   return (
     <div className="flex items-start justify-between gap-3 py-2">
       <div className="min-w-0">
@@ -265,15 +268,17 @@ function ExtensionRow({ id, info, checked, status = 'idle', onToggle }: Extensio
           ))}
         </span>
         <p className="mt-0.5 text-muted-foreground text-xs leading-snug">{info.description}</p>
-        {toggleable && checked && status === 'error' && (
-          <p role="status" className="mt-0.5 text-status-danger text-xs">
-            Failed to load
+        {failed && (
+          // Recoverable — unchecking and rechecking retries the fetch — so
+          // this is warning ink, not danger, per the status vocabulary.
+          <p id={errorId} role="status" className="mt-0.5 text-status-warning text-xs">
+            {extensionLabel(id)} failed to load. Uncheck and check again to retry.
           </p>
         )}
       </div>
       {toggleable && (
         <span className="flex shrink-0 items-center gap-1.5 pt-0.5">
-          {checked && status === 'loading' && (
+          {loading && (
             <span role="status" className="flex items-center text-muted-foreground">
               <LoaderCircle aria-hidden="true" className="size-3 animate-spin" />
               <span className="sr-only">Loading {extensionLabel(id)}</span>
@@ -282,8 +287,15 @@ function ExtensionRow({ id, info, checked, status = 'idle', onToggle }: Extensio
           <Checkbox
             id={fieldId}
             aria-labelledby={labelId}
+            aria-describedby={failed ? errorId : undefined}
+            // Pending per the async contract: still focusable and announced,
+            // but not actionable until the in-flight load settles.
+            aria-disabled={loading || undefined}
             checked={checked ?? false}
-            onCheckedChange={(nextChecked) => onToggle(id, nextChecked === true)}
+            onCheckedChange={(nextChecked) => {
+              if (loading) return
+              onToggle(id, nextChecked === true)
+            }}
           />
         </span>
       )}
