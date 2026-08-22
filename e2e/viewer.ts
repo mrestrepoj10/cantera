@@ -21,10 +21,12 @@ import { waitForHydration } from './hydration'
 export async function gotoViewerDemo(page: Page, path: string): Promise<void> {
   // Every viewer test downloads the real SDK from Autodesk's CDN and loads a
   // real translated model into a WebGL context — the most expensive thing the
-  // suite does. CI always pays it; locally it is opt-in via APS_E2E=1.
+  // suite does, and the only place a third-party outage can fail the run.
+  // APS_E2E=1 opts in: locally by hand, in CI when the PR touches
+  // viewer-adjacent paths, and always on pushes to main.
   test.skip(
-    !process.env.CI && !process.env.APS_E2E,
-    'viewer e2e loads the real Autodesk CDN and model; opt in locally with APS_E2E=1',
+    !process.env.APS_E2E,
+    'viewer e2e loads the real Autodesk CDN and model; opt in with APS_E2E=1',
   )
   await page.goto(path)
   await waitForHydration(page)

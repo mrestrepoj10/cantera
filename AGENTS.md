@@ -42,7 +42,7 @@ pnpm e2e             # light pass locally: light-theme axe only, viewer specs sk
 ```
 
 - Most changes need lint + typecheck plus the one e2e spec that covers them (`pnpm exec playwright test <file> -g "<pattern>"`).
-- Do not run `pnpm --filter www build` or the full e2e matrix routinely — CI owns them (both appearances, viewer + screenshots, production server).
+- Do not run `pnpm --filter www build` or the full e2e matrix routinely — CI owns them (both appearances on a production server; viewer specs run when a PR touches viewer paths, and always on main).
 - New item checklist: `registry.json`, source under `registry/`, `components/site/props-tables.ts`, `components/site/registry.ts`, a demo module under `components/site/demos/` plus its `dynamic()` entry in `components/site/demos.tsx` (one module per demo — the map keeps docs pages from bundling the whole demo graph), then `registry:build` + `registry:verify`, all committed.
 
 ## Design contracts

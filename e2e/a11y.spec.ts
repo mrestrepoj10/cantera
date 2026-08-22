@@ -66,8 +66,8 @@ for (const appearance of appearances) {
         // The viewer docs pages load a real model from the Autodesk CDN in the
         // background of the scan — same opt-in as the viewer specs.
         test.skip(
-          VIEWER_DOCS_ROUTES.has(route) && !process.env.CI && !process.env.APS_E2E,
-          'viewer docs pages load the real Autodesk CDN and model; opt in locally with APS_E2E=1',
+          VIEWER_DOCS_ROUTES.has(route) && !process.env.APS_E2E,
+          'viewer docs pages load the real Autodesk CDN and model; opt in with APS_E2E=1',
         )
         await page.goto(route)
         await waitForHydration(page)
