@@ -452,6 +452,22 @@
       ]
     },
     {
+      "name": "viewer-extension-types",
+      "type": "registry:lib",
+      "title": "Viewer Extension Types",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.",
+      "categories": ["viewer", "types", "autodesk"],
+      "files": [
+        {
+          "path": "registry/lib/viewer-extension-types.ts",
+          "type": "registry:lib",
+          "target": "lib/viewer-extension-types.ts"
+        }
+      ],
+      "docs": "Pure types and data — no runtime dependency on the viewer. Pair with @cantera/aps-viewer: pass viewerExtension(...) entries to the extensions prop, or use AEC_STARTER_EXTENSIONS as a field-tested default for AEC models. Entries marked deprecated or removedIn should not ship in new code."
+    },
+    {
       "name": "aps-viewer",
       "type": "registry:component",
       "title": "APS Viewer",

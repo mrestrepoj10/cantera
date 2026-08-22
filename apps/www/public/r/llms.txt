@@ -191,6 +191,15 @@ Install: npx shadcn@latest add @cantera/viewer-types
 Docs: https://canteraui.xyz/components/viewer-types
 Item: https://canteraui.xyz/r/viewer-types.json
 
+### viewer-extension-types
+
+Title: Viewer Extension Types
+Type: lib
+Description: A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.
+Install: npx shadcn@latest add @cantera/viewer-extension-types
+Docs: https://canteraui.xyz/components/viewer-extension-types
+Item: https://canteraui.xyz/r/viewer-extension-types.json
+
 ### aps-viewer
 
 Title: APS Viewer

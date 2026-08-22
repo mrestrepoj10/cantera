@@ -3,7 +3,13 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useAPSViewerStore } from '@/components/ui/aps-viewer/context'
 import { ViewerStore } from '@/components/ui/aps-viewer/store'
-import type { APSCameraState, APSPropertyResult, APSViewer3D, Vec3 } from '@/lib/viewer-types'
+import type {
+  APSCameraState,
+  APSExtensionStatus,
+  APSPropertyResult,
+  APSViewer3D,
+  Vec3,
+} from '@/lib/viewer-types'
 
 /**
  * The live viewer instance (or null until ready). Re-renders when the viewer
@@ -188,18 +194,86 @@ export function useAPSContextMenu(build: BuildContextMenu): void {
   }, [viewer])
 }
 
-/** Imperative escape hatch: load any viewer extension while mounted. */
-export function useAPSExtension(id: string, options?: Record<string, unknown>): void {
+/**
+ * Load lifecycle of every extension requested through the `extensions` prop,
+ * keyed by id. Extensions load over the network, so a UI that offers an
+ * extension's feature should wait for `'ready'` — and an `'error'` entry
+ * means that feature is unavailable, not that the viewer is broken.
+ */
+export function useAPSExtensions(): Readonly<Record<string, APSExtensionStatus>> {
+  const store = useAPSViewerStore()
+  return useSyncExternalStore(
+    store.subscribe,
+    store.getExtensionStatuses,
+    ViewerStore.getServerExtensionStatuses,
+  )
+}
+
+export interface APSExtensionResult {
+  status: 'idle' | APSExtensionStatus
+  /** The loaded extension instance (null until ready). Cast to your extension's type. */
+  extension: unknown
+  error: Error | null
+}
+
+/**
+ * Shallow equality over option bags. Options may hold SDK objects, circular
+ * structures, or functions — never serialize them; compare by key identity.
+ */
+function sameOptions(a?: Record<string, unknown>, b?: Record<string, unknown>): boolean {
+  if (a === b) return true
+  if (!a || !b) return false
+  const keys = Object.keys(a)
+  if (keys.length !== Object.keys(b).length) return false
+  return keys.every((key) => Object.is(a[key], b[key]))
+}
+
+/**
+ * Loads a viewer extension for this component's lifetime and unloads it on
+ * unmount. Returns the load status and the instance, so UI can gate on
+ * readiness instead of assuming the network fetch succeeded.
+ *
+ * Changing `options` after load re-applies them through the extension's own
+ * `setOptions` when it exposes one; extensions without `setOptions` keep
+ * their load-time options (reload by changing `id` — i.e. remount). Changes
+ * are detected by shallow comparison, so keep option values referentially
+ * stable — an object or function literal recreated every render re-applies
+ * every render.
+ */
+export function useAPSExtension(id: string, options?: Record<string, unknown>): APSExtensionResult {
   const { viewer } = useAPSViewer()
+  const [state, setState] = useState<APSExtensionResult>({
+    status: 'idle',
+    extension: null,
+    error: null,
+  })
   const optionsRef = useRef(options)
   optionsRef.current = options
+  const appliedOptionsRef = useRef(options)
 
   useEffect(() => {
-    if (!viewer) return
+    if (!viewer) {
+      setState({ status: 'idle', extension: null, error: null })
+      return
+    }
     let cancelled = false
-    viewer.loadExtension(id, optionsRef.current).catch((error) => {
-      if (!cancelled) console.error(`cantera aps-viewer: failed to load extension "${id}"`, error)
-    })
+    setState({ status: 'loading', extension: null, error: null })
+    appliedOptionsRef.current = optionsRef.current
+    viewer
+      .loadExtension(id, optionsRef.current)
+      .then((extension) => {
+        if (cancelled) return
+        setState({ status: 'ready', extension: extension ?? viewer.getExtension(id), error: null })
+      })
+      .catch((error) => {
+        if (cancelled) return
+        console.error(`cantera aps-viewer: failed to load extension "${id}"`, error)
+        setState({
+          status: 'error',
+          extension: null,
+          error: error instanceof Error ? error : new Error(String(error)),
+        })
+      })
     return () => {
       cancelled = true
       try {
@@ -209,6 +283,17 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
       }
     }
   }, [viewer, id])
+
+  useEffect(() => {
+    if (state.status !== 'ready' || sameOptions(appliedOptionsRef.current, options)) return
+    appliedOptionsRef.current = options
+    const extension = state.extension as {
+      setOptions?: (options: Record<string, unknown>) => unknown
+    } | null
+    extension?.setOptions?.(options ?? {})
+  }, [state, options])
+
+  return state
 }
 
 /** Convenience: viewer resize bound to a ResizeObserver on its container. */

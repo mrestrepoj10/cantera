@@ -96,6 +96,7 @@ export interface APSViewer3D {
   ): void
   unregisterContextMenuCallback(id: string): boolean
   setTheme(theme: 'light-theme' | 'dark-theme'): void
+  setProfile(profile: unknown, override?: boolean): boolean
   resize(): void
   navigation: {
     getPosition(): Vec3
@@ -139,6 +140,18 @@ export interface APSViewingNamespace {
   GuiViewer3D: new (container: HTMLElement, config?: Record<string, unknown>) => APSViewer3D
   Viewer3D: new (container: HTMLElement, config?: Record<string, unknown>) => APSViewer3D
   Extension: APSViewerExtensionConstructor
+  /** Bundled settings profiles: `new Profile(ProfileSettings.AEC)` → `viewer.setProfile(...)`. */
+  Profile: new (
+    settings: unknown,
+    name?: string,
+  ) => unknown
+  ProfileSettings: {
+    AEC: unknown
+    Default: unknown
+    Fluent: unknown
+    Navis: unknown
+    [key: string]: any
+  }
   theExtensionManager: {
     registerExtension(id: string, extension: APSViewerExtensionConstructor): boolean
     getExtensionClass?(id: string): APSViewerExtensionConstructor | null
@@ -178,3 +191,18 @@ export type GetAccessToken = () => Promise<{
 }>
 
 export type APSViewerStatus = 'idle' | 'loading-runtime' | 'ready' | 'error'
+
+/**
+ * One extension to load with the viewer: a bare id, or an id with the options
+ * `loadExtension` passes to the extension's constructor. The
+ * `viewer-extension-types` item catalogs the public ids and types their
+ * options; this shape deliberately accepts any string so consumer-registered
+ * extensions need nothing extra.
+ */
+export type APSExtensionRequest = string | { id: string; options?: Record<string, unknown> }
+
+/** Load lifecycle of one extension, keyed by id. */
+export type APSExtensionStatus = 'loading' | 'ready' | 'error'
+
+/** Named viewer settings profile, applied at viewer creation. */
+export type APSViewerProfile = 'aec' | 'default' | 'fluent' | 'navis'
