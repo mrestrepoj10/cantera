@@ -213,17 +213,18 @@ const themeOptions: { value: ViewerTheme; label: string }[] = [
   { value: 'dark', label: 'Dark' },
 ]
 
-const columnClasses: Record<1 | 2 | 3, string> = {
+const columnClasses: Record<1 | 2 | 3 | 4, string> = {
   1: 'grid-cols-1',
   2: 'grid-cols-2',
   3: 'grid-cols-3',
+  4: 'grid-cols-4',
 }
 
 interface ControlGroupProps<T extends string> {
   label: string
   value: T
   options: { value: T; label: string }[]
-  columns?: 1 | 2 | 3
+  columns?: 1 | 2 | 3 | 4
   /** Describes the group; wired with aria-describedby, never left as prose. */
   hint?: string
   /** Inert, because something else in the panel turned it off. */
@@ -258,7 +259,7 @@ function ControlGroup<T extends string>({
       aria-describedby={(disabled ? describedBy : undefined) ?? (hint ? hintId : undefined)}
     >
       <legend className="mb-1.5 font-medium text-[13px] text-foreground">{label}</legend>
-      <div className={cn('grid gap-1 rounded-lg bg-muted/70 p-1', columnClasses[columns])}>
+      <div className={cn('grid rounded-lg bg-muted/60', columnClasses[columns])}>
         {options.map((option) => {
           const selected = option.value === value
           return (
@@ -267,9 +268,9 @@ function ControlGroup<T extends string>({
               type="button"
               variant="ghost"
               className={cn(
-                'h-11 justify-center rounded-md px-2 text-[13px] text-muted-foreground transition-[color,background-color,box-shadow] duration-150 hover:bg-background/70 hover:text-foreground focus-visible:border-ring aria-disabled:opacity-50',
+                'relative isolate h-11 justify-center rounded-lg bg-transparent px-1 text-[13px] text-muted-foreground transition-colors duration-150 before:absolute before:inset-1 before:-z-10 before:rounded-md before:transition-[background-color,box-shadow] before:duration-150 hover:bg-transparent hover:text-foreground hover:before:bg-background/60 focus-visible:border-ring aria-disabled:opacity-50',
                 selected &&
-                  'bg-background text-foreground shadow-xs hover:bg-background dark:bg-input/70',
+                  'text-foreground before:bg-background before:shadow-xs hover:before:bg-background dark:before:bg-input/70',
               )}
               aria-pressed={selected}
               disabled={disabled}
@@ -653,6 +654,15 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
     [handleExtensionToggle],
   )
 
+  const handleExtensionRetry = useCallback(
+    (id: string) => {
+      handleExtensionToggle(id, false)
+      // Remount on the next frame so the loader runs again.
+      window.requestAnimationFrame(() => handleExtensionToggle(id, true))
+    },
+    [handleExtensionToggle],
+  )
+
   useEffect(() => {
     const fromUrl = readSharedSettings()
     if (fromUrl) setSettings((previous) => ({ ...previous, ...fromUrl }))
@@ -679,7 +689,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
   // extensions are doing. Rebuilt on every change, announced politely.
   const liveMessage = useMemo(() => {
     const parts: string[] = []
-    parts.push(error ? error : modelLoaded ? 'Model loaded.' : 'Loading model.')
+    parts.push(error ? error : modelLoaded ? 'Model loaded' : 'Loading model')
     for (const id of settings.extensions) {
       const status = extensionStatus[id] ?? 'idle'
       const label = extensionLabel(id)
@@ -721,10 +731,11 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
   }
 
   const loadedCount = settings.extensions.length
+  const failedExtensionId = settings.extensions.find((id) => extensionStatus[id] === 'error')
 
   return (
     <div className="flex w-full flex-col bg-background">
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid lg:h-[36rem] lg:grid-cols-[minmax(0,1fr)_20rem]">
         {/* The canvas is the subject of the page, so it leads at every width. */}
         <div className="flex min-w-0 flex-col">
           <APSViewer
@@ -735,7 +746,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
             // min-height rather than height: the viewer is a flex item with
             // a zero basis, so a fixed height would collapse it wherever the
             // column is not stretched by the dock beside it.
-            className="min-h-[28rem] w-full flex-1 sm:min-h-[34rem]"
+            className="min-h-[28rem] w-full flex-1 sm:min-h-[36rem] lg:min-h-0"
             onModelLoaded={() => setModelLoaded(true)}
             onError={(nextError) => setError(nextError.message)}
           >
@@ -746,73 +757,25 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
               <DemoExtension key={id} id={id} onStatus={handleExtensionStatus} />
             ))}
           </APSViewer>
-          {/* Status sits under the canvas, not on it: one strip for the model
-              and every extension, so nothing overlaps the viewer or the
-              captured region. */}
-          <div className="relative flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1.5 border-border border-t px-3 py-2">
-            <span className="flex items-center gap-1.5 text-xs">
-              {!modelLoaded && !error && <Spinner className="size-3.5 text-muted-foreground" />}
-              {/* The live region below carries the same words. This attribute
-                  is what e2e targets, so a visibility assertion never matches
-                  two nodes. */}
-              <span
-                data-viewer-model-status=""
-                className={error ? 'text-status-warning' : 'text-muted-foreground'}
-              >
-                {error ?? (modelLoaded ? 'Model loaded' : 'Loading model')}
-              </span>
-            </span>
-            {settings.extensions.map((id) => {
-              const status = extensionStatus[id] ?? 'idle'
-              if (status === 'error') {
-                return (
-                  <span key={id} className="flex items-center gap-1.5 text-xs">
-                    {/* Recoverable — reloading retries the fetch — so this is
-                        warning ink, not danger, per the status vocabulary. */}
-                    <span className="text-status-warning">{extensionLabel(id)} failed to load</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="xs"
-                      onClick={() => {
-                        handleExtensionToggle(id, false)
-                        // Remount on the next frame so the loader runs again.
-                        window.requestAnimationFrame(() => handleExtensionToggle(id, true))
-                      }}
-                    >
-                      Retry
-                    </Button>
-                  </span>
-                )
-              }
-              return (
-                <span key={id} className="flex items-center gap-1.5 text-muted-foreground text-xs">
-                  {status === 'loading' && <Spinner className="size-3" />}
-                  {extensionLabel(id)}
-                  {status === 'ready' && <CheckIcon aria-hidden="true" className="size-3" />}
-                </span>
-              )
-            })}
-            {/* The one stable live region: rendered from the start, its text
-                replaced as state changes, so polite announcements are
-                reliable. The data attributes are the e2e contract. */}
-            <output
-              className="sr-only"
-              data-viewer-demo=""
-              data-toolbar-position={settings.position}
-              data-toolbar-scale={settings.scale}
-              data-extension-status={settings.extensions
-                .map((id) => `${id}:${extensionStatus[id] ?? 'idle'}`)
-                .join(' ')}
-            >
-              {liveMessage}
-            </output>
-          </div>
+          {/* The canvas keeps the full column. State remains available to
+              assistive technology and e2e without a permanent visual strip. */}
+          <output
+            className="sr-only"
+            data-viewer-demo=""
+            data-viewer-model-status=""
+            data-toolbar-position={settings.position}
+            data-toolbar-scale={settings.scale}
+            data-extension-status={settings.extensions
+              .map((id) => `${id}:${extensionStatus[id] ?? 'idle'}`)
+              .join(' ')}
+          >
+            {liveMessage}
+          </output>
         </div>
 
         <aside
           aria-labelledby={dockHeadingId}
-          className="relative flex min-h-0 flex-col border-border border-t bg-muted/30 lg:border-t-0 lg:border-l"
+          className="relative flex min-h-0 flex-col border-border border-t bg-muted/30 lg:overflow-hidden lg:border-t-0 lg:border-l"
         >
           <h3 id={dockHeadingId} className="sr-only">
             Viewer inspector
@@ -857,7 +820,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
             })}
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col p-3 lg:max-h-[34rem]">
+          <div className="flex min-h-0 flex-1 flex-col p-3">
             {tab === 'setup' && (
               <div
                 role="tabpanel"
@@ -881,9 +844,11 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                       // does not name it — point at the text explicitly.
                       aria-labelledby={toolbarLabelId}
                       checked={settings.toolbar}
-                      onCheckedChange={(checked) =>
+                      onCheckedChange={(checked) => {
+                        setModelLoaded(false)
+                        setError(null)
                         setSettings((previous) => ({ ...previous, toolbar: checked }))
-                      }
+                      }}
                     />
                   </label>
                   {!settings.toolbar && (
@@ -896,6 +861,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                   label="Position"
                   value={settings.position}
                   options={positionOptions}
+                  columns={4}
                   disabled={!settings.toolbar}
                   describedBy={toolbarOffId}
                   onChange={(position) => setSettings((previous) => ({ ...previous, position }))}
@@ -906,6 +872,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                     typeof settings.scale === 'number' ? String(settings.scale) : settings.scale
                   }
                   options={scaleOptions}
+                  columns={3}
                   hint="Compact is 36px, Comfortable is 44px, and Gloved is 52px."
                   disabled={!settings.toolbar}
                   describedBy={toolbarOffId}
@@ -947,8 +914,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                   </div>
                 ) : (
                   <p className="text-pretty text-[13px] text-muted-foreground leading-relaxed">
-                    Nothing loaded yet — the viewer is running its stock toolbar. Pick an extension
-                    and it loads live, without recreating the viewer.
+                    Add extensions live—no viewer restart.
                   </p>
                 )}
                 <ExtensionPicker
@@ -998,20 +964,40 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
           </div>
 
           <div className="flex min-h-11 items-center justify-between gap-2 border-border border-t px-3 py-2">
-            <span className="text-muted-foreground text-xs tabular-nums">
-              {loadedCount === 0
-                ? 'No extensions loaded'
-                : `${loadedCount} extension${loadedCount === 1 ? '' : 's'} loaded`}
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              disabled={isDefault}
-              onClick={() => setSettings(DEFAULT_SETTINGS)}
+            <span
+              className={cn(
+                'min-w-0 text-xs tabular-nums',
+                error || failedExtensionId ? 'text-status-warning' : 'text-muted-foreground',
+              )}
             >
-              Reset
-            </Button>
+              {error ??
+                (failedExtensionId
+                  ? `${extensionLabel(failedExtensionId)} failed to load`
+                  : loadedCount === 0
+                    ? 'No extensions loaded'
+                    : `${loadedCount} extension${loadedCount === 1 ? '' : 's'} loaded`)}
+            </span>
+            <div className="flex shrink-0 items-center gap-1">
+              {failedExtensionId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() => handleExtensionRetry(failedExtensionId)}
+                >
+                  Retry
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                disabled={isDefault}
+                onClick={() => setSettings(DEFAULT_SETTINGS)}
+              >
+                Reset
+              </Button>
+            </div>
           </div>
         </aside>
       </div>
