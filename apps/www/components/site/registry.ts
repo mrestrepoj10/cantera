@@ -43,8 +43,11 @@ const allItems = registryJson.items as RegistryItem[]
  */
 export const registryItems = allItems.filter((item) => item.type !== 'registry:example')
 
+/** Lookups run per docs render, so they index by name once at module load. */
+const itemsByName = new Map(registryItems.map((item) => [item.name, item]))
+
 export function getRegistryItem(name: string): RegistryItem | undefined {
-  return registryItems.find((item) => item.name === name)
+  return itemsByName.get(name)
 }
 
 const previewFrameClasses: Record<string, string> = {
@@ -147,7 +150,13 @@ function buildGroups(): RegistryGroup[] {
 /** The catalog, split into titled sections by kind. Empty sections are omitted. */
 export const registryGroups: RegistryGroup[] = buildGroups()
 
+const examplesByName = new Map(
+  allItems
+    .filter((item) => item.type === 'registry:example')
+    .map((item) => [item.name, item] as const),
+)
+
 /** The generated example page for an item, when it has one. */
 export function getExampleItem(name: string): RegistryItem | undefined {
-  return allItems.find((item) => item.type === 'registry:example' && item.name === `${name}-demo`)
+  return examplesByName.get(`${name}-demo`)
 }

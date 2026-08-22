@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronsUpDownIcon, LoaderCircleIcon } from 'lucide-react'
-import { useEffect, useId, useState } from 'react'
+import { useId, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -60,6 +60,12 @@ interface ProjectPickerProps {
   className?: string
 }
 
+/** Thenable check, not `instanceof Promise`: a polyfilled or cross-realm
+ * promise is still a pending round trip the controls must reflect. */
+function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
+  return value != null && typeof (value as Promise<void>).then === 'function'
+}
+
 /**
  * An action on the async-pending contract: disabled with a spinner while it
  * keeps its label, focusable throughout, never unmounted mid-request.
@@ -87,7 +93,7 @@ function RetryAction({
       className="relative gap-0 after:absolute after:-inset-y-2 after:inset-x-0"
       onClick={() => {
         const result = onRetry()
-        if (!(result instanceof Promise)) return
+        if (!isPromiseLike(result)) return
         setAsyncPending(true)
         result.then(
           () => setAsyncPending(false),
@@ -102,12 +108,16 @@ function RetryAction({
           busy ? 'mr-1 w-3.5' : 'mr-0 w-0',
         )}
       >
-        <LoaderCircleIcon
-          className={cn(
-            'size-3.5 animate-spin transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
-            busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
-          )}
-        />
+        {/* The spin lives on a wrapper: transform animations on the <svg>
+            itself skip the compositor in some engines. */}
+        <span className="grid size-3.5 animate-spin place-items-center">
+          <LoaderCircleIcon
+            className={cn(
+              'size-3.5 transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
+              busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
+            )}
+          />
+        </span>
       </span>
       Retry
     </Button>
@@ -149,10 +159,9 @@ function ProjectPicker({
 
   // A gate closing the popup resets the open state too. Without this a
   // pending phase would snap the list back open the instant it cleared —
-  // motion the user never asked for.
-  useEffect(() => {
-    if (gated && open) setOpen(false)
-  }, [gated, open])
+  // motion the user never asked for. Adjusted during render rather than in an
+  // effect, so the gated-but-open frame is never painted and never committed.
+  if (gated && open) setOpen(false)
 
   const groups = hubs
     ? groupProjectsByHub(hubs, projects)
@@ -165,7 +174,7 @@ function ProjectPicker({
     if (value === undefined) setUncontrolled(projectId)
     if (!onValueChange) return
     const result = onValueChange(projectId)
-    if (!(result instanceof Promise)) return
+    if (!isPromiseLike(result)) return
     setAsyncPending(true)
     result.then(
       () => setAsyncPending(false),
@@ -207,12 +216,16 @@ function ProjectPicker({
                 busy ? 'mr-1.5 w-4' : 'mr-0 w-0',
               )}
             >
-              <LoaderCircleIcon
-                className={cn(
-                  'size-4 animate-spin transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
-                  busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
-                )}
-              />
+              {/* The spin lives on a wrapper: transform animations on the
+                  <svg> itself skip the compositor in some engines. */}
+              <span className="grid size-4 animate-spin place-items-center">
+                <LoaderCircleIcon
+                  className={cn(
+                    'size-4 transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
+                    busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
+                  )}
+                />
+              </span>
             </span>
             <span className="min-w-0 flex-1 truncate text-left">
               {selected ? selected.name : placeholder}

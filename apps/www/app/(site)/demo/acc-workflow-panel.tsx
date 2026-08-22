@@ -62,12 +62,16 @@ function RetryNotice({
             pending ? 'mr-1 w-3.5' : 'mr-0 w-0',
           )}
         >
-          <LoaderCircleIcon
-            className={cn(
-              'size-3.5 animate-spin transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
-              pending ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
-            )}
-          />
+          {/* The spin lives on a wrapper: transform animations on the <svg>
+              itself skip the compositor in some engines. */}
+          <span className="grid size-3.5 animate-spin place-items-center">
+            <LoaderCircleIcon
+              className={cn(
+                'size-3.5 transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
+                pending ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
+              )}
+            />
+          </span>
         </span>
         Retry
       </Button>

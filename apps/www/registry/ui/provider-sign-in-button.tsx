@@ -44,6 +44,12 @@ type ProviderSignInButtonProps = ProviderSignInButtonBaseProps &
       } & Omit<React.ComponentProps<'button'>, 'disabled'>)
   )
 
+/** Thenable check, not `instanceof Promise`: a polyfilled or cross-realm
+ * promise is still a pending round trip the button must reflect. */
+function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
+  return value != null && typeof (value as Promise<void>).then === 'function'
+}
+
 /**
  * The icon slot is always reserved — same box whether the provider has a mark
  * or not — so starting a sign-in never shifts the label. Icon and spinner
@@ -52,12 +58,16 @@ type ProviderSignInButtonProps = ProviderSignInButtonBaseProps &
 function ProviderSignInIcon({ provider, loading }: { provider: OAuthProvider; loading: boolean }) {
   return (
     <span aria-hidden className="grid size-4 shrink-0 place-items-center">
-      <LoaderCircleIcon
-        className={cn(
-          'col-start-1 row-start-1 size-4 animate-spin transition-opacity duration-150 ease-out',
-          loading ? 'opacity-100' : 'opacity-0',
-        )}
-      />
+      {/* The spin lives on a wrapper: transform animations on the <svg>
+          itself skip the compositor in some engines. */}
+      <span className="col-start-1 row-start-1 grid size-4 animate-spin place-items-center">
+        <LoaderCircleIcon
+          className={cn(
+            'size-4 transition-opacity duration-150 ease-out',
+            loading ? 'opacity-100' : 'opacity-0',
+          )}
+        />
+      </span>
       {provider.icon && (
         <span
           className={cn(
@@ -168,7 +178,7 @@ function ProviderSignInButton(props: ProviderSignInButtonProps) {
       onClick={(event) => {
         buttonProps.onClick?.(event)
         const result = onSignIn?.()
-        if (!(result instanceof Promise)) return
+        if (!isPromiseLike(result)) return
         setAsyncPending(true)
         result.then(
           () => setAsyncPending(false),

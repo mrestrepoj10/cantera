@@ -7,11 +7,12 @@ Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code e
 - Docs: https://canteraui.xyz/components/acc-sign-in
 - Registry item: https://canteraui.xyz/r/acc-sign-in.json
 - Registry dependencies: @cantera/sign-in-card, @cantera/connection-card, @cantera/aps-oauth-preset, @cantera/oauth-types
-- npm dependencies: aec-auth
+- npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
 
 - `app/sign-in/page.tsx`
+- `app/sign-in/loading.tsx`
 - `components/acc-connection-panel.tsx`
 - `lib/acc-auth.ts`
 - `app/api/auth/[provider]/route.ts`
@@ -27,7 +28,7 @@ Environment variables added to `.env.local`:
 
 ## Install notes
 
-Installed: app/sign-in/page.tsx, the /api/auth/* route handlers, and lib/acc-auth.ts (aec-auth vault wiring).
+Installed: app/sign-in/page.tsx with its loading skeleton, the /api/auth/* route handlers, and lib/acc-auth.ts (aec-auth vault wiring).
 
 Environment (added to .env.local as empty keys — fill them in):
 - APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.

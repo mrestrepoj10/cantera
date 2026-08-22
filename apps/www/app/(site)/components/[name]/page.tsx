@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { preconnect } from 'react-dom'
 
 import { CodeBlock } from '@/components/site/code-block'
 import { ComponentDemo } from '@/components/site/demos'
@@ -10,13 +11,11 @@ import { OpenInV0 } from '@/components/site/open-in-v0'
 import { PageHandoff } from '@/components/site/page-handoff'
 import { type ApiTable, apiTables, libUsage } from '@/components/site/props-tables'
 import {
-  getExampleItem,
   getPreviewFrameClassName,
   getRegistryItem,
   installCommandFor,
   registryItems,
 } from '@/components/site/registry'
-import { itemMarkdown } from '@/lib/item-markdown'
 import { markdownPathFor, markdownUrlFor } from '@/lib/site'
 
 export const dynamicParams = false
@@ -84,6 +83,13 @@ export default async function ComponentPage({ params }: PageProps) {
   const item = getRegistryItem(name)
   if (!item) notFound()
 
+  const isViewerItem = name === 'aps-viewer' || name === 'viewer-native-toolbar'
+  // The viewer demo's first move is downloading the SDK from the Autodesk CDN
+  // — knowable at render time, so warm the connection before the script asks.
+  if (isViewerItem && process.env.APS_VIEWER_DEMO_URN) {
+    preconnect('https://developer.api.autodesk.com')
+  }
+
   const isLib = item.type === 'registry:lib'
   const usage = libUsage[item.name]
   const tables = apiTables[item.name] ?? []
@@ -111,11 +117,10 @@ export default async function ComponentPage({ params }: PageProps) {
           <h1 className="text-balance font-semibold text-3xl tracking-tight">{item.title}</h1>
           <p className="max-w-2xl text-muted-foreground">{item.description}</p>
         </div>
-        {/* Page-level hand-off, generated from the same item this page renders:
-            the clipboard, the raw .md, or a chat that starts by reading it. */}
+        {/* Page-level hand-off: the clipboard (fetched from the .md route on
+            demand), the raw .md, or a chat that starts by reading it. */}
         <PageHandoff
           title={item.title}
-          markdown={itemMarkdown(item, getExampleItem(item.name))}
           markdownPath={markdownPathFor(item.name)}
           markdownUrl={markdownUrlFor(item.name)}
         />
@@ -143,11 +148,7 @@ export default async function ComponentPage({ params }: PageProps) {
           <div className={getPreviewFrameClassName(item.name)}>
             <ComponentDemo
               name={item.name}
-              viewerUrn={
-                item.name === 'aps-viewer' || item.name === 'viewer-native-toolbar'
-                  ? process.env.APS_VIEWER_DEMO_URN
-                  : undefined
-              }
+              viewerUrn={isViewerItem ? process.env.APS_VIEWER_DEMO_URN : undefined}
             />
           </div>
         </section>

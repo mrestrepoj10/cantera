@@ -39,6 +39,12 @@ import { cn } from '@/lib/utils'
 /** What the page is showing. "ready" with nothing connected renders the empty state. */
 type ConnectionsStatus = 'ready' | 'loading' | 'error'
 
+/** Thenable check, not `instanceof Promise`: a polyfilled or cross-realm
+ * promise is still a pending round trip the retry must reflect. */
+function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
+  return value != null && typeof (value as Promise<void>).then === 'function'
+}
+
 /**
  * Consumer-driven pending, for wiring where no promise comes back (a server
  * action, or a navigation that never resolves). A callback that returns a
@@ -107,7 +113,11 @@ function ConnectionsLoading({ rows = 3, className, ...props }: ConnectionsLoadin
       {/* <output> is implicitly role="status" aria-live="polite" — the skeleton
           itself is decorative and hidden, so this is the only thing announced. */}
       <output className="flex items-center gap-2 text-muted-foreground text-sm">
-        <LoaderCircleIcon aria-hidden className="size-3.5 shrink-0 animate-spin" />
+        {/* The spin lives on a wrapper: transform animations on the <svg>
+            itself skip the compositor in some engines. */}
+        <span aria-hidden className="grid size-3.5 shrink-0 animate-spin place-items-center">
+          <LoaderCircleIcon className="size-3.5" />
+        </span>
         Loading connections
       </output>
       {placeholders.map((id) => (
@@ -188,7 +198,7 @@ function RetryButton({
       className="min-h-11 gap-2 px-4 aria-disabled:pointer-events-none"
       onClick={() => {
         const result = onRetry()
-        if (!(result instanceof Promise)) return
+        if (!isPromiseLike(result)) return
         setAsyncPending(true)
         result.then(
           () => setAsyncPending(false),
@@ -197,12 +207,16 @@ function RetryButton({
       }}
     >
       <span aria-hidden className="grid size-4 shrink-0 place-items-center">
-        <LoaderCircleIcon
-          className={cn(
-            'col-start-1 row-start-1 size-4 animate-spin transition-opacity duration-150 ease-out',
-            busy ? 'opacity-100' : 'opacity-0',
-          )}
-        />
+        {/* The spin lives on a wrapper: transform animations on the <svg>
+            itself skip the compositor in some engines. */}
+        <span className="col-start-1 row-start-1 grid size-4 animate-spin place-items-center">
+          <LoaderCircleIcon
+            className={cn(
+              'size-4 transition-opacity duration-150 ease-out',
+              busy ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+        </span>
         <RotateCwIcon
           className={cn(
             'col-start-1 row-start-1 size-4 transition-opacity duration-150 ease-out',
@@ -414,14 +428,25 @@ function ConnectionsView({
   ...props
 }: ConnectionsViewProps) {
   const rows = resolveConnections(providers, connections)
-  const connected = rows.filter((row) => row.status === 'connected').length
-  const expired = rows.filter((row) => row.status === 'expired').length
-  const failed = rows.filter((row) => row.status === 'error').length
-  // Same predicate TokenStatus renders "Expiring soon" from, so the count can
-  // never disagree with a warning shown on a card below it.
-  const expiring = rows.filter((row) => row.status === 'connected' && isExpiringSoon(row)).length
+  // One pass for every summary number. The expiring predicate is the same one
+  // TokenStatus renders "Expiring soon" from, so the count can never disagree
+  // with a warning shown on a card below it.
+  let connected = 0
+  let expired = 0
+  let failed = 0
+  let expiring = 0
+  for (const row of rows) {
+    if (row.status === 'connected') {
+      connected += 1
+      if (isExpiringSoon(row)) expiring += 1
+    } else if (row.status === 'expired') {
+      expired += 1
+    } else if (row.status === 'error') {
+      failed += 1
+    }
+  }
   const attention = expired + failed + expiring
-  const isEmpty = rows.every((row) => row.status === 'disconnected')
+  const isEmpty = connected + expired + failed === 0
 
   let body: React.ReactNode
   if (status === 'loading') {

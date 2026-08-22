@@ -49,16 +49,19 @@ export function useAPSSelection(): APSSelection {
     ViewerStore.getServerSelection,
   )
 
-  return useMemo(
+  // The verbs memoize on the store alone, never on the selection snapshot, so
+  // their identities survive selection events — safe in consumer dep arrays.
+  const verbs = useMemo(
     () => ({
-      dbIds,
       select: (ids: number[] | number) => store.getViewer()?.select(ids),
       clear: () => store.getViewer()?.clearSelection(),
       isolate: (ids?: number[] | number) => store.getViewer()?.isolate(ids),
       fitToView: (ids?: number[]) => store.getViewer()?.fitToView(ids ?? null),
     }),
-    [dbIds, store],
+    [store],
   )
+
+  return useMemo(() => ({ dbIds, ...verbs }), [dbIds, verbs])
 }
 
 export interface APSCamera {
@@ -73,9 +76,11 @@ export function useAPSCamera(): APSCamera {
   const store = useAPSViewerStore()
   const camera = useSyncExternalStore(store.subscribe, store.getCamera, ViewerStore.getServerCamera)
 
-  return useMemo(
+  // The verbs memoize on the store alone, never on the per-frame camera
+  // snapshot: an orbit updates `camera` every animation frame, and verbs keyed
+  // on it would re-run any consumer effect that lists them 60 times a second.
+  const verbs = useMemo(
     () => ({
-      camera,
       setView: (position: Vec3, target: Vec3, up?: Vec3) => {
         const viewer = store.getViewer()
         if (!viewer) return
@@ -84,8 +89,10 @@ export function useAPSCamera(): APSCamera {
       },
       fitToView: () => store.getViewer()?.fitToView(null),
     }),
-    [camera, store],
+    [store],
   )
+
+  return useMemo(() => ({ camera, ...verbs }), [camera, verbs])
 }
 
 /**
@@ -96,7 +103,11 @@ export function useAPSCamera(): APSCamera {
 export function useAPSViewerEvent(eventType: string, handler: (event: any) => void): void {
   const { viewer } = useAPSViewer()
   const handlerRef = useRef(handler)
-  handlerRef.current = handler
+  // Synced after commit, not during render: a render React discards (Strict
+  // Mode, a concurrent restart) must never leave its handler behind.
+  useEffect(() => {
+    handlerRef.current = handler
+  })
 
   useEffect(() => {
     if (!viewer) return
@@ -178,7 +189,10 @@ export type BuildContextMenu = (
 export function useAPSContextMenu(build: BuildContextMenu): void {
   const { viewer } = useAPSViewer()
   const buildRef = useRef(build)
-  buildRef.current = build
+  // Synced after commit, not during render — see useAPSViewerEvent.
+  useEffect(() => {
+    buildRef.current = build
+  })
 
   useEffect(() => {
     if (!viewer) return
@@ -248,8 +262,12 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
     error: null,
   })
   const optionsRef = useRef(options)
-  optionsRef.current = options
   const appliedOptionsRef = useRef(options)
+  // Synced after commit, not during render — see useAPSViewerEvent. Declared
+  // before the load effect so a same-commit id change reads current options.
+  useEffect(() => {
+    optionsRef.current = options
+  })
 
   useEffect(() => {
     if (!viewer) {
@@ -284,14 +302,17 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
     }
   }, [viewer, id])
 
+  const { status, extension } = state
+  // Keyed on the fields it reads, not the whole state object, so an unrelated
+  // state change (a new error) cannot re-run the option pass.
   useEffect(() => {
-    if (state.status !== 'ready' || sameOptions(appliedOptionsRef.current, options)) return
+    if (status !== 'ready' || sameOptions(appliedOptionsRef.current, options)) return
     appliedOptionsRef.current = options
-    const extension = state.extension as {
+    const loaded = extension as {
       setOptions?: (options: Record<string, unknown>) => unknown
     } | null
-    extension?.setOptions?.(options ?? {})
-  }, [state, options])
+    loaded?.setOptions?.(options ?? {})
+  }, [status, extension, options])
 
   return state
 }

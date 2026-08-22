@@ -271,7 +271,11 @@ export function useViewerNativeToolbar(options: ViewerNativeToolbarOptions = {})
   const position = options.position ?? 'bottom'
   const scale = options.scale ?? 'md'
   const optionsRef = useRef<Required<ViewerNativeToolbarOptions>>({ position, scale })
-  optionsRef.current = { position, scale }
+  // Synced after commit, not during render: a render React discards (Strict
+  // Mode, a concurrent restart) must never leave its options behind.
+  useEffect(() => {
+    optionsRef.current = { position, scale }
+  }, [position, scale])
 
   useEffect(() => {
     if (!viewer || !window.Autodesk) return

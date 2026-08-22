@@ -109,6 +109,8 @@ export interface SheetVersionSet {
   issuanceDate?: Date | string | number
 }
 
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/
+
 /** Normalize a version set's issuance into a Date, or null when absent or invalid. */
 export function versionSetIssuance(versionSet: SheetVersionSet): Date | null {
   if (versionSet.issuanceDate == null) return null
@@ -117,7 +119,7 @@ export function versionSetIssuance(versionSet: SheetVersionSet): Date | null {
   // midnight, which formats a day early anywhere west of UTC — so build it in
   // local time instead.
   if (typeof versionSet.issuanceDate === 'string') {
-    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(versionSet.issuanceDate)
+    const dateOnly = DATE_ONLY.exec(versionSet.issuanceDate)
     if (dateOnly) {
       const [, year, month, day] = dateOnly
       return new Date(Number(year), Number(month) - 1, Number(day))
@@ -138,8 +140,11 @@ export function groupProjectsByHub(
 ): { hub: Hub | null; projects: Project[] }[] {
   const byHub = new Map<string, Project[]>()
   const orphans: Project[] = []
+  // Membership by Set, not `hubs.some()` per project — the scan would make
+  // grouping quadratic on large hub lists.
+  const knownHubs = new Set(hubs.map((hub) => hub.id))
   for (const project of projects) {
-    const hub = project.hubId != null && hubs.some((h) => h.id === project.hubId)
+    const hub = project.hubId != null && knownHubs.has(project.hubId)
     if (!hub) {
       orphans.push(project)
       continue

@@ -1,8 +1,11 @@
+import { LoaderCircleIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 import { cookies, headers } from 'next/headers'
 import Link from 'next/link'
+import { Suspense } from 'react'
 
-import { APS_PROVIDER_ID, getTokenSource, openSession, SESSION_COOKIE } from '@/lib/acc-auth'
+import { HubBrowser } from '@/components/ui/hub-browser'
+import { type AccSession, getSessionToken, openSession, SESSION_COOKIE } from '@/lib/acc-auth'
 import { type AccWorkflowData, loadAccWorkflow } from '@/lib/acc-workflow'
 import { type HubBrowserWorkflowData, loadHubBrowserWorkflow } from '@/lib/aps-browser-workflow'
 import { DEMO_LANDING_HUB_ID } from '@/lib/aps-demo-seed'
@@ -52,45 +55,186 @@ const noBrowserGrant: HubBrowserWorkflowData = {
   page: 0,
 }
 
-export default async function DemoPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+/** The ACC workflow chain — hubs, projects, version sets, manifests — behind
+ * its own boundary, so the page shell never waits on the emulator. */
+async function WorkflowSection({ session, params }: { session: AccSession; params: SearchParams }) {
+  let workflow: AccWorkflowData
+  try {
+    const origin = await requestOrigin()
+    // Cached per request: AccSignIn and the browser section share this read.
+    const token = await getSessionToken(origin, session)
+    workflow = await loadAccWorkflow(origin, token, {
+      hubId: one(params, 'hub'),
+      projectId: one(params, 'project'),
+      versionSetId: one(params, 'versionSet'),
+      fallbackHubId: DEMO_LANDING_HUB_ID,
+    })
+  } catch {
+    // A lost or unrefreshable grant is the connection panel's story to tell;
+    // the workflow says so plainly instead of throwing.
+    workflow = noGrant
+  }
+  return <AccWorkflowPanel data={workflow} />
+}
+
+async function BrowserSection({ session, params }: { session: AccSession; params: SearchParams }) {
+  let browser: HubBrowserWorkflowData
+  try {
+    const origin = await requestOrigin()
+    const token = await getSessionToken(origin, session)
+    const folders = one(params, 'browserFolders')?.split('|').filter(Boolean)
+    const requestedPage = Number(one(params, 'browserPage') ?? 0)
+    browser = await loadHubBrowserWorkflow(origin, token, {
+      hubId: one(params, 'browserHub'),
+      projectId: one(params, 'browserProject'),
+      folderIds: folders,
+      page: Number.isFinite(requestedPage) ? requestedPage : 0,
+      versionsItemId: one(params, 'browserVersions'),
+    })
+  } catch {
+    browser = noBrowserGrant
+  }
+  return <HubBrowserPanel data={browser} />
+}
+
+/** Still skeleton at the connection panel's geometry, per the motion grammar. */
+function ConnectionFallback() {
+  return (
+    <div className="flex w-full max-w-sm flex-col gap-4">
+      <output className="flex items-center gap-2 text-muted-foreground text-sm">
+        <span aria-hidden className="grid size-3.5 shrink-0 animate-spin place-items-center">
+          <LoaderCircleIcon className="size-3.5" />
+        </span>
+        Checking your Autodesk connection
+      </output>
+      <div aria-hidden className="rounded-xl bg-card py-4 ring-1 ring-foreground/10">
+        <div className="flex flex-col gap-3 px-4">
+          <div className="flex items-center gap-3">
+            <div className="size-5 shrink-0 rounded bg-muted" />
+            <div className="h-4 w-28 rounded bg-muted" />
+            <div className="ml-auto h-7 w-24 shrink-0 rounded-lg bg-muted" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="size-7 shrink-0 rounded-full bg-muted" />
+            <div className="flex flex-col gap-1">
+              <div className="h-3.5 w-24 rounded bg-muted" />
+              <div className="h-3.5 w-40 rounded bg-muted" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-24 shrink-0 rounded-md bg-muted" />
+            <div className="h-3 w-20 rounded bg-muted" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Still skeleton at the workflow panel's field geometry — no shimmer, one
+ * spinner carrying the announcement. */
+function WorkflowFallback() {
+  return (
+    <div className="flex flex-col gap-6">
+      <output className="flex items-center gap-2 text-muted-foreground text-sm">
+        <span aria-hidden className="grid size-3.5 shrink-0 animate-spin place-items-center">
+          <LoaderCircleIcon className="size-3.5" />
+        </span>
+        Loading the project workflow
+      </output>
+      <div aria-hidden className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:flex-row">
+          {['hub', 'project'].map((field) => (
+            <div key={field} className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <div className="h-3 w-12 rounded bg-muted" />
+              <div className="h-9 w-full rounded-md bg-muted" />
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <div className="h-3 w-20 rounded bg-muted" />
+          <div className="h-9 w-full rounded-md bg-muted" />
+        </div>
+        <div className="flex flex-col gap-3">
+          <div className="h-4 w-36 rounded bg-muted" />
+          <div className="h-24 w-full rounded-xl bg-muted" />
+          <div className="h-24 w-full rounded-xl bg-muted" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Everything below the static header. Awaits only the session cookie — one
+ * HMAC, no network — so the sign-in card and section headings stream almost
+ * immediately, while the emulator round trips resolve behind their own
+ * Suspense boundaries.
+ */
+async function DemoBody({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const [params, cookieStore] = await Promise.all([searchParams, cookies()])
   const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)
 
-  let workflow: AccWorkflowData | null = null
-  let browser: HubBrowserWorkflowData | null = null
-  if (session) {
-    const origin = await requestOrigin()
-    try {
-      const token = await getTokenSource(origin).getToken({
-        provider: APS_PROVIDER_ID,
-        subject: { type: 'user', id: session.userId },
-        scopes: session.scopes,
-      })
-      const folders = one(params, 'browserFolders')?.split('|').filter(Boolean)
-      const requestedPage = Number(one(params, 'browserPage') ?? 0)
-      ;[workflow, browser] = await Promise.all([
-        loadAccWorkflow(origin, token, {
-          hubId: one(params, 'hub'),
-          projectId: one(params, 'project'),
-          versionSetId: one(params, 'versionSet'),
-          fallbackHubId: DEMO_LANDING_HUB_ID,
-        }),
-        loadHubBrowserWorkflow(origin, token, {
-          hubId: one(params, 'browserHub'),
-          projectId: one(params, 'browserProject'),
-          folderIds: folders,
-          page: Number.isFinite(requestedPage) ? requestedPage : 0,
-          versionsItemId: one(params, 'browserVersions'),
-        }),
-      ])
-    } catch {
-      // A lost or unrefreshable grant is the connection panel's story to tell;
-      // the workflow says so plainly instead of throwing.
-      workflow = noGrant
-      browser = noBrowserGrant
-    }
+  if (!session) {
+    return (
+      <section aria-label="Start the live demo" className="mx-auto w-full max-w-sm">
+        <AccSignIn nextPath="/demo" headingLevel="h2" />
+      </section>
+    )
   }
 
+  return (
+    <>
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:items-start">
+        {/* Signed in, AccSignIn refreshes the token — a third-party round trip
+            that must not gate the section headings around it. */}
+        <Suspense fallback={<ConnectionFallback />}>
+          <AccSignIn nextPath="/demo" headingLevel="h2" />
+        </Suspense>
+
+        <section className="flex min-w-0 flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <h2 className="font-heading font-medium text-2xl tracking-tight">Project workflow</h2>
+            <p className="text-muted-foreground text-sm">
+              Every selection below is a query parameter. Changing one re-reads the emulator’s Data
+              Management, ACC Sheets, and Model Derivative endpoints on the server with your own
+              bearer token — the pickers hold their pending state until that render commits.
+            </p>
+          </div>
+          <Suspense fallback={<WorkflowFallback />}>
+            <WorkflowSection session={session} params={params} />
+          </Suspense>
+        </section>
+      </div>
+
+      <section className="flex min-w-0 flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <h2 className="font-heading font-medium text-2xl tracking-tight">Hub browser</h2>
+          <p className="max-w-3xl text-muted-foreground text-sm">
+            Every level below comes from the emulator’s Data Management endpoints with the grant you
+            just made. Folder contents include tip versions, version history loads only when asked
+            for, and every payload crosses the server boundary through the APS adapters.
+          </p>
+        </div>
+        <Suspense
+          fallback={
+            <HubBrowser
+              path={[]}
+              entries={[]}
+              status="loading"
+              title="Data Management browser"
+              titleAs="h3"
+            />
+          }
+        >
+          <BrowserSection session={session} params={params} />
+        </Suspense>
+      </section>
+    </>
+  )
+}
+
+export default function DemoPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-12 px-6 py-16">
       <header className="mx-auto max-w-2xl text-center">
@@ -104,41 +248,17 @@ export default async function DemoPage({ searchParams }: { searchParams: Promise
         </p>
       </header>
 
-      {workflow ? (
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:items-start">
-          <AccSignIn nextPath="/demo" headingLevel="h2" />
-
-          <section className="flex min-w-0 flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <h2 className="font-heading font-medium text-2xl tracking-tight">Project workflow</h2>
-              <p className="text-muted-foreground text-sm">
-                Every selection below is a query parameter. Changing one re-reads the emulator’s
-                Data Management, ACC Sheets, and Model Derivative endpoints on the server with your
-                own bearer token — the pickers hold their pending state until that render commits.
-              </p>
-            </div>
-            <AccWorkflowPanel data={workflow} />
+      {/* The body awaits only the session cookie before choosing its layout;
+          everything network-bound streams in behind boundaries inside it. */}
+      <Suspense
+        fallback={
+          <section className="mx-auto w-full max-w-sm">
+            <ConnectionFallback />
           </section>
-        </div>
-      ) : (
-        <section aria-label="Start the live demo" className="mx-auto w-full max-w-sm">
-          <AccSignIn nextPath="/demo" headingLevel="h2" />
-        </section>
-      )}
-
-      {browser && (
-        <section className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <h2 className="font-heading font-medium text-2xl tracking-tight">Hub browser</h2>
-            <p className="max-w-3xl text-muted-foreground text-sm">
-              Every level below comes from the emulator’s Data Management endpoints with the grant
-              you just made. Folder contents include tip versions, version history loads only when
-              asked for, and every payload crosses the server boundary through the APS adapters.
-            </p>
-          </div>
-          <HubBrowserPanel data={browser} />
-        </section>
-      )}
+        }
+      >
+        <DemoBody searchParams={searchParams} />
+      </Suspense>
 
       <footer className="mx-auto flex max-w-2xl flex-col gap-3 text-center">
         <p className="text-muted-foreground text-xs">

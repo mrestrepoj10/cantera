@@ -38,6 +38,12 @@ interface SignInCardProps extends Omit<React.ComponentProps<typeof Card>, 'title
   footer?: React.ReactNode
 }
 
+/** Thenable check, not `instanceof Promise`: a polyfilled or cross-realm
+ * promise is still a pending round trip the buttons must reflect. */
+function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
+  return value != null && typeof (value as Promise<void>).then === 'function'
+}
+
 /**
  * A multi-provider sign-in chooser. Data-agnostic: pass any providers and
  * either an hrefTemplate (server-rendered flows) or an onSignIn callback.
@@ -60,7 +66,7 @@ function SignInCard({
 
   function handleSignIn(providerId: string) {
     const result = onSignIn?.(providerId)
-    if (!(result instanceof Promise)) return
+    if (!isPromiseLike(result)) return
     setPendingProvider(providerId)
     result.then(
       () => setPendingProvider(undefined),

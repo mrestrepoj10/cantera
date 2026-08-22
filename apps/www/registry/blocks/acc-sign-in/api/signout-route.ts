@@ -9,13 +9,15 @@ import {
   safeNext,
 } from '@/lib/acc-auth'
 
+const SESSION_COOKIE_PATTERN = new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`)
+
 /**
  * Signs out: deletes the stored grant and clears the session cookie.
  * Install target: app/api/auth/signout/route.ts
  */
 export async function POST(request: Request) {
   const cookieHeader = request.headers.get('cookie')
-  const match = cookieHeader?.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`))
+  const match = cookieHeader?.match(SESSION_COOKIE_PATTERN)
   const session = await openSession(match?.[1])
   if (session) {
     await deleteUserGrant(getVaultStore(), APS_PROVIDER_ID, session.userId)
