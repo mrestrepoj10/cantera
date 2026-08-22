@@ -1,8 +1,9 @@
-import type { APSCameraState, APSViewer3D } from '@/lib/viewer-types'
+import type { APSCameraState, APSExtensionStatus, APSViewer3D } from '@/lib/viewer-types'
 
 type Listener = () => void
 
 const EMPTY_SELECTION: readonly number[] = Object.freeze([])
+const EMPTY_EXTENSIONS: Readonly<Record<string, APSExtensionStatus>> = Object.freeze({})
 
 /**
  * Bridges the viewer's imperative event bus into a React 18/19 external
@@ -21,6 +22,7 @@ export class ViewerStore {
   private camera: APSCameraState | null = null
   private modelLoaded = false
   private rafId: number | null = null
+  private extensions: Readonly<Record<string, APSExtensionStatus>> = EMPTY_EXTENSIONS
 
   attach(viewer: APSViewer3D): void {
     const viewing = window.Autodesk?.Viewing
@@ -60,6 +62,17 @@ export class ViewerStore {
     this.emit()
   }
 
+  /**
+   * Load lifecycle of the extensions the viewer component was asked to load,
+   * as a frozen snapshot keyed by extension id — replaced, never mutated, so
+   * `useSyncExternalStore` sees each transition.
+   */
+  setExtensionStatus(id: string, status: APSExtensionStatus): void {
+    if (this.extensions[id] === status) return
+    this.extensions = Object.freeze({ ...this.extensions, [id]: status })
+    this.emit()
+  }
+
   detach(): void {
     if (this.viewer) {
       for (const [type, handler] of this.handlers) {
@@ -75,6 +88,7 @@ export class ViewerStore {
     this.selection = EMPTY_SELECTION
     this.camera = null
     this.modelLoaded = false
+    this.extensions = EMPTY_EXTENSIONS
     this.emit()
   }
 
@@ -89,12 +103,15 @@ export class ViewerStore {
   getSelection = (): readonly number[] => this.selection
   getCamera = (): APSCameraState | null => this.camera
   isModelLoaded = (): boolean => this.modelLoaded
+  getExtensionStatuses = (): Readonly<Record<string, APSExtensionStatus>> => this.extensions
 
   /** Server snapshots for useSyncExternalStore — stable, empty values. */
   static getServerViewer = (): APSViewer3D | null => null
   static getServerSelection = (): readonly number[] => EMPTY_SELECTION
   static getServerCamera = (): APSCameraState | null => null
   static getServerModelLoaded = (): boolean => false
+  static getServerExtensionStatuses = (): Readonly<Record<string, APSExtensionStatus>> =>
+    EMPTY_EXTENSIONS
 
   private emit(): void {
     for (const listener of this.listeners) listener()

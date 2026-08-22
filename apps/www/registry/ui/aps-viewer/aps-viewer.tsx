@@ -11,8 +11,10 @@ import {
 import { ViewerStore } from '@/components/ui/aps-viewer/store'
 import type {
   APSDocument,
+  APSExtensionRequest,
   APSModel,
   APSViewer3D,
+  APSViewerProfile,
   APSViewerStatus,
   GetAccessToken,
 } from '@/lib/viewer-types'
@@ -33,10 +35,22 @@ export interface APSViewerProps {
   env?: string
   /** Initializer api (default 'streamingV2') */
   api?: string
-  /** Extension ids to load once the viewer starts */
-  extensions?: string[]
+  /**
+   * Extensions to load once the viewer starts: bare ids, or `{ id, options }`
+   * entries when the extension reads load options. Captured when the viewer
+   * mounts. Load progress is observable via `useAPSExtensions()`; failures
+   * report through `onExtensionError`. The `viewer-extension-types` item
+   * catalogs the public ids and types their options.
+   */
+  extensions?: APSExtensionRequest[]
   /** Extra config passed to the GuiViewer3D constructor */
   viewerConfig?: Record<string, unknown>
+  /**
+   * Named Autodesk settings profile applied at creation — `'aec'` is
+   * Autodesk's "Construction (AEC)" tuning (reversed zoom, edge rendering,
+   * AEC light preset). Omit for the SDK default.
+   */
+  profile?: APSViewerProfile
   /** Native GuiViewer3D toolbar, or the toolbar-less core Viewer3D. */
   toolbar?: 'native' | 'none'
   /** Force one appearance. Omit to follow the app's light/dark appearance live. */
@@ -49,11 +63,22 @@ export interface APSViewerProps {
   onViewerReady?: (viewer: APSViewer3D) => void
   onModelLoaded?: (model: APSModel, doc: APSDocument) => void
   onError?: (error: Error) => void
+  /** An extension from `extensions` failed to load. Non-fatal: the viewer and
+   * the other extensions keep going, so this is a report, not a teardown. */
+  onExtensionError?: (id: string, error: Error) => void
   className?: string
   style?: CSSProperties
   /** Overlay UI. Rendered inside the provider, absolutely positioned children
    * can sit on top of the canvas and use every hook. */
   children?: ReactNode
+}
+
+/** A bare id and an `{ id, options }` entry are the same request. */
+function toExtensionEntry(request: APSExtensionRequest): {
+  id: string
+  options?: Record<string, unknown>
+} {
+  return typeof request === 'string' ? { id: request } : request
 }
 
 /** Unloading is best-effort: the viewer may already be finished. */
@@ -85,6 +110,7 @@ export function APSViewer({
   api,
   extensions,
   viewerConfig,
+  profile,
   toolbar = 'native',
   theme,
   autoResize = true,
@@ -92,6 +118,7 @@ export function APSViewer({
   onViewerReady,
   onModelLoaded,
   onError,
+  onExtensionError,
   className,
   style,
   children,
@@ -103,8 +130,14 @@ export function APSViewer({
 
   // Latest-callback refs so effect deps stay minimal and consumers can pass
   // inline closures without recreating the viewer.
-  const callbacksRef = useRef({ getAccessToken, onViewerReady, onModelLoaded, onError })
-  callbacksRef.current = { getAccessToken, onViewerReady, onModelLoaded, onError }
+  const callbacksRef = useRef({
+    getAccessToken,
+    onViewerReady,
+    onModelLoaded,
+    onError,
+    onExtensionError,
+  })
+  callbacksRef.current = { getAccessToken, onViewerReady, onModelLoaded, onError, onExtensionError }
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: viewerConfig and extensions are intentionally captured at creation time
   useEffect(() => {
@@ -131,10 +164,34 @@ export function APSViewer({
         }
         viewerRef.current = viewer
         store.attach(viewer)
-        for (const id of extensions ?? []) {
-          viewer.loadExtension(id).catch((error) => {
-            console.error(`cantera aps-viewer: failed to load extension "${id}"`, error)
-          })
+        if (profile) {
+          const settings = {
+            aec: autodesk.Viewing.ProfileSettings.AEC,
+            default: autodesk.Viewing.ProfileSettings.Default,
+            fluent: autodesk.Viewing.ProfileSettings.Fluent,
+            navis: autodesk.Viewing.ProfileSettings.Navis,
+          }[profile]
+          if (settings) viewer.setProfile(new autodesk.Viewing.Profile(settings))
+        }
+        const boundViewer = viewer
+        for (const request of extensions ?? []) {
+          const { id, options } = toExtensionEntry(request)
+          store.setExtensionStatus(id, 'loading')
+          boundViewer
+            .loadExtension(id, options)
+            .then(() => {
+              if (!disposed) store.setExtensionStatus(id, 'ready')
+            })
+            .catch((error) => {
+              if (disposed) return
+              store.setExtensionStatus(id, 'error')
+              const wrapped =
+                error instanceof Error
+                  ? error
+                  : new Error(`cantera aps-viewer: failed to load extension "${id}"`)
+              console.error(`cantera aps-viewer: failed to load extension "${id}"`, error)
+              callbacksRef.current.onExtensionError?.(id, wrapped)
+            })
         }
         setStatus('ready')
         callbacksRef.current.onViewerReady?.(viewer)
@@ -156,7 +213,7 @@ export function APSViewer({
       releaseViewerRuntime({ shutdown: shutdownOnUnmount })
       setStatus('idle')
     }
-  }, [version, env, api, toolbar, shutdownOnUnmount, store])
+  }, [version, env, api, toolbar, profile, shutdownOnUnmount, store])
 
   // Appearance is deliberately separate from viewer lifetime: a theme switch
   // calls setTheme in place and never burns a second WebGL context.

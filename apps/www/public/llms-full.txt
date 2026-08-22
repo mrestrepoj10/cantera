@@ -668,6 +668,45 @@ Files written into the consumer project:
 - `APSViewerExtension / APSViewingNamespace / AutodeskGlobal` (`interface`) — Public extension and global-runtime surfaces, including the extension manager and toolbar lifecycle.
 - `APSCameraState / APSPropertyResult / APSContextMenuItem` (`interface`) — Typed values returned by the camera, property, and context-menu hooks.
 
+### Viewer Extension Types (`@cantera/viewer-extension-types`)
+
+Type: lib
+Install: npx shadcn@latest add @cantera/viewer-extension-types
+Docs: https://canteraui.xyz/components/viewer-extension-types
+Item: https://canteraui.xyz/r/viewer-extension-types.json
+
+A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.
+
+The Autodesk Viewer grows real capability through extensions, but the SDK leaves their ids as bare strings and their options as untyped bags — and ids circulating in old blog posts include extensions that no longer exist. This catalog types both, verified against the shipped viewer source, so a wrong id or option is a compile error instead of a silent runtime 404.
+
+```tsx
+import { viewerExtension } from '@/lib/viewer-extension-types'
+import { APSViewer } from '@/components/ui/aps-viewer'
+
+<APSViewer
+  urn={urn}
+  getAccessToken={getAccessToken}
+  profile="aec"
+  extensions={[
+    viewerExtension('Autodesk.AEC.LevelsExtension', { ifcLevelsEnabled: true }),
+    viewerExtension('Autodesk.Viewing.MarkupsGui'),
+    'MyProject.CustomExtension',
+  ]}
+/>
+```
+
+Files written into the consumer project:
+
+- lib/viewer-extension-types.ts
+
+#### Exports
+
+- `VIEWER_EXTENSIONS` (`Record<KnownViewerExtensionId, ViewerExtensionInfo>`) — The catalog: every public extension id with what it adds, whether GuiViewer3D auto-loads it, toolbar and 2D/3D flags, AEC-model-data requirements, and deprecated/removedIn markers.
+- `viewerExtension(id, options?)` (`ViewerExtensionEntry`) — Typed entry builder for the APSViewer extensions prop: the id is checked against the catalog and the options against that extension’s interface.
+- `ViewerExtensionOptionsMap` (`interface`) — Extension id to the options loadExtension actually reads — MeasureExtensionOptions, LevelsExtensionOptions, DocumentBrowserExtensionOptions, and the rest.
+- `AEC_STARTER_EXTENSIONS` (`readonly ViewerExtensionEntry[]`) — A field-tested starter set for AEC models: levels, measurement, markup, and the sheet browser, ordered so options can reach auto-loaded dependencies.
+- `KnownViewerExtensionId / ViewerExtensionInfo / ViewerExtensionEntry` (`types`) — The catalog’s id union, per-extension metadata shape, and the { id, options } entry shape the viewer accepts.
+
 ### APS Viewer (`@cantera/aps-viewer`)
 
 Type: component
@@ -696,16 +735,18 @@ Files written into the consumer project:
 - `theme` (`'light' | 'dark'`, default `app appearance`) — Optional forced appearance. Undefined follows the document class and system preference live.
 - `autoResize` (`boolean`, default `true`) — ResizeObserver keeps the WebGL canvas matched to its container.
 - `version / env / api` (`string`, default `'7.*' / 'AutodeskProduction2' / 'streamingV2'`) — Viewer CDN and Initializer settings. The first mounted runtime consumer wins.
-- `extensions / viewerConfig` (`string[] / Record<string, unknown>`) — Extension ids and extra constructor configuration captured when the viewer mounts.
+- `extensions / viewerConfig` (`APSExtensionRequest[] / Record<string, unknown>`) — Extensions to load — bare ids or { id, options } entries — and extra constructor configuration, captured when the viewer mounts. Load progress is observable via useAPSExtensions(); viewer-extension-types catalogs the public ids and types their options.
+- `profile` (`'aec' | 'default' | 'fluent' | 'navis'`) — Named Autodesk settings profile applied at creation. 'aec' is the Construction (AEC) tuning: reversed zoom, edge rendering, AEC light preset.
 - `shutdownOnUnmount` (`boolean`, default `false`) — Shuts down the global SDK only after its last consumer releases; false keeps it warm across routes.
-- `onViewerReady / onModelLoaded / onError` (`callbacks`) — Lifecycle callbacks. Inline functions do not recreate the viewer.
+- `onViewerReady / onModelLoaded / onError / onExtensionError` (`callbacks`) — Lifecycle callbacks. Inline functions do not recreate the viewer. onExtensionError reports a failed extension load without tearing the viewer down.
 - `children` (`ReactNode`) — Overlay UI inside the viewer context. Descendants can use every exported APS hook.
 
 #### Hooks and runtime exports
 
 - `useAPSViewer / useAPSModelLoaded` (`hooks`) — Live viewer identity and model-geometry readiness.
 - `useAPSSelection / useAPSCamera / useAPSProperties` (`hooks`) — Event-driven selection, camera, and cancellable property state.
-- `useAPSViewerEvent / useAPSContextMenu / useAPSExtension` (`hooks`) — Raw event, context-menu, and extension lifecycle escape hatches.
+- `useAPSViewerEvent / useAPSContextMenu` (`hooks`) — Raw event and context-menu escape hatches.
+- `useAPSExtension / useAPSExtensions` (`hooks`) — Per-extension load with status, instance, and setOptions re-application on option change; and the load lifecycle of every extension requested through the extensions prop.
 - `acquireViewerRuntime / releaseViewerRuntime / loadViewerScript` (`functions`) — Deduplicated CDN and Initializer lifecycle, exposed for advanced imperative composition.
 
 ### Viewer Native Toolbar (`@cantera/viewer-native-toolbar`)

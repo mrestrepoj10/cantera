@@ -47,6 +47,7 @@ The types the components speak, and the provider presets that translate into the
 - [Project Types](https://canteraui.xyz/components/project-types): Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into.
 - [APS Data Preset](https://canteraui.xyz/components/aps-data-preset): Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.
 - [Viewer Types](https://canteraui.xyz/components/viewer-types): Zero-dependency structural types for the Autodesk Viewer global runtime, documents, models, extensions, and promise-based token callbacks.
+- [Viewer Extension Types](https://canteraui.xyz/components/viewer-extension-types): A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.
 
 ## Tokens
 

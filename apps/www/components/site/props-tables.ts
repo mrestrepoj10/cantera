@@ -1220,6 +1220,44 @@ export const apiTables: Record<string, ApiTable[]> = {
       ],
     },
   ],
+  'viewer-extension-types': [
+    {
+      caption: 'Exports',
+      nameHeader: 'Export',
+      rows: [
+        {
+          name: 'VIEWER_EXTENSIONS',
+          type: 'Record<KnownViewerExtensionId, ViewerExtensionInfo>',
+          description:
+            'The catalog: every public extension id with what it adds, whether GuiViewer3D auto-loads it, toolbar and 2D/3D flags, AEC-model-data requirements, and deprecated/removedIn markers.',
+        },
+        {
+          name: 'viewerExtension(id, options?)',
+          type: 'ViewerExtensionEntry',
+          description:
+            'Typed entry builder for the APSViewer extensions prop: the id is checked against the catalog and the options against that extension’s interface.',
+        },
+        {
+          name: 'ViewerExtensionOptionsMap',
+          type: 'interface',
+          description:
+            'Extension id to the options loadExtension actually reads — MeasureExtensionOptions, LevelsExtensionOptions, DocumentBrowserExtensionOptions, and the rest.',
+        },
+        {
+          name: 'AEC_STARTER_EXTENSIONS',
+          type: 'readonly ViewerExtensionEntry[]',
+          description:
+            'A field-tested starter set for AEC models: levels, measurement, markup, and the sheet browser, ordered so options can reach auto-loaded dependencies.',
+        },
+        {
+          name: 'KnownViewerExtensionId / ViewerExtensionInfo / ViewerExtensionEntry',
+          type: 'types',
+          description:
+            'The catalog’s id union, per-extension metadata shape, and the { id, options } entry shape the viewer accepts.',
+        },
+      ],
+    },
+  ],
   'aps-viewer': [
     {
       caption: 'Props',
@@ -1267,9 +1305,15 @@ export const apiTables: Record<string, ApiTable[]> = {
         },
         {
           name: 'extensions / viewerConfig',
-          type: 'string[] / Record<string, unknown>',
+          type: 'APSExtensionRequest[] / Record<string, unknown>',
           description:
-            'Extension ids and extra constructor configuration captured when the viewer mounts.',
+            'Extensions to load — bare ids or { id, options } entries — and extra constructor configuration, captured when the viewer mounts. Load progress is observable via useAPSExtensions(); viewer-extension-types catalogs the public ids and types their options.',
+        },
+        {
+          name: 'profile',
+          type: "'aec' | 'default' | 'fluent' | 'navis'",
+          description:
+            "Named Autodesk settings profile applied at creation. 'aec' is the Construction (AEC) tuning: reversed zoom, edge rendering, AEC light preset.",
         },
         {
           name: 'shutdownOnUnmount',
@@ -1279,9 +1323,10 @@ export const apiTables: Record<string, ApiTable[]> = {
             'Shuts down the global SDK only after its last consumer releases; false keeps it warm across routes.',
         },
         {
-          name: 'onViewerReady / onModelLoaded / onError',
+          name: 'onViewerReady / onModelLoaded / onError / onExtensionError',
           type: 'callbacks',
-          description: 'Lifecycle callbacks. Inline functions do not recreate the viewer.',
+          description:
+            'Lifecycle callbacks. Inline functions do not recreate the viewer. onExtensionError reports a failed extension load without tearing the viewer down.',
         },
         {
           name: 'children',
@@ -1306,9 +1351,15 @@ export const apiTables: Record<string, ApiTable[]> = {
           description: 'Event-driven selection, camera, and cancellable property state.',
         },
         {
-          name: 'useAPSViewerEvent / useAPSContextMenu / useAPSExtension',
+          name: 'useAPSViewerEvent / useAPSContextMenu',
           type: 'hooks',
-          description: 'Raw event, context-menu, and extension lifecycle escape hatches.',
+          description: 'Raw event and context-menu escape hatches.',
+        },
+        {
+          name: 'useAPSExtension / useAPSExtensions',
+          type: 'hooks',
+          description:
+            'Per-extension load with status, instance, and setOptions re-application on option change; and the load lifecycle of every extension requested through the extensions prop.',
         },
         {
           name: 'acquireViewerRuntime / releaseViewerRuntime / loadViewerScript',
@@ -1471,6 +1522,23 @@ const folders = topFoldersResponse.data.map(fromApsFolder)
 const items = contentsResponse.data.map((item) => fromApsItem(item, includedTips.get(item.id)))
 
 <ProjectPicker hubs={hubs} projects={projects} onValueChange={setProjectId} />`,
+  },
+  'viewer-extension-types': {
+    intro:
+      'The Autodesk Viewer grows real capability through extensions, but the SDK leaves their ids as bare strings and their options as untyped bags — and ids circulating in old blog posts include extensions that no longer exist. This catalog types both, verified against the shipped viewer source, so a wrong id or option is a compile error instead of a silent runtime 404.',
+    example: `import { viewerExtension } from '@/lib/viewer-extension-types'
+import { APSViewer } from '@/components/ui/aps-viewer'
+
+<APSViewer
+  urn={urn}
+  getAccessToken={getAccessToken}
+  profile="aec"
+  extensions={[
+    viewerExtension('Autodesk.AEC.LevelsExtension', { ifcLevelsEnabled: true }),
+    viewerExtension('Autodesk.Viewing.MarkupsGui'),
+    'MyProject.CustomExtension',
+  ]}
+/>`,
   },
   'viewer-types': {
     intro:
