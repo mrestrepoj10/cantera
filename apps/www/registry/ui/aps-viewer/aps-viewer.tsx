@@ -42,7 +42,7 @@ export interface APSViewerProps {
    * report through `onExtensionError`. The `viewer-extension-types` item
    * catalogs the public ids and types their options.
    */
-  extensions?: APSExtensionRequest[]
+  extensions?: readonly APSExtensionRequest[]
   /** Extra config passed to the GuiViewer3D constructor */
   viewerConfig?: Record<string, unknown>
   /**

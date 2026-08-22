@@ -217,13 +217,28 @@ export interface APSExtensionResult {
 }
 
 /**
+ * Shallow equality over option bags. Options may hold SDK objects, circular
+ * structures, or functions — never serialize them; compare by key identity.
+ */
+function sameOptions(a?: Record<string, unknown>, b?: Record<string, unknown>): boolean {
+  if (a === b) return true
+  if (!a || !b) return false
+  const keys = Object.keys(a)
+  if (keys.length !== Object.keys(b).length) return false
+  return keys.every((key) => Object.is(a[key], b[key]))
+}
+
+/**
  * Loads a viewer extension for this component's lifetime and unloads it on
  * unmount. Returns the load status and the instance, so UI can gate on
  * readiness instead of assuming the network fetch succeeded.
  *
  * Changing `options` after load re-applies them through the extension's own
  * `setOptions` when it exposes one; extensions without `setOptions` keep
- * their load-time options (reload by changing `id` — i.e. remount).
+ * their load-time options (reload by changing `id` — i.e. remount). Changes
+ * are detected by shallow comparison, so keep option values referentially
+ * stable — an object or function literal recreated every render re-applies
+ * every render.
  */
 export function useAPSExtension(id: string, options?: Record<string, unknown>): APSExtensionResult {
   const { viewer } = useAPSViewer()
@@ -234,8 +249,7 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
   })
   const optionsRef = useRef(options)
   optionsRef.current = options
-  const optionsKey = options === undefined ? '' : JSON.stringify(options)
-  const appliedKeyRef = useRef(optionsKey)
+  const appliedOptionsRef = useRef(options)
 
   useEffect(() => {
     if (!viewer) {
@@ -244,8 +258,7 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
     }
     let cancelled = false
     setState({ status: 'loading', extension: null, error: null })
-    appliedKeyRef.current =
-      optionsRef.current === undefined ? '' : JSON.stringify(optionsRef.current)
+    appliedOptionsRef.current = optionsRef.current
     viewer
       .loadExtension(id, optionsRef.current)
       .then((extension) => {
@@ -272,13 +285,13 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
   }, [viewer, id])
 
   useEffect(() => {
-    if (state.status !== 'ready' || appliedKeyRef.current === optionsKey) return
-    appliedKeyRef.current = optionsKey
+    if (state.status !== 'ready' || sameOptions(appliedOptionsRef.current, options)) return
+    appliedOptionsRef.current = options
     const extension = state.extension as {
       setOptions?: (options: Record<string, unknown>) => unknown
     } | null
-    extension?.setOptions?.(optionsRef.current ?? {})
-  }, [state, optionsKey])
+    extension?.setOptions?.(options ?? {})
+  }, [state, options])
 
   return state
 }

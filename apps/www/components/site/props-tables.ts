@@ -1305,7 +1305,7 @@ export const apiTables: Record<string, ApiTable[]> = {
         },
         {
           name: 'extensions / viewerConfig',
-          type: 'APSExtensionRequest[] / Record<string, unknown>',
+          type: 'readonly APSExtensionRequest[] / Record<string, unknown>',
           description:
             'Extensions to load — bare ids or { id, options } entries — and extra constructor configuration, captured when the viewer mounts. Load progress is observable via useAPSExtensions(); viewer-extension-types catalogs the public ids and types their options.',
         },
