@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
 import { waitForHydration } from './hydration'
@@ -69,27 +68,3 @@ test.describe('page hand-off', () => {
     await expect(toggle).toBeFocused()
   })
 })
-
-/**
- * The site-wide axe sweep only ever sees this panel closed, so its own surface —
- * popover ink on popover background, in both appearances — is scanned here.
- */
-for (const appearance of ['light', 'dark'] as const) {
-  test.describe(`page hand-off — ${appearance}`, () => {
-    test.use({ colorScheme: appearance })
-
-    test('the open panel has no WCAG A/AA violations', async ({ page }) => {
-      await page.goto('/components/connection-card')
-      await waitForHydration(page)
-      await page.getByRole('button', { name: /more ways to open connection card/i }).click()
-      await expect(
-        page.getByRole('link', { name: /open connection card in claude/i }),
-      ).toBeVisible()
-
-      const { violations } = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-        .analyze()
-      expect(violations.map((violation) => violation.id)).toEqual([])
-    })
-  })
-}

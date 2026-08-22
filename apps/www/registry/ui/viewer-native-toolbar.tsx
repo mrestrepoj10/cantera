@@ -18,10 +18,10 @@ export interface ViewerNativeToolbarOptions {
   /** Docking edge. Left and right positions derive a vertical orientation. */
   position?: ViewerNativeToolbarPosition
   /**
-   * Size of the full rendered button box. `md` is Autodesk stock (42px,
-   * untouched); `sm` is a compact 36px — opt-in only, compact is never the
-   * default; `lg` is the gloved-tablet 52px, clearing the 44px field target
-   * with margin. A number is an exact pixel box, clamped to 32–64.
+   * Size of the full rendered button box. `md` is a comfortable 44px;
+   * `sm` is a compact 36px — opt-in only, compact is never the default;
+   * `lg` is the gloved-tablet 52px. A number is an exact pixel box, clamped
+   * to 32–64.
    */
   scale?: ViewerNativeToolbarScale
 }
@@ -45,9 +45,10 @@ const SCALE_CLASSES = [
   'cantera-toolbar--sized',
 ] as const
 const STYLE_ATTRIBUTE = 'data-cantera-viewer-native-toolbar'
-/** Rendered button box per preset. `md` applies no override — Autodesk stock. */
-const SCALE_PRESET_PX = { sm: 36, lg: 52 } as const
+/** Rendered button box per preset. */
+const SCALE_PRESET_PX = { sm: 36, md: 44, lg: 52 } as const
 const SCALE_SIZE_PROPERTY = '--cantera-toolbar-size'
+const SCALE_ICON_PROPERTY = '--cantera-toolbar-icon-size'
 const MIN_SCALE_PX = 32
 const MAX_SCALE_PX = 64
 
@@ -64,6 +65,54 @@ export const VIEWER_NATIVE_TOOLBAR_CSS = `
   position: absolute !important;
   z-index: 5;
   overflow: visible;
+}
+
+/* The native groups touch to read as one rail. Autodesk still owns their
+   foreground and theme-aware surface colors; Cantera replaces only the heavy
+   island shadows and sharp geometry. */
+.adsk-toolbar.cantera-toolbar--top,
+.adsk-toolbar.cantera-toolbar--bottom,
+.adsk-toolbar.cantera-toolbar--left,
+.adsk-toolbar.cantera-toolbar--right {
+  gap: 0;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 16%))
+    drop-shadow(0 8px 18px rgb(0 0 0 / 14%));
+}
+
+.adsk-toolbar.cantera-toolbar--top > .adsk-control-group,
+.adsk-toolbar.cantera-toolbar--bottom > .adsk-control-group,
+.adsk-toolbar.cantera-toolbar--left > .adsk-control-group,
+.adsk-toolbar.cantera-toolbar--right > .adsk-control-group {
+  margin: 0 !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.adsk-toolbar.cantera-toolbar--top > .adsk-control-group:first-child,
+.adsk-toolbar.cantera-toolbar--bottom > .adsk-control-group:first-child {
+  border-radius: 10px 0 0 10px;
+}
+
+.adsk-toolbar.cantera-toolbar--top > .adsk-control-group:last-child,
+.adsk-toolbar.cantera-toolbar--bottom > .adsk-control-group:last-child {
+  border-radius: 0 10px 10px 0;
+}
+
+.adsk-toolbar.cantera-toolbar--left > .adsk-control-group:first-child,
+.adsk-toolbar.cantera-toolbar--right > .adsk-control-group:first-child {
+  border-radius: 10px 10px 0 0;
+}
+
+.adsk-toolbar.cantera-toolbar--left > .adsk-control-group:last-child,
+.adsk-toolbar.cantera-toolbar--right > .adsk-control-group:last-child {
+  border-radius: 0 0 10px 10px;
+}
+
+.adsk-toolbar.cantera-toolbar--top .adsk-button,
+.adsk-toolbar.cantera-toolbar--bottom .adsk-button,
+.adsk-toolbar.cantera-toolbar--left .adsk-button,
+.adsk-toolbar.cantera-toolbar--right .adsk-button {
+  border-radius: 6px;
 }
 
 .adsk-toolbar.cantera-toolbar--bottom {
@@ -106,18 +155,18 @@ export const VIEWER_NATIVE_TOOLBAR_CSS = `
 
 /* Sizing rides one custom property: the full rendered button box. Autodesk's
    stock box is 28px content + 6px padding + 1px border = 42px with a 24px
-   icon glyph — the calc offsets keep those proportions at any size. */
+   icon glyph. Cantera keeps the box exact but reduces the glyph's visual mass. */
 .adsk-toolbar.cantera-toolbar--sized .adsk-button {
   width: calc(var(--cantera-toolbar-size, 42px) - 14px);
   height: calc(var(--cantera-toolbar-size, 42px) - 14px);
 }
 
 .adsk-toolbar.cantera-toolbar--sized .adsk-button .adsk-button-icon {
-  font-size: calc(var(--cantera-toolbar-size, 42px) - 18px);
+  font-size: var(--cantera-toolbar-icon-size, 20px);
 }
 
 .adsk-toolbar.cantera-toolbar--sized .adsk-button-arrow > .adsk-button-icon {
-  font-size: calc(var(--cantera-toolbar-size, 42px) - 24px);
+  font-size: max(14px, calc(var(--cantera-toolbar-icon-size, 20px) - 6px));
 }
 
 .adsk-toolbar.cantera-toolbar--sized .adsk-control-group {
@@ -190,6 +239,7 @@ function removeToolbarClasses(viewer: APSViewer3D): void {
   if (!toolbar) return
   toolbar.classList.remove(...POSITION_CLASSES, ...SCALE_CLASSES)
   toolbar.style.removeProperty(SCALE_SIZE_PROPERTY)
+  toolbar.style.removeProperty(SCALE_ICON_PROPERTY)
 }
 
 /** Register the extension once for the active Autodesk Viewer runtime. */
@@ -241,17 +291,14 @@ export function registerViewerNativeToolbar(autodesk: AutodeskGlobal): void {
       if (!toolbar) return
       toolbar.classList.remove(...POSITION_CLASSES, ...SCALE_CLASSES)
       toolbar.style.removeProperty(SCALE_SIZE_PROPERTY)
+      toolbar.style.removeProperty(SCALE_ICON_PROPERTY)
       toolbar.classList.add(`cantera-toolbar--${this.current.position}`)
       const scale = this.current.scale
-      if (scale === 'md') {
-        // Stock size: the class is the observable marker; no sizing override.
-        toolbar.classList.add('cantera-toolbar--md')
-        return
-      }
       if (typeof scale !== 'number') toolbar.classList.add(`cantera-toolbar--${scale}`)
       toolbar.classList.add('cantera-toolbar--sized')
       const px = typeof scale === 'number' ? scale : SCALE_PRESET_PX[scale]
       toolbar.style.setProperty(SCALE_SIZE_PROPERTY, `${px}px`)
+      toolbar.style.setProperty(SCALE_ICON_PROPERTY, `${Math.min(24, Math.max(18, px - 24))}px`)
     }
   }
 

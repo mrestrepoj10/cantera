@@ -24,22 +24,77 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - name: Registry builds, verifies, and is committed
+        # verify-drift's second rebuild-and-byte-compare stays a local/manual
+        # tool (pnpm registry:verify); here git status proves the committed
+        # output matches a fresh build — porcelain, not diff, because a NEW
+        # generated file that was never committed is untracked and git diff
+        # would ignore it.
         run: |
           pnpm registry:build
-          pnpm registry:verify
-          git diff --exit-code apps/www/registry.json apps/www/registry apps/www/public/r apps/www/public/llms.txt apps/www/public/llms-full.txt skills
-      - name: Build (turbo-cached; e2e serves this output via next start)
+          pnpm --filter www run registry:verify:static
+          CHANGES=$(git status --porcelain -- apps/www/registry.json apps/www/registry apps/www/public/r apps/www/public/llms.txt apps/www/public/llms-full.txt skills)
+          if [ -n "$CHANGES" ]; then
+            echo "$CHANGES"
+            echo "Generated registry output is not committed. Run pnpm registry:build and commit the result."
+            exit 1
+          fi
+      - name: Build (turbo-cached; the e2e job serves this output via next start)
         run: pnpm build --filter www
         env:
           APS_CLIENT_ID: ${{ secrets.APS_CLIENT_ID }}
           APS_CLIENT_SECRET: ${{ secrets.APS_CLIENT_SECRET }}
           APS_VIEWER_DEMO_URN: ${{ secrets.APS_VIEWER_DEMO_URN }}
-      - name: E2E (OAuth flow, axe a11y in both themes, theme and pending contracts)
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: checks
+    steps:
+      - uses: actions/checkout@v4
+      # Viewer specs hit the real Autodesk CDN and load a real model — the one
+      # place a third-party outage can fail the run. They gate on
+      # viewer-adjacent paths for pull requests and always run on main.
+      - uses: dorny/paths-filter@v3
+        if: github.event_name == 'pull_request'
+        id: viewer
+        with:
+          filters: |
+            viewer:
+              - 'apps/www/registry/ui/aps-viewer/**'
+              - 'apps/www/registry/ui/viewer-native-toolbar.tsx'
+              - 'apps/www/registry/lib/viewer-types.ts'
+              - 'apps/www/registry/lib/viewer-extension-types.ts'
+              - 'apps/www/components/site/aps-viewer-demo.tsx'
+              # Entry points that dispatch or feed the viewer demo: the demo
+              # registry and the docs page that passes the URN into it.
+              - 'apps/www/components/site/demos.tsx'
+              - 'apps/www/app/(site)/components/[name]/**'
+              - 'apps/www/app/api/viewer-token/**'
+              - 'e2e/viewer*'
+              - 'playwright.config.ts'
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - name: Build (cache hit from the checks job)
+        run: pnpm build --filter www
+        env:
+          APS_CLIENT_ID: ${{ secrets.APS_CLIENT_ID }}
+          APS_CLIENT_SECRET: ${{ secrets.APS_CLIENT_SECRET }}
+          APS_VIEWER_DEMO_URN: ${{ secrets.APS_VIEWER_DEMO_URN }}
+      - name: E2E (OAuth flow, theme and pending contracts; viewer when gated in)
         run: |
           pnpm exec playwright install --with-deps chromium
           pnpm e2e
         env:
           CI: true
+          APS_E2E: ${{ (github.event_name == 'push' || steps.viewer.outputs.viewer == 'true') && '1' || '' }}
           APS_CLIENT_ID: ${{ secrets.APS_CLIENT_ID }}
           APS_CLIENT_SECRET: ${{ secrets.APS_CLIENT_SECRET }}
           APS_VIEWER_DEMO_URN: ${{ secrets.APS_VIEWER_DEMO_URN }}

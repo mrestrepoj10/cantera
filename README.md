@@ -97,7 +97,7 @@ pnpm lint             # biome
 pnpm typecheck
 pnpm registry:build   # example items + apps/www/public/r/*.json + llms.txt artifacts + skills/cantera (all committed)
 pnpm registry:verify  # install closure, npm-dep coverage, and drift against a fresh build
-pnpm e2e              # Playwright: OAuth, axe, pending contracts, and live Viewer toolbar screenshots
+pnpm e2e              # Playwright: OAuth flow, pending contracts, and live viewer assertions (APS_E2E=1)
 ```
 
 ### Repo layout

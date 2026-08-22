@@ -4,25 +4,27 @@ import { gotoViewerDemo, waitForViewerModel } from './viewer'
 
 const positions = ['bottom', 'top', 'left', 'right'] as const
 const scales = ['sm', 'md', 'lg'] as const
-/** Rendered button box per preset: Autodesk stock is 42px; sm/lg come from the extension. */
-const expectedBoxPx = { sm: 36, md: 42, lg: 52 } as const
+/** Rendered button box per preset: compact, comfortable, and gloved. */
+const expectedBoxPx = { sm: 36, md: 44, lg: 52 } as const
 
-/** Total rendered height of the first toolbar button, border box. */
+/** Total rendered height of the first visible toolbar button, border box.
+ * LMV keeps hidden buttons (collapsed flyouts) in the DOM at zero height. */
 function buttonBoxHeight(toolbar: Locator): Promise<number> {
   return toolbar
-    .locator('.adsk-button')
+    .locator('.adsk-button:visible')
     .first()
     .evaluate((node) => node.getBoundingClientRect().height)
 }
 
+/**
+ * Assertion-based on purpose — no screenshot baselines. Committed PNGs churned
+ * on every intentional layout change, needed live APS credentials to
+ * regenerate (fork PRs could not), and never caught a bug the computed-style
+ * assertions below miss: class application, orientation, flyout anchoring,
+ * and exact button-box sizing are all asserted directly against the live SDK.
+ */
 test.describe('Viewer native toolbar', () => {
   test.use({ colorScheme: 'light', viewport: { width: 1440, height: 1000 } })
-  // The captured region is the SDK canvas and toolbar, not browser chrome;
-  // one baseline is shared across CI and local Chromium with a small pixel
-  // tolerance for GPU antialiasing.
-  test.beforeEach(({ browserName: _browserName }, testInfo) => {
-    testInfo.snapshotSuffix = ''
-  })
 
   for (const position of positions) {
     for (const scale of scales) {
@@ -37,23 +39,58 @@ test.describe('Viewer native toolbar', () => {
           `.adsk-toolbar.cantera-toolbar--${position}.cantera-toolbar--${scale}`,
         )
         await expect(toolbar).toBeVisible()
+        // The docking behavior itself: the toolbar hugs the requested edge of
+        // the viewer (12px gutter in the CSS; allow slack for borders).
+        await expect
+          .poll(async () => {
+            const [toolbarBox, viewerBox] = await Promise.all([
+              toolbar.boundingBox(),
+              viewer.boundingBox(),
+            ])
+            if (!toolbarBox || !viewerBox) return false
+            let gap: number
+            switch (position) {
+              case 'bottom':
+                gap = viewerBox.y + viewerBox.height - (toolbarBox.y + toolbarBox.height)
+                break
+              case 'top':
+                gap = toolbarBox.y - viewerBox.y
+                break
+              case 'left':
+                gap = toolbarBox.x - viewerBox.x
+                break
+              case 'right':
+                gap = viewerBox.x + viewerBox.width - (toolbarBox.x + toolbarBox.width)
+                break
+            }
+            // Inside the viewer (gap >= 0) and hugging the edge (gap < 40).
+            return gap >= 0 && gap < 40
+          })
+          .toBe(true)
         if (position === 'left' || position === 'right') {
           await expect
             .poll(() => toolbar.evaluate((node) => getComputedStyle(node).flexDirection))
             .toBe('column')
+          // Flyout and tooltip anchoring is the fragile half of the vertical
+          // CSS (it targets LMV-internal class names) — assert the side
+          // override actually applied instead of trusting the class landed.
+          const tooltip = toolbar.locator('.adsk-control-tooltip').first()
+          await expect
+            .poll(() =>
+              tooltip.evaluate((node, side) => {
+                const style = getComputedStyle(node)
+                return side === 'left'
+                  ? style.right === 'auto' && style.left !== 'auto'
+                  : style.left === 'auto' && style.right !== 'auto'
+              }, position),
+            )
+            .toBe(true)
         }
         await expect.poll(() => buttonBoxHeight(toolbar)).toBeCloseTo(expectedBoxPx[scale], 0)
-
-        await expect(viewer).toHaveScreenshot(`viewer-toolbar-${position}-${scale}.png`, {
-          animations: 'disabled',
-          maxDiffPixelRatio: 0.03,
-        })
       })
     }
   }
 
-  // Numeric scale is assertion-only: an exact box, no committed baseline —
-  // the preset matrix already covers every position visually.
   test('numeric scale renders an exact button box', async ({ page }) => {
     await gotoViewerDemo(page, '/components/aps-viewer?viewerPosition=bottom&viewerScale=48')
     const viewer = await waitForViewerModel(page)

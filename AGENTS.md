@@ -37,12 +37,12 @@ pnpm lint            # biome (single quotes, no semicolons, 100-col lines)
 pnpm typecheck
 pnpm registry:build  # REQUIRED after touching apps/www/registry/** or registry.json — commit its output
 pnpm registry:verify # when registry:build ran: install closure, npm-dep coverage, drift
-pnpm e2e             # light pass locally: light-theme axe only, viewer specs skipped
+pnpm e2e             # light pass locally: viewer specs skipped
                      # (APS_E2E=1 opts in — they load the real Autodesk CDN and a model)
 ```
 
 - Most changes need lint + typecheck plus the one e2e spec that covers them (`pnpm exec playwright test <file> -g "<pattern>"`).
-- Do not run `pnpm --filter www build` or the full e2e matrix routinely — CI owns them (both appearances, viewer + screenshots, production server).
+- Do not run `pnpm --filter www build` or the full e2e matrix routinely — CI owns them (production server; viewer specs run when a PR touches viewer paths, and always on main).
 - New item checklist: `registry.json`, source under `registry/`, `components/site/props-tables.ts`, `components/site/registry.ts`, a demo module under `components/site/demos/` plus its `dynamic()` entry in `components/site/demos.tsx` (one module per demo — the map keeps docs pages from bundling the whole demo graph), then `registry:build` + `registry:verify`, all committed.
 
 ## Design contracts
@@ -52,7 +52,7 @@ Canonical text lives in `apps/www/lib/design-contracts.ts` — the llms.txt arti
 - **Status vocabulary** — every status renders from `@cantera/status-tokens`; one color, one meaning; recoverable states are warning, never danger; solid fills, never low-alpha washes; never a generic badge variant for a status. New tokens land in `apps/www/app/globals.css` (`:root` and `.dark`), the `@theme inline` block (with a `var(--token, var(--fallback))` default), and the `status-tokens` item's `cssVars` in `registry.json` — all three, or the consumer install drifts from the showcase.
 - **Async pending** — disabled-with-spinner-while-keeping-the-label; a pressed control never unmounts or changes element type; pending is consumer-drivable as a prop and promise-driven internally; `aria-disabled` over `disabled`.
 - **Field density** — 44px primary touch targets (gloves, tablet, on site); comfortable by default, compact opt-in; 12px text floor.
-- **A11y bar** — 3:1 focus indicators, name/role/state on every control, `aria-describedby` wiring, real headings, locale-neutral `Intl`. Enforced by `e2e/a11y.spec.ts`: axe over the docs pages, which render the registry sources — an exclusion there is an exclusion for consumers, so add one only for a node outside our code, with the reason inline.
+- **A11y bar** — designed to meet WCAG A/AA: 3:1 focus indicators, name/role/state on every control, `aria-describedby` wiring, real headings, locale-neutral `Intl`. No automated gate — review by hand.
 - **Motion grammar** — exactly four moves: icon/spinner crossfade (~150ms ease-out), press feedback via the primitive's `active:translate-y-px`, status `transition-colors`, and a rare user-initiated disclosure reveal (~200ms, gated on `prefers-reduced-motion`). No entrance animations on data-dense content.
 
 ## Conventions
