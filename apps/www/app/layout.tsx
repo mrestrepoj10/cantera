@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import Script from 'next/script'
 
 import { ThemeProvider } from '@/components/site/theme-provider'
 import './globals.css'
@@ -47,9 +48,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: static inline
-            appearance script, no interpolated input. */}
-        <script dangerouslySetInnerHTML={{ __html: appearanceScript }} />
+        {/* Next tracks this script across server rendering and hydration. */}
+        <Script id="appearance-script" strategy="beforeInteractive">
+          {appearanceScript}
+        </Script>
       </head>
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <ThemeProvider>{children}</ThemeProvider>

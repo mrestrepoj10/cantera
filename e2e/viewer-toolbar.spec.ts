@@ -99,4 +99,22 @@ test.describe('Viewer native toolbar', () => {
     await expect(toolbar).toBeVisible()
     await expect.poll(() => buttonBoxHeight(toolbar)).toBeCloseTo(48, 0)
   })
+
+  test('toolbar can be removed and restored without losing the model', async ({ page }) => {
+    await gotoViewerDemo(page, '/components/aps-viewer')
+    const viewer = await waitForViewerModel(page)
+    const toggle = page.getByRole('checkbox', { name: 'Native toolbar' })
+
+    await toggle.click()
+    await expect(viewer.locator('.adsk-toolbar')).toHaveCount(0)
+    await expect(page.locator('[data-viewer-model-status]')).toHaveText('Model loaded', {
+      timeout: 30_000,
+    })
+
+    await toggle.click()
+    await expect(viewer.locator('.adsk-toolbar')).toBeVisible({ timeout: 30_000 })
+    await expect(page.locator('[data-viewer-model-status]')).toHaveText('Model loaded', {
+      timeout: 30_000,
+    })
+  })
 })

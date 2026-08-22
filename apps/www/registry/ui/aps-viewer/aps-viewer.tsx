@@ -126,6 +126,7 @@ export function APSViewer({
   const containerRef = useRef<HTMLDivElement>(null)
   const [store] = useState(() => new ViewerStore())
   const [status, setStatus] = useState<APSViewerStatus>('idle')
+  const [viewerEpoch, setViewerEpoch] = useState(0)
   const viewerRef = useRef<APSViewer3D | null>(null)
 
   // Latest-callback refs so effect deps stay minimal and consumers can pass
@@ -178,6 +179,11 @@ export function APSViewer({
         }
         viewerRef.current = viewer
         store.attach(viewer)
+        // Constructor-time options such as `toolbar` replace the Viewer
+        // instance. Track that identity explicitly: the runtime can resolve so
+        // quickly that `loading-runtime` → `ready` batches into the same status
+        // value and would otherwise fail to restart model loading.
+        setViewerEpoch((previous) => previous + 1)
         if (profile) {
           const settings = {
             aec: autodesk.Viewing.ProfileSettings.AEC,
@@ -282,7 +288,7 @@ export function APSViewer({
   useEffect(() => {
     const viewer = viewerRef.current
     const autodesk = typeof window !== 'undefined' ? window.Autodesk : undefined
-    if (status !== 'ready' || !viewer || !autodesk) return
+    if (viewerEpoch === 0 || status !== 'ready' || !viewer || !autodesk) return
     if (!urn) return
 
     let cancelled = false
@@ -309,7 +315,7 @@ export function APSViewer({
             // has already run and never saw this model, so unload it here or
             // it stays in the viewer next to the model that replaced it.
             if (cancelled) {
-              unloadModel(viewerRef.current, model)
+              unloadModel(viewer, model)
               return
             }
             loadedModel = model
@@ -329,10 +335,10 @@ export function APSViewer({
 
     return () => {
       cancelled = true
-      unloadModel(viewerRef.current, loadedModel)
+      unloadModel(viewer, loadedModel)
       store.resetModel()
     }
-  }, [status, urn, store])
+  }, [status, urn, store, viewerEpoch])
 
   return (
     <APSViewerContext.Provider value={store}>
