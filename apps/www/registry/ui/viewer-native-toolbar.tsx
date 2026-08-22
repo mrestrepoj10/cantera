@@ -168,11 +168,12 @@ function releaseStylesheet(): void {
   }
 }
 
-/** Numeric scales are rounded and clamped; a non-finite number falls back to stock. */
+/** Numeric scales are clamped, never rounded — a number is an exact pixel box,
+ * and CSS renders fractional pixels. A non-finite number falls back to stock. */
 function normalizeScale(scale: ViewerNativeToolbarScale | undefined): ViewerNativeToolbarScale {
   if (typeof scale !== 'number') return scale ?? 'md'
   if (!Number.isFinite(scale)) return 'md'
-  return Math.round(Math.min(MAX_SCALE_PX, Math.max(MIN_SCALE_PX, scale)))
+  return Math.min(MAX_SCALE_PX, Math.max(MIN_SCALE_PX, scale))
 }
 
 function normalizeOptions(
