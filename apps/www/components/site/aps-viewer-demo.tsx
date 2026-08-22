@@ -357,21 +357,22 @@ function CopyButton({
       className={cn('justify-start gap-1.5', className)}
       onClick={() => void copy()}
     >
-      {/* Both icons stay mounted and cross-fade, so the swap animates in
-          both directions without a motion dependency. */}
+      {/* Both icons stay mounted and cross-fade — opacity only, the one
+          icon move the motion grammar allows — so the swap animates in both
+          directions without a motion dependency. */}
       <span className="relative grid size-3.5 place-items-center">
         <CheckIcon
           aria-hidden="true"
           className={cn(
-            'absolute size-3.5 transition-[opacity,scale] duration-150 ease-out',
-            copied ? 'scale-100 opacity-100' : 'scale-50 opacity-0',
+            'absolute size-3.5 transition-opacity duration-150 ease-out',
+            copied ? 'opacity-100' : 'opacity-0',
           )}
         />
         <CopyIcon
           aria-hidden="true"
           className={cn(
-            'size-3.5 transition-[opacity,scale] duration-150 ease-out',
-            copied ? 'scale-50 opacity-0' : 'scale-100 opacity-100',
+            'size-3.5 transition-opacity duration-150 ease-out',
+            copied ? 'opacity-0' : 'opacity-100',
           )}
         />
       </span>
@@ -748,7 +749,13 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
           <div className="relative flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1.5 border-border border-t px-3 py-2">
             <span className="flex items-center gap-1.5 text-xs">
               {!modelLoaded && !error && <Spinner className="size-3.5 text-muted-foreground" />}
-              <span className={error ? 'text-status-warning' : 'text-muted-foreground'}>
+              {/* The live region below carries the same words. This attribute
+                  is what e2e targets, so a visibility assertion never matches
+                  two nodes. */}
+              <span
+                data-viewer-model-status=""
+                className={error ? 'text-status-warning' : 'text-muted-foreground'}
+              >
                 {error ?? (modelLoaded ? 'Model loaded' : 'Loading model')}
               </span>
             </span>
@@ -827,7 +834,10 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                   aria-controls={`${tabsId}-${entry.id}-panel`}
                   tabIndex={selected ? 0 : -1}
                   className={cn(
-                    'min-h-8 rounded-t-md px-2.5 pb-1.5 font-medium text-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-1',
+                    // 44px: the dock's primary navigation is a field target,
+                    // and comfortable is the default the density contract asks
+                    // for.
+                    'min-h-11 rounded-t-md px-3 pb-1 font-medium text-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-1',
                     selected
                       ? 'bg-background text-foreground shadow-[inset_0_-2px_0_0_var(--color-foreground)]'
                       : 'text-muted-foreground hover:text-foreground',
@@ -971,7 +981,13 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                   />
                   <CopyButton
                     label="Copy install command"
-                    value={() => 'npx shadcn@latest add @cantera/aps-viewer'}
+                    // The toolbar is its own registry item, so a setup that
+                    // renders it needs both installed.
+                    value={() =>
+                      settings.toolbar
+                        ? 'npx shadcn@latest add @cantera/aps-viewer @cantera/viewer-native-toolbar'
+                        : 'npx shadcn@latest add @cantera/aps-viewer'
+                    }
                   />
                 </div>
               </div>
