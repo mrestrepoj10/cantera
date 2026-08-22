@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import { preconnect } from 'react-dom'
 
 import { CodeBlock } from '@/components/site/code-block'
@@ -17,8 +18,6 @@ import {
   registryItems,
 } from '@/components/site/registry'
 import { markdownPathFor, markdownUrlFor } from '@/lib/site'
-
-export const dynamicParams = false
 
 export function generateStaticParams() {
   return registryItems.map((item) => ({ name: item.name }))
@@ -78,7 +77,7 @@ function ApiSection({ table }: { table: ApiTable }) {
   )
 }
 
-export default async function ComponentPage({ params }: PageProps) {
+async function ComponentPageContent({ params }: PageProps) {
   const { name } = await params
   const item = getRegistryItem(name)
   if (!item) notFound()
@@ -170,5 +169,19 @@ export default async function ComponentPage({ params }: PageProps) {
         </section>
       )}
     </div>
+  )
+}
+
+export default function ComponentPage({ params }: PageProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto flex w-full max-w-5xl flex-1 px-6 py-12 sm:py-16">
+          <p className="text-muted-foreground text-sm">Loading component documentation…</p>
+        </div>
+      }
+    >
+      <ComponentPageContent params={params} />
+    </Suspense>
   )
 }

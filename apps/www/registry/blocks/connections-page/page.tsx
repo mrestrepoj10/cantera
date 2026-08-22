@@ -121,9 +121,6 @@ export async function AccConnections({
   )
 }
 
-// The grant state is read from cookies and the vault on every visit.
-export const dynamic = 'force-dynamic'
-
 export default function ConnectionsPage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col p-6 sm:py-12">

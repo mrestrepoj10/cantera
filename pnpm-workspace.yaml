@@ -7,3 +7,6 @@ allowBuilds:
   sharp: true
 minimumReleaseAgeExclude:
   - aec-auth@0.2.0
+overrides:
+  "@types/react": 19.2.18
+  "@types/react-dom": 19.2.4

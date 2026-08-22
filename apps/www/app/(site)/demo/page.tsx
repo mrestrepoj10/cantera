@@ -20,10 +20,6 @@ export const metadata: Metadata = {
     'Sign in, browse Data Management, choose an issuance, and read model translation status — the whole ACC workflow against an embedded APS emulator, no Autodesk account needed.',
 }
 
-// The OAuth flow reads request cookies and headers on every visit, and the
-// workflow reads the selection from the query string.
-export const dynamic = 'force-dynamic'
-
 type SearchParams = Record<string, string | string[] | undefined>
 
 function one(params: SearchParams, key: string): string | undefined {
