@@ -1384,10 +1384,10 @@ export const apiTables: Record<string, ApiTable[]> = {
         },
         {
           name: 'scale',
-          type: "'md' | 'lg'",
+          type: "'sm' | 'md' | 'lg' | number",
           defaultValue: "'md'",
           description:
-            'Autodesk stock size, or a 44px minimum native control target for touch use.',
+            'Rendered button box: sm is a compact 36px (opt-in only), md is Autodesk stock (42px, untouched), lg is a 52px gloved-tablet box clearing the 44px field target, and a number is an exact pixel box clamped to 32–64.',
         },
         {
           name: 'useViewerNativeToolbar',

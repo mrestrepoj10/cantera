@@ -37,7 +37,10 @@ const positionOptions: { value: ViewerNativeToolbarPosition; label: string }[] =
   { value: 'right', label: 'Right' },
 ]
 
-const scaleOptions: { value: ViewerNativeToolbarScale; label: string }[] = [
+type ViewerDemoScalePreset = 'sm' | 'md' | 'lg'
+
+const scaleOptions: { value: ViewerDemoScalePreset; label: string }[] = [
+  { value: 'sm', label: 'Compact' },
   { value: 'md', label: 'Comfortable' },
   { value: 'lg', label: 'Gloved' },
 ]
@@ -150,6 +153,13 @@ function ControlGroup<T extends string>({
  * every position and scale. Applied after mount: the page is statically
  * rendered, and the server has no query string to render from.
  */
+/** Accepts the presets plus a bare pixel number (e.g. ?viewerScale=48). */
+function parseScaleParam(raw: string): { scale: ViewerNativeToolbarScale } | Record<string, never> {
+  if (['sm', 'md', 'lg'].includes(raw)) return { scale: raw as ViewerNativeToolbarScale }
+  const px = Number(raw)
+  return Number.isFinite(px) ? { scale: px } : {}
+}
+
 function readTestSettings(): Partial<ViewerDemoSettings> | null {
   const query = new URLSearchParams(window.location.search)
   const position = query.get('viewerPosition')
@@ -159,7 +169,7 @@ function readTestSettings(): Partial<ViewerDemoSettings> | null {
     ...(position && ['bottom', 'top', 'left', 'right'].includes(position)
       ? { position: position as ViewerNativeToolbarPosition }
       : {}),
-    ...(scale && ['md', 'lg'].includes(scale) ? { scale: scale as ViewerNativeToolbarScale } : {}),
+    ...(scale ? parseScaleParam(scale) : {}),
   }
 }
 
@@ -246,12 +256,14 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
           />
           <ControlGroup
             label="Density"
-            value={settings.scale}
+            value={typeof settings.scale === 'number' ? String(settings.scale) : settings.scale}
             options={scaleOptions}
-            hint="Gloved raises every toolbar button to a 44px target."
+            hint="Compact is 36px, Comfortable is Autodesk stock, Gloved is a 52px box clearing the 44px field target."
             disabled={!settings.toolbar}
             describedBy={toolbarOffId}
-            onChange={(scale) => setSettings((previous) => ({ ...previous, scale }))}
+            onChange={(scale) =>
+              setSettings((previous) => ({ ...previous, scale: scale as ViewerDemoScalePreset }))
+            }
           />
           <ControlGroup
             label="Appearance"
