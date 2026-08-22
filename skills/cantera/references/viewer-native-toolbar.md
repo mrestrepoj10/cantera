@@ -15,14 +15,14 @@ Files written into the consumer project:
 
 ## Install notes
 
-Render ViewerNativeToolbar inside APSViewer, or register VIEWER_NATIVE_TOOLBAR_EXTENSION_ID and load it directly. position chooses bottom, top, left, or right; left and right derive a vertical layout. scale=lg raises native buttons to a 44px minimum touch target.
+Render ViewerNativeToolbar inside APSViewer, or register VIEWER_NATIVE_TOOLBAR_EXTENSION_ID and load it directly. position chooses bottom, top, left, or right; left and right derive a vertical layout. scale sets the rendered button box: sm is a compact 36px (opt-in only), md is Autodesk stock, lg is a 52px gloved-tablet box clearing the 44px field target, and a number is an exact pixel box clamped to 32-64.
 
 The extension uses only viewer.toolbar.container and the public extension manager, and cleans up its classes and stylesheet in unload. Its CSS targets Autodesk LMV 7.* native toolbar, tooltip, and flyout class names. Those DOM selectors are not a published stable contract, so positioning is best-effort and should be checked when you change the Viewer major version.
 
 ## Props and exports
 
 - `position` (`'bottom' | 'top' | 'left' | 'right'`, default `'bottom'`) — Docking edge. Left and right derive the vertical native-toolbar layout.
-- `scale` (`'md' | 'lg'`, default `'md'`) — Autodesk stock size, or a 44px minimum native control target for touch use.
+- `scale` (`'sm' | 'md' | 'lg' | number`, default `'md'`) — Rendered button box: sm is a compact 36px (opt-in only), md is Autodesk stock (42px, untouched), lg is a 52px gloved-tablet box clearing the 44px field target, and a number is an exact pixel box clamped to 32–64.
 - `useViewerNativeToolbar` (`(options?: ViewerNativeToolbarOptions) => void`) — Hook form of the declarative component. Use inside APSViewer.
 - `registerViewerNativeToolbar` (`(autodesk: AutodeskGlobal) => void`) — Idempotently registers the extension against an initialized Viewer runtime.
 - `VIEWER_NATIVE_TOOLBAR_EXTENSION_ID` (`string`, default `'Cantera.ViewerNativeToolbar'`) — Extension id for direct viewer.loadExtension usage.

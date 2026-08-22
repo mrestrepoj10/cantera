@@ -1,9 +1,19 @@
-import { expect, test } from '@playwright/test'
+import { expect, type Locator, test } from '@playwright/test'
 
 import { gotoViewerDemo, waitForViewerModel } from './viewer'
 
 const positions = ['bottom', 'top', 'left', 'right'] as const
-const scales = ['md', 'lg'] as const
+const scales = ['sm', 'md', 'lg'] as const
+/** Rendered button box per preset: Autodesk stock is 42px; sm/lg come from the extension. */
+const expectedBoxPx = { sm: 36, md: 42, lg: 52 } as const
+
+/** Total rendered height of the first toolbar button, border box. */
+function buttonBoxHeight(toolbar: Locator): Promise<number> {
+  return toolbar
+    .locator('.adsk-button')
+    .first()
+    .evaluate((node) => node.getBoundingClientRect().height)
+}
 
 test.describe('Viewer native toolbar', () => {
   test.use({ colorScheme: 'light', viewport: { width: 1440, height: 1000 } })
@@ -32,16 +42,7 @@ test.describe('Viewer native toolbar', () => {
             .poll(() => toolbar.evaluate((node) => getComputedStyle(node).flexDirection))
             .toBe('column')
         }
-        if (scale === 'lg') {
-          await expect
-            .poll(() =>
-              toolbar
-                .locator('.adsk-button')
-                .first()
-                .evaluate((node) => Number.parseFloat(getComputedStyle(node).minHeight)),
-            )
-            .toBeGreaterThanOrEqual(44)
-        }
+        await expect.poll(() => buttonBoxHeight(toolbar)).toBeCloseTo(expectedBoxPx[scale], 0)
 
         await expect(viewer).toHaveScreenshot(`viewer-toolbar-${position}-${scale}.png`, {
           animations: 'disabled',
@@ -50,4 +51,15 @@ test.describe('Viewer native toolbar', () => {
       })
     }
   }
+
+  // Numeric scale is assertion-only: an exact box, no committed baseline —
+  // the preset matrix already covers every position visually.
+  test('numeric scale renders an exact button box', async ({ page }) => {
+    await gotoViewerDemo(page, '/components/aps-viewer?viewerPosition=bottom&viewerScale=48')
+    const viewer = await waitForViewerModel(page)
+
+    const toolbar = viewer.locator('.adsk-toolbar.cantera-toolbar--bottom.cantera-toolbar--sized')
+    await expect(toolbar).toBeVisible()
+    await expect.poll(() => buttonBoxHeight(toolbar)).toBeCloseTo(48, 0)
+  })
 })

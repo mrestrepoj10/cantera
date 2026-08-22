@@ -12,12 +12,17 @@ import type {
 export const VIEWER_NATIVE_TOOLBAR_EXTENSION_ID = 'Cantera.ViewerNativeToolbar'
 
 export type ViewerNativeToolbarPosition = 'bottom' | 'top' | 'left' | 'right'
-export type ViewerNativeToolbarScale = 'md' | 'lg'
+export type ViewerNativeToolbarScale = 'sm' | 'md' | 'lg' | number
 
 export interface ViewerNativeToolbarOptions {
   /** Docking edge. Left and right positions derive a vertical orientation. */
   position?: ViewerNativeToolbarPosition
-  /** `lg` raises native controls to a 44px minimum touch target. */
+  /**
+   * Size of the full rendered button box. `md` is Autodesk stock (42px,
+   * untouched); `sm` is a compact 36px — opt-in only, compact is never the
+   * default; `lg` is the gloved-tablet 52px, clearing the 44px field target
+   * with margin. A number is an exact pixel box, clamped to 32–64.
+   */
   scale?: ViewerNativeToolbarScale
 }
 
@@ -33,8 +38,18 @@ const POSITION_CLASSES = [
   'cantera-toolbar--left',
   'cantera-toolbar--right',
 ] as const
-const SCALE_CLASSES = ['cantera-toolbar--md', 'cantera-toolbar--lg'] as const
+const SCALE_CLASSES = [
+  'cantera-toolbar--sm',
+  'cantera-toolbar--md',
+  'cantera-toolbar--lg',
+  'cantera-toolbar--sized',
+] as const
 const STYLE_ATTRIBUTE = 'data-cantera-viewer-native-toolbar'
+/** Rendered button box per preset. `md` applies no override — Autodesk stock. */
+const SCALE_PRESET_PX = { sm: 36, lg: 52 } as const
+const SCALE_SIZE_PROPERTY = '--cantera-toolbar-size'
+const MIN_SCALE_PX = 32
+const MAX_SCALE_PX = 64
 
 /**
  * Best-effort LMV 7.* styling. Autodesk does not publish a stable DOM contract
@@ -89,13 +104,24 @@ export const VIEWER_NATIVE_TOOLBAR_CSS = `
   overflow: visible;
 }
 
-.adsk-toolbar.cantera-toolbar--lg .adsk-button {
-  min-width: 44px;
-  min-height: 44px;
+/* Sizing rides one custom property: the full rendered button box. Autodesk's
+   stock box is 28px content + 6px padding + 1px border = 42px with a 24px
+   icon glyph — the calc offsets keep those proportions at any size. */
+.adsk-toolbar.cantera-toolbar--sized .adsk-button {
+  width: calc(var(--cantera-toolbar-size, 42px) - 14px);
+  height: calc(var(--cantera-toolbar-size, 42px) - 14px);
 }
 
-.adsk-toolbar.cantera-toolbar--lg .adsk-control-group {
-  min-height: 44px;
+.adsk-toolbar.cantera-toolbar--sized .adsk-button .adsk-button-icon {
+  font-size: calc(var(--cantera-toolbar-size, 42px) - 18px);
+}
+
+.adsk-toolbar.cantera-toolbar--sized .adsk-button-arrow > .adsk-button-icon {
+  font-size: calc(var(--cantera-toolbar-size, 42px) - 24px);
+}
+
+.adsk-toolbar.cantera-toolbar--sized .adsk-control-group {
+  min-height: calc(var(--cantera-toolbar-size, 42px) + 8px);
 }
 
 .adsk-toolbar.cantera-toolbar--left .adsk-control-tooltip,
@@ -142,17 +168,28 @@ function releaseStylesheet(): void {
   }
 }
 
+/** Numeric scales are clamped, never rounded — a number is an exact pixel box,
+ * and CSS renders fractional pixels. A non-finite number falls back to stock. */
+function normalizeScale(scale: ViewerNativeToolbarScale | undefined): ViewerNativeToolbarScale {
+  if (typeof scale !== 'number') return scale ?? 'md'
+  if (!Number.isFinite(scale)) return 'md'
+  return Math.min(MAX_SCALE_PX, Math.max(MIN_SCALE_PX, scale))
+}
+
 function normalizeOptions(
   options: ViewerNativeToolbarOptions = {},
 ): Required<ViewerNativeToolbarOptions> {
   return {
     position: options.position ?? 'bottom',
-    scale: options.scale ?? 'md',
+    scale: normalizeScale(options.scale),
   }
 }
 
 function removeToolbarClasses(viewer: APSViewer3D): void {
-  viewer.toolbar?.container.classList.remove(...POSITION_CLASSES, ...SCALE_CLASSES)
+  const toolbar = viewer.toolbar?.container
+  if (!toolbar) return
+  toolbar.classList.remove(...POSITION_CLASSES, ...SCALE_CLASSES)
+  toolbar.style.removeProperty(SCALE_SIZE_PROPERTY)
 }
 
 /** Register the extension once for the active Autodesk Viewer runtime. */
@@ -203,10 +240,18 @@ export function registerViewerNativeToolbar(autodesk: AutodeskGlobal): void {
       const toolbar = this.viewer.toolbar?.container
       if (!toolbar) return
       toolbar.classList.remove(...POSITION_CLASSES, ...SCALE_CLASSES)
-      toolbar.classList.add(
-        `cantera-toolbar--${this.current.position}`,
-        `cantera-toolbar--${this.current.scale}`,
-      )
+      toolbar.style.removeProperty(SCALE_SIZE_PROPERTY)
+      toolbar.classList.add(`cantera-toolbar--${this.current.position}`)
+      const scale = this.current.scale
+      if (scale === 'md') {
+        // Stock size: the class is the observable marker; no sizing override.
+        toolbar.classList.add('cantera-toolbar--md')
+        return
+      }
+      if (typeof scale !== 'number') toolbar.classList.add(`cantera-toolbar--${scale}`)
+      toolbar.classList.add('cantera-toolbar--sized')
+      const px = typeof scale === 'number' ? scale : SCALE_PRESET_PX[scale]
+      toolbar.style.setProperty(SCALE_SIZE_PROPERTY, `${px}px`)
     }
   }
 
