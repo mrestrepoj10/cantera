@@ -134,7 +134,11 @@ function ViewerLoadStatus({ error }: { error: string | null }) {
       role="status"
       aria-live="polite"
     >
-      {!error && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
+      {!error && (
+        <span aria-hidden="true" className="grid size-4 shrink-0 animate-spin place-items-center">
+          <LoaderCircle className="size-4" />
+        </span>
+      )}
       <span>{error ?? 'Loading model'}</span>
     </div>
   )
@@ -280,7 +284,9 @@ function ExtensionRow({ id, info, checked, status = 'idle', onToggle }: Extensio
         <span className="flex shrink-0 items-center gap-1.5 pt-0.5">
           {loading && (
             <span role="status" className="flex items-center text-muted-foreground">
-              <LoaderCircle aria-hidden="true" className="size-3 animate-spin" />
+              <span aria-hidden="true" className="grid size-3 animate-spin place-items-center">
+                <LoaderCircle className="size-3" />
+              </span>
               <span className="sr-only">Loading {extensionLabel(id)}</span>
             </span>
           )}

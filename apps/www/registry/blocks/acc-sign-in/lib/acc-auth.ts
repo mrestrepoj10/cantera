@@ -7,6 +7,7 @@ import {
   type VaultStore,
   vaultTokenSource,
 } from 'aec-auth/vault'
+import { cache } from 'react'
 
 /**
  * Server-side auth wiring for the acc-sign-in block, on aec-auth's vault:
@@ -62,6 +63,20 @@ export function getTokenSource(origin: string): TokenSource {
   })
 }
 
+/**
+ * One vault read per request for a session's token, however many server
+ * components ask for it. React.cache dedupes by argument identity, so pass
+ * the session object `openSession` returned — it is per-request stable for
+ * the same reason. Outside a React request scope the call runs uncached.
+ */
+export const getSessionToken = cache((origin: string, session: AccSession) =>
+  getTokenSource(origin).getToken({
+    provider: APS_PROVIDER_ID,
+    subject: { type: 'user', id: session.userId },
+    scopes: session.scopes,
+  }),
+)
+
 export function userInfoUrl(origin: string): string {
   const base = resolveAuthBase(origin)
   return base ? `${base}/userinfo` : APS_AUTH.userInfoUrl
@@ -112,15 +127,29 @@ function fromBase64Url(value: string): Uint8Array {
   return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))
 }
 
+/** The imported key is cached for the process: WebCrypto key import is the
+ * expensive half of an HMAC, and the secret never changes between requests. */
+let importedHmacKey: { secret: string; key: Promise<CryptoKey> } | undefined
+
+function hmacKey(): Promise<CryptoKey> {
+  const secret = sessionSecret()
+  if (importedHmacKey?.secret !== secret) {
+    importedHmacKey = {
+      secret,
+      key: crypto.subtle.importKey(
+        'raw',
+        encoder.encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign'],
+      ),
+    }
+  }
+  return importedHmacKey.key
+}
+
 async function hmac(payload: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(sessionSecret()),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  )
-  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(payload))
+  const signature = await crypto.subtle.sign('HMAC', await hmacKey(), encoder.encode(payload))
   return toBase64Url(new Uint8Array(signature))
 }
 
@@ -129,17 +158,24 @@ export async function sealSession(session: AccSession): Promise<string> {
   return `${payload}.${await hmac(payload)}`
 }
 
-export async function openSession(cookieValue: string | undefined): Promise<AccSession | null> {
-  if (!cookieValue) return null
-  const [payload, signature] = cookieValue.split('.')
-  if (!payload || !signature) return null
-  if ((await hmac(payload)) !== signature) return null
-  try {
-    return JSON.parse(new TextDecoder().decode(fromBase64Url(payload))) as AccSession
-  } catch {
-    return null
-  }
-}
+/**
+ * Verify and open the session cookie. Wrapped in React.cache so composable
+ * server components — a page plus the panels it mounts — verify one HMAC per
+ * request instead of one each; route handlers run it uncached.
+ */
+export const openSession = cache(
+  async (cookieValue: string | undefined): Promise<AccSession | null> => {
+    if (!cookieValue) return null
+    const [payload, signature] = cookieValue.split('.')
+    if (!payload || !signature) return null
+    if ((await hmac(payload)) !== signature) return null
+    try {
+      return JSON.parse(new TextDecoder().decode(fromBase64Url(payload))) as AccSession
+    } catch {
+      return null
+    }
+  },
+)
 
 /** `Secure` for HTTPS requests; local plain-HTTP development stays usable. */
 export function cookieSecurity(requestUrl: URL | string): string {
@@ -185,8 +221,10 @@ export function clearStateCookie(secure: string): string {
   return `${STATE_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`
 }
 
+const STATE_COOKIE_PATTERN = new RegExp(`(?:^|;\\s*)${STATE_COOKIE}=([^;]+)`)
+
 export function readStateCookie(cookieHeader: string | null): OAuthState | null {
-  const match = cookieHeader?.match(new RegExp(`(?:^|;\\s*)${STATE_COOKIE}=([^;]+)`))
+  const match = cookieHeader?.match(STATE_COOKIE_PATTERN)
   if (!match) return null
   try {
     return JSON.parse(new TextDecoder().decode(fromBase64Url(match[1]))) as OAuthState

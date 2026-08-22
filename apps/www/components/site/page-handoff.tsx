@@ -9,9 +9,9 @@ import { cn } from '@/lib/utils'
 interface PageHandoffProps {
   /** The item's title, so every control here gets a unique accessible name. */
   title: string
-  /** The page as markdown — the exact bytes the `.md` URL serves. */
-  markdown: string
-  /** Same-origin path to the markdown, so the link works on any deployment. */
+  /** Same-origin path to the markdown, so the link works on any deployment.
+   * The copy button fetches these bytes on demand — embedding them in the
+   * page's props would ship the whole document twice. */
   markdownPath: string
   /** Absolute markdown URL, for the prompts a model has to be able to fetch. */
   markdownUrl: string
@@ -33,7 +33,7 @@ interface PageHandoffProps {
  * closes. Both are listeners rather than a focus trap, because a disclosure
  * that traps focus is a dialog wearing the wrong clothes.
  */
-function PageHandoff({ title, markdown, markdownPath, markdownUrl }: PageHandoffProps) {
+function PageHandoff({ title, markdownPath, markdownUrl }: PageHandoffProps) {
   const [copied, setCopied] = useState(false)
   const [open, setOpen] = useState(false)
   const groupRef = useRef<HTMLDivElement>(null)
@@ -42,11 +42,27 @@ function PageHandoff({ title, markdown, markdownPath, markdownUrl }: PageHandoff
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(markdown)
+      // The same bytes are already served at the markdown route, so fetch them
+      // on demand rather than shipping them again inside the page's props.
+      const text = fetch(markdownPath).then((response) => {
+        if (!response.ok) throw new Error(`markdown fetch failed: ${response.status}`)
+        return response.text()
+      })
+      if (typeof ClipboardItem !== 'undefined') {
+        // A promise-valued ClipboardItem keeps the write inside the user
+        // gesture — Safari rejects a writeText issued after an await.
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/plain': text.then((markdown) => new Blob([markdown], { type: 'text/plain' })),
+          }),
+        ])
+      } else {
+        await navigator.clipboard.writeText(await text)
+      }
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1600)
     } catch {
-      // Clipboard unavailable — the markdown is still one link away.
+      // Clipboard or fetch unavailable — the markdown is still one link away.
     }
   }
 

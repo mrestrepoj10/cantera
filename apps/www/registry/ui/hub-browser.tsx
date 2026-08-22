@@ -102,24 +102,39 @@ function toPathSegment(entry: FolderEntry, path: BrowsePathSegment[]): BrowsePat
   return { id: entry.id, name: entry.name, type: nextSegmentType(path) }
 }
 
+const relativeTimeRanges: [Intl.RelativeTimeFormatUnit, number][] = [
+  ['year', 31_536_000],
+  ['month', 2_592_000],
+  ['week', 604_800],
+  ['day', 86_400],
+  ['hour', 3_600],
+  ['minute', 60],
+]
+
+/** One formatter per locale, not per row per render — construction is the
+ * expensive part of Intl, and every row in the list shares it. */
+const relativeTimeFormatters = new Map<string, Intl.RelativeTimeFormat>()
+
+function relativeTimeFormatter(locale?: string): Intl.RelativeTimeFormat {
+  const key = locale ?? ''
+  let formatter = relativeTimeFormatters.get(key)
+  if (!formatter) {
+    formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+    relativeTimeFormatters.set(key, formatter)
+  }
+  return formatter
+}
+
 function relativeTime(value: Date | string | number | undefined, locale?: string): string | null {
   if (value == null) return null
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return null
   const seconds = Math.round((date.getTime() - Date.now()) / 1000)
-  const ranges: [Intl.RelativeTimeFormatUnit, number][] = [
-    ['year', 31_536_000],
-    ['month', 2_592_000],
-    ['week', 604_800],
-    ['day', 86_400],
-    ['hour', 3_600],
-    ['minute', 60],
+  const [unit, divisor] = relativeTimeRanges.find(([, range]) => Math.abs(seconds) >= range) ?? [
+    'second',
+    1,
   ]
-  const [unit, divisor] = ranges.find(([, range]) => Math.abs(seconds) >= range) ?? ['second', 1]
-  return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
-    Math.round(seconds / divisor),
-    unit,
-  )
+  return relativeTimeFormatter(locale).format(Math.round(seconds / divisor), unit)
 }
 
 const translationLabels: Record<ModelTranslationStatus, string> = {
@@ -187,13 +202,21 @@ function HubBrowserBreadcrumb({
                     }}
                   >
                     {segment.name}
-                    <LoaderCircleIcon
+                    {/* The spin lives on a wrapper: transform animations on
+                        the <svg> itself skip the compositor in some engines. */}
+                    <span
                       aria-hidden
-                      className={cn(
-                        'absolute top-1/2 right-1 size-3.5 -translate-y-1/2 animate-spin transition-[opacity,scale,filter] duration-150 ease-out motion-reduce:transition-none',
-                        busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
-                      )}
-                    />
+                      className="absolute top-1/2 right-1 grid size-3.5 -translate-y-1/2 animate-spin place-items-center"
+                    >
+                      <LoaderCircleIcon
+                        className={cn(
+                          'size-3.5 transition-[opacity,scale,filter] duration-150 ease-out motion-reduce:transition-none',
+                          busy
+                            ? 'scale-100 opacity-100 blur-none'
+                            : 'scale-25 opacity-0 blur-[4px]',
+                        )}
+                      />
+                    </span>
                   </button>
                 )}
               </BreadcrumbItem>
@@ -210,7 +233,9 @@ function HubBrowserLoading({ rows = 5 }: { rows?: number }) {
   return (
     <div className="flex flex-col gap-2" data-slot="hub-browser-loading">
       <output className="flex items-center gap-2 px-3 text-muted-foreground text-sm">
-        <LoaderCircleIcon aria-hidden className="size-4 animate-spin" />
+        <span aria-hidden className="grid size-4 shrink-0 animate-spin place-items-center">
+          <LoaderCircleIcon className="size-4" />
+        </span>
         Loading this location
       </output>
       {Array.from({ length: rows }, (_, index) => `hub-browser-skeleton-${index}`).map((id) => (
@@ -291,12 +316,14 @@ function VersionPicker({
         }
       >
         <span aria-hidden className="grid w-7 place-items-center">
-          <LoaderCircleIcon
-            className={cn(
-              'col-start-1 row-start-1 size-3.5 animate-spin transition-[opacity,scale,filter] duration-150 ease-out motion-reduce:transition-none',
-              loading ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
-            )}
-          />
+          <span className="col-start-1 row-start-1 grid size-3.5 animate-spin place-items-center">
+            <LoaderCircleIcon
+              className={cn(
+                'size-3.5 transition-[opacity,scale,filter] duration-150 ease-out motion-reduce:transition-none',
+                loading ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
+              )}
+            />
+          </span>
           <span
             className={cn(
               'col-start-1 row-start-1 font-medium text-sm tabular-nums transition-opacity duration-150 ease-out motion-reduce:transition-none',
@@ -319,7 +346,9 @@ function VersionPicker({
         </PopoverHeader>
         {loading && (
           <output className="flex min-h-11 items-center gap-2 px-2 text-muted-foreground">
-            <LoaderCircleIcon aria-hidden className="size-4 animate-spin" />
+            <span aria-hidden className="grid size-4 shrink-0 animate-spin place-items-center">
+              <LoaderCircleIcon className="size-4" />
+            </span>
             Loading versions
           </output>
         )}
@@ -471,12 +500,14 @@ function HubBrowserList({
               }}
             >
               <span className="grid size-5 shrink-0 place-items-center" aria-hidden>
-                <LoaderCircleIcon
-                  className={cn(
-                    'col-start-1 row-start-1 size-5 animate-spin transition-[opacity,scale,filter] duration-150 ease-out motion-reduce:transition-none',
-                    busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
-                  )}
-                />
+                <span className="col-start-1 row-start-1 grid size-5 animate-spin place-items-center">
+                  <LoaderCircleIcon
+                    className={cn(
+                      'size-5 transition-[opacity,scale,filter] duration-150 ease-out motion-reduce:transition-none',
+                      busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
+                    )}
+                  />
+                </span>
                 {item ? (
                   <FileIcon
                     className={cn(
@@ -599,13 +630,14 @@ function HubBrowser({
             aria-busy={loadingMore || undefined}
             onClick={() => runPending(onLoadMore, setLocalLoadingMore)}
           >
-            <LoaderCircleIcon
-              aria-hidden
-              className={cn(
-                'size-4 animate-spin transition-[opacity,scale,filter] duration-150 ease-out motion-reduce:transition-none',
-                loadingMore ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
-              )}
-            />
+            <span aria-hidden className="grid size-4 animate-spin place-items-center">
+              <LoaderCircleIcon
+                className={cn(
+                  'size-4 transition-[opacity,scale,filter] duration-150 ease-out motion-reduce:transition-none',
+                  loadingMore ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
+                )}
+              />
+            </span>
             Load more
           </Button>
         )}

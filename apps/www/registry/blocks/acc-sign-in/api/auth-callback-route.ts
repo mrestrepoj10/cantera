@@ -5,6 +5,7 @@ import {
   getApsOAuth,
   getVaultStore,
   readStateCookie,
+  safeNext,
   saveUserGrant,
   sealSession,
   sessionCookie,
@@ -62,23 +63,29 @@ export async function GET(request: Request, ctx: { params: Promise<{ provider: s
   // Providers (and emulators) may omit the granted scope list from the token
   // response; fall back to what the flow requested, kept in the state cookie.
   const scopes = result.accessToken.scopes ? [...result.accessToken.scopes] : stored.scopes
-  if (result.refreshToken) {
-    await saveUserGrant(getVaultStore(), APS_PROVIDER_ID, userId, {
-      refreshToken: result.refreshToken,
+  // Sealing the session and persisting the grant are independent; run them in
+  // parallel rather than serializing an HMAC behind a vault write.
+  const [session] = await Promise.all([
+    sealSession({
+      userId,
+      name: info.name,
+      email: info.email,
+      avatarUrl: info.picture,
       scopes,
-      obtainedAt: Date.now(),
-    })
-  }
+    }),
+    result.refreshToken
+      ? saveUserGrant(getVaultStore(), APS_PROVIDER_ID, userId, {
+          refreshToken: result.refreshToken,
+          scopes,
+          obtainedAt: Date.now(),
+        })
+      : undefined,
+  ])
 
-  const session = await sealSession({
-    userId,
-    name: info.name,
-    email: info.email,
-    avatarUrl: info.picture,
-    scopes,
-  })
-
-  const headers = new Headers({ Location: stored.next })
+  // The start route sanitizes `next`, but this cookie is still client-side
+  // state: re-validate on the return leg so an injected cookie can never turn
+  // a successful sign-in into an open redirect.
+  const headers = new Headers({ Location: safeNext(stored.next, '/sign-in') })
   headers.append('Set-Cookie', sessionCookie(session, secure))
   headers.append('Set-Cookie', clearStateCookie(secure))
   return new Response(null, { status: 302, headers })

@@ -41,6 +41,12 @@ interface HubSwitcherProps {
   className?: string
 }
 
+/** Thenable check, not `instanceof Promise`: a polyfilled or cross-realm
+ * promise is still a pending round trip the trigger must reflect. */
+function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
+  return value != null && typeof (value as Promise<void>).then === 'function'
+}
+
 /**
  * The hub context switch — which ACC hub (or Procore company, or any Hub) the
  * rest of the screen works against. A select, not a combobox: hubs are few.
@@ -72,7 +78,7 @@ function HubSwitcher({
       onValueChange={(next: string | null) => {
         if (next == null || !onValueChange) return
         const result = onValueChange(next)
-        if (!(result instanceof Promise)) return
+        if (!isPromiseLike(result)) return
         setAsyncPending(true)
         result.then(
           () => setAsyncPending(false),
@@ -100,12 +106,16 @@ function HubSwitcher({
             busy ? 'mr-1.5 w-4' : 'mr-0 w-0',
           )}
         >
-          <LoaderCircleIcon
-            className={cn(
-              'size-4 animate-spin transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
-              busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
-            )}
-          />
+          {/* The spin lives on a wrapper: transform animations on the <svg>
+              itself skip the compositor in some engines. */}
+          <span className="grid size-4 animate-spin place-items-center">
+            <LoaderCircleIcon
+              className={cn(
+                'size-4 transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
+                busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
+              )}
+            />
+          </span>
         </span>
         <SelectValue placeholder={placeholder}>
           {(selected: string | null) => {

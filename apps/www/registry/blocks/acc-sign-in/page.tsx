@@ -3,7 +3,7 @@ import { cookies, headers } from 'next/headers'
 
 import { AccConnectionPanel } from '@/components/acc-connection-panel'
 import { SignInCard } from '@/components/ui/sign-in-card'
-import { APS_PROVIDER_ID, getTokenSource, openSession, SESSION_COOKIE } from '@/lib/acc-auth'
+import { APS_PROVIDER_ID, getSessionToken, openSession, SESSION_COOKIE } from '@/lib/acc-auth'
 import { apsProvider } from '@/lib/aps-oauth-preset'
 import type { OAuthConnection } from '@/lib/oauth-types'
 
@@ -50,11 +50,9 @@ export async function AccSignIn({
   let connection: OAuthConnection
   try {
     const origin = await requestOrigin()
-    const token = await getTokenSource(origin).getToken({
-      provider: APS_PROVIDER_ID,
-      subject: { type: 'user', id: session.userId },
-      scopes: session.scopes,
-    })
+    // Cached per request: another server component reading the same session's
+    // token in this render shares this vault read.
+    const token = await getSessionToken(origin, session)
     connection = {
       provider: apsProvider,
       status: 'connected',

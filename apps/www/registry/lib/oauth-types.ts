@@ -81,13 +81,13 @@ export function isExpiringSoon(connection: OAuthConnection, withinMs = 5 * 60_00
   return expiry.getTime() - Date.now() <= withinMs
 }
 
+const EMAIL_DOMAIN = /@.*$/
+const NAME_SEPARATORS = /[\s._-]+/
+
 /** Initials for an account, for avatar fallbacks: "Maria Renteria" -> "MR". */
 export function accountInitials(account: OAuthAccount | undefined): string {
   const source = account?.name ?? account?.email ?? ''
-  const parts = source
-    .replace(/@.*$/, '')
-    .split(/[\s._-]+/)
-    .filter(Boolean)
+  const parts = source.replace(EMAIL_DOMAIN, '').split(NAME_SEPARATORS).filter(Boolean)
   if (parts.length === 0) return '?'
   const first = parts[0][0] ?? ''
   const last = parts.length > 1 ? (parts[parts.length - 1][0] ?? '') : ''

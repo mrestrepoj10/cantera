@@ -129,15 +129,29 @@ export function APSViewer({
   const viewerRef = useRef<APSViewer3D | null>(null)
 
   // Latest-callback refs so effect deps stay minimal and consumers can pass
-  // inline closures without recreating the viewer.
+  // inline closures without recreating the viewer. `shutdownOnUnmount` rides
+  // along: it is only read at cleanup, and listing it as a dependency would
+  // tear down the WebGL context just to change what the next unmount does.
   const callbacksRef = useRef({
     getAccessToken,
     onViewerReady,
     onModelLoaded,
     onError,
     onExtensionError,
+    shutdownOnUnmount,
   })
-  callbacksRef.current = { getAccessToken, onViewerReady, onModelLoaded, onError, onExtensionError }
+  // Synced after commit, not during render: a render React discards (Strict
+  // Mode, a concurrent restart) must never leave its callbacks behind.
+  useEffect(() => {
+    callbacksRef.current = {
+      getAccessToken,
+      onViewerReady,
+      onModelLoaded,
+      onError,
+      onExtensionError,
+      shutdownOnUnmount,
+    }
+  })
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: viewerConfig and extensions are intentionally captured at creation time
   useEffect(() => {
@@ -210,10 +224,10 @@ export function APSViewer({
         viewer = null
         viewerRef.current = null
       }
-      releaseViewerRuntime({ shutdown: shutdownOnUnmount })
+      releaseViewerRuntime({ shutdown: callbacksRef.current.shutdownOnUnmount })
       setStatus('idle')
     }
-  }, [version, env, api, toolbar, profile, shutdownOnUnmount, store])
+  }, [version, env, api, toolbar, profile, store])
 
   // Appearance is deliberately separate from viewer lifetime: a theme switch
   // calls setTheme in place and never burns a second WebGL context.

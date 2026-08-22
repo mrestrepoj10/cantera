@@ -50,6 +50,20 @@ const statusLabel: Record<OAuthConnectionStatus, string> = {
   disconnected: 'Not connected',
 }
 
+/** One formatter per locale, not per render — construction is the expensive
+ * part of Intl, and every status line sharing a locale shares it. */
+const expiryFormatters = new Map<string, Intl.RelativeTimeFormat>()
+
+function expiryFormatter(locale?: string | string[]): Intl.RelativeTimeFormat {
+  const key = Array.isArray(locale) ? locale.join(',') : (locale ?? '')
+  let formatter = expiryFormatters.get(key)
+  if (!formatter) {
+    formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'always', style: 'narrow' })
+    expiryFormatters.set(key, formatter)
+  }
+  return formatter
+}
+
 /**
  * Relative expiry, clamped at zero: a token that is already gone reads
  * "expired", never "expires 5 min. ago".
@@ -57,7 +71,7 @@ const statusLabel: Record<OAuthConnectionStatus, string> = {
 function formatExpiry(expiry: Date, locale?: string | string[]): string {
   const deltaMs = expiry.getTime() - Date.now()
   if (deltaMs <= 0) return 'expired'
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'always', style: 'narrow' })
+  const rtf = expiryFormatter(locale)
   const minutes = Math.round(deltaMs / 60_000)
   if (minutes < 1) return 'expires now'
   if (minutes < 60) return `expires ${rtf.format(minutes, 'minute')}`

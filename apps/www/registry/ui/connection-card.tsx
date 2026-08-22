@@ -34,6 +34,12 @@ interface ConnectionActionProps {
   children: React.ReactNode
 }
 
+/** Thenable check, not `instanceof Promise`: a polyfilled or cross-realm
+ * promise is still a pending round trip the button must reflect. */
+function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
+  return value != null && typeof (value as Promise<void>).then === 'function'
+}
+
 /**
  * An action that follows the async-pending contract: disabled with a spinner
  * while it keeps its label, focusable throughout (`focusableWhenDisabled`
@@ -64,7 +70,7 @@ function ConnectionAction({
       className={cn('relative gap-0 after:absolute after:-inset-y-2 after:inset-x-0', className)}
       onClick={() => {
         const result = onAction()
-        if (!(result instanceof Promise)) return
+        if (!isPromiseLike(result)) return
         setAsyncPending(true)
         result.then(
           () => setAsyncPending(false),
@@ -82,12 +88,16 @@ function ConnectionAction({
           busy ? 'mr-1 w-3.5' : 'mr-0 w-0',
         )}
       >
-        <LoaderCircleIcon
-          className={cn(
-            'size-3.5 animate-spin transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
-            busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
-          )}
-        />
+        {/* The spin lives on a wrapper: transform animations on the <svg>
+            itself skip the compositor in some engines. */}
+        <span className="grid size-3.5 animate-spin place-items-center">
+          <LoaderCircleIcon
+            className={cn(
+              'size-3.5 transition-[opacity,scale,filter] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
+              busy ? 'scale-100 opacity-100 blur-none' : 'scale-25 opacity-0 blur-[4px]',
+            )}
+          />
+        </span>
       </span>
       {children}
     </Button>

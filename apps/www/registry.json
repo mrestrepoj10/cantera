@@ -209,7 +209,7 @@
       "author": "MR <contact@bimframe.co>",
       "description": "Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.",
       "categories": ["authentication", "login", "autodesk"],
-      "dependencies": ["aec-auth"],
+      "dependencies": ["aec-auth", "lucide-react"],
       "registryDependencies": [
         "@cantera/sign-in-card",
         "@cantera/connection-card",
@@ -221,6 +221,11 @@
           "path": "registry/blocks/acc-sign-in/page.tsx",
           "type": "registry:page",
           "target": "app/sign-in/page.tsx"
+        },
+        {
+          "path": "registry/blocks/acc-sign-in/loading.tsx",
+          "type": "registry:file",
+          "target": "app/sign-in/loading.tsx"
         },
         {
           "path": "registry/blocks/acc-sign-in/components/acc-connection-panel.tsx",
@@ -254,7 +259,7 @@
         "SESSION_SECRET": "",
         "APS_AUTH_BASE_URL": ""
       },
-      "docs": "Installed: app/sign-in/page.tsx, the /api/auth/* route handlers, and lib/acc-auth.ts (aec-auth vault wiring).\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — HMAC key for the session cookie. Generate one with `openssl rand -base64 32`. In production the block fails closed without it: a shared default key would let anyone mint a session for any user.\n- APS_AUTH_BASE_URL — optional auth-origin override, absolute or relative (\"/emulate/aps\") for an embedded emulator. Leave it unset to talk to real APS.\n\nACC_AUTH_DEMO=1 is the escape hatch that allows the insecure fallback session secret in production. It exists for emulator-backed showcases only — never set it anywhere real accounts exist.\n\nThe default vault store is in-memory: correct for a demo, wrong for production. Swap in a durable VaultStore (see the aec-auth README) before you ship."
+      "docs": "Installed: app/sign-in/page.tsx with its loading skeleton, the /api/auth/* route handlers, and lib/acc-auth.ts (aec-auth vault wiring).\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — HMAC key for the session cookie. Generate one with `openssl rand -base64 32`. In production the block fails closed without it: a shared default key would let anyone mint a session for any user.\n- APS_AUTH_BASE_URL — optional auth-origin override, absolute or relative (\"/emulate/aps\") for an embedded emulator. Leave it unset to talk to real APS.\n\nACC_AUTH_DEMO=1 is the escape hatch that allows the insecure fallback session secret in production. It exists for emulator-backed showcases only — never set it anywhere real accounts exist.\n\nThe default vault store is in-memory: correct for a demo, wrong for production. Swap in a durable VaultStore (see the aec-auth README) before you ship."
     },
     {
       "name": "connections-page",
