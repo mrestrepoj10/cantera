@@ -39,6 +39,9 @@ export async function gotoViewerDemo(page: Page, path: string): Promise<void> {
 export async function waitForViewerModel(page: Page) {
   const viewer = page.locator('[data-aps-viewer-status]')
   await expect(viewer).toHaveAttribute('data-aps-viewer-status', 'ready', { timeout: 30_000 })
-  await expect(viewer.getByText('Loading model')).toBeHidden({ timeout: 30_000 })
+  // The status strip sits under the canvas, outside the viewer element, so the
+  // captured region never contains chrome — assert against the page.
+  await expect(page.getByText('Loading model')).toBeHidden({ timeout: 30_000 })
+  await expect(page.getByText('Model loaded')).toBeVisible({ timeout: 30_000 })
   return viewer
 }
