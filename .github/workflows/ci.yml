@@ -88,7 +88,7 @@ jobs:
           APS_CLIENT_ID: ${{ secrets.APS_CLIENT_ID }}
           APS_CLIENT_SECRET: ${{ secrets.APS_CLIENT_SECRET }}
           APS_VIEWER_DEMO_URN: ${{ secrets.APS_VIEWER_DEMO_URN }}
-      - name: E2E (OAuth flow, axe both themes, theme and pending contracts; viewer when gated in)
+      - name: E2E (OAuth flow, theme and pending contracts; viewer when gated in)
         run: |
           pnpm exec playwright install --with-deps chromium
           pnpm e2e

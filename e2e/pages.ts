@@ -6,10 +6,9 @@ interface RegistryFile {
 }
 
 /**
- * Every catalog item gets a docs page at /components/<name>, and those pages
- * render the exact code consumers install — so scanning them is how the
- * shipping bar in AGENTS.md gets enforced. Reading registry.json keeps the page
- * list from drifting when an item is added.
+ * Every catalog item gets a docs page at /components/<name> and a markdown
+ * twin. Reading registry.json keeps the page list from drifting when an item
+ * is added.
  *
  * Generated `registry:example` items are skipped: they are v0 landing pages, not
  * catalog entries, and the docs site never routes them.
@@ -21,17 +20,6 @@ const registry = JSON.parse(
 export const componentPages = registry.items
   .filter((item) => item.type !== 'registry:example')
   .map((item) => `/components/${item.name}`)
-
-export const sitePages = [
-  '/',
-  '/installation',
-  '/philosophy',
-  '/stack',
-  '/components',
-  '/demo',
-  '/connections',
-  ...componentPages,
-]
 
 /**
  * The markdown twin of each docs page. Same list as `componentPages`, because
