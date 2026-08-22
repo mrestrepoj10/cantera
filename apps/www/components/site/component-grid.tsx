@@ -29,6 +29,10 @@ function ComponentGrid({ headingLevel = 2 }: ComponentGridProps) {
               <li key={item.name}>
                 <Link
                   href={`/components/${item.name}`}
+                  // The destination depends on its dynamic segment. Resolve
+                  // that URL-specific content before the click, while the
+                  // shared route shell remains deduplicated across the grid.
+                  prefetch={true}
                   className="focus-ring flex h-full flex-col gap-1.5 rounded-lg border border-border p-5 transition-colors hover:border-foreground/25"
                 >
                   <span className="font-mono text-code">{item.name}</span>

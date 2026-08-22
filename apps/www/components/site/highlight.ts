@@ -1,3 +1,4 @@
+import { cacheLife } from 'next/cache'
 import { createHighlighter, createJavaScriptRegexEngine, type Highlighter } from 'shiki'
 
 /**
@@ -51,6 +52,8 @@ export function langForFilename(filename: string | undefined): CodeLang {
 
 /** Highlighted `<pre class="shiki">…</pre>` markup for a snippet. */
 export async function highlightCode(code: string, lang: CodeLang): Promise<string> {
+  'use cache'
+  cacheLife('max')
   const highlighter = await getHighlighter()
   return highlighter.codeToHtml(code, { lang, themes, defaultColor: false })
 }

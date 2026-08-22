@@ -1,7 +1,6 @@
 import type { TokenSource } from 'aec-auth'
 import { apsOAuth, memoryVaultStore, vaultTokenSource } from 'aec-auth/vault'
-
-export const dynamic = 'force-dynamic'
+import { connection } from 'next/server'
 
 const VIEWER_SCOPES = ['viewables:read'] as const
 let tokenSource: TokenSource | undefined
@@ -21,6 +20,9 @@ function getTokenSource(): TokenSource {
 }
 
 export async function GET(): Promise<Response> {
+  // Token minting is request-only. Avoid probing the OAuth endpoint while
+  // Cache Components discovers which route handlers can be prerendered.
+  await connection()
   try {
     const token = await getTokenSource().getToken({
       provider: 'aps',

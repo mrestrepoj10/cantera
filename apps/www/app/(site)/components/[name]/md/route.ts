@@ -10,12 +10,9 @@ import { itemMarkdown } from '@/lib/item-markdown'
  * `lib/item-markdown.ts`, the serializer that also writes the agent skill's
  * per-item references, so the two can never disagree.
  *
- * Prerendered: the param list is the catalog, and `dynamicParams = false` makes
- * anything else a 404 rather than a rendered page for an item that does not
- * exist.
+ * Prerendered: the param list is the catalog. Unknown names still resolve to
+ * an explicit 404 below, which is compatible with Cache Components.
  */
-
-export const dynamicParams = false
 
 export function generateStaticParams() {
   return registryItems.map((item) => ({ name: item.name }))

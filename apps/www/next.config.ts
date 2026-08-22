@@ -27,6 +27,10 @@ envDefault('APS_AUTH_BASE_URL', '/emulate/aps')
 envDefault('ACC_AUTH_DEMO', '1')
 
 const nextConfig: NextConfig = {
+  // Next 16.3 can prefetch one reusable shell per route. Runtime data stays
+  // behind the app's existing Suspense boundaries and streams after navigation.
+  cacheComponents: true,
+  partialPrefetching: true,
   async rewrites() {
     return [
       // The markdown twin of each docs page is served at `/components/<name>.md`.

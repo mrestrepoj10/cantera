@@ -9,9 +9,6 @@ export const metadata: Metadata = {
     'The connections-page block, wired to the embedded APS emulator — connect, reconnect, and revoke a real grant.',
 }
 
-// The grant state is read from cookies and the vault on every visit.
-export const dynamic = 'force-dynamic'
-
 export default function ConnectionsShowcasePage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-16">
