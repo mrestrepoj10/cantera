@@ -199,7 +199,12 @@
   --status-neutral-surface: oklch(0.955 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* Darkened from the stock 0.708: the focus indicator is a 1px ring-colored
+     border plus a 50%-alpha glow, and at 0.708 that border measured 2.67:1 on
+     --background and 2.54:1 on a muted/60 control track — under the 3:1 the
+     design contract asks of a focus indicator. 0.64 clears 3.36:1 and 3.19:1.
+     The dark ring (0.556) already measures 4.18:1 and 3.64:1. */
+  --ring: oklch(0.64 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
