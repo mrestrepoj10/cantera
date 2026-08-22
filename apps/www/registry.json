@@ -528,7 +528,7 @@
           "type": "registry:ui"
         }
       ],
-      "docs": "Render ViewerNativeToolbar inside APSViewer, or register VIEWER_NATIVE_TOOLBAR_EXTENSION_ID and load it directly. position chooses bottom, top, left, or right; left and right derive a vertical layout. scale sets the rendered button box: sm is a compact 36px (opt-in only), md is Autodesk stock, lg is a 52px gloved-tablet box clearing the 44px field target, and a number is an exact pixel box clamped to 32-64.\n\nThe extension uses only viewer.toolbar.container and the public extension manager, and cleans up its classes and stylesheet in unload. Its CSS targets Autodesk LMV 7.* native toolbar, tooltip, and flyout class names. Those DOM selectors are not a published stable contract, so positioning is best-effort and should be checked when you change the Viewer major version."
+      "docs": "Render ViewerNativeToolbar inside APSViewer, or register VIEWER_NATIVE_TOOLBAR_EXTENSION_ID and load it directly. position chooses bottom, top, left, or right; left and right derive a vertical layout. scale sets the rendered button box: sm is a compact 36px (opt-in only), md is a comfortable 44px, lg is a 52px gloved-tablet box, and a number is an exact pixel box clamped to 32-64.\n\nThe extension uses only viewer.toolbar.container and the public extension manager, and cleans up its classes and stylesheet in unload. Its CSS targets Autodesk LMV 7.* native toolbar, tooltip, and flyout class names. Those DOM selectors are not a published stable contract, so positioning is best-effort and should be checked when you change the Viewer major version."
     },
     {
       "name": "model-status-card",

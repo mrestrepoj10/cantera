@@ -1387,7 +1387,7 @@ export const apiTables: Record<string, ApiTable[]> = {
           type: "'sm' | 'md' | 'lg' | number",
           defaultValue: "'md'",
           description:
-            'Rendered button box: sm is a compact 36px (opt-in only), md is Autodesk stock (42px, untouched), lg is a 52px gloved-tablet box clearing the 44px field target, and a number is an exact pixel box clamped to 32–64.',
+            'Rendered button box: sm is a compact 36px (opt-in only), md is a comfortable 44px, lg is a 52px gloved-tablet box, and a number is an exact pixel box clamped to 32–64.',
         },
         {
           name: 'useViewerNativeToolbar',

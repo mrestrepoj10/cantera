@@ -37,18 +37,17 @@ const DEFAULT_SETTINGS: ViewerDemoSettings = {
 }
 
 /**
- * The inspector and the catalog both render the `viewer-extension-types`
- * catalog, not a hand list: every 3D-applicable entry that still ships appears,
- * with its description and flags coming straight from the registry item. 2D-only
- * entries are excluded (the demo model is 3D); deprecated and removed ids are
- * excluded because nothing should invite loading them.
+ * The inspector renders the `viewer-extension-types` catalog, not a hand list:
+ * every 3D-applicable entry that still ships appears, with its description and
+ * flags coming straight from the registry item. 2D-only entries are excluded
+ * (the demo model is 3D); deprecated and removed ids are excluded because
+ * nothing should invite loading them.
  */
 const catalogEntries = Object.entries(VIEWER_EXTENSIONS) as [string, ViewerExtensionInfo][]
 const applicableEntries = catalogEntries.filter(
   ([, info]) => !info.deprecated && !info.removedIn && info.only !== '2d',
 )
 const loadableEntries = applicableEntries.filter(([, info]) => !info.autoLoaded)
-const autoLoadedEntries = applicableEntries.filter(([, info]) => info.autoLoaded)
 const DEMO_EXTENSION_IDS = loadableEntries.map(([id]) => id)
 
 /**
@@ -235,9 +234,9 @@ interface ControlGroupProps<T extends string> {
 }
 
 /**
- * A segmented control: one bordered track, a raised thumb for the selection,
- * and real buttons underneath — `aria-pressed` carries the state, so nothing
- * depends on color alone and there is no widget role to get wrong.
+ * A segmented control with one quiet track and real buttons underneath —
+ * `aria-pressed` carries the state, so nothing depends on color alone and
+ * there is no widget role to get wrong.
  */
 function ControlGroup<T extends string>({
   label,
@@ -258,13 +257,8 @@ function ControlGroup<T extends string>({
     <fieldset
       aria-describedby={(disabled ? describedBy : undefined) ?? (hint ? hintId : undefined)}
     >
-      <legend className="mb-1 font-medium text-muted-foreground text-xs">{label}</legend>
-      <div
-        className={cn(
-          'grid gap-0.5 rounded-lg border border-border bg-muted/60 p-0.5',
-          columnClasses[columns],
-        )}
-      >
+      <legend className="mb-1.5 font-medium text-[13px] text-foreground">{label}</legend>
+      <div className={cn('grid gap-1 rounded-lg bg-muted/70 p-1', columnClasses[columns])}>
         {options.map((option) => {
           const selected = option.value === value
           return (
@@ -273,9 +267,9 @@ function ControlGroup<T extends string>({
               type="button"
               variant="ghost"
               className={cn(
-                'h-8 justify-center rounded-md px-1.5 text-muted-foreground text-xs transition-colors hover:bg-background/60 hover:text-foreground focus-visible:border-ring aria-disabled:opacity-50',
+                'h-11 justify-center rounded-md px-2 text-[13px] text-muted-foreground transition-[color,background-color,box-shadow] duration-150 hover:bg-background/70 hover:text-foreground focus-visible:border-ring aria-disabled:opacity-50',
                 selected &&
-                  'bg-background text-foreground shadow-sm hover:bg-background dark:bg-input/70',
+                  'bg-background text-foreground shadow-xs hover:bg-background dark:bg-input/70',
               )}
               aria-pressed={selected}
               disabled={disabled}
@@ -288,7 +282,7 @@ function ControlGroup<T extends string>({
         })}
       </div>
       {description && (
-        <p id={hintId} className="mt-1 text-muted-foreground text-xs leading-snug">
+        <p id={hintId} className="mt-1.5 text-pretty text-muted-foreground text-xs leading-relaxed">
           {description}
         </p>
       )}
@@ -298,7 +292,6 @@ function ControlGroup<T extends string>({
 
 function extensionBadges(info: ViewerExtensionInfo): string[] {
   const badges: string[] = []
-  if (info.autoLoaded) badges.push('built in')
   if (info.addsToolbarButton) badges.push('toolbar button')
   if (info.requiresAecModelData) badges.push('needs AEC data')
   if (info.minViewerVersion) badges.push(`viewer ${info.minViewerVersion}+`)
@@ -307,7 +300,7 @@ function extensionBadges(info: ViewerExtensionInfo): string[] {
 
 function ExtensionBadge({ children }: { children: string }) {
   return (
-    <span className="rounded border border-border px-1.5 py-px text-muted-foreground text-xs">
+    <span className="whitespace-nowrap rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
       {children}
     </span>
   )
@@ -436,10 +429,11 @@ function ExtensionPicker({ loaded, status, onToggle }: ExtensionState) {
         .map((section) => ({
           title: section.title,
           entries: section.entries.filter(
-            ([id]) =>
+            ([id, info]) =>
               needle.length === 0 ||
               id.toLowerCase().includes(needle) ||
-              extensionLabel(id).toLowerCase().includes(needle),
+              extensionLabel(id).toLowerCase().includes(needle) ||
+              info.description.toLowerCase().includes(needle),
           ),
         }))
         .filter((section) => section.entries.length > 0),
@@ -449,17 +443,22 @@ function ExtensionPicker({ loaded, status, onToggle }: ExtensionState) {
   const matchCount = sections.reduce((total, section) => total + section.entries.length, 0)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <div className="flex flex-col gap-1">
-        <label className="font-medium text-muted-foreground text-xs" htmlFor={fieldId}>
-          Find an extension
-        </label>
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-baseline justify-between gap-3">
+          <label className="font-medium text-[13px] text-foreground" htmlFor={fieldId}>
+            Find an extension
+          </label>
+          <span className="text-muted-foreground text-xs tabular-nums">
+            {matchCount} {matchCount === 1 ? 'result' : 'results'}
+          </span>
+        </div>
         <input
           id={fieldId}
           type="search"
           value={query}
           placeholder="measure, markup, Autodesk.NPR"
-          className="h-8 w-full rounded-md border border-border bg-background px-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="h-11 w-full rounded-md border border-border bg-background px-3 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:text-sm"
           onChange={(event) => setQuery(event.target.value)}
         />
       </div>
@@ -469,11 +468,11 @@ function ExtensionPicker({ loaded, status, onToggle }: ExtensionState) {
             No extension matches “{query.trim()}”.
           </p>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-5">
             {sections.map((section) => (
-              <div key={section.title} className="flex flex-col gap-1">
-                <h4 className="font-medium text-muted-foreground text-xs">{section.title}</h4>
-                <div className="flex flex-col">
+              <section key={section.title} className="flex flex-col gap-1.5">
+                <h4 className="font-semibold text-sm text-foreground">{section.title}</h4>
+                <div className="flex flex-col gap-1">
                   {section.entries.map(([id, info]) => {
                     const isLoaded = loaded.includes(id)
                     const state = status[id] ?? 'idle'
@@ -485,9 +484,9 @@ function ExtensionPicker({ loaded, status, onToggle }: ExtensionState) {
                         aria-pressed={isLoaded}
                         aria-disabled={pending || undefined}
                         className={cn(
-                          'flex min-h-8 items-center justify-between gap-2 rounded-md px-2 text-start text-[13px] transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-1',
-                          isLoaded && 'text-foreground',
-                          !isLoaded && 'text-muted-foreground',
+                          'group flex min-h-11 items-start justify-between gap-3 rounded-lg px-2.5 py-2 text-start transition-colors duration-150 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-1',
+                          isLoaded && 'bg-muted/70 text-foreground',
+                          !isLoaded && 'text-foreground',
                           pending && 'opacity-60',
                         )}
                         onClick={() => {
@@ -495,16 +494,22 @@ function ExtensionPicker({ loaded, status, onToggle }: ExtensionState) {
                           onToggle(id, !isLoaded)
                         }}
                       >
-                        <span className="min-w-0 truncate">{extensionLabel(id)}</span>
-                        <span className="flex shrink-0 items-center gap-1.5">
-                          {info.addsToolbarButton && (
-                            // Decorative here: it would otherwise land inside
-                            // the button's accessible name ("Markups toolbar
-                            // toolbar"). The catalog table carries the flags.
-                            <span aria-hidden="true" className="text-muted-foreground text-xs">
-                              toolbar
+                        <span className="min-w-0">
+                          <span className="block font-medium text-sm leading-snug">
+                            {extensionLabel(id)}
+                          </span>
+                          <span className="mt-0.5 line-clamp-2 block text-pretty text-[13px] text-muted-foreground leading-relaxed">
+                            {info.description}
+                          </span>
+                          {extensionBadges(info).length > 0 && (
+                            <span aria-hidden="true" className="mt-1.5 flex flex-wrap gap-1">
+                              {extensionBadges(info).map((badge) => (
+                                <ExtensionBadge key={badge}>{badge}</ExtensionBadge>
+                              ))}
                             </span>
                           )}
+                        </span>
+                        <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground group-hover:text-foreground">
                           {pending ? (
                             <Spinner className="size-3.5 text-muted-foreground" />
                           ) : isLoaded ? (
@@ -520,7 +525,7 @@ function ExtensionPicker({ loaded, status, onToggle }: ExtensionState) {
                     )
                   })}
                 </div>
-              </div>
+              </section>
             ))}
           </div>
         )}
@@ -614,7 +619,6 @@ type TabId = (typeof TABS)[number]['id']
 
 export function APSViewerDemo({ urn }: { urn?: string }) {
   const dockHeadingId = useId()
-  const catalogHeadingId = useId()
   const toolbarFieldId = useId()
   const toolbarLabelId = `${toolbarFieldId}-label`
   const toolbarOffId = useId()
@@ -721,9 +725,8 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
   return (
     <div className="flex w-full flex-col bg-background">
       <div className="grid lg:grid-cols-[minmax(0,1fr)_20rem]">
-        {/* The canvas is the subject of the page, so it leads on wide screens
-            and the dock leads on narrow ones, where it reads as a tab strip. */}
-        <div className="order-2 flex min-w-0 flex-col lg:order-1">
+        {/* The canvas is the subject of the page, so it leads at every width. */}
+        <div className="flex min-w-0 flex-col">
           <APSViewer
             urn={urn}
             getAccessToken={getAccessToken}
@@ -809,7 +812,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
 
         <aside
           aria-labelledby={dockHeadingId}
-          className="relative order-1 flex min-h-0 flex-col border-border border-b bg-muted/40 lg:order-2 lg:border-b-0 lg:border-l"
+          className="relative flex min-h-0 flex-col border-border border-t bg-muted/30 lg:border-t-0 lg:border-l"
         >
           <h3 id={dockHeadingId} className="sr-only">
             Viewer inspector
@@ -817,7 +820,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
           <div
             role="tablist"
             aria-labelledby={dockHeadingId}
-            className="flex gap-1 border-border border-b px-2 pt-2"
+            className="grid grid-cols-3 border-border border-b px-2 pt-2"
           >
             {TABS.map((entry, index) => {
               const selected = entry.id === tab
@@ -837,7 +840,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                     // 44px: the dock's primary navigation is a field target,
                     // and comfortable is the default the density contract asks
                     // for.
-                    'min-h-11 rounded-t-md px-3 pb-1 font-medium text-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-1',
+                    'min-h-11 rounded-t-md px-2 pb-1 font-medium text-[13px] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-1',
                     selected
                       ? 'bg-background text-foreground shadow-[inset_0_-2px_0_0_var(--color-foreground)]'
                       : 'text-muted-foreground hover:text-foreground',
@@ -863,12 +866,12 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                 className="flex flex-col gap-3"
               >
                 <fieldset>
-                  <legend className="mb-1 font-medium text-muted-foreground text-xs">
+                  <legend className="mb-1.5 font-medium text-[13px] text-foreground">
                     Toolbar
                   </legend>
                   <label
                     // The checkbox primitive hooks its focus styles off this group.
-                    className="group/field-label flex min-h-8 cursor-pointer items-center justify-between gap-3 text-[13px]"
+                    className="group/field-label flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md px-1 text-sm"
                     htmlFor={toolbarFieldId}
                   >
                     <span id={toolbarLabelId}>Native toolbar</span>
@@ -903,7 +906,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                     typeof settings.scale === 'number' ? String(settings.scale) : settings.scale
                   }
                   options={scaleOptions}
-                  hint="Compact is 36px, Comfortable is Autodesk stock, Gloved is a 52px box clearing the 44px field target."
+                  hint="Compact is 36px, Comfortable is 44px, and Gloved is 52px."
                   disabled={!settings.toolbar}
                   describedBy={toolbarOffId}
                   onChange={(scale) =>
@@ -943,7 +946,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground text-xs leading-snug">
+                  <p className="text-pretty text-[13px] text-muted-foreground leading-relaxed">
                     Nothing loaded yet — the viewer is running its stock toolbar. Pick an extension
                     and it loads live, without recreating the viewer.
                   </p>
@@ -1012,156 +1015,6 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
           </div>
         </aside>
       </div>
-
-      <section
-        aria-labelledby={catalogHeadingId}
-        className="border-border border-t px-4 py-5 sm:px-6"
-      >
-        <h3 id={catalogHeadingId} className="font-medium text-sm">
-          Extension catalog
-        </h3>
-        <p className="mt-1 max-w-2xl text-[13px] text-muted-foreground leading-snug">
-          Every 3D-applicable entry in the viewer-extension-types catalog. Loading one here is the
-          same live load the inspector does — the flags come straight from the registry item.
-        </p>
-        <div className="mt-3 overflow-x-auto rounded-lg border border-border">
-          <table className="w-full min-w-[48rem] border-collapse text-sm">
-            <thead>
-              <tr className="border-border border-b bg-muted/40 text-left">
-                <th className="px-4 py-2 font-medium text-muted-foreground text-xs">Extension</th>
-                <th className="px-4 py-2 font-medium text-muted-foreground text-xs">Description</th>
-                <th className="w-20 px-4 py-2 text-right font-medium text-muted-foreground text-xs">
-                  Load
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {loadableSections.map((section) => (
-                <ExtensionCatalogSection
-                  key={section.title}
-                  title={section.title}
-                  entries={section.entries}
-                  loaded={settings.extensions}
-                  status={extensionStatus}
-                  onToggle={handleExtensionToggle}
-                />
-              ))}
-              <ExtensionCatalogSection
-                title="Built in — the viewer loads these itself"
-                entries={autoLoadedEntries}
-                loaded={settings.extensions}
-                status={extensionStatus}
-              />
-            </tbody>
-          </table>
-        </div>
-      </section>
     </div>
-  )
-}
-
-function ExtensionCatalogSection({
-  title,
-  entries,
-  loaded,
-  status,
-  onToggle,
-}: {
-  title: string
-  entries: [string, ViewerExtensionInfo][]
-  loaded: string[]
-  status: Record<string, DemoExtensionStatus>
-  onToggle?: (id: string, next: boolean) => void
-}) {
-  return (
-    <>
-      <tr className="border-border border-b bg-muted/20">
-        <th
-          colSpan={3}
-          className="px-4 py-1.5 text-left font-medium text-muted-foreground text-xs"
-          scope="colgroup"
-        >
-          {title}
-        </th>
-      </tr>
-      {entries.map(([id, info]) => (
-        <ExtensionCatalogRow
-          key={id}
-          id={id}
-          info={info}
-          checked={onToggle ? loaded.includes(id) : undefined}
-          status={status[id] ?? 'idle'}
-          onToggle={onToggle}
-        />
-      ))}
-    </>
-  )
-}
-
-function ExtensionCatalogRow({
-  id,
-  info,
-  checked,
-  status,
-  onToggle,
-}: {
-  id: string
-  info: ViewerExtensionInfo
-  /** Absent for built-in rows: nothing to toggle, the viewer loads them itself. */
-  checked?: boolean
-  status: DemoExtensionStatus
-  onToggle?: (id: string, next: boolean) => void
-}) {
-  const fieldId = useId()
-  const labelId = `${fieldId}-label`
-  const loading = checked === true && status === 'loading'
-  return (
-    <tr className="border-border border-b last:border-b-0">
-      <td className="px-4 py-2.5 align-top">
-        <span className="flex flex-col gap-0.5">
-          <span id={labelId} className="font-medium text-[13px]">
-            {extensionLabel(id)}
-          </span>
-          <code className="break-words font-mono text-code text-muted-foreground">{id}</code>
-          {extensionBadges(info).length > 0 && (
-            <span className="mt-0.5 flex flex-wrap gap-1">
-              {extensionBadges(info).map((badge) => (
-                <ExtensionBadge key={badge}>{badge}</ExtensionBadge>
-              ))}
-            </span>
-          )}
-        </span>
-      </td>
-      <td className="px-4 py-2.5 align-top text-[13px] text-muted-foreground leading-snug">
-        {info.description}
-      </td>
-      <td className="px-4 py-2.5 text-right align-top">
-        {onToggle ? (
-          // The label and the control share one hit target; the inspector's
-          // picker drives the same state from the dock.
-          <label
-            className="group/field-label inline-flex min-h-8 cursor-pointer items-center justify-end gap-2"
-            htmlFor={fieldId}
-          >
-            {loading && <Spinner className="size-3 text-muted-foreground" />}
-            <Checkbox
-              id={fieldId}
-              aria-labelledby={labelId}
-              // Pending per the async contract: still focusable and announced,
-              // but not actionable until the in-flight load settles.
-              aria-disabled={loading || undefined}
-              className={cn(loading && 'opacity-50')}
-              checked={checked ?? false}
-              onCheckedChange={(next) => {
-                if (loading) return
-                onToggle(id, next === true)
-              }}
-            />
-          </label>
-        ) : (
-          <span className="text-muted-foreground text-xs">always</span>
-        )}
-      </td>
-    </tr>
   )
 }

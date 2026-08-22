@@ -25,12 +25,19 @@ jobs:
       - run: pnpm typecheck
       - name: Registry builds, verifies, and is committed
         # verify-drift's second rebuild-and-byte-compare stays a local/manual
-        # tool (pnpm registry:verify); here the git diff already proves the
-        # committed output matches a fresh build.
+        # tool (pnpm registry:verify); here git status proves the committed
+        # output matches a fresh build — porcelain, not diff, because a NEW
+        # generated file that was never committed is untracked and git diff
+        # would ignore it.
         run: |
           pnpm registry:build
           pnpm --filter www run registry:verify:static
-          git diff --exit-code apps/www/registry.json apps/www/registry apps/www/public/r apps/www/public/llms.txt apps/www/public/llms-full.txt skills
+          CHANGES=$(git status --porcelain -- apps/www/registry.json apps/www/registry apps/www/public/r apps/www/public/llms.txt apps/www/public/llms-full.txt skills)
+          if [ -n "$CHANGES" ]; then
+            echo "$CHANGES"
+            echo "Generated registry output is not committed. Run pnpm registry:build and commit the result."
+            exit 1
+          fi
       - name: Build (turbo-cached; the e2e job serves this output via next start)
         run: pnpm build --filter www
         env:
@@ -57,6 +64,10 @@ jobs:
               - 'apps/www/registry/lib/viewer-types.ts'
               - 'apps/www/registry/lib/viewer-extension-types.ts'
               - 'apps/www/components/site/aps-viewer-demo.tsx'
+              # Entry points that dispatch or feed the viewer demo: the demo
+              # registry and the docs page that passes the URN into it.
+              - 'apps/www/components/site/demos.tsx'
+              - 'apps/www/app/(site)/components/[name]/**'
               - 'apps/www/app/api/viewer-token/**'
               - 'e2e/viewer*'
               - 'playwright.config.ts'

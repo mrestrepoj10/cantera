@@ -768,7 +768,7 @@ Files written into the consumer project:
 #### Props and exports
 
 - `position` (`'bottom' | 'top' | 'left' | 'right'`, default `'bottom'`) — Docking edge. Left and right derive the vertical native-toolbar layout.
-- `scale` (`'sm' | 'md' | 'lg' | number`, default `'md'`) — Rendered button box: sm is a compact 36px (opt-in only), md is Autodesk stock (42px, untouched), lg is a 52px gloved-tablet box clearing the 44px field target, and a number is an exact pixel box clamped to 32–64.
+- `scale` (`'sm' | 'md' | 'lg' | number`, default `'md'`) — Rendered button box: sm is a compact 36px (opt-in only), md is a comfortable 44px, lg is a 52px gloved-tablet box, and a number is an exact pixel box clamped to 32–64.
 - `useViewerNativeToolbar` (`(options?: ViewerNativeToolbarOptions) => void`) — Hook form of the declarative component. Use inside APSViewer.
 - `registerViewerNativeToolbar` (`(autodesk: AutodeskGlobal) => void`) — Idempotently registers the extension against an initialized Viewer runtime.
 - `VIEWER_NATIVE_TOOLBAR_EXTENSION_ID` (`string`, default `'Cantera.ViewerNativeToolbar'`) — Extension id for direct viewer.loadExtension usage.

@@ -4,8 +4,8 @@ import { gotoViewerDemo, waitForViewerModel } from './viewer'
 
 const positions = ['bottom', 'top', 'left', 'right'] as const
 const scales = ['sm', 'md', 'lg'] as const
-/** Rendered button box per preset: Autodesk stock is 42px; sm/lg come from the extension. */
-const expectedBoxPx = { sm: 36, md: 42, lg: 52 } as const
+/** Rendered button box per preset: compact, comfortable, and gloved. */
+const expectedBoxPx = { sm: 36, md: 44, lg: 52 } as const
 
 /** Total rendered height of the first visible toolbar button, border box.
  * LMV keeps hidden buttons (collapsed flyouts) in the DOM at zero height. */
@@ -39,6 +39,34 @@ test.describe('Viewer native toolbar', () => {
           `.adsk-toolbar.cantera-toolbar--${position}.cantera-toolbar--${scale}`,
         )
         await expect(toolbar).toBeVisible()
+        // The docking behavior itself: the toolbar hugs the requested edge of
+        // the viewer (12px gutter in the CSS; allow slack for borders).
+        await expect
+          .poll(async () => {
+            const [toolbarBox, viewerBox] = await Promise.all([
+              toolbar.boundingBox(),
+              viewer.boundingBox(),
+            ])
+            if (!toolbarBox || !viewerBox) return false
+            let gap: number
+            switch (position) {
+              case 'bottom':
+                gap = viewerBox.y + viewerBox.height - (toolbarBox.y + toolbarBox.height)
+                break
+              case 'top':
+                gap = toolbarBox.y - viewerBox.y
+                break
+              case 'left':
+                gap = toolbarBox.x - viewerBox.x
+                break
+              case 'right':
+                gap = viewerBox.x + viewerBox.width - (toolbarBox.x + toolbarBox.width)
+                break
+            }
+            // Inside the viewer (gap >= 0) and hugging the edge (gap < 40).
+            return gap >= 0 && gap < 40
+          })
+          .toBe(true)
         if (position === 'left' || position === 'right') {
           await expect
             .poll(() => toolbar.evaluate((node) => getComputedStyle(node).flexDirection))
