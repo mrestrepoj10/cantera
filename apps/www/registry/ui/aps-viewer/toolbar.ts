@@ -1,7 +1,3 @@
-'use client'
-
-import { useEffect, useRef } from 'react'
-import { useAPSViewer } from '@/components/ui/aps-viewer/hooks'
 import type {
   APSViewer3D,
   APSViewerExtension,
@@ -9,27 +5,25 @@ import type {
   AutodeskGlobal,
 } from '@/lib/viewer-types'
 
-export const VIEWER_NATIVE_TOOLBAR_EXTENSION_ID = 'Cantera.ViewerNativeToolbar'
+export const APS_VIEWER_TOOLBAR_EXTENSION_ID = 'Cantera.APSViewerToolbar'
 
-export type ViewerNativeToolbarPosition = 'bottom' | 'top' | 'left' | 'right'
-export type ViewerNativeToolbarScale = 'sm' | 'md' | 'lg' | number
+export type APSViewerToolbarPosition = 'bottom' | 'top' | 'left' | 'right'
+export type APSViewerToolbarScale = 'sm' | 'md' | 'lg' | number
 
-export interface ViewerNativeToolbarOptions {
+export interface APSViewerToolbarOptions {
   /** Docking edge. Left and right positions derive a vertical orientation. */
-  position?: ViewerNativeToolbarPosition
+  position?: APSViewerToolbarPosition
   /**
    * Size of the full rendered button box. `md` is a comfortable 44px;
    * `sm` is a compact 36px — opt-in only, compact is never the default;
    * `lg` is the gloved-tablet 52px. A number is an exact pixel box, clamped
    * to 32–64.
    */
-  scale?: ViewerNativeToolbarScale
+  scale?: APSViewerToolbarScale
 }
 
-export interface ViewerNativeToolbarProps extends ViewerNativeToolbarOptions {}
-
-interface NativeToolbarExtension extends APSViewerExtension {
-  setOptions(options: ViewerNativeToolbarOptions): void
+export interface APSViewerToolbarExtension extends APSViewerExtension {
+  setOptions(options: APSViewerToolbarOptions): void
 }
 
 const POSITION_CLASSES = [
@@ -44,7 +38,7 @@ const SCALE_CLASSES = [
   'cantera-toolbar--lg',
   'cantera-toolbar--sized',
 ] as const
-const STYLE_ATTRIBUTE = 'data-cantera-viewer-native-toolbar'
+const STYLE_ATTRIBUTE = 'data-cantera-aps-viewer-toolbar'
 /** Rendered button box per preset. */
 const SCALE_PRESET_PX = { sm: 36, md: 44, lg: 52 } as const
 const SCALE_SIZE_PROPERTY = '--cantera-toolbar-size'
@@ -57,7 +51,7 @@ const MAX_SCALE_PX = 64
  * for the native toolbar, so these selectors are intentionally isolated behind
  * our classes and include the known tooltip and flyout shapes used by v7.
  */
-export const VIEWER_NATIVE_TOOLBAR_CSS = `
+const APS_VIEWER_TOOLBAR_CSS = `
 .adsk-toolbar.cantera-toolbar--top,
 .adsk-toolbar.cantera-toolbar--bottom,
 .adsk-toolbar.cantera-toolbar--left,
@@ -206,7 +200,7 @@ function retainStylesheet(): void {
   if (document.head.querySelector(`style[${STYLE_ATTRIBUTE}]`)) return
   const style = document.createElement('style')
   style.setAttribute(STYLE_ATTRIBUTE, '')
-  style.textContent = VIEWER_NATIVE_TOOLBAR_CSS
+  style.textContent = APS_VIEWER_TOOLBAR_CSS
   document.head.appendChild(style)
 }
 
@@ -219,15 +213,15 @@ function releaseStylesheet(): void {
 
 /** Numeric scales are clamped, never rounded — a number is an exact pixel box,
  * and CSS renders fractional pixels. A non-finite number falls back to stock. */
-function normalizeScale(scale: ViewerNativeToolbarScale | undefined): ViewerNativeToolbarScale {
+function normalizeScale(scale: APSViewerToolbarScale | undefined): APSViewerToolbarScale {
   if (typeof scale !== 'number') return scale ?? 'md'
   if (!Number.isFinite(scale)) return 'md'
   return Math.min(MAX_SCALE_PX, Math.max(MIN_SCALE_PX, scale))
 }
 
 function normalizeOptions(
-  options: ViewerNativeToolbarOptions = {},
-): Required<ViewerNativeToolbarOptions> {
+  options: APSViewerToolbarOptions = {},
+): Required<APSViewerToolbarOptions> {
   return {
     position: options.position ?? 'bottom',
     scale: normalizeScale(options.scale),
@@ -243,22 +237,22 @@ function removeToolbarClasses(viewer: APSViewer3D): void {
 }
 
 /** Register the extension once for the active Autodesk Viewer runtime. */
-export function registerViewerNativeToolbar(autodesk: AutodeskGlobal): void {
+export function registerAPSViewerToolbar(autodesk: AutodeskGlobal): void {
   const viewing = autodesk.Viewing
   const manager = viewing.theExtensionManager
   if (registeredManagers.has(manager)) return
-  if (manager.getExtensionClass?.(VIEWER_NATIVE_TOOLBAR_EXTENSION_ID)) {
+  if (manager.getExtensionClass?.(APS_VIEWER_TOOLBAR_EXTENSION_ID)) {
     registeredManagers.add(manager)
     return
   }
 
-  class CanteraViewerNativeToolbar extends viewing.Extension implements NativeToolbarExtension {
+  class CanteraAPSViewerToolbar extends viewing.Extension implements APSViewerToolbarExtension {
     private current = normalizeOptions()
     private hasStylesheet = false
 
     constructor(viewer: APSViewer3D, options?: Record<string, unknown>) {
       super(viewer, options)
-      this.current = normalizeOptions(options as ViewerNativeToolbarOptions | undefined)
+      this.current = normalizeOptions(options as APSViewerToolbarOptions | undefined)
     }
 
     load(): boolean {
@@ -272,7 +266,7 @@ export function registerViewerNativeToolbar(autodesk: AutodeskGlobal): void {
       this.apply()
     }
 
-    setOptions(options: ViewerNativeToolbarOptions): void {
+    setOptions(options: APSViewerToolbarOptions): void {
       this.current = normalizeOptions(options)
       this.apply()
     }
@@ -303,69 +297,8 @@ export function registerViewerNativeToolbar(autodesk: AutodeskGlobal): void {
   }
 
   manager.registerExtension(
-    VIEWER_NATIVE_TOOLBAR_EXTENSION_ID,
-    CanteraViewerNativeToolbar as APSViewingNamespace['Extension'],
+    APS_VIEWER_TOOLBAR_EXTENSION_ID,
+    CanteraAPSViewerToolbar as APSViewingNamespace['Extension'],
   )
   registeredManagers.add(manager)
-}
-
-/**
- * Load and configure the native-toolbar extension for the closest APSViewer.
- * The extension is unloaded automatically with the component.
- */
-export function useViewerNativeToolbar(options: ViewerNativeToolbarOptions = {}): void {
-  const { viewer } = useAPSViewer()
-  const position = options.position ?? 'bottom'
-  const scale = options.scale ?? 'md'
-  const optionsRef = useRef<Required<ViewerNativeToolbarOptions>>({ position, scale })
-  // Synced after commit, not during render: a render React discards (Strict
-  // Mode, a concurrent restart) must never leave its options behind.
-  useEffect(() => {
-    optionsRef.current = { position, scale }
-  }, [position, scale])
-
-  useEffect(() => {
-    if (!viewer || !window.Autodesk) return
-    let cancelled = false
-    registerViewerNativeToolbar(window.Autodesk)
-    viewer
-      .loadExtension(VIEWER_NATIVE_TOOLBAR_EXTENSION_ID, optionsRef.current)
-      .then((extension) => {
-        if (cancelled) {
-          viewer.unloadExtension(VIEWER_NATIVE_TOOLBAR_EXTENSION_ID)
-          return
-        }
-        const nativeToolbar = extension as NativeToolbarExtension
-        nativeToolbar.setOptions(optionsRef.current)
-      })
-      .catch((error) => {
-        if (!cancelled) console.error('cantera: failed to load the native toolbar extension', error)
-      })
-
-    return () => {
-      cancelled = true
-      try {
-        viewer.unloadExtension(VIEWER_NATIVE_TOOLBAR_EXTENSION_ID)
-      } catch {
-        // The parent viewer may already be finished; cleanup is best-effort.
-      }
-    }
-  }, [viewer])
-
-  useEffect(() => {
-    if (!viewer) return
-    const extension = viewer.getExtension(
-      VIEWER_NATIVE_TOOLBAR_EXTENSION_ID,
-    ) as NativeToolbarExtension | null
-    extension?.setOptions({ position, scale })
-  }, [viewer, position, scale])
-}
-
-/** Declarative native-toolbar configuration. Render inside an APSViewer. */
-export function ViewerNativeToolbar({
-  position = 'bottom',
-  scale = 'md',
-}: ViewerNativeToolbarProps) {
-  useViewerNativeToolbar({ position, scale })
-  return null
 }

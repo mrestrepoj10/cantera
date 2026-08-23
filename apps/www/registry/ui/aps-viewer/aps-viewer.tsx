@@ -9,6 +9,13 @@ import {
   toDocumentId,
 } from '@/components/ui/aps-viewer/loader'
 import { ViewerStore } from '@/components/ui/aps-viewer/store'
+import {
+  APS_VIEWER_TOOLBAR_EXTENSION_ID,
+  type APSViewerToolbarExtension,
+  type APSViewerToolbarPosition,
+  type APSViewerToolbarScale,
+  registerAPSViewerToolbar,
+} from '@/components/ui/aps-viewer/toolbar'
 import type {
   APSDocument,
   APSExtensionRequest,
@@ -18,6 +25,11 @@ import type {
   APSViewerStatus,
   GetAccessToken,
 } from '@/lib/viewer-types'
+
+export type {
+  APSViewerToolbarPosition,
+  APSViewerToolbarScale,
+} from '@/components/ui/aps-viewer/toolbar'
 
 export interface APSViewerProps {
   /**
@@ -53,6 +65,10 @@ export interface APSViewerProps {
   profile?: APSViewerProfile
   /** Native GuiViewer3D toolbar, or the toolbar-less core Viewer3D. */
   toolbar?: 'native' | 'none'
+  /** Edge where the native toolbar docks. Changes apply live. */
+  toolbarPosition?: APSViewerToolbarPosition
+  /** Native toolbar button-box size. `md` is the 44px default. Changes apply live. */
+  toolbarScale?: APSViewerToolbarScale
   /** Show Autodesk's ViewCube and its companion controls. Default true. */
   viewCube?: boolean
   /** Clip the viewer frame to this pixel radius, clamped to 0–32. */
@@ -132,6 +148,8 @@ export function APSViewer({
   viewerConfig,
   profile,
   toolbar = 'native',
+  toolbarPosition = 'bottom',
+  toolbarScale = 'md',
   viewCube = true,
   radius,
   theme,
@@ -151,6 +169,7 @@ export function APSViewer({
   const [viewerEpoch, setViewerEpoch] = useState(0)
   const viewerRef = useRef<APSViewer3D | null>(null)
   const viewCubeRef = useRef(viewCube)
+  const toolbarOptionsRef = useRef({ position: toolbarPosition, scale: toolbarScale })
   const frameRadius =
     radius === undefined || !Number.isFinite(radius) ? undefined : Math.min(32, Math.max(0, radius))
 
@@ -182,6 +201,10 @@ export function APSViewer({
   useEffect(() => {
     viewCubeRef.current = viewCube
   }, [viewCube])
+
+  useEffect(() => {
+    toolbarOptionsRef.current = { position: toolbarPosition, scale: toolbarScale }
+  }, [toolbarPosition, toolbarScale])
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: viewerConfig, extensions, and the initial viewCube value are intentionally captured at creation time
   useEffect(() => {
@@ -223,6 +246,28 @@ export function APSViewer({
           if (settings) viewer.setProfile(new autodesk.Viewing.Profile(settings))
         }
         const boundViewer = viewer
+        if (toolbar === 'native') {
+          registerAPSViewerToolbar(autodesk)
+          boundViewer
+            .loadExtension(APS_VIEWER_TOOLBAR_EXTENSION_ID, toolbarOptionsRef.current)
+            .then((extension) => {
+              if (disposed) {
+                boundViewer.unloadExtension(APS_VIEWER_TOOLBAR_EXTENSION_ID)
+                return
+              }
+              const nativeToolbar = extension as APSViewerToolbarExtension
+              nativeToolbar.setOptions(toolbarOptionsRef.current)
+            })
+            .catch((error) => {
+              if (disposed) return
+              const wrapped =
+                error instanceof Error
+                  ? error
+                  : new Error('cantera aps-viewer: native toolbar configuration failed')
+              console.error('cantera aps-viewer: failed to configure the native toolbar', error)
+              callbacksRef.current.onExtensionError?.(APS_VIEWER_TOOLBAR_EXTENSION_ID, wrapped)
+            })
+        }
         for (const request of extensions ?? []) {
           const { id, options } = toExtensionEntry(request)
           store.setExtensionStatus(id, 'loading')
@@ -255,6 +300,7 @@ export function APSViewer({
       disposed = true
       store.detach()
       if (viewer) {
+        viewer.unloadExtension(APS_VIEWER_TOOLBAR_EXTENSION_ID)
         viewer.finish()
         viewer = null
         viewerRef.current = null
@@ -325,6 +371,17 @@ export function APSViewer({
       cancelled = true
     }
   }, [status, viewCube, viewerEpoch])
+
+  // The toolbar belongs to APSViewer: inspector controls update its docking
+  // and touch-target scale without a child component or a WebGL restart.
+  useEffect(() => {
+    if (viewerEpoch === 0 || status !== 'ready' || toolbar !== 'native') return
+    const extension = viewerRef.current?.getExtension(APS_VIEWER_TOOLBAR_EXTENSION_ID) as
+      | APSViewerToolbarExtension
+      | null
+      | undefined
+    extension?.setOptions({ position: toolbarPosition, scale: toolbarScale })
+  }, [status, toolbar, toolbarPosition, toolbarScale, viewerEpoch])
 
   // The SDK's token callback cannot reject, so the loader broadcasts token
   // failures instead: without this the viewer would sit at "loading" forever

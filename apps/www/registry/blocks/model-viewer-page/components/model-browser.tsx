@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/hub-tree'
 import { ModelStatusCard } from '@/components/ui/model-status-card'
 import { UserAccountBadge } from '@/components/ui/user-account-badge'
-import { ViewerNativeToolbar } from '@/components/ui/viewer-native-toolbar'
 import type { OAuthAccount } from '@/lib/oauth-types'
 import type { Item, ItemVersion, ModelTranslation } from '@/lib/project-types'
 import { AEC_STARTER_EXTENSIONS } from '@/lib/viewer-extension-types'
@@ -276,9 +275,7 @@ function ModelBrowser({
             className="size-full"
             onViewerReady={(viewer) => viewer.prefs.set('openPropertiesOnSelect', true)}
             onError={(error) => setViewerError(error.message)}
-          >
-            <ViewerNativeToolbar position="bottom" scale="md" />
-          </APSViewer>
+          />
         ) : (
           <div className="absolute inset-0 grid place-items-center p-6">
             {translation ? (

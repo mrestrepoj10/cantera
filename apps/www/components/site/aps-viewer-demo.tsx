@@ -3,15 +3,14 @@
 import { CheckIcon, CopyIcon, LoaderCircle, PlusIcon, XIcon } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import { APSViewer } from '@/components/ui/aps-viewer/aps-viewer'
+import {
+  APSViewer,
+  type APSViewerToolbarPosition,
+  type APSViewerToolbarScale,
+} from '@/components/ui/aps-viewer/aps-viewer'
 import { type APSExtensionResult, useAPSExtension } from '@/components/ui/aps-viewer/hooks'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  ViewerNativeToolbar,
-  type ViewerNativeToolbarPosition,
-  type ViewerNativeToolbarScale,
-} from '@/components/ui/viewer-native-toolbar'
 import { cn } from '@/lib/utils'
 import { VIEWER_EXTENSIONS, type ViewerExtensionInfo } from '@/lib/viewer-extension-types'
 import type { GetAccessToken } from '@/lib/viewer-types'
@@ -19,8 +18,8 @@ import type { GetAccessToken } from '@/lib/viewer-types'
 type ViewerTheme = 'system' | 'light' | 'dark'
 
 interface ViewerDemoSettings {
-  position: ViewerNativeToolbarPosition
-  scale: ViewerNativeToolbarScale
+  position: APSViewerToolbarPosition
+  scale: APSViewerToolbarScale
   radius: number
   toolbar: boolean
   viewCube: boolean
@@ -198,7 +197,7 @@ function DemoExtension({
   return null
 }
 
-const positionOptions: { value: ViewerNativeToolbarPosition; label: string }[] = [
+const positionOptions: { value: APSViewerToolbarPosition; label: string }[] = [
   { value: 'bottom', label: 'Bottom' },
   { value: 'top', label: 'Top' },
   { value: 'left', label: 'Left' },
@@ -613,14 +612,12 @@ function buildSnippet(settings: ViewerDemoSettings): string {
     for (const id of settings.extensions) lines.push(`    '${id}',`)
     lines.push('  ]}')
   }
-  if (!settings.toolbar) {
-    lines.push('/>')
-    return lines.join('\n')
+  if (settings.toolbar) {
+    lines.push(`  toolbarPosition="${settings.position}"`)
+    const scale = typeof settings.scale === 'number' ? `{${settings.scale}}` : `"${settings.scale}"`
+    lines.push(`  toolbarScale=${scale}`)
   }
-  lines.push('>')
-  const scale = typeof settings.scale === 'number' ? `{${settings.scale}}` : `"${settings.scale}"`
-  lines.push(`  <ViewerNativeToolbar position="${settings.position}" scale=${scale} />`)
-  lines.push('</APSViewer>')
+  lines.push('/>')
   return lines.join('\n')
 }
 
@@ -642,8 +639,8 @@ function buildShareParams(settings: ViewerDemoSettings): string {
 }
 
 /** Accepts the presets plus a bare pixel number (e.g. ?viewerScale=48). */
-function parseScaleParam(raw: string): { scale: ViewerNativeToolbarScale } | Record<string, never> {
-  if (['sm', 'md', 'lg'].includes(raw)) return { scale: raw as ViewerNativeToolbarScale }
+function parseScaleParam(raw: string): { scale: APSViewerToolbarScale } | Record<string, never> {
+  if (['sm', 'md', 'lg'].includes(raw)) return { scale: raw as APSViewerToolbarScale }
   const px = Number(raw)
   return Number.isFinite(px) ? { scale: px } : {}
 }
@@ -677,7 +674,7 @@ function readSharedSettings(): Partial<ViewerDemoSettings> | null {
   const parsedRadius = parseClampedPixels(radius, 0, 32)
   return {
     ...(position && ['bottom', 'top', 'left', 'right'].includes(position)
-      ? { position: position as ViewerNativeToolbarPosition }
+      ? { position: position as APSViewerToolbarPosition }
       : {}),
     ...(scale ? parseScaleParam(scale) : {}),
     ...(parsedRadius === null ? {} : { radius: parsedRadius }),
@@ -828,6 +825,8 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
             urn={urn}
             getAccessToken={getAccessToken}
             toolbar={settings.toolbar ? 'native' : 'none'}
+            toolbarPosition={settings.position}
+            toolbarScale={settings.scale}
             viewCube={settings.viewCube}
             radius={settings.radius}
             theme={settings.theme === 'system' ? undefined : settings.theme}
@@ -838,9 +837,6 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
             onModelLoaded={() => setModelLoaded(true)}
             onError={(nextError) => setError(nextError.message)}
           >
-            {settings.toolbar && (
-              <ViewerNativeToolbar position={settings.position} scale={settings.scale} />
-            )}
             {settings.extensions.map((id) => (
               <DemoExtension key={id} id={id} onStatus={handleExtensionStatus} />
             ))}
@@ -1059,13 +1055,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                   />
                   <CopyButton
                     label="Copy install command"
-                    // The toolbar is its own registry item, so a setup that
-                    // renders it needs both installed.
-                    value={() =>
-                      settings.toolbar
-                        ? 'npx shadcn@latest add @cantera/aps-viewer @cantera/viewer-native-toolbar'
-                        : 'npx shadcn@latest add @cantera/aps-viewer'
-                    }
+                    value={() => 'npx shadcn@latest add @cantera/aps-viewer'}
                   />
                 </div>
               </div>

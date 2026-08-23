@@ -213,19 +213,10 @@ Item: https://canteraui.xyz/r/viewer-extension-types.json
 
 Title: APS Viewer
 Type: component
-Description: A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks.
+Description: A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks.
 Install: npx shadcn@latest add @cantera/aps-viewer
 Docs: https://canteraui.xyz/components/aps-viewer
 Item: https://canteraui.xyz/r/aps-viewer.json
-
-### viewer-native-toolbar
-
-Title: Viewer Native Toolbar
-Type: component
-Description: An Autodesk Viewer extension that docks the native toolbar on any edge and offers a 44px touch-target scale without replacing Autodesk controls.
-Install: npx shadcn@latest add @cantera/viewer-native-toolbar
-Docs: https://canteraui.xyz/components/viewer-native-toolbar
-Item: https://canteraui.xyz/r/viewer-native-toolbar.json
 
 ### model-status-card
 

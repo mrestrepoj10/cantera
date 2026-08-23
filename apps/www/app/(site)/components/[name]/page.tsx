@@ -82,7 +82,7 @@ async function ComponentPageContent({ params }: PageProps) {
   const item = getRegistryItem(name)
   if (!item) notFound()
 
-  const isViewerItem = name === 'aps-viewer' || name === 'viewer-native-toolbar'
+  const isViewerItem = name === 'aps-viewer'
   // The viewer demo's first move is downloading the SDK from the Autodesk CDN
   // — knowable at render time, so warm the connection before the script asks.
   if (isViewerItem && process.env.APS_VIEWER_DEMO_URN) {

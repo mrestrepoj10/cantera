@@ -16,7 +16,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         </aside>
         {/* min-h + wrap: on phone widths the nav folds to a second row instead of
             overflowing the viewport; desktop renders identically (nothing wraps). */}
-        <div className="mx-auto flex min-h-14 w-full max-w-[90rem] flex-wrap items-center gap-y-1 px-4 py-2 sm:px-6">
+        <div className="mx-auto flex min-h-14 w-full max-w-5xl flex-wrap items-center gap-y-1 px-4 py-2 sm:px-6">
           <Link href="/" className="focus-ring rounded-md font-medium font-mono text-sm lowercase">
             cantera
           </Link>

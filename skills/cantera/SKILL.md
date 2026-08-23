@@ -89,8 +89,7 @@ exports, the files the install writes, and the environment it needs.
 | `@cantera/file-picker-dialog` | component | Hub Browser inside a dialog, with tip-or-version selection and an explicit cancel action. | [references/file-picker-dialog.md](references/file-picker-dialog.md) |
 | `@cantera/viewer-types` | lib | Zero-dependency structural types for the Autodesk Viewer global runtime, documents, models, extensions, and promise-based token callbacks. | [references/viewer-types.md](references/viewer-types.md) |
 | `@cantera/viewer-extension-types` | lib | A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source. | [references/viewer-extension-types.md](references/viewer-extension-types.md) |
-| `@cantera/aps-viewer` | component | A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks. | [references/aps-viewer.md](references/aps-viewer.md) |
-| `@cantera/viewer-native-toolbar` | component | An Autodesk Viewer extension that docks the native toolbar on any edge and offers a 44px touch-target scale without replacing Autodesk controls. | [references/viewer-native-toolbar.md](references/viewer-native-toolbar.md) |
+| `@cantera/aps-viewer` | component | A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks. | [references/aps-viewer.md](references/aps-viewer.md) |
 | `@cantera/model-status-card` | component | The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract. | [references/model-status-card.md](references/model-status-card.md) |
 | `@cantera/model-viewer-page` | block | A complete APS project-tree and Autodesk Viewer page: lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states. | [references/model-viewer-page.md](references/model-viewer-page.md) |
 | `@cantera/upload-types` | lib | Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting. | [references/upload-types.md](references/upload-types.md) |
@@ -116,7 +115,6 @@ npx shadcn@latest add @cantera/version-set-select-demo
 npx shadcn@latest add @cantera/hub-browser-demo
 npx shadcn@latest add @cantera/file-picker-dialog-demo
 npx shadcn@latest add @cantera/aps-viewer-demo
-npx shadcn@latest add @cantera/viewer-native-toolbar-demo
 npx shadcn@latest add @cantera/model-status-card-demo
 npx shadcn@latest add @cantera/file-drop-zone-demo
 ```

@@ -56,8 +56,6 @@ const previewFrameClasses: Record<string, string> = {
   'model-viewer-page':
     'flex min-h-[36rem] items-stretch overflow-hidden rounded-lg border border-border',
   'aps-viewer': 'flex min-h-[36rem] items-stretch',
-  'viewer-native-toolbar':
-    'flex min-h-[36rem] items-stretch overflow-hidden rounded-lg border border-border',
   'file-drop-zone': 'flex min-h-[26rem] items-start rounded-lg border border-border p-4 sm:p-6',
 }
 

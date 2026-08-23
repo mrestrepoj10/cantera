@@ -1,6 +1,6 @@
 # APS Viewer (`@cantera/aps-viewer`)
 
-A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks.
+A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks.
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/aps-viewer`
@@ -16,19 +16,22 @@ Files written into the consumer project:
 - `components/ui/aps-viewer/hooks.ts`
 - `components/ui/aps-viewer/loader.ts`
 - `components/ui/aps-viewer/store.ts`
+- `components/ui/aps-viewer/toolbar.ts`
 - `components/ui/aps-viewer/index.ts`
 
 ## Install notes
 
-APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance, viewCube, and radius changes apply in place. toolbar=none uses the core Viewer3D without Autodesk's native toolbar; viewCube controls the cube independently.
+APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance, viewCube, radius, toolbarPosition, and toolbarScale changes apply in place. toolbar=none uses the core Viewer3D without Autodesk's native toolbar; viewCube controls the cube independently.
 
-Autodesk Viewer 7.* renders third-party DOM that cantera cannot repair. The docs accessibility suite excludes only the subtree rooted inside the viewer canvas; controls you add around or over the viewer remain in scope. Audit the inherited Autodesk controls against your own product requirements.
+The native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are not a published stable contract, so docking is best-effort and should be checked when changing the Viewer major version. Autodesk Viewer also renders third-party DOM that cantera cannot repair. The docs accessibility suite excludes only the subtree rooted inside the viewer canvas; controls you add around or over the viewer remain in scope. Audit the inherited Autodesk controls against your own product requirements.
 
 ## Props
 
 - `urn` (`string`) — Model Derivative URN with or without the urn: prefix. Changes reuse the live WebGL viewer.
 - `getAccessToken` (`GetAccessToken`) — Fetches a short-lived token from your backend. APS credentials must never enter the browser.
 - `toolbar` (`'native' | 'none'`, default `'native'`) — Chooses the GuiViewer3D native toolbar or the core Viewer3D; ViewCube remains independently controllable.
+- `toolbarPosition` (`'bottom' | 'top' | 'left' | 'right'`, default `'bottom'`) — Docks the native toolbar to an edge. Left and right derive a vertical layout; changes apply live.
+- `toolbarScale` (`'sm' | 'md' | 'lg' | number`, default `'md'`) — Native-toolbar button box: compact 36px, comfortable 44px, gloved 52px, or an exact number clamped to 32–64. Changes apply live.
 - `viewCube` (`boolean`, default `true`) — Shows Autodesk's ViewCube and companion controls. Changes apply live without recreating the viewer.
 - `radius` (`number`) — Clips the viewer frame to a pixel radius clamped to 0–32. Omit to leave frame styling to the consumer.
 - `theme` (`'light' | 'dark'`, default `app appearance`) — Optional forced appearance. Undefined follows the document class and system preference live.

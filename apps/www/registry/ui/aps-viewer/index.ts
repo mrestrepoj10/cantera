@@ -32,6 +32,10 @@ export {
 } from '@/components/ui/aps-viewer/loader'
 export { ViewerStore } from '@/components/ui/aps-viewer/store'
 export type {
+  APSViewerToolbarPosition,
+  APSViewerToolbarScale,
+} from '@/components/ui/aps-viewer/toolbar'
+export type {
   APSCameraState,
   APSContextMenuItem,
   APSContextMenuStatus,

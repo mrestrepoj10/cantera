@@ -1419,6 +1419,20 @@ export const apiTables: Record<string, ApiTable[]> = {
             'Chooses the GuiViewer3D native toolbar or the core Viewer3D; ViewCube remains independently controllable.',
         },
         {
+          name: 'toolbarPosition',
+          type: "'bottom' | 'top' | 'left' | 'right'",
+          defaultValue: "'bottom'",
+          description:
+            'Docks the native toolbar to an edge. Left and right derive a vertical layout; changes apply live.',
+        },
+        {
+          name: 'toolbarScale',
+          type: "'sm' | 'md' | 'lg' | number",
+          defaultValue: "'md'",
+          description:
+            'Native-toolbar button box: compact 36px, comfortable 44px, gloved 52px, or an exact number clamped to 32–64. Changes apply live.',
+        },
+        {
           name: 'viewCube',
           type: 'boolean',
           defaultValue: 'true',
@@ -1514,45 +1528,6 @@ export const apiTables: Record<string, ApiTable[]> = {
           type: 'functions',
           description:
             'Deduplicated CDN and Initializer lifecycle, exposed for advanced imperative composition.',
-        },
-      ],
-    },
-  ],
-  'viewer-native-toolbar': [
-    {
-      caption: 'Props and exports',
-      nameHeader: 'Prop or export',
-      showDefault: true,
-      rows: [
-        {
-          name: 'position',
-          type: "'bottom' | 'top' | 'left' | 'right'",
-          defaultValue: "'bottom'",
-          description: 'Docking edge. Left and right derive the vertical native-toolbar layout.',
-        },
-        {
-          name: 'scale',
-          type: "'sm' | 'md' | 'lg' | number",
-          defaultValue: "'md'",
-          description:
-            'Rendered button box: sm is a compact 36px (opt-in only), md is a comfortable 44px, lg is a 52px gloved-tablet box, and a number is an exact pixel box clamped to 32–64.',
-        },
-        {
-          name: 'useViewerNativeToolbar',
-          type: '(options?: ViewerNativeToolbarOptions) => void',
-          description: 'Hook form of the declarative component. Use inside APSViewer.',
-        },
-        {
-          name: 'registerViewerNativeToolbar',
-          type: '(autodesk: AutodeskGlobal) => void',
-          description:
-            'Idempotently registers the extension against an initialized Viewer runtime.',
-        },
-        {
-          name: 'VIEWER_NATIVE_TOOLBAR_EXTENSION_ID',
-          type: 'string',
-          defaultValue: "'Cantera.ViewerNativeToolbar'",
-          description: 'Extension id for direct viewer.loadExtension usage.',
         },
       ],
     },

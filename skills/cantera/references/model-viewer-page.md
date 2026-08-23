@@ -6,7 +6,7 @@ A complete APS project-tree and Autodesk Viewer page: lazy 3-legged Data Managem
 - Install: `npx shadcn@latest add @cantera/model-viewer-page`
 - Docs: https://canteraui.xyz/components/model-viewer-page
 - Registry item: https://canteraui.xyz/r/model-viewer-page.json
-- Registry dependencies: button, @cantera/hub-tree, @cantera/aps-viewer, @cantera/viewer-native-toolbar, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
+- Registry dependencies: button, @cantera/hub-tree, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:

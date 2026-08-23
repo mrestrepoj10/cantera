@@ -53,8 +53,7 @@ Agents: install the skill with `npx skills add mrestrepoj10/cantera` for the reg
 | `hub-browser` | component | Controlled hub-to-file browser with breadcrumbs, pagination, translation status, and on-demand version selection. |
 | `file-picker-dialog` | component | The hub browser in a dialog, returning an item tip or an exact version. |
 | `viewer-types` | lib | Structural types for the public Autodesk Viewer global runtime. |
-| `aps-viewer` | component | Strict-Mode-safe Viewer host with deduplicated runtime loading, live theme changes, URN swaps, resize, and hooks. |
-| `viewer-native-toolbar` | component | Public Viewer extension for edge docking and 44px native toolbar controls. |
+| `aps-viewer` | component | Strict-Mode-safe Viewer host with native-toolbar docking and sizing, live theme changes, URN swaps, resize, and hooks. |
 
 Components are data-agnostic by design: they never fetch. The pattern every future domain (issues, RFIs, submittals, model viewers) follows is **types + adapters + blocks** — generic types as props, adapters per provider, blocks for the batteries-included path.
 

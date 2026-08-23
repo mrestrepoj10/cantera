@@ -23,7 +23,7 @@ function buttonBoxHeight(toolbar: Locator): Promise<number> {
  * assertions below miss: class application, orientation, flyout anchoring,
  * and exact button-box sizing are all asserted directly against the live SDK.
  */
-test.describe('Viewer native toolbar', () => {
+test.describe('APS Viewer toolbar', () => {
   test.use({ colorScheme: 'light', viewport: { width: 1440, height: 1000 } })
 
   for (const position of positions) {

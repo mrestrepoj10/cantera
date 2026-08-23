@@ -61,7 +61,7 @@ const APSViewerDemo = dynamic(() =>
 
 /** Renders the demo for a registry item, or nothing for lib items. */
 export function ComponentDemo({ name, viewerUrn }: { name: string; viewerUrn?: string }) {
-  if (name === 'aps-viewer' || name === 'viewer-native-toolbar') {
+  if (name === 'aps-viewer') {
     return <APSViewerDemo urn={viewerUrn} />
   }
   const Demo = demos[name]
