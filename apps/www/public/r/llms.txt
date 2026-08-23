@@ -182,6 +182,33 @@ Install: npx shadcn@latest add @cantera/hub-tree
 Docs: https://canteraui.xyz/components/hub-tree
 Item: https://canteraui.xyz/r/hub-tree.json
 
+### finder
+
+Title: Finder
+Type: component
+Description: Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives.
+Install: npx shadcn@latest add @cantera/finder
+Docs: https://canteraui.xyz/components/finder
+Item: https://canteraui.xyz/r/finder.json
+
+### hub-sidebar
+
+Title: Hub Sidebar
+Type: component
+Description: The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.
+Install: npx shadcn@latest add @cantera/hub-sidebar
+Docs: https://canteraui.xyz/components/hub-sidebar
+Item: https://canteraui.xyz/r/hub-sidebar.json
+
+### crew-avatar
+
+Title: Crew Avatar
+Type: component
+Description: Deterministic construction-crew SVG avatars — hard hats, hi-vis vests, safety glasses, ear defenders — generated from a name with zero dependencies, boring-avatars style.
+Install: npx shadcn@latest add @cantera/crew-avatar
+Docs: https://canteraui.xyz/components/crew-avatar
+Item: https://canteraui.xyz/r/crew-avatar.json
+
 ### file-picker-dialog
 
 Title: File Picker Dialog

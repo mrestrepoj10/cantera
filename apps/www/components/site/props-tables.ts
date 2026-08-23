@@ -1210,6 +1210,176 @@ export const apiTables: Record<string, ApiTable[]> = {
       ],
     },
   ],
+  finder: [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'query / onQueryChange',
+          type: 'string / (query: string) => void',
+          description:
+            'Controlled query. The finder never fetches: the consumer owns the search call, the debounce, and the scope.',
+        },
+        {
+          name: 'groups',
+          type: 'FinderGroup[]',
+          description:
+            'Result groups in render order — recents, pins, the current level, an async deep search. Each carries id, label, status (ready | loading | error), error, and entries; loading keeps existing entries visible under a spinner-labeled heading, and error renders in warning ink because retyping retries.',
+        },
+        {
+          name: 'entries (FinderEntry)',
+          type: '{ item: Item; version?: ItemVersion; path?: BrowsePathSegment[]; caption?: string }',
+          description:
+            'Entries carry their address: path renders as the location line and powers onReveal; caption replaces it for recents ("opened 5 minutes ago").',
+        },
+        {
+          name: 'onItemOpen',
+          type: '(entry: FinderEntry) => void | Promise<void>',
+          description:
+            'Open the entry (tip, or the carried version). A returned promise drives the per-row pending spinner; the row keeps its label and never unmounts.',
+        },
+        {
+          name: 'onReveal',
+          type: '(entry: FinderEntry) => void',
+          description:
+            'Show the entry where it lives. Map entry.path to a hub-tree (expandedIds + selectedId) or a hub-browser location in one state update. The affordance renders only when the entry has a path.',
+        },
+        {
+          name: 'pending',
+          type: '{ openingId?: string }',
+          description:
+            'Consumer-driven pending for server actions, keyed by finderEntryKey(entry). Promise-returning callbacks drive it automatically.',
+        },
+        {
+          name: 'placeholder / label / emptyLabel',
+          type: 'string',
+          defaultValue: "'Find a file' / 'Find a file' / 'No matches.'",
+          description:
+            'Input placeholder, the accessible name of the query box, and the no-matches line shown once a query has no entries anywhere.',
+        },
+      ],
+    },
+    {
+      caption: 'Exports',
+      nameHeader: 'Export',
+      rows: [
+        {
+          name: 'FinderDialog',
+          type: 'FinderProps & { open; onOpenChange; shortcut?; title?; description? }',
+          description:
+            'The \u2318K palette over the same controlled surface. shortcut (default true) binds \u2318K / Ctrl+K to toggle; selecting or revealing an entry closes it — the palette is a jump, not a workspace.',
+        },
+        {
+          name: 'FinderTrigger',
+          type: "ComponentProps<'button'> & { placeholder?; showShortcut? }",
+          description:
+            'Input-shaped button that opens the palette — the visible, tappable entry point with the shortcut as decoration. Compacts to an icon inside a sidebar collapsed to icon mode.',
+        },
+        {
+          name: 'finderEntryKey',
+          type: '(entry: FinderEntry) => string',
+          description:
+            'Stable key for an entry — item id, plus the version id when the entry means a specific version. Use it for pending.openingId and list keys.',
+        },
+        {
+          name: 'FinderEntry / FinderGroup / FinderGroupStatus / FinderPending',
+          type: 'types',
+          description: 'The full controlled surface, importable for consumer wiring.',
+        },
+      ],
+    },
+  ],
+  'crew-avatar': [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'name',
+          type: 'string',
+          description:
+            'The seed. Casing and surrounding whitespace are normalized, so the same person always gets the same worker.',
+        },
+        {
+          name: 'size',
+          type: 'number',
+          defaultValue: '32',
+          description: 'Rendered square in pixels. Shapes are tuned to stay legible down to 24px.',
+        },
+        {
+          name: 'colors',
+          type: 'string[]',
+          description:
+            'Backdrop palette override. The defaults clear 3:1 against both white and near-black surfaces; overrides own that contrast responsibility.',
+        },
+        {
+          name: 'title',
+          type: 'string',
+          description:
+            'Accessible name — renders role="img" with a <title>. Omit next to a visible name and the mark stays decorative (aria-hidden).',
+        },
+      ],
+    },
+    {
+      caption: 'Library exports',
+      nameHeader: 'Export',
+      rows: [
+        {
+          name: 'crewAvatarSvg',
+          type: '(name, { size?, colors?, title? }) => string',
+          description:
+            'Standalone <svg> markup for non-React surfaces — emails, canvases, OG images.',
+        },
+        {
+          name: 'crewAvatarSpec / crewAvatarShapes',
+          type: 'functions',
+          description:
+            'The resolved trait spec (headwear, vest, eyewear, palette) and the renderer-neutral shape tree both renderers share, for custom rendering.',
+        },
+      ],
+    },
+  ],
+  'hub-sidebar': [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      rows: [
+        {
+          name: 'finder',
+          type: "Omit<FinderProps, 'className'>",
+          description:
+            'Powers the \u2318K FinderDialog; the header renders a FinderTrigger reusing its placeholder. The fast paths — query, recents, deep search — sit above the tree on purpose.',
+        },
+        {
+          name: 'tree',
+          type: 'HubTreeProps',
+          description:
+            'Forwarded to the HubTree in the content slot. Reveal wiring stays in the consumer: a finder entry path becomes expandedIds + selectedId in one update.',
+        },
+        {
+          name: 'user',
+          type: '{ name: string; detail?: string; avatar?: ReactNode }',
+          description:
+            'Identity row pinned at the very top — avatar (initials fallback) plus name and detail, with the collapse toggle inline on its right; the toggle stays reachable when the rail collapses to icon mode.',
+        },
+        {
+          name: 'header / footer',
+          type: 'ReactNode',
+          description:
+            'Rendered between the identity row and the finder trigger, and in the sidebar footer.',
+        },
+        {
+          name: '...props',
+          type: 'ComponentProps<typeof Sidebar>',
+          description:
+            'Remaining props reach the shadcn Sidebar — side, variant, collapsible (the trigger compacts to an icon in icon mode). Render inside your own SidebarProvider with page content in SidebarInset.',
+        },
+      ],
+    },
+  ],
   'model-viewer-page': [
     {
       caption: 'ModelBrowser props',

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "hub-sidebar",
+  "title": "Hub Sidebar",
+  "author": "MR <contact@bimframe.co>",
+  "description": "The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.",
+  "registryDependencies": [
+    "avatar",
+    "sidebar",
+    "@cantera/finder",
+    "@cantera/hub-tree"
+  ],
+  "files": [
+    {
+      "path": "registry/ui/hub-sidebar.tsx",
+      "content": "'use client'\n\nimport { type ComponentProps, type ReactNode, useState } from 'react'\n\nimport { Avatar, AvatarFallback } from '@/components/ui/avatar'\nimport { FinderDialog, type FinderProps, FinderTrigger } from '@/components/ui/finder'\nimport { HubTree, type HubTreeProps } from '@/components/ui/hub-tree'\nimport {\n  Sidebar,\n  SidebarContent,\n  SidebarFooter,\n  SidebarGroup,\n  SidebarHeader,\n  SidebarRail,\n  SidebarTrigger,\n} from '@/components/ui/sidebar'\n\n/**\n * HubSidebar — who you are, then the fast path, then the walk: an identity\n * row (avatar + name, with the collapse toggle inline on its right), an\n * input-shaped trigger opening the ⌘K finder palette, and the hub tree.\n * Pure composition of controlled components: it lays out and forwards, and\n * the wiring between them stays in the consumer's hands — a finder\n * `onReveal` becomes tree `expandedIds` + `selectedId` in one update.\n *\n * Render inside your own `SidebarProvider`, with the page content in\n * `SidebarInset` — this component is the sidebar itself, not the app shell.\n * `collapsible` and the other shadcn Sidebar props pass straight through;\n * in icon mode the identity row keeps its avatar, the trigger compacts to\n * an icon, and the text yields.\n */\n\nexport interface HubSidebarUser {\n  name: string\n  /** Secondary line — a role, an email, the active hub. */\n  detail?: string\n  /** Avatar node (e.g. a generated mark). Falls back to initials. */\n  avatar?: ReactNode\n}\n\nexport interface HubSidebarProps extends ComponentProps<typeof Sidebar> {\n  /** Props forwarded to the ⌘K FinderDialog; the trigger reuses its placeholder. */\n  finder: Omit<FinderProps, 'className'>\n  /** Props forwarded to the HubTree in the content slot. */\n  tree: HubTreeProps\n  /** Identity row pinned at the very top, with the collapse toggle inline. */\n  user?: HubSidebarUser\n  /** Rendered between the identity row and the finder trigger. */\n  header?: ReactNode\n  /** Rendered in the sidebar footer. */\n  footer?: ReactNode\n}\n\nfunction initialsOf(name: string): string {\n  return name\n    .split(/\\s+/)\n    .filter(Boolean)\n    .slice(0, 2)\n    .map((part) => part[0]?.toLocaleUpperCase() ?? '')\n    .join('')\n}\n\nfunction HubSidebar({ finder, tree, user, header, footer, ...props }: HubSidebarProps) {\n  const [finderOpen, setFinderOpen] = useState(false)\n\n  return (\n    <Sidebar {...props}>\n      <SidebarHeader className=\"gap-2\">\n        {user && (\n          <div className=\"flex min-h-8 items-center gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1\">\n            {user.avatar ?? (\n              <Avatar className=\"size-8 shrink-0\">\n                <AvatarFallback className=\"text-xs\">{initialsOf(user.name)}</AvatarFallback>\n              </Avatar>\n            )}\n            <div className=\"flex min-w-0 flex-1 flex-col group-data-[collapsible=icon]:hidden\">\n              <span className=\"truncate font-medium text-sm\">{user.name}</span>\n              {user.detail && (\n                <span className=\"truncate text-muted-foreground text-xs\">{user.detail}</span>\n              )}\n            </div>\n            {/* Stays reachable when collapsed to the icon rail — the toggle is\n                how you get back, so it never hides with the text. */}\n            <SidebarTrigger className=\"shrink-0\" />\n          </div>\n        )}\n        {header}\n        <FinderTrigger placeholder={finder.placeholder} onClick={() => setFinderOpen(true)} />\n      </SidebarHeader>\n      <SidebarContent>\n        <SidebarGroup>\n          <HubTree {...tree} />\n        </SidebarGroup>\n      </SidebarContent>\n      {footer && <SidebarFooter>{footer}</SidebarFooter>}\n      <SidebarRail />\n      <FinderDialog open={finderOpen} onOpenChange={setFinderOpen} {...finder} />\n    </Sidebar>\n  )\n}\n\nexport { HubSidebar }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "docs": "Render inside your own SidebarProvider with page content in SidebarInset — HubSidebar is the sidebar, not the app shell. The header stacks an identity row (avatar + name with the collapse toggle inline — the toggle stays reachable in the icon rail) above a FinderTrigger opening the ⌘K FinderDialog (fed by the finder prop); the tree fills the content slot. It forwards grouped props to its two controlled halves and adds no state of its own; wire reveal by mapping a finder entry's path to the tree's expandedIds and selectedId in one update.",
+  "categories": [
+    "projects",
+    "navigation"
+  ],
+  "type": "registry:component"
+}

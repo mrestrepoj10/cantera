@@ -98,6 +98,9 @@ interface ApsSheet extends Entity {
     tags: string[];
     is_current: boolean;
     deleted: boolean;
+    upload_file_name: string;
+    viewable_urn: string;
+    viewable_guid: string;
     payload: Record<string, unknown>;
 }
 type ApsManifestDerivative = Record<string, unknown>;

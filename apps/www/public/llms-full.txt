@@ -638,6 +638,86 @@ Files written into the consumer project:
 
 - `HubTreeNode` (`HubTreeHubNode | HubTreeProjectNode | HubTreeFolderNode | HubTreeItemNode | HubTreeVersionNode`) — Discriminated by type. Branches may receive children and hasChildren; versions are always leaves.
 
+### Finder (`@cantera/finder`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/finder
+Docs: https://canteraui.xyz/components/finder
+Item: https://canteraui.xyz/r/finder.json
+Registry dependencies: button, command, @cantera/project-types, @cantera/status-tokens
+npm dependencies: lucide-react
+
+Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives.
+
+Files written into the consumer project:
+
+- finder.tsx
+
+#### Props
+
+- `query / onQueryChange` (`string / (query: string) => void`) — Controlled query. The finder never fetches: the consumer owns the search call, the debounce, and the scope.
+- `groups` (`FinderGroup[]`) — Result groups in render order — recents, pins, the current level, an async deep search. Each carries id, label, status (ready | loading | error), error, and entries; loading keeps existing entries visible under a spinner-labeled heading, and error renders in warning ink because retyping retries.
+- `entries (FinderEntry)` (`{ item: Item; version?: ItemVersion; path?: BrowsePathSegment[]; caption?: string }`) — Entries carry their address: path renders as the location line and powers onReveal; caption replaces it for recents ("opened 5 minutes ago").
+- `onItemOpen` (`(entry: FinderEntry) => void | Promise<void>`) — Open the entry (tip, or the carried version). A returned promise drives the per-row pending spinner; the row keeps its label and never unmounts.
+- `onReveal` (`(entry: FinderEntry) => void`) — Show the entry where it lives. Map entry.path to a hub-tree (expandedIds + selectedId) or a hub-browser location in one state update. The affordance renders only when the entry has a path.
+- `pending` (`{ openingId?: string }`) — Consumer-driven pending for server actions, keyed by finderEntryKey(entry). Promise-returning callbacks drive it automatically.
+- `placeholder / label / emptyLabel` (`string`, default `'Find a file' / 'Find a file' / 'No matches.'`) — Input placeholder, the accessible name of the query box, and the no-matches line shown once a query has no entries anywhere.
+
+#### Exports
+
+- `FinderDialog` (`FinderProps & { open; onOpenChange; shortcut?; title?; description? }`) — The ⌘K palette over the same controlled surface. shortcut (default true) binds ⌘K / Ctrl+K to toggle; selecting or revealing an entry closes it — the palette is a jump, not a workspace.
+- `FinderTrigger` (`ComponentProps<'button'> & { placeholder?; showShortcut? }`) — Input-shaped button that opens the palette — the visible, tappable entry point with the shortcut as decoration. Compacts to an icon inside a sidebar collapsed to icon mode.
+- `finderEntryKey` (`(entry: FinderEntry) => string`) — Stable key for an entry — item id, plus the version id when the entry means a specific version. Use it for pending.openingId and list keys.
+- `FinderEntry / FinderGroup / FinderGroupStatus / FinderPending` (`types`) — The full controlled surface, importable for consumer wiring.
+
+### Hub Sidebar (`@cantera/hub-sidebar`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/hub-sidebar
+Docs: https://canteraui.xyz/components/hub-sidebar
+Item: https://canteraui.xyz/r/hub-sidebar.json
+Registry dependencies: avatar, sidebar, @cantera/finder, @cantera/hub-tree
+
+The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.
+
+Files written into the consumer project:
+
+- hub-sidebar.tsx
+
+#### Props
+
+- `finder` (`Omit<FinderProps, 'className'>`) — Powers the ⌘K FinderDialog; the header renders a FinderTrigger reusing its placeholder. The fast paths — query, recents, deep search — sit above the tree on purpose.
+- `tree` (`HubTreeProps`) — Forwarded to the HubTree in the content slot. Reveal wiring stays in the consumer: a finder entry path becomes expandedIds + selectedId in one update.
+- `user` (`{ name: string; detail?: string; avatar?: ReactNode }`) — Identity row pinned at the very top — avatar (initials fallback) plus name and detail, with the collapse toggle inline on its right; the toggle stays reachable when the rail collapses to icon mode.
+- `header / footer` (`ReactNode`) — Rendered between the identity row and the finder trigger, and in the sidebar footer.
+- `...props` (`ComponentProps<typeof Sidebar>`) — Remaining props reach the shadcn Sidebar — side, variant, collapsible (the trigger compacts to an icon in icon mode). Render inside your own SidebarProvider with page content in SidebarInset.
+
+### Crew Avatar (`@cantera/crew-avatar`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/crew-avatar
+Docs: https://canteraui.xyz/components/crew-avatar
+Item: https://canteraui.xyz/r/crew-avatar.json
+
+Deterministic construction-crew SVG avatars — hard hats, hi-vis vests, safety glasses, ear defenders — generated from a name with zero dependencies, boring-avatars style.
+
+Files written into the consumer project:
+
+- lib/crew-avatar.ts
+- crew-avatar.tsx
+
+#### Props
+
+- `name` (`string`) — The seed. Casing and surrounding whitespace are normalized, so the same person always gets the same worker.
+- `size` (`number`, default `32`) — Rendered square in pixels. Shapes are tuned to stay legible down to 24px.
+- `colors` (`string[]`) — Backdrop palette override. The defaults clear 3:1 against both white and near-black surfaces; overrides own that contrast responsibility.
+- `title` (`string`) — Accessible name — renders role="img" with a <title>. Omit next to a visible name and the mark stays decorative (aria-hidden).
+
+#### Library exports
+
+- `crewAvatarSvg` (`(name, { size?, colors?, title? }) => string`) — Standalone <svg> markup for non-React surfaces — emails, canvases, OG images.
+- `crewAvatarSpec / crewAvatarShapes` (`functions`) — The resolved trait spec (headwear, vest, eyewear, palette) and the renderer-neutral shape tree both renderers share, for custom rendering.
+
 ### File Picker Dialog (`@cantera/file-picker-dialog`)
 
 Type: component

@@ -44,6 +44,9 @@ const demos: Record<string, ComponentType> = {
     import('@/components/examples/hub-browser-demo').then((m) => m.HubBrowserDemo),
   ),
   'hub-tree': dynamic(() => import('./demos/hub-tree-demo').then((m) => m.HubTreeDemo)),
+  finder: dynamic(() => import('./demos/finder-demo').then((m) => m.FinderDemo)),
+  'crew-avatar': dynamic(() => import('./demos/crew-avatar-demo').then((m) => m.CrewAvatarDemo)),
+  'hub-sidebar': dynamic(() => import('./demos/hub-sidebar-demo').then((m) => m.HubSidebarDemo)),
   'model-viewer-page': dynamic(() =>
     import('./demos/model-viewer-page-demo').then((m) => m.ModelViewerPageDemo),
   ),
