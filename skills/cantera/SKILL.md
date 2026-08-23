@@ -57,8 +57,6 @@ These are not style preferences. Code that breaks them is wrong here.
 
 **Field density and a11y.** This UI is used with gloves, on a tablet, on site. Primary actions carry a 44px minimum touch target; comfortable density is the default and compact is opt-in. 12px is the text floor — there is no `text-[10px]` anywhere in the registry. Focus indicators are 3:1 against their surroundings (`focus-visible:border-ring` plus a full-alpha ring). Every block ships a real heading, every description is wired with `aria-describedby`, and `Intl` formatting is locale-neutral (`Intl.RelativeTimeFormat(undefined, ...)`, with an optional `locale` prop).
 
-**Motion grammar.** Exactly four moves: (1) icon and spinner crossfade, about 150ms ease-out; (2) press feedback, delegated to the primitive's `active:translate-y-px`; (3) status color transitions, via `transition-colors`; (4) a rare, user-initiated progressive-disclosure reveal may transition height at about 200ms, always gated behind `prefers-reduced-motion` — never on content a user toggles repeatedly. That is the whole vocabulary. No entrance animations on data-dense content — a connections list does not stagger in.
-
 **Installed specifiers.** Distributed files import what the install produces: `@/components/ui/connection-card`, `@/lib/oauth-types`. Never `@/registry/...` — that path exists only in the cantera repo and installs broken.
 
 **Icon sizing.** Preset provider marks carry their own `className="size-4"`, so one renders correctly wherever it is dropped. A `[&_svg]:size-*` wrapper still wins on specificity where a surface wants another size — use the wrapper, not a rewritten mark, and keep `aria-hidden` on decorative marks.
@@ -87,12 +85,16 @@ exports, the files the install writes, and the environment it needs.
 | `@cantera/project-picker` | component | The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs. | [references/project-picker.md](references/project-picker.md) |
 | `@cantera/version-set-select` | component | Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake. | [references/version-set-select.md](references/version-set-select.md) |
 | `@cantera/hub-browser` | component | A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics. | [references/hub-browser.md](references/hub-browser.md) |
+| `@cantera/hub-tree` | component | A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation. | [references/hub-tree.md](references/hub-tree.md) |
 | `@cantera/file-picker-dialog` | component | Hub Browser inside a dialog, with tip-or-version selection and an explicit cancel action. | [references/file-picker-dialog.md](references/file-picker-dialog.md) |
 | `@cantera/viewer-types` | lib | Zero-dependency structural types for the Autodesk Viewer global runtime, documents, models, extensions, and promise-based token callbacks. | [references/viewer-types.md](references/viewer-types.md) |
 | `@cantera/viewer-extension-types` | lib | A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source. | [references/viewer-extension-types.md](references/viewer-extension-types.md) |
-| `@cantera/aps-viewer` | component | A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme changes, URN swaps, automatic resize, and composable hooks. | [references/aps-viewer.md](references/aps-viewer.md) |
+| `@cantera/aps-viewer` | component | A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks. | [references/aps-viewer.md](references/aps-viewer.md) |
 | `@cantera/viewer-native-toolbar` | component | An Autodesk Viewer extension that docks the native toolbar on any edge and offers a 44px touch-target scale without replacing Autodesk controls. | [references/viewer-native-toolbar.md](references/viewer-native-toolbar.md) |
 | `@cantera/model-status-card` | component | The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract. | [references/model-status-card.md](references/model-status-card.md) |
+| `@cantera/model-viewer-page` | block | A complete APS project-tree and Autodesk Viewer page: lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states. | [references/model-viewer-page.md](references/model-viewer-page.md) |
+| `@cantera/upload-types` | lib | Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting. | [references/upload-types.md](references/upload-types.md) |
+| `@cantera/file-drop-zone` | component | A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract. | [references/file-drop-zone.md](references/file-drop-zone.md) |
 
 ## Working examples
 
@@ -116,6 +118,7 @@ npx shadcn@latest add @cantera/file-picker-dialog-demo
 npx shadcn@latest add @cantera/aps-viewer-demo
 npx shadcn@latest add @cantera/viewer-native-toolbar-demo
 npx shadcn@latest add @cantera/model-status-card-demo
+npx shadcn@latest add @cantera/file-drop-zone-demo
 ```
 
 ## More

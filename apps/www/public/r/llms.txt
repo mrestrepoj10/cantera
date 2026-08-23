@@ -173,6 +173,15 @@ Install: npx shadcn@latest add @cantera/hub-browser
 Docs: https://canteraui.xyz/components/hub-browser
 Item: https://canteraui.xyz/r/hub-browser.json
 
+### hub-tree
+
+Title: Hub Tree
+Type: component
+Description: A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation.
+Install: npx shadcn@latest add @cantera/hub-tree
+Docs: https://canteraui.xyz/components/hub-tree
+Item: https://canteraui.xyz/r/hub-tree.json
+
 ### file-picker-dialog
 
 Title: File Picker Dialog
@@ -204,7 +213,7 @@ Item: https://canteraui.xyz/r/viewer-extension-types.json
 
 Title: APS Viewer
 Type: component
-Description: A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme changes, URN swaps, automatic resize, and composable hooks.
+Description: A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks.
 Install: npx shadcn@latest add @cantera/aps-viewer
 Docs: https://canteraui.xyz/components/aps-viewer
 Item: https://canteraui.xyz/r/aps-viewer.json
@@ -226,3 +235,30 @@ Description: The translation state of one design: whether the model is viewable 
 Install: npx shadcn@latest add @cantera/model-status-card
 Docs: https://canteraui.xyz/components/model-status-card
 Item: https://canteraui.xyz/r/model-status-card.json
+
+### model-viewer-page
+
+Title: Model Viewer Page
+Type: block
+Description: A complete APS project-tree and Autodesk Viewer page: lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
+Install: npx shadcn@latest add @cantera/model-viewer-page
+Docs: https://canteraui.xyz/components/model-viewer-page
+Item: https://canteraui.xyz/r/model-viewer-page.json
+
+### upload-types
+
+Title: Upload Types
+Type: lib
+Description: Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.
+Install: npx shadcn@latest add @cantera/upload-types
+Docs: https://canteraui.xyz/components/upload-types
+Item: https://canteraui.xyz/r/upload-types.json
+
+### file-drop-zone
+
+Title: File Drop Zone
+Type: component
+Description: A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract.
+Install: npx shadcn@latest add @cantera/file-drop-zone
+Docs: https://canteraui.xyz/components/file-drop-zone
+Item: https://canteraui.xyz/r/file-drop-zone.json

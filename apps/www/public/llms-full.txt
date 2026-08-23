@@ -35,10 +35,6 @@ Every component with an async callback exposes a pending state, and pending mean
 
 This UI is used with gloves, on a tablet, on site. Primary actions carry a 44px minimum touch target; comfortable density is the default and compact is opt-in. 12px is the text floor — there is no `text-[10px]` anywhere in the registry. Focus indicators are 3:1 against their surroundings (`focus-visible:border-ring` plus a full-alpha ring). Every block ships a real heading, every description is wired with `aria-describedby`, and `Intl` formatting is locale-neutral (`Intl.RelativeTimeFormat(undefined, ...)`, with an optional `locale` prop).
 
-### Motion grammar
-
-Exactly four moves: (1) icon and spinner crossfade, about 150ms ease-out; (2) press feedback, delegated to the primitive's `active:translate-y-px`; (3) status color transitions, via `transition-colors`; (4) a rare, user-initiated progressive-disclosure reveal may transition height at about 200ms, always gated behind `prefers-reduced-motion` — never on content a user toggles repeatedly. That is the whole vocabulary. No entrance animations on data-dense content — a connections list does not stagger in.
-
 ### Installed specifiers
 
 Distributed files import what the install produces: `@/components/ui/connection-card`, `@/lib/oauth-types`. Never `@/registry/...` — that path exists only in the cantera repo and installs broken.
@@ -400,7 +396,7 @@ Files written into the consumer project:
 - `ConnectionsView` (`component`) — The presentational page: heading, summary, and whichever of the four states applies. Data in, callbacks out, no fetching.
 - `ConnectionsList` (`component`) — The ready state — one ConnectionCard per row, where the whole status vocabulary shows up at once.
 - `ConnectionsEmpty` (`component`) — The empty state: the provider chooser itself, with one sentence on what a connection buys. No illustration — the system is monochrome.
-- `ConnectionsLoading` (`component`) — The loading state: static skeleton rows built from the ConnectionCard box model, so nothing shifts on resolve, plus one spinner in a live region. No shimmer and no stagger — neither is in the motion grammar.
+- `ConnectionsLoading` (`component`) — The loading state: static skeleton rows built from the ConnectionCard box model, so nothing shifts on resolve, plus one spinner in a live region.
 - `ConnectionsError` (`component`) — The page-level failure: message in danger ink plus a retry on the async-pending contract, wired with aria-describedby.
 - `resolveConnections` (`(providers, connections?) => OAuthConnection[]`) — The data model: one row per provider in catalog order, a disconnected placeholder where no grant exists, and unknown grants appended.
 - `ConnectionsManager` (`component`) — The client wiring: connect navigates to the consent route, disconnect posts to the revoke route, and both settle by re-rendering the server page. Swap it for your own backend and ConnectionsView does not change.
@@ -613,6 +609,35 @@ Files written into the consumer project:
 - `locale` (`string`, default `runtime locale`) — BCP 47 locale for relative modified times. Undefined delegates to Intl — nothing is hardcoded to English.
 - `title / titleAs` (`string / 'h2' | 'h3' | 'h4'`, default `'Browse files' / 'h2'`) — Visible real heading and the level it occupies in the surrounding outline.
 
+### Hub Tree (`@cantera/hub-tree`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/hub-tree
+Docs: https://canteraui.xyz/components/hub-tree
+Item: https://canteraui.xyz/r/hub-tree.json
+Registry dependencies: @cantera/project-types, @cantera/status-tokens
+npm dependencies: lucide-react
+
+A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation.
+
+Files written into the consumer project:
+
+- hub-tree.tsx
+
+#### Props
+
+- `nodes` (`HubTreeNode[]`) — Controlled hub → project → folder → item → version tree. Each node keeps a globally unique tree id and its typed domain object in value.
+- `expandedIds` (`string[]`) — Controlled ids of branches whose children are visible.
+- `selectedId` (`string`) — Tree id of the selected item or version.
+- `pendingId` (`string`) — Branch currently loading children. Its label stays mounted while the disclosure icon crossfades to a spinner.
+- `density` (`'comfortable' | 'compact'`, default `'comfortable'`) — Row density. Comfortable keeps the 44px field target; compact is the explicit desktop escape hatch.
+- `onExpand / onCollapse` (`(node: HubTreeBranchNode) => void | Promise<void>`) — Controlled disclosure callbacks. Fetch children in onExpand, then feed the updated nodes and expandedIds back.
+- `onItemOpen` (`(item: Item, version?: ItemVersion) => void | Promise<void>`) — Opens the item tip when version is absent, or the exact immutable version activated below it.
+
+#### Node types
+
+- `HubTreeNode` (`HubTreeHubNode | HubTreeProjectNode | HubTreeFolderNode | HubTreeItemNode | HubTreeVersionNode`) — Discriminated by type. Branches may receive children and hasChildren; versions are always leaves.
+
 ### File Picker Dialog (`@cantera/file-picker-dialog`)
 
 Type: component
@@ -717,7 +742,7 @@ Item: https://canteraui.xyz/r/aps-viewer.json
 Working example page: npx shadcn@latest add @cantera/aps-viewer-demo
 Registry dependencies: @cantera/viewer-types
 
-A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme changes, URN swaps, automatic resize, and composable hooks.
+A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks.
 
 Files written into the consumer project:
 
@@ -732,7 +757,9 @@ Files written into the consumer project:
 
 - `urn` (`string`) — Model Derivative URN with or without the urn: prefix. Changes reuse the live WebGL viewer.
 - `getAccessToken` (`GetAccessToken`) — Fetches a short-lived token from your backend. APS credentials must never enter the browser.
-- `toolbar` (`'native' | 'none'`, default `'native'`) — Chooses GuiViewer3D with Autodesk controls or the toolbar-less core Viewer3D.
+- `toolbar` (`'native' | 'none'`, default `'native'`) — Chooses the GuiViewer3D native toolbar or the core Viewer3D; ViewCube remains independently controllable.
+- `viewCube` (`boolean`, default `true`) — Shows Autodesk's ViewCube and companion controls. Changes apply live without recreating the viewer.
+- `radius` (`number`) — Clips the viewer frame to a pixel radius clamped to 0–32. Omit to leave frame styling to the consumer.
 - `theme` (`'light' | 'dark'`, default `app appearance`) — Optional forced appearance. Undefined follows the document class and system preference live.
 - `autoResize` (`boolean`, default `true`) — ResizeObserver keeps the WebGL canvas matched to its container.
 - `version / env / api` (`string`, default `'7.*' / 'AutodeskProduction2' / 'streamingV2'`) — Viewer CDN and Initializer settings. The first mounted runtime consumer wins.
@@ -796,3 +823,135 @@ Files written into the consumer project:
 - `retryPending` (`boolean`, default `false`) — Pending state for the retry action, drivable from outside.
 - `showOutputs` (`boolean`, default `true`) — Render each produced output format as an outline badge while ready.
 - `...props` (`ComponentProps<typeof Card>`) — Everything else lands on the root Card.
+
+### Model Viewer Page (`@cantera/model-viewer-page`)
+
+Type: block
+Install: npx shadcn@latest add @cantera/model-viewer-page
+Docs: https://canteraui.xyz/components/model-viewer-page
+Item: https://canteraui.xyz/r/model-viewer-page.json
+Registry dependencies: button, @cantera/hub-tree, @cantera/aps-viewer, @cantera/viewer-native-toolbar, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
+npm dependencies: aec-auth, lucide-react
+
+A complete APS project-tree and Autodesk Viewer page: lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
+
+Files written into the consumer project:
+
+- app/models/page.tsx
+- app/models/loading.tsx
+- components/model-browser.tsx
+- app/api/models/tree/route.ts
+- app/api/viewer-token/route.ts
+
+#### ModelBrowser props
+
+- `account` (`OAuthAccount`) — Signed-in account shown in the fixed top-right account control.
+- `initialNodes` (`HubTreeNode[]`, default `[]`) — Optional normalized roots. When empty, the client starts by requesting hubs from treeEndpoint.
+- `treeEndpoint` (`string`, default `'/api/models/tree'`) — Session-backed lazy Data Management route implementing the shared kind and id query contract.
+- `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Separate two-legged viewer token route, scoped to viewables:read. Three-legged Data Management tokens never cross into the viewer.
+- `signOutHref` (`string`, default `'/api/auth/signout?next=/sign-in'`) — POST route used by the account control to revoke the grant and clear the session.
+
+#### Tree route
+
+- `kind=hubs` (`no ids`) — Loads the signed-in account’s hubs.
+- `kind=projects` (`hubId`) — Loads projects under one hub.
+- `kind=top-folders` (`hubId, projectId`) — Loads a project’s top folders.
+- `kind=folder-contents` (`projectId, folderId`) — Loads folders and items under one folder.
+- `kind=versions` (`projectId, itemId`) — Loads immutable versions under one item.
+
+### Upload Types (`@cantera/upload-types`)
+
+Type: lib
+Install: npx shadcn@latest add @cantera/upload-types
+Docs: https://canteraui.xyz/components/upload-types
+Item: https://canteraui.xyz/r/upload-types.json
+
+Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.
+
+The lifecycle of a file on its way into a project. Construction files are heavy and "uploaded" is not "done" — providers translate a design after the bytes land. Components render these shapes and never upload; adapters drive the phases and report back through them.
+
+```tsx
+import { formatBytes, MODEL_FILE_ACCEPT, type UploadFile } from '@/lib/upload-types'
+
+const files: UploadFile[] = [
+  { id: 'v1', name: 'summit-tower.rvt', size: 248_000_000, phase: 'complete' },
+  { id: 'v2', name: 'cedar-mill-site.nwd', size: 612_000_000, phase: 'uploading', progress: 0.42 },
+  {
+    id: 'v3',
+    name: 'dockside-mep.ifc',
+    phase: 'processing',
+    processingLabel: 'Translating model',
+  },
+]
+
+const caption = `${MODEL_FILE_ACCEPT} · up to ${formatBytes(800_000_000)}`
+```
+
+Files written into the consumer project:
+
+- lib/upload-types.ts
+
+#### Exports
+
+- `UploadPhase` (`type`) — 'queued' | 'uploading' | 'processing' | 'complete' | 'error'. Processing is the provider working after the bytes arrived — translation, extraction — usually without a progress signal.
+- `UploadFile` (`interface`) — One tracked file: stable id, name, optional byte size, phase, 0–1 progress while uploading, a processingLabel, and error text with a retryable flag that decides warning versus danger.
+- `UploadRejection / UploadRejectionReason` (`interface / type`) — A refused browser File plus the rule it broke: 'file-type', 'file-size', or 'file-count'.
+- `MODEL_FILE_ACCEPT` (`string`) — Accept preset for the design formats APS translates most often: .rvt, .ifc, .dwg, .dxf, .nwd, .nwc, .pdf.
+- `matchesAccept` (`(file: File, accept?: string) => boolean`) — Whether a File satisfies an accept string — extensions, exact MIME types, and type/* wildcards, the native file-input grammar.
+- `formatBytes` (`(bytes: number, locale?: string) => string`) — Bytes as a localized short unit string, e.g. 248 MB. Locale-neutral Intl by default; decimal units, matching what storage providers report.
+
+### File Drop Zone (`@cantera/file-drop-zone`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/file-drop-zone
+Docs: https://canteraui.xyz/components/file-drop-zone
+Item: https://canteraui.xyz/r/file-drop-zone.json
+Working example page: npx shadcn@latest add @cantera/file-drop-zone-demo
+Registry dependencies: button, @cantera/token-status, @cantera/status-tokens, @cantera/upload-types
+npm dependencies: lucide-react
+
+A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract.
+
+Files written into the consumer project:
+
+- file-drop-zone.tsx
+
+#### Props
+
+- `files` (`UploadFile[]`, default `[]`) — The tracked files, controlled by the consumer. The grid surface derives its phase from them: uploading plots the grid, processing starts the ambient glow, settled files tint it.
+- `onDropFiles` (`(files: File[]) => void | Promise<void>`) — Files that passed validation, from a drop or the picker. The component never uploads — start the transfer here and drive files as it moves.
+- `onReject` (`(rejections: UploadRejection[]) => void`) — Files refused before any upload started, with the rule each broke.
+- `onRetry` (`(file: UploadFile) => void | Promise<void>`) — Retry for a failed file. Promise-returning handlers drive the pending state; the button keeps its label, spins, and stays put.
+- `onRemove` (`(file: UploadFile) => void`) — Remove a file's row. While the file is queued or uploading the same control reads as cancel.
+- `accept` (`string`) — Native accept grammar: extensions, MIME types, type/* wildcards. MODEL_FILE_ACCEPT covers the common APS design formats.
+- `maxFiles` (`number`) — Cap on tracked files; extras reject as file-count.
+- `maxSize` (`number`) — Per-file byte ceiling; larger files reject as file-size.
+- `multiple` (`boolean`, default `true`) — Accept several files per gesture. Drops usually batch.
+- `disabled` (`boolean`, default `false`) — Ignores drops and the picker while keeping the zone focusable.
+- `label` (`string`, default `'Drag files here or browse'`) — Idle headline. The zone swaps it for phase copy while work is running.
+- `hint` (`string`) — Caption under the headline. Defaults to a summary of the accept and size rules.
+- `showList` (`boolean`, default `true`) — Render the built-in file rows. Files keep driving the grid either way; turn this off to lay rows out yourself with FileDropZoneItem.
+- `density` (`'comfortable' | 'compact'`, default `'comfortable'`) — Comfortable keeps the 44px field target on rows; compact is the explicit desktop escape hatch.
+- `locale` (`string`) — BCP 47 tag for sizes and percentages. Defaults locale-neutral.
+- `...props` (`ComponentProps<'div'>`) — Everything else lands on the root element.
+
+#### Data attributes
+
+- `data-phase` (`'idle' | 'dragover' | 'uploading' | 'processing' | 'complete' | 'error'`) — The derived surface phase, on the root and each file row (rows carry their own file phase).
+- `data-tone` (`'success' | 'warning' | 'danger'`) — Present once work settles: success on complete; a retryable-only failure is warning, a terminal one danger.
+- `data-density` (`'comfortable' | 'compact'`) — The active density, for consumer styling hooks.
+
+#### FileDropZoneItem props
+
+- `file` (`UploadFile`) — The file to render: name, format and size chip, and the phase treatment — progressbar, shimmer label, check, or error with retry.
+- `onRetry` (`(file: UploadFile) => void | Promise<void>`) — Retry for a failed file. Promise-returning handlers drive the pending state; the button keeps its label, spins, and stays put.
+- `retryPending` (`boolean`, default `false`) — Pending state for the retry action, drivable from outside.
+- `onRemove` (`(file: UploadFile) => void`) — Remove the row — cancel in flight, clear it after it settled.
+- `density` (`'comfortable' | 'compact'`, default `'comfortable'`) — Comfortable keeps the 44px field target; compact is the escape hatch.
+- `locale` (`string`) — BCP 47 tag for sizes and percentages. Defaults locale-neutral.
+- `...props` (`ComponentProps<'li'>`) — Everything else lands on the root li.
+
+#### Exports
+
+- `FileDropZoneItem` (`component`) — The file row on its own, for laying rows out anywhere — a table, a sidebar, next to model-status-card — with identical styling. Pair with showList false.
+- `FILE_DROP_ZONE_CSS` (`string`) — The drafting-grid stylesheet the component hoists via React 19 style precedence — exported for custom surfaces that reuse the grid outside the zone.

@@ -64,7 +64,7 @@ ConnectionsView never fetches — providers and connections in, callbacks out �
 - `ConnectionsView` (`component`) — The presentational page: heading, summary, and whichever of the four states applies. Data in, callbacks out, no fetching.
 - `ConnectionsList` (`component`) — The ready state — one ConnectionCard per row, where the whole status vocabulary shows up at once.
 - `ConnectionsEmpty` (`component`) — The empty state: the provider chooser itself, with one sentence on what a connection buys. No illustration — the system is monochrome.
-- `ConnectionsLoading` (`component`) — The loading state: static skeleton rows built from the ConnectionCard box model, so nothing shifts on resolve, plus one spinner in a live region. No shimmer and no stagger — neither is in the motion grammar.
+- `ConnectionsLoading` (`component`) — The loading state: static skeleton rows built from the ConnectionCard box model, so nothing shifts on resolve, plus one spinner in a live region.
 - `ConnectionsError` (`component`) — The page-level failure: message in danger ink plus a retry on the async-pending contract, wired with aria-describedby.
 - `resolveConnections` (`(providers, connections?) => OAuthConnection[]`) — The data model: one row per provider in catalog order, a disconnected placeholder where no grant exists, and unknown grants appended.
 - `ConnectionsManager` (`component`) — The client wiring: connect navigates to the consent route, disconnect posts to the revoke route, and both settle by re-rendering the server page. Swap it for your own backend and ConnectionsView does not change.

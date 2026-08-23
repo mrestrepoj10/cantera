@@ -422,6 +422,23 @@
       "docs": "HubBrowser is fully controlled and never fetches. An empty path renders the hub list; each callback advances or rewinds the consumer-owned path and entries. Activating the Hubs breadcrumb passes ROOT_BROWSE_SEGMENT — the exported empty-id sentinel — to onNavigate.\n\nVersion history is on demand: onRequestVersions receives one item id, and the consumer feeds the single-item versions prop back. Picking a row calls onItemOpen(item); picking history calls onItemOpen(item, version). Status badges use @cantera/status-tokens."
     },
     {
+      "name": "hub-tree",
+      "type": "registry:component",
+      "title": "Hub Tree",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation.",
+      "categories": ["projects", "files", "navigation", "autodesk"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": ["@cantera/project-types", "@cantera/status-tokens"],
+      "files": [
+        {
+          "path": "registry/ui/hub-tree.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "docs": "HubTree is fully controlled and never fetches. Give every node a stable, globally unique tree id and preserve the provider-normalized Hub, Project, Folder, Item, or ItemVersion in its value field. Expanding calls onExpand; feed the loaded children back through nodes and include the id in expandedIds. Items open their tip through onItemOpen(item); version rows call onItemOpen(item, version). The comfortable default uses 44px rows; compact is an explicit opt-in."
+    },
+    {
       "name": "file-picker-dialog",
       "type": "registry:component",
       "title": "File Picker Dialog",
@@ -477,7 +494,7 @@
       "type": "registry:component",
       "title": "APS Viewer",
       "author": "MR <contact@bimframe.co>",
-      "description": "A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme changes, URN swaps, automatic resize, and composable hooks.",
+      "description": "A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks.",
       "categories": ["viewer", "models", "autodesk"],
       "registryDependencies": ["@cantera/viewer-types"],
       "files": [
@@ -512,7 +529,7 @@
           "target": "components/ui/aps-viewer/index.ts"
         }
       ],
-      "docs": "APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance changes call setTheme in place. toolbar=none uses the core Viewer3D and omits Autodesk's native GUI.\n\nAutodesk Viewer 7.* renders third-party DOM that cantera cannot repair. The docs accessibility suite excludes only the subtree rooted inside the viewer canvas; controls you add around or over the viewer remain in scope. Audit the inherited Autodesk controls against your own product requirements."
+      "docs": "APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance, viewCube, and radius changes apply in place. toolbar=none uses the core Viewer3D without Autodesk's native toolbar; viewCube controls the cube independently.\n\nAutodesk Viewer 7.* renders third-party DOM that cantera cannot repair. The docs accessibility suite excludes only the subtree rooted inside the viewer canvas; controls you add around or over the viewer remain in scope. Audit the inherited Autodesk controls against your own product requirements."
     },
     {
       "name": "viewer-native-toolbar",
@@ -552,6 +569,99 @@
           "type": "registry:ui"
         }
       ]
+    },
+    {
+      "name": "model-viewer-page",
+      "type": "registry:block",
+      "title": "Model Viewer Page",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A complete APS project-tree and Autodesk Viewer page: lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.",
+      "categories": ["projects", "files", "viewer", "autodesk"],
+      "dependencies": ["aec-auth", "lucide-react"],
+      "registryDependencies": [
+        "button",
+        "@cantera/hub-tree",
+        "@cantera/aps-viewer",
+        "@cantera/viewer-native-toolbar",
+        "@cantera/viewer-extension-types",
+        "@cantera/aps-data-preset",
+        "@cantera/project-types",
+        "@cantera/acc-sign-in",
+        "@cantera/model-status-card",
+        "@cantera/status-tokens",
+        "@cantera/user-account-badge"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/model-viewer-page/page.tsx",
+          "type": "registry:page",
+          "target": "app/models/page.tsx"
+        },
+        {
+          "path": "registry/blocks/model-viewer-page/loading.tsx",
+          "type": "registry:file",
+          "target": "app/models/loading.tsx"
+        },
+        {
+          "path": "registry/blocks/model-viewer-page/components/model-browser.tsx",
+          "type": "registry:component",
+          "target": "components/model-browser.tsx"
+        },
+        {
+          "path": "registry/blocks/model-viewer-page/api/tree-route.ts",
+          "type": "registry:file",
+          "target": "app/api/models/tree/route.ts"
+        },
+        {
+          "path": "registry/blocks/model-viewer-page/api/viewer-token-route.ts",
+          "type": "registry:file",
+          "target": "app/api/viewer-token/route.ts"
+        }
+      ],
+      "envVars": {
+        "APS_CLIENT_ID": "",
+        "APS_CLIENT_SECRET": "",
+        "SESSION_SECRET": "",
+        "APS_AUTH_BASE_URL": ""
+      },
+      "docs": "Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-sign-in dependency supplies the OAuth routes and lib/acc-auth.ts.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.\n- SESSION_SECRET — required in production. Generate one with `openssl rand -base64 32`.\n- APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS. A relative value such as \"/emulate/aps\" is useful only when your app mounts a compatible embedded emulator at that path.\n\nThe default aec-auth vault from acc-sign-in is in-memory: appropriate for a demo, not production. Replace it with a durable encrypted VaultStore before real users connect.\n\nThe cantera showcase emulator supplies the project tree but no SVF geometry. Its seeded demo links one tip version to an externally translated sample URN when credentials are configured; every other item intentionally renders the no-geometry state. Your application should store real derivative URNs on normalized item versions."
+    },
+    {
+      "name": "upload-types",
+      "type": "registry:lib",
+      "title": "Upload Types",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.",
+      "categories": ["uploads", "types"],
+      "files": [
+        {
+          "path": "registry/lib/upload-types.ts",
+          "type": "registry:lib",
+          "target": "lib/upload-types.ts"
+        }
+      ]
+    },
+    {
+      "name": "file-drop-zone",
+      "type": "registry:component",
+      "title": "File Drop Zone",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract.",
+      "categories": ["uploads", "files"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "button",
+        "@cantera/token-status",
+        "@cantera/status-tokens",
+        "@cantera/upload-types"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/file-drop-zone.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "docs": "The component never uploads: onDropFiles hands over validated File objects and the consumer drives the controlled files array as the transfer moves through queued, uploading, processing, complete, and error. The grid surface derives one phase from those files — magnetized during a drag, plotted bottom-up by aggregate progress, an ambient glow while providers translate, and a status tint when work settles. Ambient motion is confined to the surface and falls back to a static treatment under prefers-reduced-motion.\n\nValidation runs before any callback: accept (extension, MIME, and type/* wildcard grammar), maxSize per file, and maxFiles against the tracked list; refusals arrive at onReject with a reason. MODEL_FILE_ACCEPT from upload-types covers the common APS design formats. Retry follows the async-pending contract; remove doubles as cancel while a file is in flight.\n\nshowList false hides the built-in rows while files keep driving the grid; FileDropZoneItem is exported for rendering the same rows in your own layout."
     },
     {
       "name": "status-tokens-demo",
@@ -885,6 +995,27 @@
           "path": "registry/examples/pages/model-status-card-demo-page.tsx",
           "type": "registry:page",
           "target": "app/examples/model-status-card/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "file-drop-zone-demo",
+      "type": "registry:example",
+      "title": "File Drop Zone Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering File Drop Zone, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["uploads", "files"],
+      "registryDependencies": ["@cantera/file-drop-zone", "@cantera/upload-types"],
+      "files": [
+        {
+          "path": "registry/examples/file-drop-zone-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/file-drop-zone-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/file-drop-zone-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/file-drop-zone/page.tsx"
         }
       ]
     }

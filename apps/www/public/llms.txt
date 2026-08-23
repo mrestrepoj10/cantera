@@ -26,10 +26,12 @@ Data-agnostic UI: typed props in, callbacks out, no fetching.
 - [Project Picker](https://canteraui.xyz/components/project-picker): The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs.
 - [Version Set Select](https://canteraui.xyz/components/version-set-select): Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake.
 - [Hub Browser](https://canteraui.xyz/components/hub-browser): A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics.
+- [Hub Tree](https://canteraui.xyz/components/hub-tree): A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation.
 - [File Picker Dialog](https://canteraui.xyz/components/file-picker-dialog): Hub Browser inside a dialog, with tip-or-version selection and an explicit cancel action.
-- [APS Viewer](https://canteraui.xyz/components/aps-viewer): A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme changes, URN swaps, automatic resize, and composable hooks.
+- [APS Viewer](https://canteraui.xyz/components/aps-viewer): A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks.
 - [Viewer Native Toolbar](https://canteraui.xyz/components/viewer-native-toolbar): An Autodesk Viewer extension that docks the native toolbar on any edge and offers a 44px touch-target scale without replacing Autodesk controls.
 - [Model Status Card](https://canteraui.xyz/components/model-status-card): The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract.
+- [File Drop Zone](https://canteraui.xyz/components/file-drop-zone): A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract.
 
 ## Blocks
 
@@ -37,6 +39,7 @@ Wired end-to-end flows — pages, route handlers, and the auth glue between them
 
 - [ACC Sign-In](https://canteraui.xyz/components/acc-sign-in): Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.
 - [Connections Page](https://canteraui.xyz/components/connections-page): The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
+- [Model Viewer Page](https://canteraui.xyz/components/model-viewer-page): A complete APS project-tree and Autodesk Viewer page: lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
 
 ## Libraries
 
@@ -48,6 +51,7 @@ The types the components speak, and the provider presets that translate into the
 - [APS Data Preset](https://canteraui.xyz/components/aps-data-preset): Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.
 - [Viewer Types](https://canteraui.xyz/components/viewer-types): Zero-dependency structural types for the Autodesk Viewer global runtime, documents, models, extensions, and promise-based token callbacks.
 - [Viewer Extension Types](https://canteraui.xyz/components/viewer-extension-types): A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.
+- [Upload Types](https://canteraui.xyz/components/upload-types): Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.
 
 ## Tokens
 

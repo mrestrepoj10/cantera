@@ -1,6 +1,6 @@
 # APS Viewer (`@cantera/aps-viewer`)
 
-A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme changes, URN swaps, automatic resize, and composable hooks.
+A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks.
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/aps-viewer`
@@ -20,7 +20,7 @@ Files written into the consumer project:
 
 ## Install notes
 
-APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance changes call setTheme in place. toolbar=none uses the core Viewer3D and omits Autodesk's native GUI.
+APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance, viewCube, and radius changes apply in place. toolbar=none uses the core Viewer3D without Autodesk's native toolbar; viewCube controls the cube independently.
 
 Autodesk Viewer 7.* renders third-party DOM that cantera cannot repair. The docs accessibility suite excludes only the subtree rooted inside the viewer canvas; controls you add around or over the viewer remain in scope. Audit the inherited Autodesk controls against your own product requirements.
 
@@ -28,7 +28,9 @@ Autodesk Viewer 7.* renders third-party DOM that cantera cannot repair. The docs
 
 - `urn` (`string`) — Model Derivative URN with or without the urn: prefix. Changes reuse the live WebGL viewer.
 - `getAccessToken` (`GetAccessToken`) — Fetches a short-lived token from your backend. APS credentials must never enter the browser.
-- `toolbar` (`'native' | 'none'`, default `'native'`) — Chooses GuiViewer3D with Autodesk controls or the toolbar-less core Viewer3D.
+- `toolbar` (`'native' | 'none'`, default `'native'`) — Chooses the GuiViewer3D native toolbar or the core Viewer3D; ViewCube remains independently controllable.
+- `viewCube` (`boolean`, default `true`) — Shows Autodesk's ViewCube and companion controls. Changes apply live without recreating the viewer.
+- `radius` (`number`) — Clips the viewer frame to a pixel radius clamped to 0–32. Omit to leave frame styling to the consumer.
 - `theme` (`'light' | 'dark'`, default `app appearance`) — Optional forced appearance. Undefined follows the document class and system preference live.
 - `autoResize` (`boolean`, default `true`) — ResizeObserver keeps the WebGL canvas matched to its container.
 - `version / env / api` (`string`, default `'7.*' / 'AutodeskProduction2' / 'streamingV2'`) — Viewer CDN and Initializer settings. The first mounted runtime consumer wins.
