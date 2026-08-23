@@ -206,6 +206,43 @@ interface ApsDocumentVersion extends Entity {
     last_modified_by_name: string;
     last_modified_time: string;
 }
+interface ApsStorageObject extends Entity {
+    object_id: string;
+    bucket_key: string;
+    object_key: string;
+    project_id: string;
+    folder_id: string;
+    name: string;
+    size: number;
+    sha1: string;
+    content_base64: string | null;
+    uploaded_at: string | null;
+}
+interface ApsUploadSession extends Entity {
+    upload_key: string;
+    object_key: string;
+    bucket_key: string;
+    parts_base64: Array<string | null>;
+    expected_parts: number;
+    expires_at: string;
+}
+type ApsTranslationJobStatus = "pending" | "inprogress" | "success" | "failed";
+interface ApsTranslationOutputFormat {
+    type: "svf2" | "svf" | "thumbnail";
+    views: string[];
+}
+interface ApsTranslationJob extends Entity {
+    urn: string;
+    source_name: string;
+    region: string;
+    status: ApsTranslationJobStatus;
+    progress: string;
+    started_at: string;
+    completes_at: string;
+    output_formats: ApsTranslationOutputFormat[];
+    force_count: number;
+    webhook_emitted: boolean;
+}
 type ApsModelSetVersionStatus = "Pending" | "Processing" | "Successful" | "Partial" | "Failed";
 type ApsClashTestStatus = "Pending" | "Processing" | "Success" | "Failed";
 interface ApsModelSetDocumentVersion {
@@ -524,6 +561,8 @@ interface ApsSeedConfig {
         version?: string;
         derivatives?: ApsManifestDerivative[];
     }>;
+    upload?: Partial<ApsUploadConfig>;
+    translation?: Partial<ApsTranslationConfig>;
     webhook_timing?: Partial<ApsWebhookTimingConfig>;
     model_coordination_timing?: Partial<ApsModelCoordinationTimingConfig>;
     document_folders?: ApsDocumentFolderSeed[];
@@ -577,6 +616,16 @@ interface ApsModelCoordinationTimingConfig {
     processing_ms: number;
     signed_url_ttl_ms: number;
 }
+interface ApsUploadConfig {
+    maxObjectBytes: number;
+}
+interface ApsTranslationConfig {
+    autoTranslateOnVersionAdd: boolean;
+    durationMs: number;
+    failForExtensions: string[];
+}
+declare const DEFAULT_UPLOAD_CONFIG: ApsUploadConfig;
+declare const DEFAULT_TRANSLATION_CONFIG: ApsTranslationConfig;
 declare const DEFAULT_MODEL_COORDINATION_TIMING: ApsModelCoordinationTimingConfig;
 declare const DEFAULT_WEBHOOK_TIMING: ApsWebhookTimingConfig;
 declare const DEFAULT_DATA_SEED: {
@@ -960,6 +1009,9 @@ interface ApsStore {
     documentFolders: Collection<ApsDocumentFolder>;
     documentItems: Collection<ApsDocumentItem>;
     documentVersions: Collection<ApsDocumentVersion>;
+    storageObjects: Collection<ApsStorageObject>;
+    uploadSessions: Collection<ApsUploadSession>;
+    translationJobs: Collection<ApsTranslationJob>;
     modelSets: Collection<ApsModelSet>;
     modelSetVersions: Collection<ApsModelSetVersion>;
     modelSetViews: Collection<ApsModelSetView>;
@@ -971,6 +1023,11 @@ declare function getApsStore(store: Store): ApsStore;
 
 declare function getModelCoordinationTiming(store: Store): ApsModelCoordinationTimingConfig;
 declare function setModelCoordinationTiming(store: Store, timing: Partial<ApsModelCoordinationTimingConfig>): void;
+
+declare function getUploadConfig(store: Store): ApsUploadConfig;
+declare function setUploadConfig(store: Store, input: Partial<ApsUploadConfig>): void;
+declare function getTranslationConfig(store: Store): ApsTranslationConfig;
+declare function setTranslationConfig(store: Store, input: Partial<ApsTranslationConfig>): void;
 
 interface ApsWebhookEventInput {
     system: string;
@@ -1006,4 +1063,4 @@ declare function simulateWebhookEvent(aps: ApsStore, store: Store, input: ApsWeb
 declare function seedFromConfig(store: Store, _baseUrl: string, config: ApsSeedConfig): void;
 declare const apsPlugin: ServicePlugin;
 
-export { type ApsAccProjectUser, type ApsClashGroup, type ApsClashTest, type ApsClashTestStatus, type ApsClient, type ApsClientType, type ApsDocumentFolder, type ApsDocumentFolderSeed, type ApsDocumentItem, type ApsDocumentItemSeed, type ApsDocumentVersion, type ApsDocumentVersionSeed, type ApsHub, type ApsIssue, type ApsIssuePermission, type ApsIssueType, type ApsManifest, type ApsManifestDerivative, type ApsModelCoordinationTimingConfig, type ApsModelSet, type ApsModelSetDocumentVersion, type ApsModelSetVersion, type ApsModelSetVersionStatus, type ApsModelSetView, type ApsProject, type ApsRfi, type ApsRfiAttribute, type ApsRfiType, type ApsSeedConfig, type ApsSheet, type ApsSheetCollection, type ApsSheetVersionSet, type ApsSignedBlob, type ApsStore, type ApsUser, type ApsWebhookCreatorType, type ApsWebhookDelivery, type ApsWebhookFilter, type ApsWebhookHook, type ApsWebhookSecret, type ApsWebhookStatus, type ApsWebhookTimingConfig, DEFAULT_DATA_SEED, DEFAULT_MODEL_COORDINATION_TIMING, DEFAULT_WEBHOOK_TIMING, apsPlugin, apsPlugin as default, getApsStore, getModelCoordinationTiming, getWebhookTiming, seedFromConfig, setModelCoordinationTiming, setWebhookTiming, simulateWebhookEvent, webhookDetails };
+export { type ApsAccProjectUser, type ApsClashGroup, type ApsClashTest, type ApsClashTestStatus, type ApsClient, type ApsClientType, type ApsDocumentFolder, type ApsDocumentFolderSeed, type ApsDocumentItem, type ApsDocumentItemSeed, type ApsDocumentVersion, type ApsDocumentVersionSeed, type ApsHub, type ApsIssue, type ApsIssuePermission, type ApsIssueType, type ApsManifest, type ApsManifestDerivative, type ApsModelCoordinationTimingConfig, type ApsModelSet, type ApsModelSetDocumentVersion, type ApsModelSetVersion, type ApsModelSetVersionStatus, type ApsModelSetView, type ApsProject, type ApsRfi, type ApsRfiAttribute, type ApsRfiType, type ApsSeedConfig, type ApsSheet, type ApsSheetCollection, type ApsSheetVersionSet, type ApsSignedBlob, type ApsStorageObject, type ApsStore, type ApsTranslationConfig, type ApsTranslationJob, type ApsTranslationJobStatus, type ApsTranslationOutputFormat, type ApsUploadConfig, type ApsUploadSession, type ApsUser, type ApsWebhookCreatorType, type ApsWebhookDelivery, type ApsWebhookFilter, type ApsWebhookHook, type ApsWebhookSecret, type ApsWebhookStatus, type ApsWebhookTimingConfig, DEFAULT_DATA_SEED, DEFAULT_MODEL_COORDINATION_TIMING, DEFAULT_TRANSLATION_CONFIG, DEFAULT_UPLOAD_CONFIG, DEFAULT_WEBHOOK_TIMING, apsPlugin, apsPlugin as default, getApsStore, getModelCoordinationTiming, getTranslationConfig, getUploadConfig, getWebhookTiming, seedFromConfig, setModelCoordinationTiming, setTranslationConfig, setUploadConfig, setWebhookTiming, simulateWebhookEvent, webhookDetails };

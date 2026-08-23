@@ -131,6 +131,14 @@ function createDefaultUser() {
 }
 
 // src/config.ts
+var DEFAULT_UPLOAD_CONFIG = {
+  maxObjectBytes: 25 * 1024 * 1024
+};
+var DEFAULT_TRANSLATION_CONFIG = {
+  autoTranslateOnVersionAdd: true,
+  durationMs: 15e3,
+  failForExtensions: ["zip"]
+};
 var DEFAULT_MODEL_COORDINATION_TIMING = {
   processing_ms: 25,
   signed_url_ttl_ms: 6e4
@@ -661,11 +669,11 @@ function actorName(aps, actor, configuredName) {
 function projectFolderId(projectId) {
   return `urn:adsk.wipprod:fs.folder:co.${Buffer.from(projectId).toString("base64url")}`;
 }
-function fileType(displayName) {
+function documentFileType(displayName) {
   const separator = displayName.lastIndexOf(".");
   return separator < 0 ? "" : displayName.slice(separator + 1).toLowerCase();
 }
-function mimeType(extension) {
+function documentMimeType(extension) {
   switch (extension) {
     case "dwg":
       return "application/acad";
@@ -676,6 +684,32 @@ function mimeType(extension) {
     default:
       return "application/octet-stream";
   }
+}
+function createDocumentItem(aps, data) {
+  const folder = aps.documentFolders.findOneBy("folder_id", data.folder_id);
+  if (!folder || folder.project_id !== data.project_id) {
+    throw new Error(`APS document item '${data.item_id}' references unknown folder '${data.folder_id}'.`);
+  }
+  if (aps.documentItems.findOneBy("item_id", data.item_id)) {
+    throw new Error(`APS document item '${data.item_id}' already exists.`);
+  }
+  return aps.documentItems.insert(data);
+}
+function createDocumentVersion(aps, data) {
+  const item = aps.documentItems.findOneBy("item_id", data.item_id);
+  if (!item || item.project_id !== data.project_id) {
+    throw new Error(`APS document version '${data.version_id}' references unknown item '${data.item_id}'.`);
+  }
+  if (!Number.isInteger(data.version_number) || data.version_number < 1) {
+    throw new Error(`APS document version '${data.version_id}' must have a positive integer version number.`);
+  }
+  if (aps.documentVersions.findOneBy("version_id", data.version_id)) {
+    throw new Error(`APS document version '${data.version_id}' already exists.`);
+  }
+  if (aps.documentVersions.findBy("item_id", data.item_id).some((version) => version.version_number === data.version_number)) {
+    throw new Error(`APS document item '${data.item_id}' has more than one version numbered ${data.version_number}.`);
+  }
+  return aps.documentVersions.insert(data);
 }
 function versionNumber(versionId, configured) {
   if (configured !== void 0) return configured;
@@ -709,7 +743,9 @@ function validateFolders(aps) {
     if (folder.parent_folder_id) {
       const parent = aps.documentFolders.findOneBy("folder_id", folder.parent_folder_id);
       if (!parent) {
-        throw new Error(`APS document folder '${folder.folder_id}' references unknown parent '${folder.parent_folder_id}'.`);
+        throw new Error(
+          `APS document folder '${folder.folder_id}' references unknown parent '${folder.parent_folder_id}'.`
+        );
       }
       if (parent.project_id !== folder.project_id) {
         throw new Error(`APS document folder '${folder.folder_id}' references a parent from another project.`);
@@ -774,19 +810,19 @@ function seedDocumentTreeFromConfig(aps, config) {
   }
   for (const project of aps.projects.all()) {
     if (aps.documentFolders.findBy("project_id", project.project_id).length > 0) continue;
-    insertFolder(aps, { id: projectFolderId(project.project_id), project_id: project.project_id, name: "Project Files" });
+    insertFolder(aps, {
+      id: projectFolderId(project.project_id),
+      project_id: project.project_id,
+      name: "Project Files"
+    });
   }
   validateFolders(aps);
   for (const seed of config.document_items ?? []) {
     if (aps.documentItems.findOneBy("item_id", seed.id)) continue;
-    const folder = aps.documentFolders.findOneBy("folder_id", seed.folder_id);
-    if (!folder || folder.project_id !== seed.project_id) {
-      throw new Error(`APS document item '${seed.id}' references unknown folder '${seed.folder_id}'.`);
-    }
     const actor = seed.created_by ?? DEFAULT_USER_EMAIL;
     const created = seed.create_time ?? DEFAULT_TIMESTAMP;
     const modifier = seed.last_modified_by ?? actor;
-    aps.documentItems.insert({
+    createDocumentItem(aps, {
       item_id: seed.id,
       project_id: seed.project_id,
       folder_id: seed.folder_id,
@@ -816,7 +852,7 @@ function seedDocumentTreeFromConfig(aps, config) {
     const actor = seed.created_by ?? DEFAULT_USER_EMAIL;
     const created = seed.create_time ?? DEFAULT_TIMESTAMP;
     const modifier = seed.last_modified_by ?? actor;
-    aps.documentItems.insert({
+    createDocumentItem(aps, {
       item_id: seed.item_id,
       project_id: seed.project_id,
       folder_id: seed.folder_id,
@@ -846,14 +882,8 @@ function seedDocumentTreeFromConfig(aps, config) {
       throw new Error(`APS document version '${seed.version_id}' conflicts with its item's folder.`);
     }
     const displayName = seed.display_name ?? item.display_name;
-    const extension = seed.file_type ?? fileType(displayName);
+    const extension = seed.file_type ?? documentFileType(displayName);
     const number = versionNumber(seed.version_id, seed.version_number);
-    if (!Number.isInteger(number) || number < 1) {
-      throw new Error(`APS document version '${seed.version_id}' must have a positive integer version number.`);
-    }
-    if (aps.documentVersions.findBy("item_id", item.item_id).some((version) => version.version_number === number)) {
-      throw new Error(`APS document item '${item.item_id}' has more than one version numbered ${number}.`);
-    }
     const bubbleUrn = seed.bubble_urn === void 0 ? DEFAULT_MANIFEST_URN : seed.bubble_urn;
     if (bubbleUrn && !aps.manifests.findOneBy("urn", bubbleUrn)) {
       throw new Error(`APS document version '${seed.version_id}' references unknown manifest '${bubbleUrn}'.`);
@@ -861,14 +891,14 @@ function seedDocumentTreeFromConfig(aps, config) {
     const actor = seed.created_by ?? DEFAULT_USER_EMAIL;
     const created = seed.create_time ?? item.create_time;
     const modifier = seed.last_modified_by ?? actor;
-    aps.documentVersions.insert({
+    createDocumentVersion(aps, {
       version_id: seed.version_id,
       item_id: seed.item_id,
       project_id: seed.project_id,
       version_number: number,
       display_name: displayName,
       file_type: extension,
-      mime_type: seed.mime_type ?? mimeType(extension),
+      mime_type: seed.mime_type ?? documentMimeType(extension),
       storage_size: seed.storage_size ?? 0,
       storage_urn: seed.storage_urn ?? `urn:adsk.objects:os.object:emulate-bucket/${encodeURIComponent(seed.version_id)}`,
       region: (seed.region ?? "US").toUpperCase(),
@@ -1102,6 +1132,13 @@ function forbidden(c, detail) {
     detail
   });
 }
+function payloadTooLarge(c, detail) {
+  return problem(c, 413, {
+    type: "PayloadTooLarge",
+    title: "The request payload is too large",
+    detail
+  });
+}
 
 // src/store.ts
 function getApsStore(store) {
@@ -1130,6 +1167,19 @@ function getApsStore(store) {
     ]),
     documentItems: store.collection("aps.documentItems", ["item_id", "project_id", "folder_id"]),
     documentVersions: store.collection("aps.documentVersions", ["version_id", "item_id"]),
+    storageObjects: store.collection("aps.storageObjects", [
+      "object_id",
+      "bucket_key",
+      "object_key",
+      "project_id",
+      "folder_id"
+    ]),
+    uploadSessions: store.collection("aps.uploadSessions", [
+      "upload_key",
+      "bucket_key",
+      "object_key"
+    ]),
+    translationJobs: store.collection("aps.translationJobs", ["urn", "status"]),
     modelSets: store.collection("aps.modelSets", ["project_id", "model_set_id"]),
     modelSetVersions: store.collection("aps.modelSetVersions", ["model_set_id", "version"]),
     modelSetViews: store.collection("aps.modelSetViews", ["model_set_id", "version"]),
@@ -1148,8 +1198,8 @@ function signingSecret(store) {
   store.setData(SIGNING_SECRET_KEY, secret);
   return secret;
 }
-function signatureFor(store, blobId, expires, nonce) {
-  return createHmac("sha256", signingSecret(store)).update(`${blobId}
+function signedResourceSignature(store, resourceId, expires, nonce) {
+  return createHmac("sha256", signingSecret(store)).update(`${resourceId}
 ${expires}
 ${nonce}`).digest("base64url");
 }
@@ -1170,28 +1220,33 @@ function putSignedBlob(aps, input) {
   else aps.signedBlobs.insert(data);
 }
 function issueSignedBlobUrl(store, baseUrl, blobId, ttlMs) {
+  return issueSignedResourceUrl(store, baseUrl, `/_aps/blobs/${encodeURIComponent(blobId)}`, blobId, ttlMs);
+}
+function issueSignedResourceUrl(store, baseUrl, path, resourceId, ttlMs) {
   const expires = Date.now() + ttlMs;
   const nonce = randomBytes2(12).toString("base64url");
-  const signature = signatureFor(store, blobId, expires, nonce);
-  const url = new URL(`/_aps/blobs/${encodeURIComponent(blobId)}`, baseUrl);
+  const signature = signedResourceSignature(store, resourceId, expires, nonce);
+  const url = new URL(path, baseUrl);
   url.searchParams.set("expires", String(expires));
   url.searchParams.set("nonce", nonce);
   url.searchParams.set("signature", signature);
   return { url: url.toString(), validUntil: new Date(expires).toISOString() };
 }
+function validateSignedResource(store, resourceId, values) {
+  const expires = values.expires ? Number(values.expires) : Number.NaN;
+  if (!Number.isSafeInteger(expires) || !values.nonce || !values.signature || expires <= Date.now()) return false;
+  const expected = signedResourceSignature(store, resourceId, expires, values.nonce);
+  return signaturesMatch(values.signature, expected);
+}
 function signedBlobRoutes({ app, store }) {
   const aps = getApsStore(store);
   app.get("/_aps/blobs/:blobId", (c) => {
     const blobId = c.req.param("blobId");
-    const expiresValue = c.req.query("expires");
-    const nonce = c.req.query("nonce");
-    const signature = c.req.query("signature");
-    const expires = expiresValue ? Number(expiresValue) : Number.NaN;
-    if (!Number.isSafeInteger(expires) || !nonce || !signature || expires <= Date.now()) {
-      return forbidden(c, "The signed blob URL is invalid or has expired.");
-    }
-    const expected = signatureFor(store, blobId, expires, nonce);
-    if (!signaturesMatch(signature, expected)) {
+    if (!validateSignedResource(store, blobId, {
+      expires: c.req.query("expires"),
+      nonce: c.req.query("nonce"),
+      signature: c.req.query("signature")
+    })) {
       return forbidden(c, "The signed blob URL is invalid or has expired.");
     }
     const blob = aps.signedBlobs.findOneBy("blob_id", blobId);
@@ -1496,9 +1551,61 @@ function addModelSetVersion(aps, store, modelSet, overrides) {
   return { version, test };
 }
 
-// src/routes/data-management.ts
+// src/jsonapi.ts
 import { randomUUID as randomUUID2 } from "crypto";
 var JSON_API_TYPE = "application/vnd.api+json";
+function routeId(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+function asRecord(value) {
+  return isRecordObject(value) ? value : null;
+}
+function resourceAttributes(resource) {
+  return asRecord(resource.attributes) ?? {};
+}
+function relationshipId(resource, name) {
+  const relationships = asRecord(resource.relationships);
+  const relationship = relationships ? asRecord(relationships[name]) : null;
+  const data = relationship ? asRecord(relationship.data) : null;
+  return data ? optionalString(data.id) : void 0;
+}
+function jsonApiDocument(c, selfHref, data, options) {
+  c.header("Content-Type", JSON_API_TYPE);
+  return c.json({
+    jsonapi: { version: "1.0" },
+    links: options?.links ?? { self: { href: selfHref } },
+    data,
+    ...options?.included ? { included: options.included } : {}
+  });
+}
+function jsonApiCreated(c, selfHref, data, included) {
+  c.header("Content-Type", JSON_API_TYPE);
+  return c.json(
+    {
+      jsonapi: { version: "1.0" },
+      links: { self: { href: selfHref } },
+      data,
+      ...included ? { included } : {}
+    },
+    201
+  );
+}
+function jsonApiError(c, status, code, detail) {
+  c.header("Content-Type", JSON_API_TYPE);
+  return c.json(
+    { jsonapi: { version: "1.0" }, errors: [{ id: randomUUID2(), status: String(status), code, detail }] },
+    status
+  );
+}
+function jsonApiNotFound(c, detail) {
+  return jsonApiError(c, 404, "NOT_FOUND", detail);
+}
+
+// src/routes/data-management.ts
 var FOLDER_EXTENSION_TYPE = "folders:autodesk.bim360:Folder";
 var VERSION_EXTENSION_TYPE = "versions:autodesk.bim360:File";
 function hubPath(hubId) {
@@ -1522,13 +1629,6 @@ function versionPath(projectId, versionId) {
 function requestHref(c, baseUrl) {
   const requestUrl = new URL(c.req.url);
   return `${baseUrl}${requestUrl.pathname}${requestUrl.search}`;
-}
-function routeId(value) {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
 }
 function schemaHref(type) {
   return `https://developer.api.autodesk.com/schema/v1/versions/${encodeURIComponent(type)}-1.0`;
@@ -1630,7 +1730,7 @@ function folderData(baseUrl, aps, folder) {
     }
   };
 }
-function itemData(baseUrl, aps, item) {
+function documentItemData(baseUrl, aps, item) {
   const path = itemPath(item.project_id, item.item_id);
   const tip = itemTip(aps, item.item_id);
   return {
@@ -1675,7 +1775,7 @@ function itemData(baseUrl, aps, item) {
     }
   };
 }
-function versionData(baseUrl, version) {
+function documentVersionData(baseUrl, version) {
   const path = versionPath(version.project_id, version.version_id);
   return {
     type: "versions",
@@ -1729,25 +1829,6 @@ function versionData(baseUrl, version) {
     }
   };
 }
-function jsonApiDocument(c, selfHref, data, options) {
-  c.header("Content-Type", JSON_API_TYPE);
-  return c.json({
-    jsonapi: { version: "1.0" },
-    links: options?.links ?? { self: { href: selfHref } },
-    data,
-    ...options?.included ? { included: options.included } : {}
-  });
-}
-function jsonApiError(c, status, code, detail) {
-  c.header("Content-Type", JSON_API_TYPE);
-  return c.json(
-    { jsonapi: { version: "1.0" }, errors: [{ id: randomUUID2(), status: String(status), code, detail }] },
-    status
-  );
-}
-function notFound2(c, detail) {
-  return jsonApiError(c, 404, "NOT_FOUND", detail);
-}
 function projectForDataRoute(aps, projectId) {
   return aps.projects.findOneBy("project_id", routeId(projectId));
 }
@@ -1783,19 +1864,22 @@ function dataManagementRoutes({ app, store, baseUrl }) {
   const aps = getApsStore(store);
   const auth = apsAuth(store, { scopes: ["data:read"], requireUser: true });
   app.use("/project/v1/*", auth);
-  app.use("/data/v1/*", auth);
   app.get(
     "/project/v1/hubs",
-    (c) => jsonApiDocument(c, `${baseUrl}/project/v1/hubs`, aps.hubs.all().map((hub) => hubData(baseUrl, hub)))
+    (c) => jsonApiDocument(
+      c,
+      `${baseUrl}/project/v1/hubs`,
+      aps.hubs.all().map((hub) => hubData(baseUrl, hub))
+    )
   );
   app.get("/project/v1/hubs/:hubId", (c) => {
     const hub = aps.hubs.findOneBy("hub_id", routeId(c.req.param("hubId")));
-    if (!hub) return notFound2(c, `The hub ${c.req.param("hubId")} was not found.`);
+    if (!hub) return jsonApiNotFound(c, `The hub ${c.req.param("hubId")} was not found.`);
     return jsonApiDocument(c, `${baseUrl}${hubPath(hub.hub_id)}`, hubData(baseUrl, hub));
   });
   app.get("/project/v1/hubs/:hubId/projects", (c) => {
     const hubId = routeId(c.req.param("hubId"));
-    if (!aps.hubs.findOneBy("hub_id", hubId)) return notFound2(c, `The hub ${hubId} was not found.`);
+    if (!aps.hubs.findOneBy("hub_id", hubId)) return jsonApiNotFound(c, `The hub ${hubId} was not found.`);
     const path = `${hubPath(hubId)}/projects`;
     return jsonApiDocument(
       c,
@@ -1805,35 +1889,45 @@ function dataManagementRoutes({ app, store, baseUrl }) {
   });
   app.get("/project/v1/hubs/:hubId/projects/:projectId", (c) => {
     const hubId = routeId(c.req.param("hubId"));
-    if (!aps.hubs.findOneBy("hub_id", hubId)) return notFound2(c, `The hub ${hubId} was not found.`);
+    if (!aps.hubs.findOneBy("hub_id", hubId)) return jsonApiNotFound(c, `The hub ${hubId} was not found.`);
     const projectId = routeId(c.req.param("projectId"));
     const project = aps.projects.findOneBy("project_id", projectId);
-    if (!project || project.hub_id !== hubId) return notFound2(c, `The project ${projectId} was not found in hub ${hubId}.`);
-    return jsonApiDocument(c, `${baseUrl}${projectPath(hubId, project.project_id)}`, projectData(baseUrl, aps, project));
+    if (!project || project.hub_id !== hubId)
+      return jsonApiNotFound(c, `The project ${projectId} was not found in hub ${hubId}.`);
+    return jsonApiDocument(
+      c,
+      `${baseUrl}${projectPath(hubId, project.project_id)}`,
+      projectData(baseUrl, aps, project)
+    );
   });
   app.get("/project/v1/hubs/:hubId/projects/:projectId/topFolders", (c) => {
     const hubId = routeId(c.req.param("hubId"));
     const projectId = routeId(c.req.param("projectId"));
     const project = aps.projects.findOneBy("project_id", projectId);
-    if (!project || project.hub_id !== hubId) return notFound2(c, `The project ${projectId} was not found in hub ${hubId}.`);
+    if (!project || project.hub_id !== hubId)
+      return jsonApiNotFound(c, `The project ${projectId} was not found in hub ${hubId}.`);
     const folders = aps.documentFolders.findBy("project_id", project.project_id).filter((folder) => folder.parent_folder_id === null && !folder.hidden);
-    return jsonApiDocument(c, requestHref(c, baseUrl), folders.map((folder) => folderData(baseUrl, aps, folder)));
+    return jsonApiDocument(
+      c,
+      requestHref(c, baseUrl),
+      folders.map((folder) => folderData(baseUrl, aps, folder))
+    );
   });
-  app.get("/data/v1/projects/:projectId/folders/:folderId", (c) => {
+  app.get("/data/v1/projects/:projectId/folders/:folderId", auth, (c) => {
     const project = projectForDataRoute(aps, c.req.param("projectId"));
     const folderId = routeId(c.req.param("folderId"));
     const folder = aps.documentFolders.findOneBy("folder_id", folderId);
     if (!project || !folder || folder.project_id !== project.project_id) {
-      return notFound2(c, `The folder ${folderId} was not found in project ${c.req.param("projectId")}.`);
+      return jsonApiNotFound(c, `The folder ${folderId} was not found in project ${c.req.param("projectId")}.`);
     }
     return jsonApiDocument(c, requestHref(c, baseUrl), folderData(baseUrl, aps, folder));
   });
-  app.get("/data/v1/projects/:projectId/folders/:folderId/contents", (c) => {
+  app.get("/data/v1/projects/:projectId/folders/:folderId/contents", auth, (c) => {
     const project = projectForDataRoute(aps, c.req.param("projectId"));
     const folderId = routeId(c.req.param("folderId"));
     const folder = aps.documentFolders.findOneBy("folder_id", folderId);
     if (!project || !folder || folder.project_id !== project.project_id) {
-      return notFound2(c, `The folder ${folderId} was not found in project ${c.req.param("projectId")}.`);
+      return jsonApiNotFound(c, `The folder ${folderId} was not found in project ${c.req.param("projectId")}.`);
     }
     const parsedPage = pagination(c);
     if (typeof parsedPage === "string") return jsonApiError(c, 400, "BAD_INPUT", parsedPage);
@@ -1848,32 +1942,34 @@ function dataManagementRoutes({ app, store, baseUrl }) {
     const resources = [...children, ...items];
     const start = parsedPage.number * parsedPage.limit;
     const page = resources.slice(start, start + parsedPage.limit);
-    const included = page.filter((entry) => entry.kind === "item").map((entry) => itemTip(aps, entry.value.item_id)).filter((version) => Boolean(version)).map((version) => versionData(baseUrl, version));
+    const included = page.filter((entry) => entry.kind === "item").map((entry) => itemTip(aps, entry.value.item_id)).filter((version) => Boolean(version)).map((version) => documentVersionData(baseUrl, version));
     return jsonApiDocument(
       c,
       requestHref(c, baseUrl),
-      page.map((entry) => entry.kind === "folder" ? folderData(baseUrl, aps, entry.value) : itemData(baseUrl, aps, entry.value)),
+      page.map(
+        (entry) => entry.kind === "folder" ? folderData(baseUrl, aps, entry.value) : documentItemData(baseUrl, aps, entry.value)
+      ),
       { included, links: pageLinks(c, baseUrl, parsedPage.number, parsedPage.limit, resources.length) }
     );
   });
-  app.get("/data/v1/projects/:projectId/items/:itemId", (c) => {
+  app.get("/data/v1/projects/:projectId/items/:itemId", auth, (c) => {
     const project = projectForDataRoute(aps, c.req.param("projectId"));
     const itemId = routeId(c.req.param("itemId"));
     const item = aps.documentItems.findOneBy("item_id", itemId);
     if (!project || !item || item.project_id !== project.project_id) {
-      return notFound2(c, `The item ${itemId} was not found in project ${c.req.param("projectId")}.`);
+      return jsonApiNotFound(c, `The item ${itemId} was not found in project ${c.req.param("projectId")}.`);
     }
     const tip = itemTip(aps, item.item_id);
-    return jsonApiDocument(c, requestHref(c, baseUrl), itemData(baseUrl, aps, item), {
-      included: tip ? [versionData(baseUrl, tip)] : []
+    return jsonApiDocument(c, requestHref(c, baseUrl), documentItemData(baseUrl, aps, item), {
+      included: tip ? [documentVersionData(baseUrl, tip)] : []
     });
   });
-  app.get("/data/v1/projects/:projectId/items/:itemId/versions", (c) => {
+  app.get("/data/v1/projects/:projectId/items/:itemId/versions", auth, (c) => {
     const project = projectForDataRoute(aps, c.req.param("projectId"));
     const itemId = routeId(c.req.param("itemId"));
     const item = aps.documentItems.findOneBy("item_id", itemId);
     if (!project || !item || item.project_id !== project.project_id) {
-      return notFound2(c, `The item ${itemId} was not found in project ${c.req.param("projectId")}.`);
+      return jsonApiNotFound(c, `The item ${itemId} was not found in project ${c.req.param("projectId")}.`);
     }
     const parsedPage = pagination(c);
     if (typeof parsedPage === "string") return jsonApiError(c, 400, "BAD_INPUT", parsedPage);
@@ -1884,28 +1980,932 @@ function dataManagementRoutes({ app, store, baseUrl }) {
     return jsonApiDocument(
       c,
       requestHref(c, baseUrl),
-      versions.slice(start, start + parsedPage.limit).map((version) => versionData(baseUrl, version)),
+      versions.slice(start, start + parsedPage.limit).map((version) => documentVersionData(baseUrl, version)),
       { links: pageLinks(c, baseUrl, parsedPage.number, parsedPage.limit, versions.length) }
     );
   });
-  app.get("/data/v1/projects/:projectId/items/:itemId/tip", (c) => {
+  app.get("/data/v1/projects/:projectId/items/:itemId/tip", auth, (c) => {
     const project = projectForDataRoute(aps, c.req.param("projectId"));
     const itemId = routeId(c.req.param("itemId"));
     const item = aps.documentItems.findOneBy("item_id", itemId);
     const tip = item ? itemTip(aps, item.item_id) : void 0;
     if (!project || !item || item.project_id !== project.project_id || !tip) {
-      return notFound2(c, `The tip for item ${itemId} was not found in project ${c.req.param("projectId")}.`);
+      return jsonApiNotFound(c, `The tip for item ${itemId} was not found in project ${c.req.param("projectId")}.`);
     }
-    return jsonApiDocument(c, requestHref(c, baseUrl), versionData(baseUrl, tip));
+    return jsonApiDocument(c, requestHref(c, baseUrl), documentVersionData(baseUrl, tip));
   });
-  app.get("/data/v1/projects/:projectId/versions/:versionId", (c) => {
+  app.get("/data/v1/projects/:projectId/versions/:versionId", auth, (c) => {
     const project = projectForDataRoute(aps, c.req.param("projectId"));
     const versionId = routeId(c.req.param("versionId"));
     const version = aps.documentVersions.findOneBy("version_id", versionId);
     if (!project || !version || version.project_id !== project.project_id) {
-      return notFound2(c, `The version ${versionId} was not found in project ${c.req.param("projectId")}.`);
+      return jsonApiNotFound(c, `The version ${versionId} was not found in project ${c.req.param("projectId")}.`);
     }
-    return jsonApiDocument(c, requestHref(c, baseUrl), versionData(baseUrl, version));
+    return jsonApiDocument(c, requestHref(c, baseUrl), documentVersionData(baseUrl, version));
+  });
+}
+
+// src/routes/ingestion.ts
+import { createHash as createHash4, randomUUID as randomUUID4 } from "crypto";
+
+// src/webhooks.ts
+import { createHmac as createHmac2, randomUUID as randomUUID3 } from "crypto";
+
+// src/webhook-filter.ts
+function splitTopLevel(value, delimiter) {
+  const parts = [];
+  let quote = null;
+  let bracketDepth = 0;
+  let start = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    if (quote) {
+      if (char === "\\") index += 1;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === "'" || char === '"') quote = char;
+    else if (char === "[") bracketDepth += 1;
+    else if (char === "]") bracketDepth -= 1;
+    else if (bracketDepth === 0 && value.slice(index, index + delimiter.length) === delimiter) {
+      parts.push(value.slice(start, index).trim());
+      start = index + delimiter.length;
+      index += delimiter.length - 1;
+    }
+  }
+  parts.push(value.slice(start).trim());
+  return parts;
+}
+function parseScalar(value) {
+  const trimmed = value.trim();
+  if (/^'(?:[^'\\]|\\.)*'$/.test(trimmed) || /^"(?:[^"\\]|\\.)*"$/.test(trimmed)) {
+    const inner = trimmed.slice(1, -1);
+    return inner.replace(/\\(['"\\])/g, "$1");
+  }
+  if (/^-?(?:\d+\.?\d*|\.\d+)$/.test(trimmed)) return Number(trimmed);
+  if (trimmed === "true") return true;
+  if (trimmed === "false") return false;
+  if (trimmed === "null") return null;
+  return void 0;
+}
+function parseArray(value) {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) return null;
+  const body = trimmed.slice(1, -1).trim();
+  if (!body) return [];
+  const result = [];
+  for (const part of splitTopLevel(body, ",")) {
+    const scalar = parseScalar(part);
+    if (scalar === void 0) return null;
+    result.push(scalar);
+  }
+  return result;
+}
+function valueAtPath(payload, path) {
+  let value = payload;
+  for (const part of path.split(".")) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return void 0;
+    value = value[part];
+  }
+  return value;
+}
+function evaluateClause(payload, clause) {
+  const match = clause.match(/^@\.([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*(==|!=|>=|<=|>|<|in)\s*(.+)$/);
+  if (!match) return null;
+  const [, path, operator, rawExpected] = match;
+  const actual = valueAtPath(payload, path);
+  if (operator === "in") {
+    const expected2 = parseArray(rawExpected);
+    return expected2 ? expected2.some((candidate) => candidate === actual) : null;
+  }
+  const expected = parseScalar(rawExpected);
+  if (expected === void 0) return null;
+  if (operator === "==") return actual === expected;
+  if (operator === "!=") return actual !== expected;
+  if ((typeof actual !== "number" || typeof expected !== "number") && (typeof actual !== "string" || typeof expected !== "string")) {
+    return false;
+  }
+  if (operator === ">") return actual > expected;
+  if (operator === ">=") return actual >= expected;
+  if (operator === "<") return actual < expected;
+  return actual <= expected;
+}
+function evaluateFilterString(filter, payload) {
+  const trimmed = filter.trim();
+  if (!trimmed.startsWith("$[?(") || !trimmed.endsWith(")]")) return null;
+  const expression = trimmed.slice(4, -2).trim();
+  if (!expression) return null;
+  const orGroups = splitTopLevel(expression, "||");
+  let valid = true;
+  let result = false;
+  for (const group of orGroups) {
+    const clauses = splitTopLevel(group, "&&");
+    let groupMatches = true;
+    for (const clause of clauses) {
+      const clauseResult = evaluateClause(payload, clause);
+      if (clauseResult === null) valid = false;
+      if (clauseResult !== true) groupMatches = false;
+    }
+    if (groupMatches) result = true;
+  }
+  return valid ? result : null;
+}
+function validateWebhookFilter(filter) {
+  const filters = Array.isArray(filter) ? filter : [filter];
+  return filters.length > 0 && filters.every((candidate) => evaluateFilterString(candidate, {}) !== null);
+}
+function webhookFilterMatches(filter, payload) {
+  if (filter === null) return true;
+  const filters = Array.isArray(filter) ? filter : [filter];
+  return filters.every((candidate) => evaluateFilterString(candidate, payload) === true);
+}
+
+// src/webhooks.ts
+var TIMING_STORE_KEY = "aps.webhooks.timing";
+var MAX_DELIVERIES = 1e3;
+async function sendWebhookRequest(request) {
+  const start = Date.now();
+  try {
+    const response = await fetch(request.url, {
+      method: "POST",
+      headers: request.headers,
+      body: request.body,
+      signal: AbortSignal.timeout(request.timeoutMs)
+    });
+    return { status_code: response.status, duration: Date.now() - start, success: response.ok };
+  } catch {
+    return { status_code: null, duration: Date.now() - start, success: false };
+  }
+}
+function userIdentity(userId2) {
+  return { key: `user:${userId2}`, createdBy: userId2, creatorType: "O2User" };
+}
+function appIdentity(clientId) {
+  return { key: `app:${clientId}`, createdBy: clientId, creatorType: "Application" };
+}
+function getWebhookTiming(store) {
+  return { ...DEFAULT_WEBHOOK_TIMING, ...store.getData(TIMING_STORE_KEY) ?? {} };
+}
+function setWebhookTiming(store, timing) {
+  store.setData(TIMING_STORE_KEY, { ...getWebhookTiming(store), ...timing });
+}
+function canonicalWebhookScope(scope) {
+  return JSON.stringify(Object.entries(scope).sort(([left], [right]) => left.localeCompare(right)));
+}
+function createWebhookRecord(aps, input) {
+  return aps.webhookHooks.insert({
+    hook_id: randomUUID3(),
+    // APS derives a hook's tenant from its scope value when none is supplied.
+    tenant: input.tenant ?? Object.values(input.scope)[0] ?? "",
+    callback_url: input.callbackUrl,
+    created_by: input.identity.createdBy,
+    creator_type: input.identity.creatorType,
+    identity_key: input.identity.key,
+    event: input.event,
+    system: input.system,
+    status: input.status ?? "active",
+    auto_reactivate_hook: input.autoReactivateHook ?? false,
+    hook_expiry: input.hookExpiry ?? null,
+    hook_attribute: structuredClone(input.hookAttribute ?? null),
+    filter: structuredClone(input.filter ?? null),
+    scope: structuredClone(input.scope),
+    hub_id: input.hubId ?? null,
+    project_id: input.projectId ?? null,
+    token: input.token ?? null,
+    region: input.region,
+    failed_event_count: 0,
+    inactive_at: input.status === "inactive" ? (/* @__PURE__ */ new Date()).toISOString() : null,
+    reactivation_count: 0
+  });
+}
+function findDuplicateHook(aps, input) {
+  const canonical = canonicalWebhookScope(input.scope);
+  return aps.webhookHooks.all().find(
+    (hook) => hook.identity_key === input.identity.key && hook.region === input.region && hook.system === input.system && hook.event === input.event && hook.callback_url === input.callbackUrl && canonicalWebhookScope(hook.scope) === canonical
+  );
+}
+function findWebhookSecret(aps, identityKey, region) {
+  return aps.webhookSecrets.findBy("identity_key", identityKey).find((secret) => secret.region === region);
+}
+function webhookDetails(hook) {
+  const details = {
+    hookId: hook.hook_id,
+    tenant: hook.tenant,
+    callbackUrl: hook.callback_url,
+    createdBy: hook.created_by,
+    event: hook.event,
+    createdDate: hook.created_at,
+    lastUpdatedDate: hook.updated_at,
+    system: hook.system,
+    creatorType: hook.creator_type,
+    status: hook.status,
+    autoReactivateHook: hook.auto_reactivate_hook,
+    scope: structuredClone(hook.scope),
+    urn: `urn:adsk.webhooks:events.hook:${hook.hook_id}`,
+    __self__: `/systems/${encodeURIComponent(hook.system)}/events/${encodeURIComponent(hook.event)}/hooks/${encodeURIComponent(hook.hook_id)}`
+  };
+  if (hook.hook_expiry !== null) details.hookExpiry = hook.hook_expiry;
+  if (hook.hook_attribute !== null) details.hookAttribute = structuredClone(hook.hook_attribute);
+  if (hook.filter !== null) details.filter = structuredClone(hook.filter);
+  if (hook.hub_id !== null) details.hubId = hook.hub_id;
+  if (hook.project_id !== null) details.projectId = hook.project_id;
+  return details;
+}
+function webhookEventMatches(pattern, event) {
+  if (pattern === "*") return true;
+  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".+");
+  return new RegExp(`^${escaped}$`).test(event);
+}
+function eventScopeCandidates(input) {
+  const eventScope = input.scope ?? {};
+  const ancestors = input.folderAncestors ?? [];
+  const anyKey = input.scopeValue !== void 0 ? [input.scopeValue] : [];
+  const byName = new Map(Object.entries(eventScope).map(([name, value]) => [name, [value]]));
+  byName.set("folder", [...byName.get("folder") ?? [], ...ancestors]);
+  const tenants = [
+    ...input.tenant !== void 0 ? [input.tenant] : [],
+    ...anyKey,
+    ...Object.values(eventScope),
+    ...ancestors
+  ];
+  return { byName, anyKey, tenants };
+}
+function webhookScopeMatches(hook, candidates) {
+  const scopeMatches = Object.entries(hook.scope).every(
+    ([name, value]) => (candidates.byName.get(name) ?? []).includes(value) || candidates.anyKey.includes(value)
+  );
+  if (!scopeMatches) return false;
+  return !hook.tenant || candidates.tenants.includes(hook.tenant);
+}
+function skippedDelivery(hook, reason) {
+  return {
+    hookId: hook.hook_id,
+    matched: false,
+    delivered: false,
+    statusCode: null,
+    attempts: 0,
+    signaturePresent: false,
+    reason
+  };
+}
+function webhookStatusAllowsDelivery(store, hook, now = Date.now()) {
+  if (hook.status === "active" || hook.status === "reactivated") return true;
+  const inactiveAt = hook.inactive_at ? Date.parse(hook.inactive_at) : Number.NaN;
+  const timing = getWebhookTiming(store);
+  return hook.auto_reactivate_hook && Number.isFinite(inactiveAt) && now - inactiveAt >= timing.reactivate_after_ms && hook.reactivation_count < timing.max_reactivation_cycles;
+}
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+function addDelivery(aps, data) {
+  aps.webhookDeliveries.insert(data);
+  for (const delivery of aps.webhookDeliveries.all().slice(0, -MAX_DELIVERIES)) {
+    aps.webhookDeliveries.delete(delivery.id);
+  }
+}
+async function attemptDelivery(aps, hook, input, token, timeoutMs, attempt) {
+  const envelope = {
+    version: "1.0",
+    resourceUrn: input.resourceUrn,
+    hook: webhookDetails(hook),
+    payload: input.payload
+  };
+  const body = JSON.stringify(envelope);
+  const deliveryId = randomUUID3();
+  const headers = {
+    "Content-Type": "application/json",
+    "x-adsk-delivery-id": deliveryId
+  };
+  if (token) {
+    headers["x-adsk-signature"] = `sha1hash=${createHmac2("sha1", token).update(body).digest("hex")}`;
+  }
+  const result = await sendWebhookRequest({ url: hook.callback_url, headers, body, timeoutMs });
+  addDelivery(aps, {
+    delivery_id: deliveryId,
+    hook_id: hook.hook_id,
+    system: input.system,
+    event: input.event,
+    attempt,
+    envelope,
+    status_code: result.status_code,
+    duration: result.duration,
+    success: result.success,
+    signature_present: Boolean(token)
+  });
+  return { success: result.success, statusCode: result.status_code, signaturePresent: Boolean(token) };
+}
+function identityToken(aps, hook) {
+  return hook.token ?? findWebhookSecret(aps, hook.identity_key, hook.region)?.token ?? null;
+}
+async function deliverMatchingHook(aps, store, hook, input) {
+  const timing = getWebhookTiming(store);
+  let current = hook;
+  let reactivationTrial = current.status === "reactivated";
+  if (current.status === "inactive") {
+    if (!webhookStatusAllowsDelivery(store, current)) return skippedDelivery(current, "inactive");
+    current = aps.webhookHooks.update(current.id, {
+      status: "reactivated",
+      reactivation_count: current.reactivation_count + 1
+    });
+    reactivationTrial = true;
+  }
+  const token = identityToken(aps, current);
+  const maxAttempts = reactivationTrial ? 1 : timing.max_retries + 1;
+  let lastStatus = null;
+  let signaturePresent = false;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const result = await attemptDelivery(aps, current, input, token, timing.delivery_timeout_ms, attempt);
+    lastStatus = result.statusCode;
+    signaturePresent = result.signaturePresent;
+    if (result.success) {
+      aps.webhookHooks.update(current.id, {
+        status: "active",
+        failed_event_count: 0,
+        inactive_at: null
+      });
+      return {
+        hookId: current.hook_id,
+        matched: true,
+        delivered: true,
+        statusCode: lastStatus,
+        attempts: attempt,
+        signaturePresent
+      };
+    }
+    if (attempt < maxAttempts) {
+      await delay(Math.min(timing.retry_base_ms * 2 ** (attempt - 1), timing.retry_max_ms));
+    }
+  }
+  if (reactivationTrial) {
+    const permanent = current.reactivation_count >= timing.max_reactivation_cycles;
+    aps.webhookHooks.update(current.id, {
+      status: "inactive",
+      inactive_at: (/* @__PURE__ */ new Date()).toISOString(),
+      auto_reactivate_hook: permanent ? false : current.auto_reactivate_hook
+    });
+  } else {
+    const failedEventCount = current.failed_event_count + 1;
+    const inactive = failedEventCount >= timing.failed_events_before_inactive;
+    aps.webhookHooks.update(current.id, {
+      failed_event_count: failedEventCount,
+      status: inactive ? "inactive" : current.status,
+      inactive_at: inactive ? (/* @__PURE__ */ new Date()).toISOString() : current.inactive_at
+    });
+  }
+  return {
+    hookId: current.hook_id,
+    matched: true,
+    delivered: false,
+    statusCode: lastStatus,
+    attempts: maxAttempts,
+    signaturePresent,
+    reason: "delivery_failed"
+  };
+}
+function deleteExpiredHooks(aps, now = Date.now()) {
+  for (const hook of aps.webhookHooks.all()) {
+    if (hook.hook_expiry !== null && Date.parse(hook.hook_expiry) <= now) aps.webhookHooks.delete(hook.id);
+  }
+}
+async function simulateWebhookEvent(aps, store, input) {
+  deleteExpiredHooks(aps);
+  const candidates = eventScopeCandidates(input);
+  const hooks = aps.webhookHooks.all().filter((hook) => hook.region === input.region && hook.system === input.system);
+  const reports = await Promise.all(
+    hooks.map((hook) => {
+      if (!webhookEventMatches(hook.event, input.event)) return skippedDelivery(hook, "event");
+      if (!webhookScopeMatches(hook, candidates)) return skippedDelivery(hook, "scope");
+      if (!webhookStatusAllowsDelivery(store, hook)) return skippedDelivery(hook, "inactive");
+      if (!webhookFilterMatches(hook.filter, input.payload)) return skippedDelivery(hook, "filter");
+      return deliverMatchingHook(aps, store, hook, input);
+    })
+  );
+  return { system: input.system, event: input.event, resourceUrn: input.resourceUrn, deliveries: reports };
+}
+function validWebhookStatus(value) {
+  return value === "active" || value === "inactive" || value === "reactivated";
+}
+
+// src/dm-events.ts
+function documentVersionAddedEvent(aps, version) {
+  const item = documentItemForVersion(aps, version);
+  if (!item) return null;
+  const folder = aps.documentFolders.findOneBy("folder_id", item.folder_id);
+  if (!folder) return null;
+  const ancestors = folderAncestors(aps, version.project_id, folder.folder_id);
+  const projectId = bareProjectId(version.project_id);
+  return {
+    system: "data",
+    event: "dm.version.added",
+    resourceUrn: version.version_id,
+    region: version.region,
+    scope: { folder: folder.folder_id, project: version.project_id },
+    folderAncestors: ancestors.map((ancestor) => ancestor.folder_id),
+    payload: {
+      ext: version.file_type,
+      modifiedTime: version.last_modified_time,
+      creator: version.created_by,
+      lineageUrn: version.item_id,
+      sizeInBytes: version.storage_size,
+      hidden: item.hidden,
+      indexable: true,
+      project: projectId,
+      source: version.version_id,
+      version: String(version.version_number),
+      user_info: { id: version.created_by },
+      name: version.display_name,
+      createdTime: version.create_time,
+      modifiedBy: version.last_modified_by,
+      state: "CONTENT_AVAILABLE",
+      parentFolderUrn: folder.folder_id,
+      ancestors: [...ancestors, folder].map((ancestor) => ({ urn: ancestor.folder_id, name: ancestor.name })),
+      tenant: projectId
+    }
+  };
+}
+async function emitDocumentVersionAdded(aps, store, version) {
+  const event = documentVersionAddedEvent(aps, version);
+  return event ? simulateWebhookEvent(aps, store, event) : null;
+}
+
+// src/ingestion-config.ts
+var UPLOAD_CONFIG_KEY = "aps.uploadConfig";
+var TRANSLATION_CONFIG_KEY = "aps.translationConfig";
+function getUploadConfig(store) {
+  return { ...DEFAULT_UPLOAD_CONFIG, ...store.getData(UPLOAD_CONFIG_KEY) ?? {} };
+}
+function setUploadConfig(store, input) {
+  if (input.maxObjectBytes !== void 0 && (!Number.isSafeInteger(input.maxObjectBytes) || input.maxObjectBytes < 1)) {
+    throw new Error("APS upload.maxObjectBytes must be a positive integer.");
+  }
+  store.setData(UPLOAD_CONFIG_KEY, { ...getUploadConfig(store), ...input });
+}
+function getTranslationConfig(store) {
+  const configured = store.getData(TRANSLATION_CONFIG_KEY) ?? {};
+  return {
+    ...DEFAULT_TRANSLATION_CONFIG,
+    ...configured,
+    failForExtensions: [...configured.failForExtensions ?? DEFAULT_TRANSLATION_CONFIG.failForExtensions]
+  };
+}
+function setTranslationConfig(store, input) {
+  if (input.autoTranslateOnVersionAdd !== void 0 && typeof input.autoTranslateOnVersionAdd !== "boolean") {
+    throw new Error("APS translation.autoTranslateOnVersionAdd must be a boolean.");
+  }
+  if (input.durationMs !== void 0 && (!Number.isFinite(input.durationMs) || input.durationMs < 0)) {
+    throw new Error("APS translation.durationMs must be a non-negative number.");
+  }
+  if (input.failForExtensions !== void 0 && (!Array.isArray(input.failForExtensions) || input.failForExtensions.some((value) => typeof value !== "string"))) {
+    throw new Error("APS translation.failForExtensions must contain strings.");
+  }
+  store.setData(TRANSLATION_CONFIG_KEY, {
+    ...getTranslationConfig(store),
+    ...input,
+    ...input.failForExtensions ? { failForExtensions: input.failForExtensions.map((value) => value.toLowerCase().replace(/^\./, "")) } : {}
+  });
+}
+
+// src/translation.ts
+import { createHash as createHash3 } from "crypto";
+function terminal(status) {
+  return status === "success" || status === "failed";
+}
+function extractionFinishedEvent(job) {
+  const workflow = "emulate-translation";
+  return {
+    system: "derivative",
+    event: "extraction.finished",
+    resourceUrn: job.urn,
+    region: job.region,
+    scope: { workflow },
+    payload: {
+      TimeStamp: Date.now(),
+      URN: job.urn,
+      EventType: "EXTRACTION_FINISHED",
+      Payload: { status: job.status, scope: workflow, registerKey: [] }
+    }
+  };
+}
+async function emitTerminalWebhook(aps, store, job) {
+  if (!terminal(job.status) || job.webhook_emitted) return job;
+  const guarded = aps.translationJobs.update(job.id, { webhook_emitted: true }) ?? job;
+  await simulateWebhookEvent(aps, store, extractionFinishedEvent(guarded));
+  return guarded;
+}
+function enqueueTranslation(aps, store, input) {
+  const existing = aps.translationJobs.findOneBy("urn", input.urn);
+  if (existing && !input.force) {
+    const job = !terminal(existing.status) && input.outputFormats ? aps.translationJobs.update(existing.id, { output_formats: structuredClone(input.outputFormats) }) ?? existing : existing;
+    return { job, created: false };
+  }
+  const now = Date.now();
+  const durationMs = getTranslationConfig(store).durationMs;
+  const data = {
+    source_name: input.sourceName,
+    region: (input.region ?? "US").toUpperCase(),
+    status: "pending",
+    progress: "0% complete",
+    started_at: new Date(now).toISOString(),
+    completes_at: new Date(now + durationMs).toISOString(),
+    output_formats: structuredClone(input.outputFormats ?? [{ type: "svf2", views: ["2d", "3d"] }]),
+    force_count: existing ? existing.force_count + 1 : 0,
+    webhook_emitted: false
+  };
+  if (existing) {
+    return { job: aps.translationJobs.update(existing.id, data) ?? existing, created: true };
+  }
+  return { job: aps.translationJobs.insert({ urn: input.urn, ...data }), created: true };
+}
+function successfulDerivative(job, format) {
+  if (format.type === "thumbnail") {
+    return { name: job.source_name, status: "success", progress: "complete", outputType: "thumbnail" };
+  }
+  const digest = createHash3("sha1").update(`${job.urn}:${format.type}`).digest("hex");
+  const guid = `${digest.slice(0, 8)}-${digest.slice(8, 12)}-${digest.slice(12, 16)}-${digest.slice(16, 20)}-${digest.slice(20, 32)}`;
+  return {
+    name: job.source_name,
+    status: "success",
+    progress: "complete",
+    outputType: format.type,
+    children: [
+      {
+        guid,
+        type: "geometry",
+        role: "3d",
+        name: "{3D}",
+        viewableID: "emulate-3d-view",
+        status: "success",
+        progress: "complete"
+      }
+    ]
+  };
+}
+function derivativesForJob(job) {
+  switch (job.status) {
+    case "success":
+      return job.output_formats.map((format) => successfulDerivative(job, format));
+    case "failed":
+      return [
+        {
+          name: job.source_name,
+          status: "failed",
+          progress: "complete",
+          outputType: job.output_formats[0]?.type ?? "svf2",
+          messages: [
+            {
+              type: "error",
+              code: "TranslationFailed",
+              message: `Translation is configured to fail for .${documentFileType(job.source_name)} files.`
+            }
+          ]
+        }
+      ];
+    default:
+      return job.output_formats.map((format) => ({
+        name: job.source_name,
+        status: job.status,
+        progress: job.progress,
+        outputType: format.type
+      }));
+  }
+}
+function manifestForJob(job) {
+  return {
+    type: "manifest",
+    hasThumbnail: String(job.output_formats.some((format) => format.type === "thumbnail")),
+    status: job.status,
+    progress: job.progress,
+    region: job.region,
+    urn: job.urn,
+    version: "1.0",
+    derivatives: derivativesForJob(job)
+  };
+}
+async function refreshTranslationJob(aps, store, job, now = Date.now()) {
+  if (terminal(job.status)) return emitTerminalWebhook(aps, store, job);
+  const started = Date.parse(job.started_at);
+  const completes = Date.parse(job.completes_at);
+  let next = job;
+  if (now >= completes) {
+    const extension = documentFileType(job.source_name);
+    const failed = getTranslationConfig(store).failForExtensions.includes(extension);
+    next = aps.translationJobs.update(job.id, {
+      status: failed ? "failed" : "success",
+      progress: "complete"
+    }) ?? job;
+  } else {
+    const duration = Math.max(1, completes - started);
+    const ratio = Math.max(0, Math.min(1, (now - started) / duration));
+    if (ratio >= 0.1) {
+      const percent = Math.min(75, Math.max(25, Math.floor(ratio * 4) * 25));
+      next = aps.translationJobs.update(job.id, { status: "inprogress", progress: `${percent}% complete` }) ?? job;
+    }
+  }
+  return emitTerminalWebhook(aps, store, next);
+}
+async function forceTranslationTerminal(aps, store, job, status) {
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const alreadyEmittedForOutcome = job.status === status ? job.webhook_emitted : false;
+  const updated = aps.translationJobs.update(job.id, {
+    status,
+    progress: "complete",
+    completes_at: now,
+    webhook_emitted: alreadyEmittedForOutcome
+  }) ?? job;
+  return emitTerminalWebhook(aps, store, updated);
+}
+
+// src/routes/ingestion.ts
+var UPLOAD_SESSION_TTL_MS = 24 * 60 * 60 * 1e3;
+var DEFAULT_SIGNED_URL_TTL_MINUTES = 2;
+var MAX_UPLOAD_PARTS = 100;
+function storageForWrite(c, aps, projectId, folderId, storageId) {
+  const storage = storageId ? aps.storageObjects.findOneBy("object_id", storageId) : void 0;
+  if (!storage || storage.project_id !== projectId || !storage.uploaded_at || storage.content_base64 === null) {
+    return jsonApiError(c, 400, "BAD_INPUT", "The storage relationship must reference a finalized object.");
+  }
+  if (storage.folder_id !== folderId) {
+    return jsonApiError(c, 400, "BAD_INPUT", "The storage object must target the item's parent folder.");
+  }
+  return storage;
+}
+async function actorForRequest(c, store, aps) {
+  const token = await accessTokenForRequest(c, store);
+  const user = token?.apsUserId ? aps.users.findOneBy("user_id", token.apsUserId) : void 0;
+  return { id: user?.user_id ?? DEFAULT_USER_EMAIL, name: user?.name ?? "Test User" };
+}
+function itemVersionId(itemId, versionNumber2) {
+  const lineage = itemId.split(":").at(-1);
+  return `urn:adsk.wipprod:fs.file:vf.${lineage}?version=${versionNumber2}`;
+}
+function versionValues(item, storage, versionNumber2, actor, displayName) {
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const extension = documentFileType(displayName);
+  return {
+    version_id: itemVersionId(item.item_id, versionNumber2),
+    item_id: item.item_id,
+    project_id: item.project_id,
+    version_number: versionNumber2,
+    display_name: displayName,
+    file_type: extension,
+    mime_type: documentMimeType(extension),
+    storage_size: storage.size,
+    storage_urn: storage.object_id,
+    region: "US",
+    bubble_urn: Buffer.from(storage.object_id).toString("base64url"),
+    viewable_id: "emulate-3d-view",
+    viewable_guid: "d8e734a8-6e9e-4f4d-9a4f-000000000001",
+    created_by: actor.id,
+    created_by_name: actor.name,
+    create_time: now,
+    last_modified_by: actor.id,
+    last_modified_by_name: actor.name,
+    last_modified_time: now
+  };
+}
+async function finishVersionWrite(aps, store, version) {
+  if (version.bubble_urn && getTranslationConfig(store).autoTranslateOnVersionAdd) {
+    enqueueTranslation(aps, store, {
+      urn: version.bubble_urn,
+      sourceName: version.display_name,
+      region: version.region
+    });
+  }
+  await emitDocumentVersionAdded(aps, store, version);
+}
+function ingestionRoutes({ app, store, baseUrl }) {
+  const aps = getApsStore(store);
+  const writeAuth = apsAuth(store, { scopes: ["data:create", "data:write"] });
+  const userWriteAuth = apsAuth(store, { scopes: ["data:create", "data:write"], requireUser: true });
+  app.use("/oss/v2/buckets/*", writeAuth);
+  app.post("/data/v1/projects/:projectId/storage", userWriteAuth, async (c) => {
+    const projectId = routeId(c.req.param("projectId"));
+    if (!aps.projects.findOneBy("project_id", projectId))
+      return jsonApiError(c, 404, "NOT_FOUND", "The project was not found.");
+    const body = await jsonObjectBody(c);
+    const data = body ? asRecord(body.data) : null;
+    const name = data ? optionalString(resourceAttributes(data).name) : void 0;
+    const folderId = data ? relationshipId(data, "target") : void 0;
+    const folder = folderId ? aps.documentFolders.findOneBy("folder_id", folderId) : void 0;
+    if (!data || data.type !== "objects" || !name || !folderId) {
+      return jsonApiError(c, 400, "BAD_INPUT", "An objects resource with a name and target folder is required.");
+    }
+    if (!folder || folder.project_id !== projectId) {
+      return jsonApiError(c, 404, "NOT_FOUND", "The target folder was not found in this project.");
+    }
+    const bucketKey = `wip.dm.emulate-${createHash4("sha1").update(projectId).digest("hex").slice(0, 16)}`;
+    const safeName = name.replace(/[\\/]/g, "_");
+    const objectKey = `${randomUUID4()}-${safeName}`;
+    const objectId = `urn:adsk.objects:os.object:${bucketKey}/${objectKey}`;
+    aps.storageObjects.insert({
+      object_id: objectId,
+      bucket_key: bucketKey,
+      object_key: objectKey,
+      project_id: projectId,
+      folder_id: folderId,
+      name,
+      size: 0,
+      sha1: "",
+      content_base64: null,
+      uploaded_at: null
+    });
+    const self = `${baseUrl}/data/v1/projects/${encodeURIComponent(projectId)}/storage`;
+    return jsonApiCreated(c, self, {
+      type: "objects",
+      id: objectId,
+      attributes: { name },
+      relationships: { target: { data: { type: "folders", id: folderId } } }
+    });
+  });
+  app.get("/oss/v2/buckets/:bucketKey/objects/:objectKey/signeds3upload", (c) => {
+    const bucketKey = routeId(c.req.param("bucketKey"));
+    const objectKey = routeId(c.req.param("objectKey"));
+    const storage = aps.storageObjects.findBy("bucket_key", bucketKey).find((candidate) => candidate.object_key === objectKey);
+    if (!storage) return notFound(c, "The requested storage object");
+    const partsValue = c.req.query("parts") ?? "1";
+    const minutesValue = c.req.query("minutesExpiration") ?? String(DEFAULT_SIGNED_URL_TTL_MINUTES);
+    if (!/^\d+$/.test(partsValue) || Number(partsValue) < 1 || Number(partsValue) > MAX_UPLOAD_PARTS) {
+      return badInput(c, "parts", `parts must be an integer from 1 through ${MAX_UPLOAD_PARTS}.`);
+    }
+    if (!/^\d+$/.test(minutesValue) || Number(minutesValue) < 1 || Number(minutesValue) > 60) {
+      return badInput(c, "minutesExpiration", "minutesExpiration must be an integer from 1 through 60.");
+    }
+    const now = Date.now();
+    for (const session of aps.uploadSessions.all()) {
+      if (Date.parse(session.expires_at) <= now) aps.uploadSessions.delete(session.id);
+    }
+    const expectedParts = Number(partsValue);
+    const uploadKey = randomUUID4();
+    const expiresAt = new Date(now + UPLOAD_SESSION_TTL_MS).toISOString();
+    const ttlMs = Number(minutesValue) * 6e4;
+    aps.uploadSessions.insert({
+      upload_key: uploadKey,
+      object_key: objectKey,
+      bucket_key: bucketKey,
+      parts_base64: Array.from({ length: expectedParts }, () => null),
+      expected_parts: expectedParts,
+      expires_at: expiresAt
+    });
+    const urls = Array.from({ length: expectedParts }, (_, index) => {
+      const part = index + 1;
+      return issueSignedResourceUrl(
+        store,
+        baseUrl,
+        `/oss/v2/signed-upload/${encodeURIComponent(uploadKey)}/${part}`,
+        `aps-upload:${uploadKey}:${part}`,
+        ttlMs
+      ).url;
+    });
+    return c.json({
+      uploadKey,
+      urls,
+      urlExpiration: new Date(now + ttlMs).toISOString(),
+      uploadExpiration: expiresAt
+    });
+  });
+  app.put("/oss/v2/signed-upload/:uploadKey/:part", async (c) => {
+    const uploadKey = c.req.param("uploadKey");
+    const part = Number(c.req.param("part"));
+    if (!validateSignedResource(store, `aps-upload:${uploadKey}:${part}`, {
+      expires: c.req.query("expires"),
+      nonce: c.req.query("nonce"),
+      signature: c.req.query("signature")
+    })) {
+      return forbidden(c, "The signed upload URL is invalid or has expired.");
+    }
+    const session = aps.uploadSessions.findOneBy("upload_key", uploadKey);
+    if (!session || Date.parse(session.expires_at) <= Date.now()) {
+      return forbidden(c, "The upload session is invalid or has expired.");
+    }
+    if (!Number.isInteger(part) || part < 1 || part > session.expected_parts) {
+      return badInput(c, "part", "The part number is outside the issued upload range.");
+    }
+    const bytes = Buffer.from(await c.req.arrayBuffer());
+    const existingSize = session.parts_base64.reduce(
+      (total, value, index) => total + (index === part - 1 || !value ? 0 : Buffer.byteLength(value, "base64")),
+      0
+    );
+    if (existingSize + bytes.length > getUploadConfig(store).maxObjectBytes) {
+      return payloadTooLarge(c, `The uploaded object exceeds the ${getUploadConfig(store).maxObjectBytes} byte limit.`);
+    }
+    const parts = [...session.parts_base64];
+    parts[part - 1] = bytes.toString("base64");
+    aps.uploadSessions.update(session.id, { parts_base64: parts });
+    return c.body(null, 200, { ETag: createHash4("sha1").update(bytes).digest("hex") });
+  });
+  app.post("/oss/v2/buckets/:bucketKey/objects/:objectKey/signeds3upload", async (c) => {
+    const bucketKey = routeId(c.req.param("bucketKey"));
+    const objectKey = routeId(c.req.param("objectKey"));
+    const body = await jsonObjectBody(c);
+    const uploadKey = body ? optionalString(body.uploadKey) : void 0;
+    if (!uploadKey) return badInput(c, "uploadKey", "uploadKey is required.");
+    const session = aps.uploadSessions.findOneBy("upload_key", uploadKey);
+    if (!session || session.bucket_key !== bucketKey || session.object_key !== objectKey) {
+      return badInput(c, "uploadKey", "uploadKey does not belong to this object.");
+    }
+    if (Date.parse(session.expires_at) <= Date.now()) return forbidden(c, "The upload session has expired.");
+    if (session.parts_base64.some((part) => part === null)) {
+      return badInput(c, "uploadKey", "Every issued upload part must be uploaded before completion.");
+    }
+    const storage = aps.storageObjects.findBy("bucket_key", bucketKey).find((candidate) => candidate.object_key === objectKey);
+    if (!storage) return notFound(c, "The requested storage object");
+    const bytes = Buffer.concat(session.parts_base64.map((part) => Buffer.from(part ?? "", "base64")));
+    const sha1 = createHash4("sha1").update(bytes).digest("hex");
+    aps.storageObjects.update(storage.id, {
+      size: bytes.length,
+      sha1,
+      content_base64: bytes.toString("base64"),
+      uploaded_at: (/* @__PURE__ */ new Date()).toISOString()
+    });
+    aps.uploadSessions.delete(session.id);
+    const location = `${baseUrl}/oss/v2/buckets/${encodeURIComponent(bucketKey)}/objects/${encodeURIComponent(objectKey)}`;
+    return c.json({
+      objectId: storage.object_id,
+      objectKey,
+      bucketKey,
+      size: bytes.length,
+      sha1,
+      location
+    });
+  });
+  app.post("/data/v1/projects/:projectId/items", userWriteAuth, async (c) => {
+    const projectId = routeId(c.req.param("projectId"));
+    if (!aps.projects.findOneBy("project_id", projectId))
+      return jsonApiError(c, 404, "NOT_FOUND", "The project was not found.");
+    const body = await jsonObjectBody(c);
+    const data = body ? asRecord(body.data) : null;
+    const included = body && Array.isArray(body.included) ? body.included.map(asRecord).filter(Boolean) : [];
+    const includedVersion = included.find((entry) => entry?.type === "versions") ?? null;
+    const folderId = data ? relationshipId(data, "parent") : void 0;
+    const displayName = data ? optionalString(resourceAttributes(data).displayName) ?? optionalString(resourceAttributes(data).name) : void 0;
+    const versionName = includedVersion ? optionalString(resourceAttributes(includedVersion).name) : void 0;
+    const storageId = includedVersion ? relationshipId(includedVersion, "storage") : void 0;
+    if (!data || data.type !== "items" || !includedVersion || !folderId || !(displayName ?? versionName)) {
+      return jsonApiError(c, 400, "BAD_INPUT", "An item with a parent folder and included first version is required.");
+    }
+    const name = displayName ?? versionName;
+    const folder = aps.documentFolders.findOneBy("folder_id", folderId);
+    if (!folder || folder.project_id !== projectId)
+      return jsonApiError(c, 404, "NOT_FOUND", "The parent folder was not found.");
+    if (aps.documentItems.findBy("folder_id", folderId).some((item2) => item2.display_name === name)) {
+      return jsonApiError(c, 409, "CONFLICT", "An item with this name already exists in the folder.");
+    }
+    const storage = storageForWrite(c, aps, projectId, folderId, storageId);
+    if (storage instanceof Response) return storage;
+    const actor = await actorForRequest(c, store, aps);
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const item = createDocumentItem(aps, {
+      item_id: `urn:adsk.wipprod:dm.lineage:${randomUUID4().replaceAll("-", "")}`,
+      project_id: projectId,
+      folder_id: folderId,
+      display_name: name,
+      hidden: false,
+      reserved: false,
+      reserved_time: null,
+      reserved_by: null,
+      reserved_by_name: null,
+      created_by: actor.id,
+      created_by_name: actor.name,
+      create_time: now,
+      last_modified_by: actor.id,
+      last_modified_by_name: actor.name,
+      last_modified_time: now,
+      extension_type: "items:autodesk.bim360:File"
+    });
+    const version = createDocumentVersion(aps, versionValues(item, storage, 1, actor, versionName ?? name));
+    await finishVersionWrite(aps, store, version);
+    const self = `${baseUrl}/data/v1/projects/${encodeURIComponent(projectId)}/items/${encodeURIComponent(item.item_id)}`;
+    return jsonApiCreated(c, self, documentItemData(baseUrl, aps, item), [documentVersionData(baseUrl, version)]);
+  });
+  app.post("/data/v1/projects/:projectId/versions", userWriteAuth, async (c) => {
+    const projectId = routeId(c.req.param("projectId"));
+    if (!aps.projects.findOneBy("project_id", projectId))
+      return jsonApiError(c, 404, "NOT_FOUND", "The project was not found.");
+    const body = await jsonObjectBody(c);
+    const data = body ? asRecord(body.data) : null;
+    const itemId = data ? relationshipId(data, "item") : void 0;
+    const storageId = data ? relationshipId(data, "storage") : void 0;
+    const item = itemId ? aps.documentItems.findOneBy("item_id", itemId) : void 0;
+    if (!data || data.type !== "versions" || !itemId || !storageId) {
+      return jsonApiError(c, 400, "BAD_INPUT", "A version with item and storage relationships is required.");
+    }
+    if (!item || item.project_id !== projectId) return jsonApiError(c, 404, "NOT_FOUND", "The item was not found.");
+    const storage = storageForWrite(c, aps, projectId, item.folder_id, storageId);
+    if (storage instanceof Response) return storage;
+    const actor = await actorForRequest(c, store, aps);
+    const latest = itemTip(aps, item.item_id);
+    const number = (latest?.version_number ?? 0) + 1;
+    const name = optionalString(resourceAttributes(data).name) ?? optionalString(resourceAttributes(data).displayName) ?? storage.name;
+    const version = createDocumentVersion(aps, versionValues(item, storage, number, actor, name));
+    aps.documentItems.update(item.id, {
+      display_name: name,
+      last_modified_by: actor.id,
+      last_modified_by_name: actor.name,
+      last_modified_time: version.create_time
+    });
+    await finishVersionWrite(aps, store, version);
+    const self = `${baseUrl}/data/v1/projects/${encodeURIComponent(projectId)}/versions/${encodeURIComponent(version.version_id)}`;
+    return jsonApiCreated(c, self, documentVersionData(baseUrl, version));
   });
 }
 
@@ -2388,11 +3388,83 @@ var SUPPORTED_FORMATS = {
     thumbnail: [...VIEWABLE_INPUT_FORMATS, "axmf", "dwgx", "f2d", "flbr", "fprj", "rva"]
   }
 };
+var PLAIN_VIEWABLE_EXTENSIONS = new Set(VIEWABLE_INPUT_FORMATS.filter((format) => /^[a-z0-9_]+$/.test(format)));
+var PATTERN_VIEWABLE_EXTENSIONS = VIEWABLE_INPUT_FORMATS.filter(
+  (format) => !PLAIN_VIEWABLE_EXTENSIONS.has(format)
+).map((pattern) => new RegExp(`^(?:${pattern})$`, "i"));
+function isViewableInputFormat(sourceName) {
+  const basename = sourceName.split(/[\\/]/).at(-1).toLowerCase();
+  const segments = basename.split(".");
+  const candidates = segments.length < 2 ? [] : [segments.at(-1), segments.slice(-2).join(".")];
+  return candidates.some(
+    (candidate) => PLAIN_VIEWABLE_EXTENSIONS.has(candidate) || PATTERN_VIEWABLE_EXTENSIONS.some((pattern) => pattern.test(candidate))
+  );
+}
+function translationViews(value) {
+  if (value === void 0) return [];
+  if (!Array.isArray(value)) return null;
+  const views = value.filter((view) => typeof view === "string");
+  return views.length === value.length ? views : null;
+}
+function translationFormats(value) {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const formats = [];
+  for (const candidate of value) {
+    if (!isRecordObject(candidate)) return null;
+    const type = optionalString(candidate.type);
+    if (type !== "svf2" && type !== "svf" && type !== "thumbnail") return null;
+    const views = translationViews(candidate.views);
+    if (!views) return null;
+    formats.push({ type, views });
+  }
+  return formats;
+}
 function modelDerivativeRoutes({ app, store }) {
   const aps = getApsStore(store);
-  app.use("/modelderivative/v2/*", apsAuth(store, { scopes: ["data:read"] }));
-  app.get("/modelderivative/v2/designdata/formats", (c) => c.json(SUPPORTED_FORMATS));
-  app.get("/modelderivative/v2/designdata/:urn/manifest", (c) => {
+  const readAuth = apsAuth(store, { scopes: ["data:read"] });
+  const writeAuth = apsAuth(store, { scopes: ["data:create", "data:write"] });
+  app.get("/modelderivative/v2/designdata/formats", readAuth, (c) => c.json(SUPPORTED_FORMATS));
+  app.post("/modelderivative/v2/designdata/job", writeAuth, async (c) => {
+    const body = await jsonObjectBody(c);
+    const input = body && isRecordObject(body.input) ? body.input : null;
+    const output = body && isRecordObject(body.output) ? body.output : null;
+    const urn = input ? optionalString(input.urn) : void 0;
+    const formats = translationFormats(output?.formats);
+    if (!urn) return badInput(c, "input.urn", "input.urn is required.");
+    if (!formats) return badInput(c, "output.formats", "At least one svf2, svf, or thumbnail output is required.");
+    let objectId;
+    try {
+      objectId = Buffer.from(urn, "base64url").toString("utf8");
+    } catch {
+      return badInput(c, "input.urn", "input.urn must be a base64url-encoded storage object ID.");
+    }
+    const storage = aps.storageObjects.findOneBy("object_id", objectId);
+    if (!storage || !storage.uploaded_at) return notFound(c, "The source storage object");
+    if (!isViewableInputFormat(storage.name)) {
+      return badInput(c, "input.urn", `The .${documentFileType(storage.name)} source format is not viewable.`);
+    }
+    const force = c.req.header("x-ads-force")?.toLowerCase() === "true";
+    const result = enqueueTranslation(aps, store, {
+      urn,
+      sourceName: storage.name,
+      outputFormats: formats,
+      force
+    });
+    return c.json(
+      {
+        result: result.created ? "created" : "success",
+        urn,
+        acceptedJobs: { output: formats.map((format) => ({ destination: { region: "us" }, formats: [format] })) }
+      },
+      result.created ? 201 : 200
+    );
+  });
+  app.get("/modelderivative/v2/designdata/:urn/manifest", readAuth, async (c) => {
+    const job = aps.translationJobs.findOneBy("urn", c.req.param("urn"));
+    if (job) {
+      const refreshed = await refreshTranslationJob(aps, store, job);
+      return c.json(manifestForJob(refreshed));
+    }
     const manifest = aps.manifests.findOneBy("urn", c.req.param("urn"));
     if (!manifest) return c.body(null, 404);
     return c.json({
@@ -2504,7 +3576,7 @@ function modelSetRoutes({ app, store }) {
 }
 
 // src/routes/oauth.ts
-import { createHash as createHash3, randomBytes as randomBytes3 } from "crypto";
+import { createHash as createHash5, randomBytes as randomBytes3 } from "crypto";
 import { SignJWT, exportJWK } from "jose";
 
 // ../core/dist/index.js
@@ -3263,7 +4335,7 @@ function oauthRoutes({ app, store, baseUrl, tokenMap }) {
         if (!codeVerifier) {
           return oauthError(c, 400, "invalid_request", "The request is missing a required parameter 'code_verifier'.");
         }
-        const expected = createHash3("sha256").update(codeVerifier).digest("base64url");
+        const expected = createHash5("sha256").update(codeVerifier).digest("base64url");
         if (expected !== pending.codeChallenge) {
           return oauthError(c, 400, "invalid_grant", "PKCE verification failed.");
         }
@@ -3967,384 +5039,6 @@ var APS_WEBHOOK_EVENTS = {
   "adsk.tandem": ["dt.alert", "dt.mutation", "dt.applyTemplate", "dt.removeTemplate"]
 };
 
-// src/webhooks.ts
-import { createHmac as createHmac2, randomUUID as randomUUID3 } from "crypto";
-
-// src/webhook-filter.ts
-function splitTopLevel(value, delimiter) {
-  const parts = [];
-  let quote = null;
-  let bracketDepth = 0;
-  let start = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    const char = value[index];
-    if (quote) {
-      if (char === "\\") index += 1;
-      else if (char === quote) quote = null;
-      continue;
-    }
-    if (char === "'" || char === '"') quote = char;
-    else if (char === "[") bracketDepth += 1;
-    else if (char === "]") bracketDepth -= 1;
-    else if (bracketDepth === 0 && value.slice(index, index + delimiter.length) === delimiter) {
-      parts.push(value.slice(start, index).trim());
-      start = index + delimiter.length;
-      index += delimiter.length - 1;
-    }
-  }
-  parts.push(value.slice(start).trim());
-  return parts;
-}
-function parseScalar(value) {
-  const trimmed = value.trim();
-  if (/^'(?:[^'\\]|\\.)*'$/.test(trimmed) || /^"(?:[^"\\]|\\.)*"$/.test(trimmed)) {
-    const inner = trimmed.slice(1, -1);
-    return inner.replace(/\\(['"\\])/g, "$1");
-  }
-  if (/^-?(?:\d+\.?\d*|\.\d+)$/.test(trimmed)) return Number(trimmed);
-  if (trimmed === "true") return true;
-  if (trimmed === "false") return false;
-  if (trimmed === "null") return null;
-  return void 0;
-}
-function parseArray(value) {
-  const trimmed = value.trim();
-  if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) return null;
-  const body = trimmed.slice(1, -1).trim();
-  if (!body) return [];
-  const result = [];
-  for (const part of splitTopLevel(body, ",")) {
-    const scalar = parseScalar(part);
-    if (scalar === void 0) return null;
-    result.push(scalar);
-  }
-  return result;
-}
-function valueAtPath(payload, path) {
-  let value = payload;
-  for (const part of path.split(".")) {
-    if (!value || typeof value !== "object" || Array.isArray(value)) return void 0;
-    value = value[part];
-  }
-  return value;
-}
-function evaluateClause(payload, clause) {
-  const match = clause.match(/^@\.([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*(==|!=|>=|<=|>|<|in)\s*(.+)$/);
-  if (!match) return null;
-  const [, path, operator, rawExpected] = match;
-  const actual = valueAtPath(payload, path);
-  if (operator === "in") {
-    const expected2 = parseArray(rawExpected);
-    return expected2 ? expected2.some((candidate) => candidate === actual) : null;
-  }
-  const expected = parseScalar(rawExpected);
-  if (expected === void 0) return null;
-  if (operator === "==") return actual === expected;
-  if (operator === "!=") return actual !== expected;
-  if ((typeof actual !== "number" || typeof expected !== "number") && (typeof actual !== "string" || typeof expected !== "string")) {
-    return false;
-  }
-  if (operator === ">") return actual > expected;
-  if (operator === ">=") return actual >= expected;
-  if (operator === "<") return actual < expected;
-  return actual <= expected;
-}
-function evaluateFilterString(filter, payload) {
-  const trimmed = filter.trim();
-  if (!trimmed.startsWith("$[?(") || !trimmed.endsWith(")]")) return null;
-  const expression = trimmed.slice(4, -2).trim();
-  if (!expression) return null;
-  const orGroups = splitTopLevel(expression, "||");
-  let valid = true;
-  let result = false;
-  for (const group of orGroups) {
-    const clauses = splitTopLevel(group, "&&");
-    let groupMatches = true;
-    for (const clause of clauses) {
-      const clauseResult = evaluateClause(payload, clause);
-      if (clauseResult === null) valid = false;
-      if (clauseResult !== true) groupMatches = false;
-    }
-    if (groupMatches) result = true;
-  }
-  return valid ? result : null;
-}
-function validateWebhookFilter(filter) {
-  const filters = Array.isArray(filter) ? filter : [filter];
-  return filters.length > 0 && filters.every((candidate) => evaluateFilterString(candidate, {}) !== null);
-}
-function webhookFilterMatches(filter, payload) {
-  if (filter === null) return true;
-  const filters = Array.isArray(filter) ? filter : [filter];
-  return filters.every((candidate) => evaluateFilterString(candidate, payload) === true);
-}
-
-// src/webhooks.ts
-var TIMING_STORE_KEY = "aps.webhooks.timing";
-var MAX_DELIVERIES = 1e3;
-async function sendWebhookRequest(request) {
-  const start = Date.now();
-  try {
-    const response = await fetch(request.url, {
-      method: "POST",
-      headers: request.headers,
-      body: request.body,
-      signal: AbortSignal.timeout(request.timeoutMs)
-    });
-    return { status_code: response.status, duration: Date.now() - start, success: response.ok };
-  } catch {
-    return { status_code: null, duration: Date.now() - start, success: false };
-  }
-}
-function userIdentity(userId2) {
-  return { key: `user:${userId2}`, createdBy: userId2, creatorType: "O2User" };
-}
-function appIdentity(clientId) {
-  return { key: `app:${clientId}`, createdBy: clientId, creatorType: "Application" };
-}
-function getWebhookTiming(store) {
-  return { ...DEFAULT_WEBHOOK_TIMING, ...store.getData(TIMING_STORE_KEY) ?? {} };
-}
-function setWebhookTiming(store, timing) {
-  store.setData(TIMING_STORE_KEY, { ...getWebhookTiming(store), ...timing });
-}
-function canonicalWebhookScope(scope) {
-  return JSON.stringify(Object.entries(scope).sort(([left], [right]) => left.localeCompare(right)));
-}
-function createWebhookRecord(aps, input) {
-  return aps.webhookHooks.insert({
-    hook_id: randomUUID3(),
-    // APS derives a hook's tenant from its scope value when none is supplied.
-    tenant: input.tenant ?? Object.values(input.scope)[0] ?? "",
-    callback_url: input.callbackUrl,
-    created_by: input.identity.createdBy,
-    creator_type: input.identity.creatorType,
-    identity_key: input.identity.key,
-    event: input.event,
-    system: input.system,
-    status: input.status ?? "active",
-    auto_reactivate_hook: input.autoReactivateHook ?? false,
-    hook_expiry: input.hookExpiry ?? null,
-    hook_attribute: structuredClone(input.hookAttribute ?? null),
-    filter: structuredClone(input.filter ?? null),
-    scope: structuredClone(input.scope),
-    hub_id: input.hubId ?? null,
-    project_id: input.projectId ?? null,
-    token: input.token ?? null,
-    region: input.region,
-    failed_event_count: 0,
-    inactive_at: input.status === "inactive" ? (/* @__PURE__ */ new Date()).toISOString() : null,
-    reactivation_count: 0
-  });
-}
-function findDuplicateHook(aps, input) {
-  const canonical = canonicalWebhookScope(input.scope);
-  return aps.webhookHooks.all().find(
-    (hook) => hook.identity_key === input.identity.key && hook.region === input.region && hook.system === input.system && hook.event === input.event && hook.callback_url === input.callbackUrl && canonicalWebhookScope(hook.scope) === canonical
-  );
-}
-function findWebhookSecret(aps, identityKey, region) {
-  return aps.webhookSecrets.findBy("identity_key", identityKey).find((secret) => secret.region === region);
-}
-function webhookDetails(hook) {
-  const details = {
-    hookId: hook.hook_id,
-    tenant: hook.tenant,
-    callbackUrl: hook.callback_url,
-    createdBy: hook.created_by,
-    event: hook.event,
-    createdDate: hook.created_at,
-    lastUpdatedDate: hook.updated_at,
-    system: hook.system,
-    creatorType: hook.creator_type,
-    status: hook.status,
-    autoReactivateHook: hook.auto_reactivate_hook,
-    scope: structuredClone(hook.scope),
-    urn: `urn:adsk.webhooks:events.hook:${hook.hook_id}`,
-    __self__: `/systems/${encodeURIComponent(hook.system)}/events/${encodeURIComponent(hook.event)}/hooks/${encodeURIComponent(hook.hook_id)}`
-  };
-  if (hook.hook_expiry !== null) details.hookExpiry = hook.hook_expiry;
-  if (hook.hook_attribute !== null) details.hookAttribute = structuredClone(hook.hook_attribute);
-  if (hook.filter !== null) details.filter = structuredClone(hook.filter);
-  if (hook.hub_id !== null) details.hubId = hook.hub_id;
-  if (hook.project_id !== null) details.projectId = hook.project_id;
-  return details;
-}
-function webhookEventMatches(pattern, event) {
-  if (pattern === "*") return true;
-  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".+");
-  return new RegExp(`^${escaped}$`).test(event);
-}
-function eventScopeCandidates(input) {
-  const eventScope = input.scope ?? {};
-  const ancestors = input.folderAncestors ?? [];
-  const anyKey = input.scopeValue !== void 0 ? [input.scopeValue] : [];
-  const byName = new Map(Object.entries(eventScope).map(([name, value]) => [name, [value]]));
-  byName.set("folder", [...byName.get("folder") ?? [], ...ancestors]);
-  const tenants = [
-    ...input.tenant !== void 0 ? [input.tenant] : [],
-    ...anyKey,
-    ...Object.values(eventScope),
-    ...ancestors
-  ];
-  return { byName, anyKey, tenants };
-}
-function webhookScopeMatches(hook, candidates) {
-  const scopeMatches = Object.entries(hook.scope).every(
-    ([name, value]) => (candidates.byName.get(name) ?? []).includes(value) || candidates.anyKey.includes(value)
-  );
-  if (!scopeMatches) return false;
-  return !hook.tenant || candidates.tenants.includes(hook.tenant);
-}
-function skippedDelivery(hook, reason) {
-  return {
-    hookId: hook.hook_id,
-    matched: false,
-    delivered: false,
-    statusCode: null,
-    attempts: 0,
-    signaturePresent: false,
-    reason
-  };
-}
-function webhookStatusAllowsDelivery(store, hook, now = Date.now()) {
-  if (hook.status === "active" || hook.status === "reactivated") return true;
-  const inactiveAt = hook.inactive_at ? Date.parse(hook.inactive_at) : Number.NaN;
-  const timing = getWebhookTiming(store);
-  return hook.auto_reactivate_hook && Number.isFinite(inactiveAt) && now - inactiveAt >= timing.reactivate_after_ms && hook.reactivation_count < timing.max_reactivation_cycles;
-}
-function delay(milliseconds) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
-function addDelivery(aps, data) {
-  aps.webhookDeliveries.insert(data);
-  for (const delivery of aps.webhookDeliveries.all().slice(0, -MAX_DELIVERIES)) {
-    aps.webhookDeliveries.delete(delivery.id);
-  }
-}
-async function attemptDelivery(aps, hook, input, token, timeoutMs, attempt) {
-  const envelope = {
-    version: "1.0",
-    resourceUrn: input.resourceUrn,
-    hook: webhookDetails(hook),
-    payload: input.payload
-  };
-  const body = JSON.stringify(envelope);
-  const deliveryId = randomUUID3();
-  const headers = {
-    "Content-Type": "application/json",
-    "x-adsk-delivery-id": deliveryId
-  };
-  if (token) {
-    headers["x-adsk-signature"] = `sha1hash=${createHmac2("sha1", token).update(body).digest("hex")}`;
-  }
-  const result = await sendWebhookRequest({ url: hook.callback_url, headers, body, timeoutMs });
-  addDelivery(aps, {
-    delivery_id: deliveryId,
-    hook_id: hook.hook_id,
-    system: input.system,
-    event: input.event,
-    attempt,
-    envelope,
-    status_code: result.status_code,
-    duration: result.duration,
-    success: result.success,
-    signature_present: Boolean(token)
-  });
-  return { success: result.success, statusCode: result.status_code, signaturePresent: Boolean(token) };
-}
-function identityToken(aps, hook) {
-  return hook.token ?? findWebhookSecret(aps, hook.identity_key, hook.region)?.token ?? null;
-}
-async function deliverMatchingHook(aps, store, hook, input) {
-  const timing = getWebhookTiming(store);
-  let current = hook;
-  let reactivationTrial = current.status === "reactivated";
-  if (current.status === "inactive") {
-    if (!webhookStatusAllowsDelivery(store, current)) return skippedDelivery(current, "inactive");
-    current = aps.webhookHooks.update(current.id, {
-      status: "reactivated",
-      reactivation_count: current.reactivation_count + 1
-    });
-    reactivationTrial = true;
-  }
-  const token = identityToken(aps, current);
-  const maxAttempts = reactivationTrial ? 1 : timing.max_retries + 1;
-  let lastStatus = null;
-  let signaturePresent = false;
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const result = await attemptDelivery(aps, current, input, token, timing.delivery_timeout_ms, attempt);
-    lastStatus = result.statusCode;
-    signaturePresent = result.signaturePresent;
-    if (result.success) {
-      aps.webhookHooks.update(current.id, {
-        status: "active",
-        failed_event_count: 0,
-        inactive_at: null
-      });
-      return {
-        hookId: current.hook_id,
-        matched: true,
-        delivered: true,
-        statusCode: lastStatus,
-        attempts: attempt,
-        signaturePresent
-      };
-    }
-    if (attempt < maxAttempts) {
-      await delay(Math.min(timing.retry_base_ms * 2 ** (attempt - 1), timing.retry_max_ms));
-    }
-  }
-  if (reactivationTrial) {
-    const permanent = current.reactivation_count >= timing.max_reactivation_cycles;
-    aps.webhookHooks.update(current.id, {
-      status: "inactive",
-      inactive_at: (/* @__PURE__ */ new Date()).toISOString(),
-      auto_reactivate_hook: permanent ? false : current.auto_reactivate_hook
-    });
-  } else {
-    const failedEventCount = current.failed_event_count + 1;
-    const inactive = failedEventCount >= timing.failed_events_before_inactive;
-    aps.webhookHooks.update(current.id, {
-      failed_event_count: failedEventCount,
-      status: inactive ? "inactive" : current.status,
-      inactive_at: inactive ? (/* @__PURE__ */ new Date()).toISOString() : current.inactive_at
-    });
-  }
-  return {
-    hookId: current.hook_id,
-    matched: true,
-    delivered: false,
-    statusCode: lastStatus,
-    attempts: maxAttempts,
-    signaturePresent,
-    reason: "delivery_failed"
-  };
-}
-function deleteExpiredHooks(aps, now = Date.now()) {
-  for (const hook of aps.webhookHooks.all()) {
-    if (hook.hook_expiry !== null && Date.parse(hook.hook_expiry) <= now) aps.webhookHooks.delete(hook.id);
-  }
-}
-async function simulateWebhookEvent(aps, store, input) {
-  deleteExpiredHooks(aps);
-  const candidates = eventScopeCandidates(input);
-  const hooks = aps.webhookHooks.all().filter((hook) => hook.region === input.region && hook.system === input.system);
-  const reports = await Promise.all(
-    hooks.map((hook) => {
-      if (!webhookEventMatches(hook.event, input.event)) return skippedDelivery(hook, "event");
-      if (!webhookScopeMatches(hook, candidates)) return skippedDelivery(hook, "scope");
-      if (!webhookStatusAllowsDelivery(store, hook)) return skippedDelivery(hook, "inactive");
-      if (!webhookFilterMatches(hook.filter, input.payload)) return skippedDelivery(hook, "filter");
-      return deliverMatchingHook(aps, store, hook, input);
-    })
-  );
-  return { system: input.system, event: input.event, resourceUrn: input.resourceUrn, deliveries: reports };
-}
-function validWebhookStatus(value) {
-  return value === "active" || value === "inactive" || value === "reactivated";
-}
-
 // src/routes/simulate.ts
 function simulatorError(c, message, status = 400) {
   return c.json({ error: message }, status);
@@ -4407,41 +5101,9 @@ function simulateRoutes({ app, store }) {
     const requestedVersionId = optionalString(body.versionId);
     const version = requestedVersionId ? aps.documentVersions.findOneBy("version_id", requestedVersionId) : aps.documentVersions.all()[0];
     if (!version) return simulatorError(c, "The seeded Data Management version was not found.", 404);
-    const item = documentItemForVersion(aps, version);
-    if (!item) return simulatorError(c, "The seeded Data Management item was not found.", 404);
-    const folder = aps.documentFolders.findOneBy("folder_id", item.folder_id);
-    if (!folder) return simulatorError(c, "The seeded Data Management folder was not found.", 404);
-    const ancestors = folderAncestors(aps, version.project_id, folder.folder_id);
-    const projectId = bareProjectId(version.project_id);
-    const payload = {
-      ext: version.file_type,
-      modifiedTime: version.last_modified_time,
-      creator: version.created_by,
-      lineageUrn: version.item_id,
-      sizeInBytes: version.storage_size,
-      hidden: item.hidden,
-      indexable: true,
-      project: projectId,
-      source: version.version_id,
-      version: String(version.version_number),
-      user_info: { id: version.created_by },
-      name: version.display_name,
-      createdTime: version.create_time,
-      modifiedBy: version.last_modified_by,
-      state: "CONTENT_AVAILABLE",
-      parentFolderUrn: folder.folder_id,
-      ancestors: [...ancestors, folder].map((ancestor) => ({ urn: ancestor.folder_id, name: ancestor.name })),
-      tenant: projectId
-    };
-    const report = await simulateWebhookEvent(aps, store, {
-      system: "data",
-      event: "dm.version.added",
-      resourceUrn: version.version_id,
-      region: version.region,
-      scope: { folder: folder.folder_id, project: version.project_id },
-      folderAncestors: ancestors.map((ancestor) => ancestor.folder_id),
-      payload
-    });
+    const event = documentVersionAddedEvent(aps, version);
+    if (!event) return simulatorError(c, "The seeded Data Management item or folder was not found.", 404);
+    const report = await simulateWebhookEvent(aps, store, event);
     return c.json(report);
   });
   app.post("/_aps/simulate/extraction-finished", async (c) => {
@@ -4471,6 +5133,20 @@ function simulateRoutes({ app, store }) {
     });
     return c.json(report);
   });
+  app.post("/_aps/simulate/translation-complete", async (c) => {
+    const body = await jsonObjectBody(c);
+    if (!body) return simulatorError(c, "The request body must be a JSON object.");
+    const urn = optionalString(body.urn);
+    const status = optionalString(body.status) ?? "success";
+    if (!urn) return simulatorError(c, "urn is required.");
+    if (status !== "success" && status !== "failed") {
+      return simulatorError(c, "status must be success or failed.");
+    }
+    const job = aps.translationJobs.findOneBy("urn", urn);
+    if (!job) return simulatorError(c, "The translation job was not found.", 404);
+    const completed = await forceTranslationTerminal(aps, store, job, status);
+    return c.json(manifestForJob(completed));
+  });
   app.post("/_aps/simulate/issue-created", async (c) => {
     const body = await jsonObjectBody(c);
     if (!body) return simulatorError(c, "The request body must be a JSON object.");
@@ -4498,13 +5174,13 @@ function simulateRoutes({ app, store }) {
 }
 
 // src/routes/webhooks.ts
-import { randomUUID as randomUUID4 } from "crypto";
+import { randomUUID as randomUUID5 } from "crypto";
 var PAGE_SIZE = 200;
 var SCOPE_QUOTA = 1e3;
 var READ_SCOPES = ["data:read"];
 var WRITE_SCOPES = ["data:read", "data:write"];
 function webhookError(c, status) {
-  return c.json({ id: randomUUID4() }, status);
+  return c.json({ id: randomUUID5() }, status);
 }
 async function webhookContext(c, store, aps, scopes, appOnly = false) {
   const token = await accessTokenForRequest(c, store);
@@ -5261,6 +5937,8 @@ function seedFromConfig(store, _baseUrl, config) {
     }
   }
   if (config.webhook_timing) setWebhookTiming(store, config.webhook_timing);
+  if (config.upload) setUploadConfig(store, config.upload);
+  if (config.translation) setTranslationConfig(store, config.translation);
   seedDocumentTreeFromConfig(aps, config);
   seedModelCoordinationFromConfig(aps, store, config);
   for (const hook of config.webhooks ?? []) {
@@ -5299,6 +5977,7 @@ var apsPlugin = {
     const ctx = { app, store, webhooks, baseUrl, tokenMap };
     oauthRoutes(ctx);
     dataManagementRoutes(ctx);
+    ingestionRoutes(ctx);
     modelDerivativeRoutes(ctx);
     modelSetRoutes(ctx);
     clashRoutes(ctx);
@@ -5317,14 +5996,20 @@ var index_default = apsPlugin;
 export {
   DEFAULT_DATA_SEED,
   DEFAULT_MODEL_COORDINATION_TIMING,
+  DEFAULT_TRANSLATION_CONFIG,
+  DEFAULT_UPLOAD_CONFIG,
   DEFAULT_WEBHOOK_TIMING,
   apsPlugin,
   index_default as default,
   getApsStore,
   getModelCoordinationTiming,
+  getTranslationConfig,
+  getUploadConfig,
   getWebhookTiming,
   seedFromConfig,
   setModelCoordinationTiming,
+  setTranslationConfig,
+  setUploadConfig,
   setWebhookTiming,
   simulateWebhookEvent,
   webhookDetails

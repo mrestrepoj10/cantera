@@ -241,6 +241,8 @@ function thumbnailDerivative(status: string): ApsManifestDerivative {
   return { status, progress: 'complete', outputType: 'thumbnail', children: [] }
 }
 
+const demoViewerUrn = process.env.APS_VIEWER_DEMO_URN
+
 /**
  * One manifest per translated design, covering the whole vocabulary the
  * ModelStatusCard renders: ready with outputs, translating with a progress
@@ -322,6 +324,19 @@ const demoManifests: NonNullable<ApsSeedConfig['manifests']> = {
     region: 'EMEA',
     derivatives: [svfDerivative('harbor-point-arch.rvt', 'success')],
   },
+  ...(demoViewerUrn
+    ? {
+        [demoViewerUrn]: {
+          status: 'success',
+          progress: 'complete',
+          hasThumbnail: 'true',
+          derivatives: [
+            svfDerivative('cantera-viewer-sample', 'success'),
+            thumbnailDerivative('success'),
+          ],
+        },
+      }
+    : {}),
 }
 
 const projectIds = [...demoProjects.map((project) => project.id), ...EMULATOR_DEFAULT_PROJECT_IDS]
@@ -393,6 +408,16 @@ function documentVersionId(projectId: string, displayName: string, version: numb
   return `urn:adsk.wipprod:fs.file:vf.cantera-${documentId(projectId)}-${documentId(displayName)}?version=${version}`
 }
 
+/** The one Data Management item whose tip can open real showcase geometry. */
+export const DEMO_VIEWER_ITEM_ID = documentItemId('b.summit-tower', 'summit-tower-arch.rvt')
+
+/** Stable tip id paired with DEMO_VIEWER_ITEM_ID. */
+export const DEMO_VIEWER_VERSION_ID = documentVersionId(
+  'b.summit-tower',
+  'summit-tower-arch.rvt',
+  3,
+)
+
 const documentFolders: NonNullable<ApsSeedConfig['document_folders']> = demoProjects.flatMap(
   (project) => {
     const root = projectFolderId(project.id, 'root')
@@ -452,18 +477,21 @@ const documentVersions: NonNullable<ApsSeedConfig['document_versions']> = demoPr
   (project) =>
     projectDesigns(project).flatMap((displayName, itemIndex) => {
       const count = itemIndex === 0 ? 3 : itemIndex === 1 ? 2 : 1
-      const urn = designUrns[displayName]
-      const translated = urn != null && demoManifests[urn] != null
       return Array.from({ length: count }, (_, index) => {
         const versionNumber = index + 1
+        const versionId = documentVersionId(project.id, displayName, versionNumber)
         return {
-          version_id: documentVersionId(project.id, displayName, versionNumber),
+          version_id: versionId,
           item_id: documentItemId(project.id, displayName),
           project_id: project.id,
           version_number: versionNumber,
           display_name: displayName,
           storage_size: 24_000_000 + itemIndex * 8_500_000 + versionNumber * 1_200_000,
-          bubble_urn: translated ? urn : null,
+          // The embedded emulator cannot serve SVF geometry. Link exactly one
+          // deterministic tip to the real translated sample used by the
+          // showcase viewer; every other file deliberately exercises the
+          // model browser's no-geometry state.
+          bubble_urn: versionId === DEMO_VIEWER_VERSION_ID ? (demoViewerUrn ?? null) : null,
           created_by: versionNumber % 2 === 0 ? DEMO_USER_EMAILS[1] : DEMO_USER_EMAILS[0],
           created_by_name: versionNumber % 2 === 0 ? 'Sam Ito' : 'Maria Renteria',
           create_time: `2026-08-${String(15 + versionNumber + itemIndex).padStart(2, '0')}T13:10:00.000Z`,
