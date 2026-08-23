@@ -439,6 +439,44 @@
       "docs": "HubTree is fully controlled and never fetches. Give every node a stable, globally unique tree id and preserve the provider-normalized Hub, Project, Folder, Item, or ItemVersion in its value field. Expanding calls onExpand; feed the loaded children back through nodes and include the id in expandedIds. Items open their tip through onItemOpen(item); version rows call onItemOpen(item, version). The comfortable default uses 44px rows; compact is an explicit opt-in."
     },
     {
+      "name": "finder",
+      "type": "registry:component",
+      "title": "Finder",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives.",
+      "categories": ["projects", "search"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "button",
+        "command",
+        "@cantera/project-types",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/finder.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "docs": "Fully controlled and data-agnostic: query out through onQueryChange, groups in as props; the consumer owns fetching, debouncing, and persistence. APS has no cross-hub search API, so label each group after the scope actually searched (folders/{id}/search is recursive within one project). Entries carry path: BrowsePathSegment[] — onReveal hands it back so a hub-tree (expandedIds + selectedId) or hub-browser (a location change) unfolds to the entry. Three surfaces share the contract: Finder renders inline, FinderDialog is the ⌘K palette (shortcut built in, closes on select or reveal), and FinderTrigger is the input-shaped button that opens it."
+    },
+    {
+      "name": "hub-sidebar",
+      "type": "registry:component",
+      "title": "Hub Sidebar",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.",
+      "categories": ["projects", "navigation"],
+      "registryDependencies": ["sidebar", "@cantera/finder", "@cantera/hub-tree"],
+      "files": [
+        {
+          "path": "registry/ui/hub-sidebar.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "docs": "Render inside your own SidebarProvider with page content in SidebarInset — HubSidebar is the sidebar, not the app shell. The header renders a FinderTrigger opening the ⌘K FinderDialog (fed by the finder prop); the tree fills the content slot. It forwards grouped props to its two controlled halves and adds no state of its own; wire reveal by mapping a finder entry's path to the tree's expandedIds and selectedId in one update."
+    },
+    {
       "name": "file-picker-dialog",
       "type": "registry:component",
       "title": "File Picker Dialog",

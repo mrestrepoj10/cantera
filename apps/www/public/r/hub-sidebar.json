@@ -1,0 +1,25 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "hub-sidebar",
+  "title": "Hub Sidebar",
+  "author": "MR <contact@bimframe.co>",
+  "description": "The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.",
+  "registryDependencies": [
+    "sidebar",
+    "@cantera/finder",
+    "@cantera/hub-tree"
+  ],
+  "files": [
+    {
+      "path": "registry/ui/hub-sidebar.tsx",
+      "content": "'use client'\n\nimport { type ComponentProps, type ReactNode, useState } from 'react'\n\nimport { FinderDialog, type FinderProps, FinderTrigger } from '@/components/ui/finder'\nimport { HubTree, type HubTreeProps } from '@/components/ui/hub-tree'\nimport {\n  Sidebar,\n  SidebarContent,\n  SidebarFooter,\n  SidebarGroup,\n  SidebarHeader,\n  SidebarRail,\n} from '@/components/ui/sidebar'\n\n/**\n * HubSidebar — the finder above the tree in one sidebar, ordered so the fast\n * path (an input-shaped trigger opening the ⌘K palette) sits above the walk\n * (the hub tree). Pure composition of controlled components: it lays out and\n * forwards, and the wiring between them stays in the consumer's hands — a\n * finder `onReveal` becomes tree `expandedIds` + `selectedId` in one update.\n *\n * Render inside your own `SidebarProvider`, with the page content in\n * `SidebarInset` — this component is the sidebar itself, not the app shell.\n * `collapsible` and the other shadcn Sidebar props pass straight through; the\n * trigger compacts to an icon when the rail collapses to icon mode.\n */\n\nexport interface HubSidebarProps extends ComponentProps<typeof Sidebar> {\n  /** Props forwarded to the ⌘K FinderDialog; the trigger reuses its placeholder. */\n  finder: Omit<FinderProps, 'className'>\n  /** Props forwarded to the HubTree in the content slot. */\n  tree: HubTreeProps\n  /** Rendered above the finder trigger (a hub switcher, a title). */\n  header?: ReactNode\n  /** Rendered in the sidebar footer. */\n  footer?: ReactNode\n}\n\nfunction HubSidebar({ finder, tree, header, footer, ...props }: HubSidebarProps) {\n  const [finderOpen, setFinderOpen] = useState(false)\n\n  return (\n    <Sidebar {...props}>\n      <SidebarHeader className=\"gap-2\">\n        {header}\n        <FinderTrigger placeholder={finder.placeholder} onClick={() => setFinderOpen(true)} />\n      </SidebarHeader>\n      <SidebarContent>\n        <SidebarGroup>\n          <HubTree {...tree} />\n        </SidebarGroup>\n      </SidebarContent>\n      {footer && <SidebarFooter>{footer}</SidebarFooter>}\n      <SidebarRail />\n      <FinderDialog open={finderOpen} onOpenChange={setFinderOpen} {...finder} />\n    </Sidebar>\n  )\n}\n\nexport { HubSidebar }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "docs": "Render inside your own SidebarProvider with page content in SidebarInset — HubSidebar is the sidebar, not the app shell. The header renders a FinderTrigger opening the ⌘K FinderDialog (fed by the finder prop); the tree fills the content slot. It forwards grouped props to its two controlled halves and adds no state of its own; wire reveal by mapping a finder entry's path to the tree's expandedIds and selectedId in one update.",
+  "categories": [
+    "projects",
+    "navigation"
+  ],
+  "type": "registry:component"
+}

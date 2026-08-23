@@ -59,6 +59,10 @@ function generateUserId() {
 function analyticsIdFor(userId2) {
   return createHash("sha256").update(userId2).digest("hex").slice(0, 32);
 }
+function stableDerivativeGuid(value) {
+  const digest = createHash("sha1").update(value).digest("hex");
+  return `${digest.slice(0, 8)}-${digest.slice(8, 12)}-${digest.slice(12, 16)}-${digest.slice(16, 20)}-${digest.slice(20, 32)}`;
+}
 function isRecordObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -795,6 +799,25 @@ function folderAncestors(aps, projectId, folderId) {
     parentId = parent.parent_folder_id;
   }
   return ancestors;
+}
+function folderSubtree(aps, projectId, folderId) {
+  const root = aps.documentFolders.findOneBy("folder_id", folderId);
+  if (!root || root.project_id !== projectId) return [];
+  const folders = [];
+  const pending = [root];
+  const visited = /* @__PURE__ */ new Set();
+  for (let index = 0; index < pending.length; index += 1) {
+    const folder = pending[index];
+    if (visited.has(folder.folder_id)) {
+      throw new Error(`APS document folder tree contains a cycle at '${folder.folder_id}'.`);
+    }
+    visited.add(folder.folder_id);
+    folders.push(folder);
+    pending.push(
+      ...aps.documentFolders.findBy("parent_folder_id", folder.folder_id).filter((candidate) => candidate.project_id === projectId)
+    );
+  }
+  return folders;
 }
 function documentItemForVersion(aps, version) {
   const item = aps.documentItems.findOneBy("item_id", version.item_id);
@@ -1832,6 +1855,15 @@ function documentVersionData(baseUrl, version) {
 function projectForDataRoute(aps, projectId) {
   return aps.projects.findOneBy("project_id", routeId(projectId));
 }
+function folderForDataRoute(c, aps) {
+  const project = projectForDataRoute(aps, c.req.param("projectId"));
+  const folderId = routeId(c.req.param("folderId"));
+  const folder = aps.documentFolders.findOneBy("folder_id", folderId);
+  if (!project || !folder || folder.project_id !== project.project_id) {
+    return jsonApiNotFound(c, `The folder ${folderId} was not found in project ${c.req.param("projectId")}.`);
+  }
+  return folder;
+}
 function queryValues(c, name) {
   return (c.req.queries(name) ?? []).flatMap((value) => value.split(",")).filter(Boolean);
 }
@@ -1859,6 +1891,9 @@ function pageLinks(c, baseUrl, number, limit, total) {
     ...number > 0 ? { prev: href(number - 1) } : {},
     ...number < last ? { next: href(number + 1) } : {}
   };
+}
+function includedTipVersions(baseUrl, aps, items) {
+  return items.map((item) => itemTip(aps, item.item_id)).filter((version) => Boolean(version)).map((version) => documentVersionData(baseUrl, version));
 }
 function dataManagementRoutes({ app, store, baseUrl }) {
   const aps = getApsStore(store);
@@ -1914,21 +1949,13 @@ function dataManagementRoutes({ app, store, baseUrl }) {
     );
   });
   app.get("/data/v1/projects/:projectId/folders/:folderId", auth, (c) => {
-    const project = projectForDataRoute(aps, c.req.param("projectId"));
-    const folderId = routeId(c.req.param("folderId"));
-    const folder = aps.documentFolders.findOneBy("folder_id", folderId);
-    if (!project || !folder || folder.project_id !== project.project_id) {
-      return jsonApiNotFound(c, `The folder ${folderId} was not found in project ${c.req.param("projectId")}.`);
-    }
+    const folder = folderForDataRoute(c, aps);
+    if (folder instanceof Response) return folder;
     return jsonApiDocument(c, requestHref(c, baseUrl), folderData(baseUrl, aps, folder));
   });
   app.get("/data/v1/projects/:projectId/folders/:folderId/contents", auth, (c) => {
-    const project = projectForDataRoute(aps, c.req.param("projectId"));
-    const folderId = routeId(c.req.param("folderId"));
-    const folder = aps.documentFolders.findOneBy("folder_id", folderId);
-    if (!project || !folder || folder.project_id !== project.project_id) {
-      return jsonApiNotFound(c, `The folder ${folderId} was not found in project ${c.req.param("projectId")}.`);
-    }
+    const folder = folderForDataRoute(c, aps);
+    if (folder instanceof Response) return folder;
     const parsedPage = pagination(c);
     if (typeof parsedPage === "string") return jsonApiError(c, 400, "BAD_INPUT", parsedPage);
     const types = queryValues(c, "filter[type]");
@@ -1942,7 +1969,11 @@ function dataManagementRoutes({ app, store, baseUrl }) {
     const resources = [...children, ...items];
     const start = parsedPage.number * parsedPage.limit;
     const page = resources.slice(start, start + parsedPage.limit);
-    const included = page.filter((entry) => entry.kind === "item").map((entry) => itemTip(aps, entry.value.item_id)).filter((version) => Boolean(version)).map((version) => documentVersionData(baseUrl, version));
+    const included = includedTipVersions(
+      baseUrl,
+      aps,
+      page.filter((entry) => entry.kind === "item").map((entry) => entry.value)
+    );
     return jsonApiDocument(
       c,
       requestHref(c, baseUrl),
@@ -1950,6 +1981,31 @@ function dataManagementRoutes({ app, store, baseUrl }) {
         (entry) => entry.kind === "folder" ? folderData(baseUrl, aps, entry.value) : documentItemData(baseUrl, aps, entry.value)
       ),
       { included, links: pageLinks(c, baseUrl, parsedPage.number, parsedPage.limit, resources.length) }
+    );
+  });
+  app.get("/data/v1/projects/:projectId/folders/:folderId/search", auth, (c) => {
+    const folder = folderForDataRoute(c, aps);
+    if (folder instanceof Response) return folder;
+    const parsedPage = pagination(c);
+    if (typeof parsedPage === "string") return jsonApiError(c, 400, "BAD_INPUT", parsedPage);
+    const name = c.req.query("filter[attributes.displayName]")?.toLocaleLowerCase() ?? "";
+    const fileTypes = queryValues(c, "filter[fileType]").map((value) => value.trim().toLocaleLowerCase().replace(/^\./, "")).filter(Boolean);
+    const folderIds = new Set(folderSubtree(aps, folder.project_id, folder.folder_id).map((entry) => entry.folder_id));
+    const items = aps.documentItems.findBy("project_id", folder.project_id).filter((item) => folderIds.has(item.folder_id) && !item.hidden).filter((item) => !name || item.display_name.toLocaleLowerCase().includes(name)).filter((item) => {
+      if (fileTypes.length === 0) return true;
+      const tip = itemTip(aps, item.item_id);
+      return Boolean(tip && fileTypes.includes(tip.file_type.toLocaleLowerCase()));
+    });
+    const start = parsedPage.number * parsedPage.limit;
+    const page = items.slice(start, start + parsedPage.limit);
+    return jsonApiDocument(
+      c,
+      requestHref(c, baseUrl),
+      page.map((item) => documentItemData(baseUrl, aps, item)),
+      {
+        included: includedTipVersions(baseUrl, aps, page),
+        links: pageLinks(c, baseUrl, parsedPage.number, parsedPage.limit, items.length)
+      }
     );
   });
   app.get("/data/v1/projects/:projectId/items/:itemId", auth, (c) => {
@@ -2006,7 +2062,7 @@ function dataManagementRoutes({ app, store, baseUrl }) {
 }
 
 // src/routes/ingestion.ts
-import { createHash as createHash4, randomUUID as randomUUID4 } from "crypto";
+import { createHash as createHash3, randomUUID as randomUUID4 } from "crypto";
 
 // src/webhooks.ts
 import { createHmac as createHmac2, randomUUID as randomUUID3 } from "crypto";
@@ -2466,7 +2522,6 @@ function setTranslationConfig(store, input) {
 }
 
 // src/translation.ts
-import { createHash as createHash3 } from "crypto";
 function terminal(status) {
   return status === "success" || status === "failed";
 }
@@ -2520,8 +2575,7 @@ function successfulDerivative(job, format) {
   if (format.type === "thumbnail") {
     return { name: job.source_name, status: "success", progress: "complete", outputType: "thumbnail" };
   }
-  const digest = createHash3("sha1").update(`${job.urn}:${format.type}`).digest("hex");
-  const guid = `${digest.slice(0, 8)}-${digest.slice(8, 12)}-${digest.slice(12, 16)}-${digest.slice(16, 20)}-${digest.slice(20, 32)}`;
+  const guid = stableDerivativeGuid(`${job.urn}:3d`);
   return {
     name: job.source_name,
     status: "success",
@@ -2641,6 +2695,7 @@ function itemVersionId(itemId, versionNumber2) {
 function versionValues(item, storage, versionNumber2, actor, displayName) {
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const extension = documentFileType(displayName);
+  const bubbleUrn = Buffer.from(storage.object_id).toString("base64url");
   return {
     version_id: itemVersionId(item.item_id, versionNumber2),
     item_id: item.item_id,
@@ -2652,9 +2707,9 @@ function versionValues(item, storage, versionNumber2, actor, displayName) {
     storage_size: storage.size,
     storage_urn: storage.object_id,
     region: "US",
-    bubble_urn: Buffer.from(storage.object_id).toString("base64url"),
+    bubble_urn: bubbleUrn,
     viewable_id: "emulate-3d-view",
-    viewable_guid: "d8e734a8-6e9e-4f4d-9a4f-000000000001",
+    viewable_guid: stableDerivativeGuid(`${bubbleUrn}:3d`),
     created_by: actor.id,
     created_by_name: actor.name,
     create_time: now,
@@ -2675,9 +2730,9 @@ async function finishVersionWrite(aps, store, version) {
 }
 function ingestionRoutes({ app, store, baseUrl }) {
   const aps = getApsStore(store);
+  const readAuth = apsAuth(store, { scopes: ["data:read"] });
   const writeAuth = apsAuth(store, { scopes: ["data:create", "data:write"] });
   const userWriteAuth = apsAuth(store, { scopes: ["data:create", "data:write"], requireUser: true });
-  app.use("/oss/v2/buckets/*", writeAuth);
   app.post("/data/v1/projects/:projectId/storage", userWriteAuth, async (c) => {
     const projectId = routeId(c.req.param("projectId"));
     if (!aps.projects.findOneBy("project_id", projectId))
@@ -2693,7 +2748,7 @@ function ingestionRoutes({ app, store, baseUrl }) {
     if (!folder || folder.project_id !== projectId) {
       return jsonApiError(c, 404, "NOT_FOUND", "The target folder was not found in this project.");
     }
-    const bucketKey = `wip.dm.emulate-${createHash4("sha1").update(projectId).digest("hex").slice(0, 16)}`;
+    const bucketKey = `wip.dm.emulate-${createHash3("sha1").update(projectId).digest("hex").slice(0, 16)}`;
     const safeName = name.replace(/[\\/]/g, "_");
     const objectKey = `${randomUUID4()}-${safeName}`;
     const objectId = `urn:adsk.objects:os.object:${bucketKey}/${objectKey}`;
@@ -2717,7 +2772,7 @@ function ingestionRoutes({ app, store, baseUrl }) {
       relationships: { target: { data: { type: "folders", id: folderId } } }
     });
   });
-  app.get("/oss/v2/buckets/:bucketKey/objects/:objectKey/signeds3upload", (c) => {
+  app.get("/oss/v2/buckets/:bucketKey/objects/:objectKey/signeds3upload", writeAuth, (c) => {
     const bucketKey = routeId(c.req.param("bucketKey"));
     const objectKey = routeId(c.req.param("objectKey"));
     const storage = aps.storageObjects.findBy("bucket_key", bucketKey).find((candidate) => candidate.object_key === objectKey);
@@ -2791,9 +2846,9 @@ function ingestionRoutes({ app, store, baseUrl }) {
     const parts = [...session.parts_base64];
     parts[part - 1] = bytes.toString("base64");
     aps.uploadSessions.update(session.id, { parts_base64: parts });
-    return c.body(null, 200, { ETag: createHash4("sha1").update(bytes).digest("hex") });
+    return c.body(null, 200, { ETag: createHash3("sha1").update(bytes).digest("hex") });
   });
-  app.post("/oss/v2/buckets/:bucketKey/objects/:objectKey/signeds3upload", async (c) => {
+  app.post("/oss/v2/buckets/:bucketKey/objects/:objectKey/signeds3upload", writeAuth, async (c) => {
     const bucketKey = routeId(c.req.param("bucketKey"));
     const objectKey = routeId(c.req.param("objectKey"));
     const body = await jsonObjectBody(c);
@@ -2810,7 +2865,7 @@ function ingestionRoutes({ app, store, baseUrl }) {
     const storage = aps.storageObjects.findBy("bucket_key", bucketKey).find((candidate) => candidate.object_key === objectKey);
     if (!storage) return notFound(c, "The requested storage object");
     const bytes = Buffer.concat(session.parts_base64.map((part) => Buffer.from(part ?? "", "base64")));
-    const sha1 = createHash4("sha1").update(bytes).digest("hex");
+    const sha1 = createHash3("sha1").update(bytes).digest("hex");
     aps.storageObjects.update(storage.id, {
       size: bytes.length,
       sha1,
@@ -2826,6 +2881,60 @@ function ingestionRoutes({ app, store, baseUrl }) {
       size: bytes.length,
       sha1,
       location
+    });
+  });
+  app.post("/oss/v2/buckets/:bucketKey/objects/:objectKey/signeds3download", readAuth, (c) => {
+    const bucketKey = routeId(c.req.param("bucketKey"));
+    const objectKey = routeId(c.req.param("objectKey"));
+    const storage = aps.storageObjects.findBy("bucket_key", bucketKey).find(
+      (candidate) => candidate.object_key === objectKey && candidate.uploaded_at && candidate.content_base64 !== null
+    );
+    if (!storage) return notFound(c, "The requested storage object");
+    const minutesValue = c.req.query("minutesExpiration") ?? String(DEFAULT_SIGNED_URL_TTL_MINUTES);
+    if (!/^\d+$/.test(minutesValue) || Number(minutesValue) < 1 || Number(minutesValue) > 60) {
+      return badInput(c, "minutesExpiration", "minutesExpiration must be an integer from 1 through 60.");
+    }
+    const token = Buffer.from(storage.object_id).toString("base64url");
+    const issued = issueSignedResourceUrl(
+      store,
+      baseUrl,
+      `/oss/v2/signed-download/${token}`,
+      `aps-download:${storage.object_id}`,
+      Number(minutesValue) * 6e4
+    );
+    return c.json({
+      url: issued.url,
+      expiration: issued.validUntil,
+      size: storage.size,
+      sha1: storage.sha1
+    });
+  });
+  app.get("/oss/v2/signed-download/:token", (c) => {
+    let objectId;
+    try {
+      objectId = Buffer.from(c.req.param("token"), "base64url").toString("utf8");
+    } catch {
+      return forbidden(c, "The signed download URL is invalid or has expired.");
+    }
+    if (!validateSignedResource(store, `aps-download:${objectId}`, {
+      expires: c.req.query("expires"),
+      nonce: c.req.query("nonce"),
+      signature: c.req.query("signature")
+    })) {
+      return forbidden(c, "The signed download URL is invalid or has expired.");
+    }
+    const storage = aps.storageObjects.findOneBy("object_id", objectId);
+    if (!storage || !storage.uploaded_at || storage.content_base64 === null) {
+      return notFound(c, "The requested storage object");
+    }
+    const bytes = Buffer.from(storage.content_base64, "base64");
+    return new Response(bytes, {
+      status: 200,
+      headers: {
+        "Content-Type": documentMimeType(documentFileType(storage.name)),
+        "Content-Length": String(bytes.length),
+        "Content-Disposition": `attachment; filename="${storage.name.replace(/["\r\n]/g, "")}"`
+      }
     });
   });
   app.post("/data/v1/projects/:projectId/items", userWriteAuth, async (c) => {
@@ -3211,7 +3320,106 @@ function issueRoutes(route) {
   });
 }
 
+// src/derivative-resources.ts
+import { createHash as createHash4 } from "crypto";
+function sourceForUrn(aps, urn, jobName) {
+  const version = aps.documentVersions.findBy("bubble_urn", urn)[0];
+  if (version) return { urn, name: version.display_name, version };
+  const objectId = Buffer.from(urn, "base64url").toString("utf8");
+  const storage = objectId ? aps.storageObjects.findOneBy("object_id", objectId) : void 0;
+  return { urn, name: jobName ?? storage?.name ?? "model" };
+}
+async function resolveDerivative(aps, store, urn) {
+  const job = aps.translationJobs.findOneBy("urn", urn);
+  let manifest;
+  if (job) {
+    manifest = manifestForJob(await refreshTranslationJob(aps, store, job));
+  } else {
+    const seeded = aps.manifests.findOneBy("urn", urn);
+    if (seeded) {
+      const { id: _id, created_at: _created, updated_at: _updated, ...fields } = seeded;
+      manifest = fields;
+    }
+  }
+  if (!manifest) return { state: "missing" };
+  const source = sourceForUrn(aps, urn, job?.source_name);
+  if (manifest.status === "pending" || manifest.status === "inprogress") {
+    return { state: "pending", manifest, source };
+  }
+  return { state: manifest.status === "success" ? "success" : "failed", manifest, source };
+}
+function metadataViews(aps, source) {
+  const version = source.version;
+  const threeDimensional = {
+    name: version?.display_name ?? source.name,
+    role: "3d",
+    guid: version?.viewable_guid ?? stableDerivativeGuid(`${source.urn}:3d`)
+  };
+  if (!version) return [threeDimensional];
+  const sheet = aps.sheets.findBy("project_id", version.project_id).find(
+    (candidate) => candidate.upload_file_name === version.display_name || candidate.viewable_urn !== "" && (candidate.viewable_urn === version.bubble_urn || candidate.viewable_urn === version.storage_urn)
+  );
+  if (!sheet) return [threeDimensional];
+  return [
+    threeDimensional,
+    {
+      name: `${sheet.number} - ${sheet.title}`,
+      role: "2d",
+      guid: sheet.viewable_guid || stableDerivativeGuid(`${source.urn}:2d:${sheet.sheet_id}`)
+    }
+  ];
+}
+function baseObjectId(urn, guid) {
+  return Number.parseInt(createHash4("sha1").update(`${urn}:${guid}`).digest("hex").slice(0, 7), 16) + 1;
+}
+function derivativeObjectTree(source, view) {
+  const first = baseObjectId(source.urn, view.guid);
+  return [
+    {
+      objectid: first,
+      name: source.name,
+      category: "Model",
+      objects: [
+        {
+          objectid: first + 1,
+          name: view.role === "2d" ? "Sheets" : "Model Elements",
+          category: "Category",
+          objects: [
+            {
+              objectid: first + 2,
+              name: `${source.name} Family`,
+              category: "Family",
+              objects: [
+                { objectid: first + 3, name: `${source.name} Instance 1`, category: "Instance" },
+                { objectid: first + 4, name: `${source.name} Instance 2`, category: "Instance" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ];
+}
+function flattenDerivativeObjects(objects) {
+  return objects.flatMap((object) => [object, ...flattenDerivativeObjects(object.objects ?? [])]);
+}
+function derivativeProperties(source, view, objects) {
+  return flattenDerivativeObjects(objects).map((object) => ({
+    objectid: object.objectid,
+    name: object.name,
+    externalId: stableDerivativeGuid(`${source.urn}:${view.guid}:${object.objectid}`),
+    properties: {
+      "Identity Data": { Name: object.name, Category: object.category },
+      Emulate: { "Source URN": source.urn, "View GUID": view.guid }
+    }
+  }));
+}
+
 // src/routes/model-derivative.ts
+var THUMBNAIL_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+  "base64"
+);
 var VIEWABLE_INPUT_FORMATS = [
   "3dm",
   "3ds",
@@ -3423,6 +3631,7 @@ function modelDerivativeRoutes({ app, store }) {
   const aps = getApsStore(store);
   const readAuth = apsAuth(store, { scopes: ["data:read"] });
   const writeAuth = apsAuth(store, { scopes: ["data:create", "data:write"] });
+  const deleteAuth = apsAuth(store, { scopes: ["data:write"] });
   app.get("/modelderivative/v2/designdata/formats", readAuth, (c) => c.json(SUPPORTED_FORMATS));
   app.post("/modelderivative/v2/designdata/job", writeAuth, async (c) => {
     const body = await jsonObjectBody(c);
@@ -3460,22 +3669,67 @@ function modelDerivativeRoutes({ app, store }) {
     );
   });
   app.get("/modelderivative/v2/designdata/:urn/manifest", readAuth, async (c) => {
-    const job = aps.translationJobs.findOneBy("urn", c.req.param("urn"));
-    if (job) {
-      const refreshed = await refreshTranslationJob(aps, store, job);
-      return c.json(manifestForJob(refreshed));
-    }
-    const manifest = aps.manifests.findOneBy("urn", c.req.param("urn"));
-    if (!manifest) return c.body(null, 404);
+    const derivative = await resolveDerivative(aps, store, c.req.param("urn"));
+    return derivative.state === "missing" ? c.body(null, 404) : c.json(derivative.manifest);
+  });
+  app.delete("/modelderivative/v2/designdata/:urn/manifest", deleteAuth, (c) => {
+    const urn = c.req.param("urn");
+    const job = aps.translationJobs.findOneBy("urn", urn);
+    const manifest = aps.manifests.findOneBy("urn", urn);
+    if (job) aps.translationJobs.delete(job.id);
+    if (manifest) aps.manifests.delete(manifest.id);
+    return c.json({ result: "success" });
+  });
+  const inspectionRoute = (path, handler) => app.get(path, readAuth, async (c) => {
+    const derivative = await resolveDerivative(aps, store, c.req.param("urn"));
+    if (derivative.state === "pending") return c.body(null, 202, { "Retry-After": "1" });
+    if (derivative.state !== "success") return notFound(c, "The requested derivative");
+    return handler(c, derivative.source);
+  });
+  const viewForRequest = (c, source) => metadataViews(aps, source).find((candidate) => candidate.guid === c.req.param("guid"));
+  inspectionRoute("/modelderivative/v2/designdata/:urn/thumbnail", () => {
+    return new Response(THUMBNAIL_PNG, {
+      status: 200,
+      headers: {
+        "Content-Type": "image/png",
+        "Content-Length": String(THUMBNAIL_PNG.length)
+      }
+    });
+  });
+  inspectionRoute(
+    "/modelderivative/v2/designdata/:urn/metadata",
+    (c, source) => c.json({
+      data: {
+        type: "metadata",
+        metadata: metadataViews(aps, source)
+      }
+    })
+  );
+  inspectionRoute("/modelderivative/v2/designdata/:urn/metadata/:guid", (c, source) => {
+    const view = viewForRequest(c, source);
+    if (!view) return notFound(c, "The requested model view");
     return c.json({
-      type: manifest.type,
-      hasThumbnail: manifest.hasThumbnail,
-      status: manifest.status,
-      progress: manifest.progress,
-      region: manifest.region,
-      urn: manifest.urn,
-      version: manifest.version,
-      derivatives: manifest.derivatives
+      data: {
+        type: "objects",
+        objects: derivativeObjectTree(source, view)
+      }
+    });
+  });
+  inspectionRoute("/modelderivative/v2/designdata/:urn/metadata/:guid/properties", (c, source) => {
+    const view = viewForRequest(c, source);
+    if (!view) return notFound(c, "The requested model view");
+    const objectIdValue = c.req.query("objectid");
+    if (objectIdValue !== void 0 && (!/^\d+$/.test(objectIdValue) || Number(objectIdValue) < 1)) {
+      return badInput(c, "objectid", "objectid must be a positive integer.");
+    }
+    const properties = derivativeProperties(source, view, derivativeObjectTree(source, view)).filter(
+      (entry) => objectIdValue === void 0 || entry.objectid === Number(objectIdValue)
+    );
+    return c.json({
+      data: {
+        type: "properties",
+        collection: properties
+      }
     });
   });
 }
@@ -5816,6 +6070,9 @@ function seedAccFromConfig(aps, config) {
       tags: structuredClone(sheet.tags ?? []),
       is_current: sheet.is_current ?? true,
       deleted,
+      upload_file_name: sheet.upload_file_name ?? "",
+      viewable_urn: sheet.viewable_urn ?? "",
+      viewable_guid: sheet.viewable_guid ?? "",
       payload: {
         id: sheet.id,
         number: sheet.number,

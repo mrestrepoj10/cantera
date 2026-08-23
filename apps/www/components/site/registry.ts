@@ -53,6 +53,9 @@ export function getRegistryItem(name: string): RegistryItem | undefined {
 const previewFrameClasses: Record<string, string> = {
   'hub-browser': 'flex min-h-64 items-stretch rounded-lg border border-border p-4 sm:p-6',
   'hub-tree': 'flex min-h-[28rem] items-stretch rounded-lg border border-border p-4 sm:p-6',
+  finder:
+    'flex min-h-[24rem] items-start justify-center rounded-lg border border-border p-4 sm:p-6',
+  'hub-sidebar': 'flex min-h-[28rem] items-stretch overflow-hidden rounded-lg border border-border',
   'model-viewer-page':
     'flex min-h-[36rem] items-stretch overflow-hidden rounded-lg border border-border',
   'aps-viewer': 'flex min-h-[36rem] items-stretch',
