@@ -18,12 +18,7 @@ export interface DesignContract {
 export function designContracts(
   namespace: string,
 ): Record<
-  | 'statusVocabulary'
-  | 'asyncPending'
-  | 'fieldDensity'
-  | 'motionGrammar'
-  | 'installedSpecifiers'
-  | 'iconSizing',
+  'statusVocabulary' | 'asyncPending' | 'fieldDensity' | 'installedSpecifiers' | 'iconSizing',
   DesignContract
 > {
   return {
@@ -38,10 +33,6 @@ export function designContracts(
     fieldDensity: {
       title: 'Field density and a11y',
       body: `This UI is used with gloves, on a tablet, on site. Primary actions carry a 44px minimum touch target; comfortable density is the default and compact is opt-in. 12px is the text floor — there is no \`text-[10px]\` anywhere in the registry. Focus indicators are 3:1 against their surroundings (\`focus-visible:border-ring\` plus a full-alpha ring). Every block ships a real heading, every description is wired with \`aria-describedby\`, and \`Intl\` formatting is locale-neutral (\`Intl.RelativeTimeFormat(undefined, ...)\`, with an optional \`locale\` prop).`,
-    },
-    motionGrammar: {
-      title: 'Motion grammar',
-      body: `Exactly four moves: (1) icon and spinner crossfade, about 150ms ease-out; (2) press feedback, delegated to the primitive's \`active:translate-y-px\`; (3) status color transitions, via \`transition-colors\`; (4) a rare, user-initiated progressive-disclosure reveal may transition height at about 200ms, always gated behind \`prefers-reduced-motion\` — never on content a user toggles repeatedly. That is the whole vocabulary. No entrance animations on data-dense content — a connections list does not stagger in.`,
     },
     installedSpecifiers: {
       title: 'Installed specifiers',

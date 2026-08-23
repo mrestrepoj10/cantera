@@ -100,6 +100,61 @@ test.describe('Viewer native toolbar', () => {
     await expect.poll(() => buttonBoxHeight(toolbar)).toBeCloseTo(48, 0)
   })
 
+  test('viewer radius updates in place without overflowing the inspector', async ({ page }) => {
+    await gotoViewerDemo(page, '/components/aps-viewer?viewerRadius=0')
+    const viewer = await waitForViewerModel(page)
+    const workbench = page.locator('[data-viewer-workbench]')
+    const canvas = viewer.locator('canvas').first()
+    const canvasHandle = await canvas.elementHandle()
+    const inspector = page.getByRole('complementary', { name: 'Viewer inspector' })
+    const setup = page.getByRole('tabpanel', { name: 'Setup' })
+
+    await expect
+      .poll(() => viewer.evaluate((node) => getComputedStyle(node).borderRadius))
+      .toBe('0px')
+    await expect
+      .poll(() => workbench.evaluate((node) => getComputedStyle(node).borderRadius))
+      .toBe('0px')
+    await expect
+      .poll(() => viewer.evaluate((node) => getComputedStyle(node).overflow))
+      .toBe('hidden')
+    await expect
+      .poll(() => inspector.evaluate((node) => node.scrollWidth <= node.clientWidth))
+      .toBe(true)
+    await expect
+      .poll(() => setup.evaluate((node) => getComputedStyle(node).overflowX))
+      .toBe('hidden')
+
+    await page.getByRole('slider', { name: 'Viewer radius' }).fill('24')
+    await expect
+      .poll(() => viewer.evaluate((node) => getComputedStyle(node).borderRadius))
+      .toBe('24px')
+    await expect
+      .poll(() => workbench.evaluate((node) => getComputedStyle(node).borderRadius))
+      .toBe('24px')
+    expect(
+      await canvasHandle?.evaluate((node, live) => node === live, await canvas.elementHandle()),
+    ).toBe(true)
+  })
+
+  test('ViewCube visibility changes without recreating the viewer', async ({ page }) => {
+    await gotoViewerDemo(page, '/components/aps-viewer')
+    const viewer = await waitForViewerModel(page)
+    const canvas = viewer.locator('canvas').first()
+    const canvasHandle = await canvas.elementHandle()
+    const viewCube = viewer.locator('.viewcubeWrapper')
+    const toggle = page.getByRole('checkbox', { name: 'ViewCube' })
+
+    await expect(viewCube).toBeVisible()
+    await toggle.click()
+    await expect(viewCube).toBeHidden()
+    await toggle.click()
+    await expect(viewCube).toBeVisible()
+    expect(
+      await canvasHandle?.evaluate((node, live) => node === live, await canvas.elementHandle()),
+    ).toBe(true)
+  })
+
   test('toolbar can be removed and restored without losing the model', async ({ page }) => {
     await gotoViewerDemo(page, '/components/aps-viewer')
     const viewer = await waitForViewerModel(page)

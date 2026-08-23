@@ -21,7 +21,9 @@ type ViewerTheme = 'system' | 'light' | 'dark'
 interface ViewerDemoSettings {
   position: ViewerNativeToolbarPosition
   scale: ViewerNativeToolbarScale
+  radius: number
   toolbar: boolean
+  viewCube: boolean
   theme: ViewerTheme
   /** Extension ids currently loaded. None by default: the stock toolbar is the
    * baseline every screenshot and first impression starts from. */
@@ -31,7 +33,9 @@ interface ViewerDemoSettings {
 const DEFAULT_SETTINGS: ViewerDemoSettings = {
   position: 'bottom',
   scale: 'md',
+  radius: 12,
   toolbar: true,
+  viewCube: true,
   theme: 'system',
   extensions: [],
 }
@@ -47,7 +51,9 @@ const catalogEntries = Object.entries(VIEWER_EXTENSIONS) as [string, ViewerExten
 const applicableEntries = catalogEntries.filter(
   ([, info]) => !info.deprecated && !info.removedIn && info.only !== '2d',
 )
-const loadableEntries = applicableEntries.filter(([, info]) => !info.autoLoaded)
+const loadableEntries = applicableEntries.filter(
+  ([id, info]) => !info.autoLoaded && id !== 'Autodesk.ViewCubeUi',
+)
 const DEMO_EXTENSION_IDS = loadableEntries.map(([id]) => id)
 
 /**
@@ -256,6 +262,7 @@ function ControlGroup<T extends string>({
   const description = disabled ? undefined : hint
   return (
     <fieldset
+      className="min-w-0"
       aria-describedby={(disabled ? describedBy : undefined) ?? (hint ? hintId : undefined)}
     >
       <legend className="mb-1.5 font-medium text-[13px] text-foreground">{label}</legend>
@@ -291,6 +298,60 @@ function ControlGroup<T extends string>({
   )
 }
 
+function RangeControl({
+  label,
+  value,
+  min,
+  max,
+  disabled = false,
+  describedBy,
+  onChange,
+}: {
+  label: string
+  value: number
+  min: number
+  max: number
+  disabled?: boolean
+  describedBy?: string
+  onChange: (value: number) => void
+}) {
+  const id = useId()
+  return (
+    <div className="min-w-0">
+      <div className="flex items-baseline justify-between gap-3">
+        <label htmlFor={id} className="font-medium text-[13px] text-foreground">
+          {label}
+        </label>
+        <output htmlFor={id} className="font-mono text-muted-foreground text-xs tabular-nums">
+          {value}px
+        </output>
+      </div>
+      <div className="min-w-0 px-1">
+        <input
+          id={id}
+          type="range"
+          min={min}
+          max={max}
+          step="1"
+          value={value}
+          aria-disabled={disabled}
+          aria-describedby={disabled ? describedBy : undefined}
+          onChange={(event) => {
+            if (!disabled) onChange(Number(event.currentTarget.value))
+          }}
+          onKeyDown={(event) => {
+            if (disabled) event.preventDefault()
+          }}
+          onPointerDown={(event) => {
+            if (disabled) event.preventDefault()
+          }}
+          className="h-11 w-full min-w-0 max-w-full cursor-pointer accent-foreground aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+        />
+      </div>
+    </div>
+  )
+}
+
 function extensionBadges(info: ViewerExtensionInfo): string[] {
   const badges: string[] = []
   if (info.addsToolbarButton) badges.push('toolbar button')
@@ -315,7 +376,7 @@ function Spinner({ className }: { className?: string }) {
   )
 }
 
-/** One clipboard action with the crossfade the motion grammar allows. */
+/** One clipboard action with an icon crossfade on success. */
 function CopyButton({
   label,
   copiedLabel = 'Copied',
@@ -351,9 +412,8 @@ function CopyButton({
       className={cn('justify-start gap-1.5', className)}
       onClick={() => void copy()}
     >
-      {/* Both icons stay mounted and cross-fade — opacity only, the one
-          icon move the motion grammar allows — so the swap animates in both
-          directions without a motion dependency. */}
+      {/* Both icons stay mounted and cross-fade — opacity only — so the swap
+          animates in both directions without a motion dependency. */}
       <span className="relative grid size-3.5 place-items-center">
         <CheckIcon
           aria-hidden="true"
@@ -542,7 +602,9 @@ function buildSnippet(settings: ViewerDemoSettings): string {
     '  urn={urn}',
     '  getAccessToken={getAccessToken}',
     `  toolbar="${settings.toolbar ? 'native' : 'none'}"`,
+    `  radius={${settings.radius}}`,
   ]
+  if (!settings.viewCube) lines.push('  viewCube={false}')
   if (settings.theme !== 'system') lines.push(`  theme="${settings.theme}"`)
   if (settings.extensions.length === 1) {
     lines.push(`  extensions={['${settings.extensions[0]}']}`)
@@ -566,6 +628,8 @@ function buildSnippet(settings: ViewerDemoSettings): string {
 function buildShareParams(settings: ViewerDemoSettings): string {
   const params = new URLSearchParams()
   params.set('viewerToolbar', settings.toolbar ? 'native' : 'none')
+  params.set('viewerViewCube', settings.viewCube ? 'on' : 'off')
+  params.set('viewerRadius', String(settings.radius))
   if (settings.toolbar) {
     params.set('viewerPosition', settings.position)
     params.set('viewerScale', String(settings.scale))
@@ -584,6 +648,13 @@ function parseScaleParam(raw: string): { scale: ViewerNativeToolbarScale } | Rec
   return Number.isFinite(px) ? { scale: px } : {}
 }
 
+function parseClampedPixels(raw: string | null, min: number, max: number): number | null {
+  if (raw === null) return null
+  const value = Number(raw)
+  if (!Number.isFinite(value)) return null
+  return Math.min(max, Math.max(min, value))
+}
+
 /**
  * A shared link — and the e2e toolbar baselines, which drive the demo from the
  * URL so one page covers every position and scale — restores the setup on
@@ -596,15 +667,22 @@ function readSharedSettings(): Partial<ViewerDemoSettings> | null {
   const scale = query.get('viewerScale')
   const extensions = query.get('viewerExtensions')
   const toolbar = query.get('viewerToolbar')
+  const viewCube = query.get('viewerViewCube')
+  const radius = query.get('viewerRadius')
   const theme = query.get('viewerTheme')
-  if (!position && !scale && !extensions && !toolbar && !theme) return null
+  if (!position && !scale && !extensions && !toolbar && !viewCube && !radius && !theme) {
+    return null
+  }
   const extensionIds = (extensions ?? '').split(',').filter((id) => DEMO_EXTENSION_IDS.includes(id))
+  const parsedRadius = parseClampedPixels(radius, 0, 32)
   return {
     ...(position && ['bottom', 'top', 'left', 'right'].includes(position)
       ? { position: position as ViewerNativeToolbarPosition }
       : {}),
     ...(scale ? parseScaleParam(scale) : {}),
+    ...(parsedRadius === null ? {} : { radius: parsedRadius }),
     ...(toolbar === 'none' ? { toolbar: false } : toolbar === 'native' ? { toolbar: true } : {}),
+    ...(viewCube === 'off' ? { viewCube: false } : viewCube === 'on' ? { viewCube: true } : {}),
     ...(theme === 'light' || theme === 'dark' ? { theme } : {}),
     ...(extensionIds.length > 0 ? { extensions: extensionIds } : {}),
   }
@@ -622,6 +700,8 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
   const dockHeadingId = useId()
   const toolbarFieldId = useId()
   const toolbarLabelId = `${toolbarFieldId}-label`
+  const viewCubeFieldId = useId()
+  const viewCubeLabelId = `${viewCubeFieldId}-label`
   const toolbarOffId = useId()
   const tabsId = useId()
 
@@ -678,8 +758,10 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
   const isDefault = useMemo(
     () =>
       settings.toolbar === DEFAULT_SETTINGS.toolbar &&
+      settings.viewCube === DEFAULT_SETTINGS.viewCube &&
       settings.position === DEFAULT_SETTINGS.position &&
       settings.scale === DEFAULT_SETTINGS.scale &&
+      settings.radius === DEFAULT_SETTINGS.radius &&
       settings.theme === DEFAULT_SETTINGS.theme &&
       settings.extensions.length === 0,
     [settings],
@@ -735,13 +817,19 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
 
   return (
     <div className="flex w-full flex-col bg-background">
-      <div className="grid lg:h-[36rem] lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div
+        className="grid overflow-hidden border border-border lg:h-[36rem] lg:grid-cols-[minmax(0,1fr)_20rem]"
+        data-viewer-workbench=""
+        style={{ borderRadius: settings.radius }}
+      >
         {/* The canvas is the subject of the page, so it leads at every width. */}
         <div className="flex min-w-0 flex-col">
           <APSViewer
             urn={urn}
             getAccessToken={getAccessToken}
             toolbar={settings.toolbar ? 'native' : 'none'}
+            viewCube={settings.viewCube}
+            radius={settings.radius}
             theme={settings.theme === 'system' ? undefined : settings.theme}
             // min-height rather than height: the viewer is a flex item with
             // a zero basis, so a fixed height would collapse it wherever the
@@ -765,6 +853,8 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
             data-viewer-model-status=""
             data-toolbar-position={settings.position}
             data-toolbar-scale={settings.scale}
+            data-viewer-radius={settings.radius}
+            data-view-cube={settings.viewCube ? 'on' : 'off'}
             data-extension-status={settings.extensions
               .map((id) => `${id}:${extensionStatus[id] ?? 'idle'}`)
               .join(' ')}
@@ -826,12 +916,10 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                 role="tabpanel"
                 id={`${tabsId}-setup-panel`}
                 aria-labelledby={`${tabsId}-setup-tab`}
-                className="flex flex-col gap-3"
+                className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto"
               >
-                <fieldset>
-                  <legend className="mb-1.5 font-medium text-[13px] text-foreground">
-                    Toolbar
-                  </legend>
+                <fieldset className="min-w-0">
+                  <legend className="mb-1.5 font-medium text-[13px] text-foreground">Chrome</legend>
                   <label
                     // The checkbox primitive hooks its focus styles off this group.
                     className="group/field-label flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md px-1 text-sm"
@@ -849,6 +937,20 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                         setError(null)
                         setSettings((previous) => ({ ...previous, toolbar: checked }))
                       }}
+                    />
+                  </label>
+                  <label
+                    className="group/field-label flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md px-1 text-sm"
+                    htmlFor={viewCubeFieldId}
+                  >
+                    <span id={viewCubeLabelId}>ViewCube</span>
+                    <Checkbox
+                      id={viewCubeFieldId}
+                      aria-labelledby={viewCubeLabelId}
+                      checked={settings.viewCube}
+                      onCheckedChange={(viewCube) =>
+                        setSettings((previous) => ({ ...previous, viewCube }))
+                      }
                     />
                   </label>
                   {!settings.toolbar && (
@@ -882,6 +984,13 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                       scale: scale as ViewerDemoScalePreset,
                     }))
                   }
+                />
+                <RangeControl
+                  label="Viewer radius"
+                  value={settings.radius}
+                  min={0}
+                  max={32}
+                  onChange={(radius) => setSettings((previous) => ({ ...previous, radius }))}
                 />
                 <ControlGroup
                   label="Appearance"

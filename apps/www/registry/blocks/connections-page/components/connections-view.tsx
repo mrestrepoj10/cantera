@@ -92,10 +92,9 @@ interface ConnectionsLoadingProps extends React.ComponentProps<'div'> {
 }
 
 /**
- * The initial fetch. Deliberately still: the motion grammar is four moves and
- * a looping shimmer is not one of them — on a list of rows it is an attention
- * magnet with nothing to say, and it reads as activity where there is none.
- * The single spinner is the sanctioned move, and it carries the announcement.
+ * The initial fetch. Deliberately still: on a list of rows a looping shimmer
+ * is an attention magnet with nothing to say, and it reads as activity where
+ * there is none. The single spinner carries the announcement.
  *
  * The skeleton's job is geometry, not entertainment: these rows are built from
  * the same box model as ConnectionCard, so the real cards land exactly where

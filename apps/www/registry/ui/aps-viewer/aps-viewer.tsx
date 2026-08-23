@@ -53,6 +53,10 @@ export interface APSViewerProps {
   profile?: APSViewerProfile
   /** Native GuiViewer3D toolbar, or the toolbar-less core Viewer3D. */
   toolbar?: 'native' | 'none'
+  /** Show Autodesk's ViewCube and its companion controls. Default true. */
+  viewCube?: boolean
+  /** Clip the viewer frame to this pixel radius, clamped to 0–32. */
+  radius?: number
   /** Force one appearance. Omit to follow the app's light/dark appearance live. */
   theme?: 'light' | 'dark'
   /** Observe the viewer container and resize the WebGL canvas. Default true. */
@@ -91,6 +95,22 @@ function unloadModel(viewer: APSViewer3D | null, model: APSModel | null): void {
   }
 }
 
+/** Disable ViewCube at construction so GuiViewer3D cannot auto-load it after
+ * the live visibility effect has already asked it to unload. */
+function withInitialViewCube(
+  viewerConfig: Record<string, unknown> | undefined,
+  viewCube: boolean,
+): Record<string, unknown> | undefined {
+  if (viewCube) return viewerConfig
+  const configured = viewerConfig?.disabledExtensions
+  const disabledExtensions =
+    configured && typeof configured === 'object' ? configured : ({} as Record<string, unknown>)
+  return {
+    ...viewerConfig,
+    disabledExtensions: { ...disabledExtensions, viewcube: true },
+  }
+}
+
 /**
  * APS Viewer container. Renders a plain positioned <div> on the
  * server (SSR-safe: no window access until effects run), then on the client:
@@ -112,6 +132,8 @@ export function APSViewer({
   viewerConfig,
   profile,
   toolbar = 'native',
+  viewCube = true,
+  radius,
   theme,
   autoResize = true,
   shutdownOnUnmount = false,
@@ -128,6 +150,9 @@ export function APSViewer({
   const [status, setStatus] = useState<APSViewerStatus>('idle')
   const [viewerEpoch, setViewerEpoch] = useState(0)
   const viewerRef = useRef<APSViewer3D | null>(null)
+  const viewCubeRef = useRef(viewCube)
+  const frameRadius =
+    radius === undefined || !Number.isFinite(radius) ? undefined : Math.min(32, Math.max(0, radius))
 
   // Latest-callback refs so effect deps stay minimal and consumers can pass
   // inline closures without recreating the viewer. `shutdownOnUnmount` rides
@@ -154,7 +179,11 @@ export function APSViewer({
     }
   })
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: viewerConfig and extensions are intentionally captured at creation time
+  useEffect(() => {
+    viewCubeRef.current = viewCube
+  }, [viewCube])
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: viewerConfig, extensions, and the initial viewCube value are intentionally captured at creation time
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -172,7 +201,7 @@ export function APSViewer({
         // Strict Mode: the first effect's cleanup may already have run.
         if (disposed) return
         const Ctor = toolbar === 'none' ? autodesk.Viewing.Viewer3D : autodesk.Viewing.GuiViewer3D
-        viewer = new Ctor(container, viewerConfig)
+        viewer = new Ctor(container, withInitialViewCube(viewerConfig, viewCube))
         const startCode = viewer.start()
         if (startCode > 0) {
           throw new Error(`cantera aps-viewer: viewer.start() failed with code ${startCode}`)
@@ -262,6 +291,41 @@ export function APSViewer({
     }
   }, [status, theme])
 
+  // ViewCube APIs moved into Autodesk.ViewCubeUi in LMV v7. Treat it as live
+  // chrome: load/unload the extension without replacing the WebGL viewer.
+  useEffect(() => {
+    if (viewerEpoch === 0 || status !== 'ready') return
+    const viewer = viewerRef.current
+    if (!viewer) return
+    let cancelled = false
+    const id = 'Autodesk.ViewCubeUi'
+
+    if (viewCube) {
+      viewer
+        .loadExtension(id)
+        .then(() => {
+          if (cancelled && (!viewCubeRef.current || viewerRef.current !== viewer)) {
+            viewer.unloadExtension(id)
+          }
+        })
+        .catch((error) => {
+          if (cancelled) return
+          const wrapped =
+            error instanceof Error
+              ? error
+              : new Error('cantera aps-viewer: ViewCube failed to load')
+          console.error('cantera aps-viewer: failed to load the ViewCube extension', error)
+          callbacksRef.current.onExtensionError?.(id, wrapped)
+        })
+    } else {
+      viewer.unloadExtension(id)
+    }
+
+    return () => {
+      cancelled = true
+    }
+  }, [status, viewCube, viewerEpoch])
+
   // The SDK's token callback cannot reject, so the loader broadcasts token
   // failures instead: without this the viewer would sit at "loading" forever
   // with nothing reported to the consumer.
@@ -344,9 +408,16 @@ export function APSViewer({
     <APSViewerContext.Provider value={store}>
       <div
         className={className}
-        style={{ position: 'relative', ...style }}
+        style={{
+          position: 'relative',
+          ...(frameRadius === undefined
+            ? {}
+            : { borderRadius: frameRadius, overflow: 'hidden' as const }),
+          ...style,
+        }}
         data-aps-viewer=""
         data-aps-viewer-status={status}
+        data-aps-viewer-radius={frameRadius}
       >
         <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
         {children}

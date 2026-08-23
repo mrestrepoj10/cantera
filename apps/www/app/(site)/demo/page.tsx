@@ -93,7 +93,7 @@ async function BrowserSection({ session, params }: { session: AccSession; params
   return <HubBrowserPanel data={browser} />
 }
 
-/** Still skeleton at the connection panel's geometry, per the motion grammar. */
+/** Still skeleton at the connection panel's geometry, so nothing shifts on resolve. */
 function ConnectionFallback() {
   return (
     <div className="flex w-full max-w-sm flex-col gap-4">

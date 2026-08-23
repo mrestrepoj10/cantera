@@ -53,10 +53,10 @@ Canonical text lives in `apps/www/lib/design-contracts.ts` — the llms.txt arti
 - **Async pending** — disabled-with-spinner-while-keeping-the-label; a pressed control never unmounts or changes element type; pending is consumer-drivable as a prop and promise-driven internally; `aria-disabled` over `disabled`.
 - **Field density** — 44px primary touch targets (gloves, tablet, on site); comfortable by default, compact opt-in; 12px text floor.
 - **A11y bar** — designed to meet WCAG A/AA: 3:1 focus indicators, name/role/state on every control, `aria-describedby` wiring, real headings, locale-neutral `Intl`. No automated gate — review by hand.
-- **Motion grammar** — exactly four moves: icon/spinner crossfade (~150ms ease-out), press feedback via the primitive's `active:translate-y-px`, status `transition-colors`, and a rare user-initiated disclosure reveal (~200ms, gated on `prefers-reduced-motion`). No entrance animations on data-dense content.
 
 ## Conventions
 
+- Motion and animations are implemented only when the maintainers or the user ask for them — never add animation work unprompted.
 - End-user install instructions use `npx shadcn@latest add ...` as the canonical form — the default tab on the installation page and the only form in README, docs prose, and the llms outputs. The installation page may additionally offer pnpm/bun tabs.
 - Prose uses em dashes, not `--` (CLI flags excepted). No emojis in code, docs, or output.
 
