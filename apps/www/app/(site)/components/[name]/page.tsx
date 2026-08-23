@@ -106,7 +106,7 @@ async function ComponentPageContent({ params }: PageProps) {
   )
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 py-12 sm:py-16">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 py-12 sm:py-16">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-2">
           <p className="font-mono text-code text-muted-foreground">
@@ -176,7 +176,7 @@ export default function ComponentPage({ params }: PageProps) {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto flex w-full max-w-5xl flex-1 px-6 py-12 sm:py-16">
+        <div className="mx-auto flex w-full max-w-5xl flex-1 py-12 sm:py-16">
           <p className="text-muted-foreground text-sm">Loading component documentation…</p>
         </div>
       }
