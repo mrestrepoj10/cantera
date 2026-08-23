@@ -591,7 +591,7 @@ export const apiTables: Record<string, ApiTable[]> = {
           name: 'ConnectionsLoading',
           type: 'component',
           description:
-            'The loading state: static skeleton rows built from the ConnectionCard box model, so nothing shifts on resolve, plus one spinner in a live region. No shimmer and no stagger — neither is in the motion grammar.',
+            'The loading state: static skeleton rows built from the ConnectionCard box model, so nothing shifts on resolve, plus one spinner in a live region.',
         },
         {
           name: 'ConnectionsError',
@@ -1148,6 +1148,141 @@ export const apiTables: Record<string, ApiTable[]> = {
       ],
     },
   ],
+  'hub-tree': [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'nodes',
+          type: 'HubTreeNode[]',
+          description:
+            'Controlled hub → project → folder → item → version tree. Each node keeps a globally unique tree id and its typed domain object in value.',
+        },
+        {
+          name: 'expandedIds',
+          type: 'string[]',
+          description: 'Controlled ids of branches whose children are visible.',
+        },
+        {
+          name: 'selectedId',
+          type: 'string',
+          description: 'Tree id of the selected item or version.',
+        },
+        {
+          name: 'pendingId',
+          type: 'string',
+          description:
+            'Branch currently loading children. Its label stays mounted while the disclosure icon crossfades to a spinner.',
+        },
+        {
+          name: 'density',
+          type: "'comfortable' | 'compact'",
+          defaultValue: "'comfortable'",
+          description:
+            'Row density. Comfortable keeps the 44px field target; compact is the explicit desktop escape hatch.',
+        },
+        {
+          name: 'onExpand / onCollapse',
+          type: '(node: HubTreeBranchNode) => void | Promise<void>',
+          description:
+            'Controlled disclosure callbacks. Fetch children in onExpand, then feed the updated nodes and expandedIds back.',
+        },
+        {
+          name: 'onItemOpen',
+          type: '(item: Item, version?: ItemVersion) => void | Promise<void>',
+          description:
+            'Opens the item tip when version is absent, or the exact immutable version activated below it.',
+        },
+      ],
+    },
+    {
+      caption: 'Node types',
+      nameHeader: 'Type',
+      rows: [
+        {
+          name: 'HubTreeNode',
+          type: 'HubTreeHubNode | HubTreeProjectNode | HubTreeFolderNode | HubTreeItemNode | HubTreeVersionNode',
+          description:
+            'Discriminated by type. Branches may receive children and hasChildren; versions are always leaves.',
+        },
+      ],
+    },
+  ],
+  'model-viewer-page': [
+    {
+      caption: 'ModelBrowser props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'account',
+          type: 'OAuthAccount',
+          description: 'Signed-in account shown in the fixed top-right account control.',
+        },
+        {
+          name: 'initialNodes',
+          type: 'HubTreeNode[]',
+          defaultValue: '[]',
+          description:
+            'Optional normalized roots. When empty, the client starts by requesting hubs from treeEndpoint.',
+        },
+        {
+          name: 'treeEndpoint',
+          type: 'string',
+          defaultValue: "'/api/models/tree'",
+          description:
+            'Session-backed lazy Data Management route implementing the shared kind and id query contract.',
+        },
+        {
+          name: 'viewerTokenEndpoint',
+          type: 'string',
+          defaultValue: "'/api/viewer-token'",
+          description:
+            'Separate two-legged viewer token route, scoped to viewables:read. Three-legged Data Management tokens never cross into the viewer.',
+        },
+        {
+          name: 'signOutHref',
+          type: 'string',
+          defaultValue: "'/api/auth/signout?next=/sign-in'",
+          description:
+            'POST route used by the account control to revoke the grant and clear the session.',
+        },
+      ],
+    },
+    {
+      caption: 'Tree route',
+      nameHeader: 'Query',
+      rows: [
+        {
+          name: 'kind=hubs',
+          type: 'no ids',
+          description: 'Loads the signed-in account’s hubs.',
+        },
+        {
+          name: 'kind=projects',
+          type: 'hubId',
+          description: 'Loads projects under one hub.',
+        },
+        {
+          name: 'kind=top-folders',
+          type: 'hubId, projectId',
+          description: 'Loads a project’s top folders.',
+        },
+        {
+          name: 'kind=folder-contents',
+          type: 'projectId, folderId',
+          description: 'Loads folders and items under one folder.',
+        },
+        {
+          name: 'kind=versions',
+          type: 'projectId, itemId',
+          description: 'Loads immutable versions under one item.',
+        },
+      ],
+    },
+  ],
   'file-picker-dialog': [
     {
       caption: 'Props',
@@ -1281,7 +1416,20 @@ export const apiTables: Record<string, ApiTable[]> = {
           type: "'native' | 'none'",
           defaultValue: "'native'",
           description:
-            'Chooses GuiViewer3D with Autodesk controls or the toolbar-less core Viewer3D.',
+            'Chooses the GuiViewer3D native toolbar or the core Viewer3D; ViewCube remains independently controllable.',
+        },
+        {
+          name: 'viewCube',
+          type: 'boolean',
+          defaultValue: 'true',
+          description:
+            "Shows Autodesk's ViewCube and companion controls. Changes apply live without recreating the viewer.",
+        },
+        {
+          name: 'radius',
+          type: 'number',
+          description:
+            'Clips the viewer frame to a pixel radius clamped to 0–32. Omit to leave frame styling to the consumer.',
         },
         {
           name: 'theme',
@@ -1447,6 +1595,240 @@ export const apiTables: Record<string, ApiTable[]> = {
       ],
     },
   ],
+  'upload-types': [
+    {
+      caption: 'Exports',
+      nameHeader: 'Export',
+      rows: [
+        {
+          name: 'UploadPhase',
+          type: 'type',
+          description:
+            "'queued' | 'uploading' | 'processing' | 'complete' | 'error'. Processing is the provider working after the bytes arrived — translation, extraction — usually without a progress signal.",
+        },
+        {
+          name: 'UploadFile',
+          type: 'interface',
+          description:
+            'One tracked file: stable id, name, optional byte size, phase, 0–1 progress while uploading, a processingLabel, and error text with a retryable flag that decides warning versus danger.',
+        },
+        {
+          name: 'UploadRejection / UploadRejectionReason',
+          type: 'interface / type',
+          description:
+            "A refused browser File plus the rule it broke: 'file-type', 'file-size', or 'file-count'.",
+        },
+        {
+          name: 'MODEL_FILE_ACCEPT',
+          type: 'string',
+          description:
+            'Accept preset for the design formats APS translates most often: .rvt, .ifc, .dwg, .dxf, .nwd, .nwc, .pdf.',
+        },
+        {
+          name: 'matchesAccept',
+          type: '(file: File, accept?: string) => boolean',
+          description:
+            'Whether a File satisfies an accept string — extensions, exact MIME types, and type/* wildcards, the native file-input grammar.',
+        },
+        {
+          name: 'formatBytes',
+          type: '(bytes: number, locale?: string) => string',
+          description:
+            'Bytes as a localized short unit string, e.g. 248 MB. Locale-neutral Intl by default; decimal units, matching what storage providers report.',
+        },
+      ],
+    },
+  ],
+  'file-drop-zone': [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'files',
+          type: 'UploadFile[]',
+          defaultValue: '[]',
+          description:
+            'The tracked files, controlled by the consumer. The grid surface derives its phase from them: uploading plots the grid, processing starts the ambient glow, settled files tint it.',
+        },
+        {
+          name: 'onDropFiles',
+          type: '(files: File[]) => void | Promise<void>',
+          description:
+            'Files that passed validation, from a drop or the picker. The component never uploads — start the transfer here and drive files as it moves.',
+        },
+        {
+          name: 'onReject',
+          type: '(rejections: UploadRejection[]) => void',
+          description: 'Files refused before any upload started, with the rule each broke.',
+        },
+        {
+          name: 'onRetry',
+          type: '(file: UploadFile) => void | Promise<void>',
+          description:
+            'Retry for a failed file. Promise-returning handlers drive the pending state; the button keeps its label, spins, and stays put.',
+        },
+        {
+          name: 'onRemove',
+          type: '(file: UploadFile) => void',
+          description:
+            "Remove a file's row. While the file is queued or uploading the same control reads as cancel.",
+        },
+        {
+          name: 'accept',
+          type: 'string',
+          description:
+            'Native accept grammar: extensions, MIME types, type/* wildcards. MODEL_FILE_ACCEPT covers the common APS design formats.',
+        },
+        {
+          name: 'maxFiles',
+          type: 'number',
+          description: 'Cap on tracked files; extras reject as file-count.',
+        },
+        {
+          name: 'maxSize',
+          type: 'number',
+          description: 'Per-file byte ceiling; larger files reject as file-size.',
+        },
+        {
+          name: 'multiple',
+          type: 'boolean',
+          defaultValue: 'true',
+          description: 'Accept several files per gesture. Drops usually batch.',
+        },
+        {
+          name: 'disabled',
+          type: 'boolean',
+          defaultValue: 'false',
+          description: 'Ignores drops and the picker while keeping the zone focusable.',
+        },
+        {
+          name: 'label',
+          type: 'string',
+          defaultValue: "'Drag files here or browse'",
+          description: 'Idle headline. The zone swaps it for phase copy while work is running.',
+        },
+        {
+          name: 'hint',
+          type: 'string',
+          description:
+            'Caption under the headline. Defaults to a summary of the accept and size rules.',
+        },
+        {
+          name: 'showList',
+          type: 'boolean',
+          defaultValue: 'true',
+          description:
+            'Render the built-in file rows. Files keep driving the grid either way; turn this off to lay rows out yourself with FileDropZoneItem.',
+        },
+        {
+          name: 'density',
+          type: "'comfortable' | 'compact'",
+          defaultValue: "'comfortable'",
+          description:
+            'Comfortable keeps the 44px field target on rows; compact is the explicit desktop escape hatch.',
+        },
+        {
+          name: 'locale',
+          type: 'string',
+          description: 'BCP 47 tag for sizes and percentages. Defaults locale-neutral.',
+        },
+        {
+          name: '...props',
+          type: "ComponentProps<'div'>",
+          description: 'Everything else lands on the root element.',
+        },
+      ],
+    },
+    {
+      caption: 'Data attributes',
+      nameHeader: 'Attribute',
+      rows: [
+        {
+          name: 'data-phase',
+          type: "'idle' | 'dragover' | 'uploading' | 'processing' | 'complete' | 'error'",
+          description:
+            'The derived surface phase, on the root and each file row (rows carry their own file phase).',
+        },
+        {
+          name: 'data-tone',
+          type: "'success' | 'warning' | 'danger'",
+          description:
+            'Present once work settles: success on complete; a retryable-only failure is warning, a terminal one danger.',
+        },
+        {
+          name: 'data-density',
+          type: "'comfortable' | 'compact'",
+          description: 'The active density, for consumer styling hooks.',
+        },
+      ],
+    },
+    {
+      caption: 'FileDropZoneItem props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'file',
+          type: 'UploadFile',
+          description:
+            'The file to render: name, format and size chip, and the phase treatment — progressbar, shimmer label, check, or error with retry.',
+        },
+        {
+          name: 'onRetry',
+          type: '(file: UploadFile) => void | Promise<void>',
+          description:
+            'Retry for a failed file. Promise-returning handlers drive the pending state; the button keeps its label, spins, and stays put.',
+        },
+        {
+          name: 'retryPending',
+          type: 'boolean',
+          defaultValue: 'false',
+          description: 'Pending state for the retry action, drivable from outside.',
+        },
+        {
+          name: 'onRemove',
+          type: '(file: UploadFile) => void',
+          description: 'Remove the row — cancel in flight, clear it after it settled.',
+        },
+        {
+          name: 'density',
+          type: "'comfortable' | 'compact'",
+          defaultValue: "'comfortable'",
+          description: 'Comfortable keeps the 44px field target; compact is the escape hatch.',
+        },
+        {
+          name: 'locale',
+          type: 'string',
+          description: 'BCP 47 tag for sizes and percentages. Defaults locale-neutral.',
+        },
+        {
+          name: '...props',
+          type: "ComponentProps<'li'>",
+          description: 'Everything else lands on the root li.',
+        },
+      ],
+    },
+    {
+      caption: 'Exports',
+      nameHeader: 'Export',
+      rows: [
+        {
+          name: 'FileDropZoneItem',
+          type: 'component',
+          description:
+            'The file row on its own, for laying rows out anywhere — a table, a sidebar, next to model-status-card — with identical styling. Pair with showList false.',
+        },
+        {
+          name: 'FILE_DROP_ZONE_CSS',
+          type: 'string',
+          description:
+            'The drafting-grid stylesheet the component hoists via React 19 style precedence — exported for custom surfaces that reuse the grid outside the zone.',
+        },
+      ],
+    },
+  ],
 }
 
 export interface LibUsage {
@@ -1550,5 +1932,23 @@ const getAccessToken: GetAccessToken = async () => {
   if (!response.ok) throw new Error('Viewer token unavailable')
   return response.json()
 }`,
+  },
+  'upload-types': {
+    intro:
+      'The lifecycle of a file on its way into a project. Construction files are heavy and "uploaded" is not "done" — providers translate a design after the bytes land. Components render these shapes and never upload; adapters drive the phases and report back through them.',
+    example: `import { formatBytes, MODEL_FILE_ACCEPT, type UploadFile } from '@/lib/upload-types'
+
+const files: UploadFile[] = [
+  { id: 'v1', name: 'summit-tower.rvt', size: 248_000_000, phase: 'complete' },
+  { id: 'v2', name: 'cedar-mill-site.nwd', size: 612_000_000, phase: 'uploading', progress: 0.42 },
+  {
+    id: 'v3',
+    name: 'dockside-mep.ifc',
+    phase: 'processing',
+    processingLabel: 'Translating model',
+  },
+]
+
+const caption = \`\${MODEL_FILE_ACCEPT} · up to \${formatBytes(800_000_000)}\``,
   },
 }

@@ -52,9 +52,13 @@ export function getRegistryItem(name: string): RegistryItem | undefined {
 
 const previewFrameClasses: Record<string, string> = {
   'hub-browser': 'flex min-h-64 items-stretch rounded-lg border border-border p-4 sm:p-6',
-  'aps-viewer': 'flex min-h-[36rem] items-stretch overflow-hidden rounded-lg border border-border',
+  'hub-tree': 'flex min-h-[28rem] items-stretch rounded-lg border border-border p-4 sm:p-6',
+  'model-viewer-page':
+    'flex min-h-[36rem] items-stretch overflow-hidden rounded-lg border border-border',
+  'aps-viewer': 'flex min-h-[36rem] items-stretch',
   'viewer-native-toolbar':
     'flex min-h-[36rem] items-stretch overflow-hidden rounded-lg border border-border',
+  'file-drop-zone': 'flex min-h-[26rem] items-start rounded-lg border border-border p-4 sm:p-6',
 }
 
 /** Docs previews default to centered component scale; canvas-like items opt into a full frame. */
@@ -149,6 +153,10 @@ function buildGroups(): RegistryGroup[] {
 
 /** The catalog, split into titled sections by kind. Empty sections are omitted. */
 export const registryGroups: RegistryGroup[] = buildGroups()
+
+/** Full-page blocks have their own gallery; the component catalog stays component-scale. */
+export const blockItems = registryItems.filter((item) => item.type === 'registry:block')
+export const componentRegistryGroups = registryGroups.filter((group) => group.id !== 'blocks')
 
 const examplesByName = new Map(
   allItems

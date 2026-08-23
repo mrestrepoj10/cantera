@@ -49,6 +49,7 @@ const pagesDir = path.join(examplesDir, 'pages')
 
 /** How wide the generated page renders each demo. The only per-example knob. */
 const PAGE_WIDTH: Record<string, string> = {
+  'file-drop-zone': 'max-w-lg',
   'provider-sign-in-button': 'max-w-sm',
   'sign-in-card': 'max-w-md',
   'scope-picker': 'max-w-lg',

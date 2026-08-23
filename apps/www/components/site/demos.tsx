@@ -43,8 +43,15 @@ const demos: Record<string, ComponentType> = {
   'hub-browser': dynamic(() =>
     import('@/components/examples/hub-browser-demo').then((m) => m.HubBrowserDemo),
   ),
+  'hub-tree': dynamic(() => import('./demos/hub-tree-demo').then((m) => m.HubTreeDemo)),
+  'model-viewer-page': dynamic(() =>
+    import('./demos/model-viewer-page-demo').then((m) => m.ModelViewerPageDemo),
+  ),
   'file-picker-dialog': dynamic(() =>
     import('@/components/examples/file-picker-dialog-demo').then((m) => m.FilePickerDialogDemo),
+  ),
+  'file-drop-zone': dynamic(() =>
+    import('@/components/examples/file-drop-zone-demo').then((m) => m.FileDropZoneDemo),
   ),
 }
 

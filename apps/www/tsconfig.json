@@ -25,6 +25,7 @@
       "@/components/*": [
         "./registry/blocks/acc-sign-in/components/*",
         "./registry/blocks/connections-page/components/*",
+        "./registry/blocks/model-viewer-page/components/*",
         "./components/*"
       ],
       "@/lib/*": ["./registry/lib/*", "./registry/blocks/acc-sign-in/lib/*", "./lib/*"],

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-import { registryGroups } from '@/components/site/registry'
+import { componentRegistryGroups } from '@/components/site/registry'
 
 interface ComponentGridProps {
   /**
@@ -18,7 +18,7 @@ function ComponentGrid({ headingLevel = 2 }: ComponentGridProps) {
   const Heading = headingLevel === 3 ? 'h3' : 'h2'
   return (
     <div className="flex flex-col gap-12">
-      {registryGroups.map((group) => (
+      {componentRegistryGroups.map((group) => (
         <section key={group.id} aria-labelledby={`${group.id}-heading`}>
           <Heading id={`${group.id}-heading`} className="font-semibold text-xl tracking-tight">
             {group.title}
