@@ -78,6 +78,24 @@ function ApiSection({ table }: { table: ApiTable }) {
   )
 }
 
+function ComponentDocumentationFallback() {
+  return (
+    <div
+      data-testid="component-documentation-fallback"
+      aria-hidden="true"
+      className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-12 py-12 sm:py-16"
+    >
+      <div className="flex flex-col gap-2">
+        <div className="h-4 w-36 rounded-sm bg-muted" />
+        <div className="h-9 w-64 max-w-full rounded-sm bg-muted" />
+        <div className="h-5 w-full max-w-2xl rounded-sm bg-muted" />
+      </div>
+      <div className="h-20 w-full max-w-xl rounded-lg border border-border bg-muted/20" />
+      <div className="h-64 w-full rounded-lg border border-border bg-muted/20" />
+    </div>
+  )
+}
+
 /**
  * The registry sources shown under Source. Reading them is the page's only I/O,
  * and under cacheComponents an uncached read is what pushes the whole body into
@@ -158,10 +176,14 @@ async function ComponentPageContent({ params }: PageProps) {
         <section className="flex flex-col gap-3">
           <h2 className="font-medium text-sm">Preview</h2>
           <div className={getPreviewFrameClassName(item.name)}>
-            <ComponentDemo
-              name={item.name}
-              viewerUrn={isViewerItem ? process.env.APS_VIEWER_DEMO_URN : undefined}
-            />
+            {/* Each demo is a separate next/dynamic chunk. Keep that client-side
+                suspension local so it cannot replace the prefetched docs page. */}
+            <Suspense fallback={null}>
+              <ComponentDemo
+                name={item.name}
+                viewerUrn={isViewerItem ? process.env.APS_VIEWER_DEMO_URN : undefined}
+              />
+            </Suspense>
           </div>
         </section>
       )}
@@ -187,13 +209,7 @@ async function ComponentPageContent({ params }: PageProps) {
 
 export default function ComponentPage({ params }: PageProps) {
   return (
-    <Suspense
-      fallback={
-        <div className="mx-auto flex w-full max-w-5xl flex-1 py-12 sm:py-16">
-          <p className="text-muted-foreground text-sm">Loading component documentation…</p>
-        </div>
-      }
-    >
+    <Suspense fallback={<ComponentDocumentationFallback />}>
       <ComponentPageContent params={params} />
     </Suspense>
   )
