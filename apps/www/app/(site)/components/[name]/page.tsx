@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import type { Metadata } from 'next'
+import { cacheLife } from 'next/cache'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { preconnect } from 'react-dom'
@@ -77,6 +78,27 @@ function ApiSection({ table }: { table: ApiTable }) {
   )
 }
 
+/**
+ * The registry sources shown under Source. Reading them is the page's only I/O,
+ * and under cacheComponents an uncached read is what pushes the whole body into
+ * a dynamic hole: the prefetch stops there and every navigation waits on the
+ * server. Cached, the read resolves at prefetch time and the click is instant.
+ */
+async function getSources(files: { path: string }[]) {
+  'use cache'
+  cacheLife('max')
+  return Promise.all(
+    files.map(async (file) => ({
+      filename: path.basename(file.path),
+      // Statically scoped to registry/ so the bundler can trace the fs usage.
+      code: await fs.readFile(
+        path.join(process.cwd(), 'registry', path.relative('registry', file.path)),
+        'utf8',
+      ),
+    })),
+  )
+}
+
 async function ComponentPageContent({ params }: PageProps) {
   const { name } = await params
   const item = getRegistryItem(name)
@@ -94,16 +116,7 @@ async function ComponentPageContent({ params }: PageProps) {
   const tables = apiTables[item.name] ?? []
   // Token-only items (cssVars, no files) have nothing to show as source.
   const files = item.files ?? []
-  const sources = await Promise.all(
-    files.map(async (file) => ({
-      filename: path.basename(file.path),
-      // Statically scoped to registry/ so the bundler can trace the fs usage.
-      code: await fs.readFile(
-        path.join(process.cwd(), 'registry', path.relative('registry', file.path)),
-        'utf8',
-      ),
-    })),
-  )
+  const sources = await getSources(files)
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 py-12 sm:py-16">
