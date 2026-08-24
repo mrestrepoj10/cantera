@@ -4,7 +4,6 @@ import { BadgeCheckIcon, BellIcon, BuildingIcon, LogOutIcon } from 'lucide-react
 import { useEffect, useState } from 'react'
 
 import { delay } from '@/components/site/demos/support'
-import { CrewAvatar } from '@/components/ui/crew-avatar'
 import type { FinderEntry, FinderGroup } from '@/components/ui/finder'
 import { HubSidebar } from '@/components/ui/hub-sidebar'
 import type { HubTreeNode } from '@/components/ui/hub-tree'
@@ -161,7 +160,6 @@ export function HubSidebarDemo() {
         user={{
           name: 'Maria Renteria',
           detail: 'Site engineer',
-          avatar: <CrewAvatar name="Maria Renteria" size={32} />,
           actions: [
             {
               id: 'account',

@@ -100,11 +100,20 @@ function UserIdentity({ user, collapsible }: { user: HubSidebarUser; collapsible
           every descendant svg to 16px, which would shrink an SVG avatar to an
           icon while leaving an <img> one alone. */}
       {/* The avatar fills its button in the icon rail, hiding the row's hover
-          fill — so hover and open read on the mark itself instead. */}
-      <span className="flex size-8 shrink-0 overflow-hidden rounded-lg ring-1 ring-transparent transition-[box-shadow] duration-150 ease-out group-hover/menu-button:ring-sidebar-border group-data-open/menu-button:ring-sidebar-ring [&>svg]:size-8!">
+          fill — so hover and open read on the mark itself instead. The ring is
+          sidebar-ring at both steps, not sidebar-border: the initials disc and
+          the hover fill share the muted tone, so a hairline border-token ring
+          dissolves with them. */}
+      <span className="flex size-8 shrink-0 overflow-hidden rounded-lg ring-1 ring-transparent transition-[box-shadow] duration-150 ease-out group-hover/menu-button:ring-sidebar-ring/60 group-data-open/menu-button:ring-sidebar-ring [&>svg]:size-8!">
         {user.avatar ?? (
           <Avatar className="size-8 rounded-lg">
-            <AvatarFallback className="rounded-lg text-xs">{initialsOf(user.name)}</AvatarFallback>
+            {/* Committed, not muted: bg-muted is the same tone as the row's
+                hover fill, so a muted disc vanishes the moment the row is
+                hovered. The primary pair sits at the opposite end of the
+                scale in both themes, so the disc always keeps its own edge. */}
+            <AvatarFallback className="rounded-lg bg-sidebar-primary text-sidebar-primary-foreground text-xs">
+              {initialsOf(user.name)}
+            </AvatarFallback>
           </Avatar>
         )}
       </span>
