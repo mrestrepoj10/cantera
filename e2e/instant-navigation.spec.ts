@@ -19,7 +19,11 @@ test.describe('Next.js 16.3 instant navigations', () => {
   test('catalog links prefetch URL-specific component documentation', async ({ page }) => {
     test.skip(!process.env.CI, 'Next.js route prefetching is disabled by the development server')
     await page.goto('/components')
-    const componentLink = page.getByRole('link', { name: /sign-in-card/i })
+    // The catalog grid lives in the page's article; the sidebar nav renders
+    // the same link twice (mobile disclosure and desktop aside).
+    const componentLink = page
+      .getByRole('article')
+      .getByRole('link', { name: 'Sign-In Card', exact: true })
     await componentLink.scrollIntoViewIfNeeded()
     await expect(componentLink).toBeVisible()
     await page.waitForLoadState('networkidle')
