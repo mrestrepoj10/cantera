@@ -487,7 +487,7 @@
       "type": "registry:component",
       "title": "Crew Avatar",
       "author": "MR <contact@bimframe.co>",
-      "description": "Deterministic construction-crew SVG avatars — hard hats, hi-vis vests, safety glasses, ear defenders — generated from a name with zero dependencies, boring-avatars style.",
+      "description": "Deterministic construction-crew SVG avatars — monochrome disc, geometric figure, one accent for the trade on the hard hat — generated from a name with zero dependencies, boring-avatars style.",
       "categories": ["identity", "avatars"],
       "files": [
         {
@@ -500,7 +500,7 @@
           "type": "registry:ui"
         }
       ],
-      "docs": "The same name always renders the same worker — a salted FNV-1a hash drives every trait, so avatars are SSR-safe and hydration-identical with no randomness at render time. The disc is self-contained: every backdrop clears 3:1 against both white and near-black surfaces, so it needs no theme awareness. Pass title for a meaningful image (role=img); omit it next to a visible name and the mark stays decorative (aria-hidden). crewAvatarSvg(name) returns standalone markup for non-React surfaces; colors overrides the backdrop palette."
+      "docs": "The same name always renders the same worker — a salted FNV-1a hash drives every trait, so avatars are SSR-safe and hydration-identical with no randomness at render time. The mark is monochrome by construction: a near-black or near-white canvas, the figure drawn in whichever end the canvas is not, and exactly one chroma — the hard hat, whose color codes the trade and is repeated as text on spec.role, so nothing depends on reading the color alone. The disc needs no theme awareness: it carries a hairline ring one step off its own canvas, so a light disc keeps its edge on a light page. Pass title for a meaningful image (role=img); omit it next to a visible name and the mark stays decorative (aria-hidden). crewAvatarSvg(name) returns standalone markup for non-React surfaces; colors overrides the canvas palette."
     },
     {
       "name": "file-picker-dialog",

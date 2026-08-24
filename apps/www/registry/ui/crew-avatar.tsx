@@ -13,7 +13,7 @@ export interface CrewAvatarProps
   name: string
   /** Rendered edge length in px. Designed for 24-48; 32 is the crew-list size. */
   size?: number
-  /** Backdrop palette override, the way boring-avatars takes `colors`. */
+  /** Canvas palette override, the way boring-avatars takes `colors`. */
   colors?: readonly string[]
   /**
    * The accessible name. Pass it when the avatar is the only thing identifying
@@ -74,7 +74,17 @@ function renderShapes(shapes: CrewAvatarShape[]): React.ReactNode {
           </g>
         )
       case 'circle':
-        return <circle key={shape.id} cx={shape.cx} cy={shape.cy} r={shape.r} fill={shape.fill} />
+        return (
+          <circle
+            key={shape.id}
+            cx={shape.cx}
+            cy={shape.cy}
+            r={shape.r}
+            fill={shape.fill ?? 'none'}
+            stroke={shape.stroke}
+            strokeWidth={shape.strokeWidth}
+          />
+        )
       case 'rect':
         return (
           <rect

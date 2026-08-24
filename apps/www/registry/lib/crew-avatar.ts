@@ -2,9 +2,14 @@
  * Deterministic crew avatars — the same name always draws the same worker.
  *
  * The seed name is hashed once and every decision after that is a slice of the
- * hash: palette entry, face offset, which safety gear this person wears. No
+ * hash: canvas tone, face offset, which safety gear this person wears. No
  * `Math.random`, no `Date`, no dependency — server and client produce the same
  * markup, so an avatar never flickers on hydration.
+ *
+ * The mark is monochrome by construction. A near-black or near-white canvas,
+ * a figure drawn in the opposing tone plus two mixes of it, and exactly one
+ * chroma: the hard hat, whose color is the trade it codes for on a real site.
+ * Nothing else is colored, because nothing else means anything.
  *
  * Everything is drawn in a 36-unit square and clipped to a circle. Shapes are
  * deliberately blunt: these are read at 24-32px in a crew list, where a
@@ -93,104 +98,96 @@ function channels(hex: string): [number, number, number] | null {
   ]
 }
 
-/**
- * Mix toward white (positive) or black (negative). Consumer-supplied colors
- * reach this, so an unparseable value passes through untouched rather than
- * collapsing the whole avatar to black.
- */
-function shade(hex: string, amount: number): string {
-  const rgb = channels(hex)
-  if (!rgb) return hex
-  const target = amount < 0 ? 0 : 255
-  const weight = Math.abs(amount)
-  const mixed = rgb.map((channel) => Math.round(channel + (target - channel) * weight))
-  return `#${mixed.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
+function toHex(rgb: number[]): string {
+  return `#${rgb
+    .map((channel) =>
+      Math.max(0, Math.min(255, Math.round(channel)))
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`
 }
 
 /**
- * Backdrop colors: a graphite-to-concrete ramp, near-neutral by design. The
- * surrounding product is achromatic — color there means status and nothing
- * else — so a wheel of saturated discs would read as eight meanings nobody
- * assigned. Holding the backdrops in the theme's grey family leaves the hi-vis
- * vest and the hard hat as the only chroma in the mark, which is also how a
- * real site reads.
+ * Mix two colors by weight. Consumer-supplied colors reach this, so an
+ * unparseable value passes through untouched rather than collapsing the whole
+ * avatar to black.
+ */
+function mix(from: string, to: string, weight: number): string {
+  const a = channels(from)
+  const b = channels(to)
+  if (!a || !b) return from
+  return toHex(a.map((channel, index) => channel + (b[index] - channel) * weight))
+}
+
+/** Mix toward white (positive) or black (negative). */
+function shade(hex: string, amount: number): string {
+  return mix(hex, amount < 0 ? '#000000' : '#ffffff', Math.abs(amount))
+}
+
+/** Relative luminance, WCAG definition. Unparseable colors read as mid. */
+function luminance(hex: string): number {
+  const rgb = channels(hex)
+  if (!rgb) return 0.5
+  const [r, g, b] = rgb.map((channel) => {
+    const value = channel / 255
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+/**
+ * Canvas tones: the Geist neutral scale at its two ends, never the middle.
+ * A mid-grey disc is the one thing that reads as unresolved against both a
+ * white page and a near-black one, so the canvas commits — near-black or
+ * near-white — and the figure is drawn in whichever end the canvas is not.
+ * Identity comes from gear, stance, and trade color, not from hue.
  *
- * Mid-tone on purpose: the avatar is a self-contained disc, so it has to hold
- * its edge against a white page and a near-black one without knowing which it
- * landed on. Every entry sits in the 3:1-against-both band (measured), and
- * each one keeps a light hard hat and a dark jacket readable on top of it.
- * People stay told apart by gear, skin, and hair — not by hue.
+ * The consequence is that a light disc on a light page has no edge of its own,
+ * which is why every avatar draws a hairline ring one step off the canvas.
  */
 export const crewAvatarColors = [
-  '#5E6469',
-  '#6B6A66',
-  '#67706F',
-  '#726D72',
-  '#6C737A',
-  '#7C7970',
-  '#82817D',
-  '#8A8A8A',
+  '#0A0A0A',
+  '#141414',
+  '#1F1F1F',
+  '#2E2E2E',
+  '#E8E8E8',
+  '#EDEDED',
+  '#F2F2F2',
+  '#FAFAFA',
 ] as const
-
-/** Skin tones, light to deep. Face ink is derived per tone, not fixed black. */
-const skinTones = [
-  '#F6D5B8',
-  '#EFC49C',
-  '#DFA97A',
-  '#C98F5E',
-  '#AC7444',
-  '#96613A',
-  '#875634',
-] as const
-
-const hairColors = ['#241A13', '#3D2A1B', '#5C3E24', '#7A5432', '#A8622E', '#8E8B86'] as const
-
-/** Deep tones only, so the beard never reads as a pasted-on light patch. */
-const darkHairColors = ['#241A13', '#3D2A1B', '#5C3E24'] as const
 
 /**
- * Hard hat colors carry meaning on a real site: white for supervisors and
- * engineers, yellow for general labor, orange for signalers and traffic, blue
- * for technical trades, green for safety, red for emergency response. The
- * weights approximate the mix on an actual crew rather than an even spread.
+ * Hard hat color is the one piece of chroma in the mark, and it is not
+ * decoration: on a real site white is supervision and engineering, yellow is
+ * general labor, orange is signaling and traffic, blue is the technical
+ * trades, green is safety, red is emergency response. The weights approximate
+ * the mix on an actual crew rather than an even spread. `spec.role` carries
+ * the same fact as text, so nothing depends on reading the color alone.
  */
-const hardHatColors = [
-  { color: '#F2C21B', weight: 5 },
-  { color: '#EDEFF2', weight: 4 },
-  { color: '#F0801E', weight: 3 },
-  { color: '#2E7BC4', weight: 2 },
-  { color: '#D2402F', weight: 1 },
-  { color: '#3FA05A', weight: 1 },
-] as const
+export type CrewAvatarRole =
+  | 'labor'
+  | 'supervisor'
+  | 'signal'
+  | 'technical'
+  | 'safety'
+  | 'emergency'
 
-const beanieColors = ['#C2452F', '#2E6B7A', '#3A4250', '#7A5C3E', '#4E6B34'] as const
-
-/** Work shirts stay dark so a hi-vis vest reads as the brighter layer on top. */
-const shirtColors = ['#3B4A5A', '#2F3A42', '#55604F', '#6B4535', '#44506B'] as const
-
-/**
- * Hi-vis, each with its own tape. Retroreflective tape is grey until a light
- * hits it, and grey is what keeps it legible on the lime vest — silver-white
- * banding all but disappears against fluorescent yellow-green.
- */
-const hiVisVests = [
-  { fill: '#D2E32C', tape: '#8E9BA4' },
-  { fill: '#F2851F', tape: '#E8EEF2' },
-] as const
-
-const earDefenderColors = ['#2B3138', '#E04A2F', '#F0871E'] as const
-
-const LENS_DARK = '#26333D'
-const LENS_GLINT = '#7E97A6'
-const LENS_CLEAR = '#D5E3EC'
-const FRAME = '#2B3138'
+const hardHats = [
+  { role: 'labor', color: '#F5A623', weight: 5 },
+  { role: 'supervisor', color: '#8F8F8F', weight: 4 },
+  { role: 'signal', color: '#F97316', weight: 3 },
+  { role: 'technical', color: '#0070F3', weight: 2 },
+  { role: 'emergency', color: '#E5484D', weight: 1 },
+  { role: 'safety', color: '#45A557', weight: 1 },
+] as const satisfies readonly { role: CrewAvatarRole; color: string; weight: number }[]
 
 export type CrewAvatarHeadwear = 'hard-hat' | 'beanie'
 
 export type CrewAvatarEyewear = 'none' | 'safety-glasses' | 'goggles'
 
 export interface CrewAvatarOptions {
-  /** Backdrop palette override, the way boring-avatars takes `colors`. */
+  /** Canvas palette override, the way boring-avatars takes `colors`. */
   colors?: readonly string[]
 }
 
@@ -198,32 +195,32 @@ export interface CrewAvatarSpec {
   /** Stable base36 form of the seed hash — safe as a DOM id fragment. */
   id: string
   name: string
+  /** The disc. */
   background: string
-  backdrop: string
-  backdropX: number
-  backdropY: number
-  backdropRadius: number
-  skin: string
+  /** Hairline ring, one step off the canvas, so a light disc keeps an edge. */
+  ring: string
+  /** The figure, drawn in whichever end of the scale the canvas is not. */
   ink: string
-  hair: string
-  shirt: string
+  /** The figure mixed 38% toward the canvas — the beard block. */
+  inkMuted: string
+  /** The figure mixed 66% toward the canvas — eyewear frames and ear pads. */
+  inkFaint: string
+  /** Trade color, toned to sit at least 3:1 on this canvas. */
+  accent: string
+  /** One step down from the accent, for the hat ridge and the beanie band. */
+  accentDeep: string
+  /** What the hat color codes for, as text. Never rely on the color alone. */
+  role: CrewAvatarRole
   headwear: CrewAvatarHeadwear
-  headwearColor: string
-  headwearAccent: string
   eyewear: CrewAvatarEyewear
   earDefenders: boolean
-  earDefenderColor: string
   vest: boolean
-  vestColor: string
-  reflective: string
   beard: boolean
   /** Degrees, about the base of the neck. */
   tilt: number
   faceX: number
   faceY: number
   eyeSpread: number
-  mouthWidth: number
-  mouthOpen: boolean
 }
 
 /**
@@ -234,48 +231,40 @@ export function crewAvatarSpec(name: string, options: CrewAvatarOptions = {}): C
   const seed = seedFromName(name)
   const backgrounds =
     options.colors && options.colors.length > 0 ? options.colors : crewAvatarColors
-
-  const skinIndex = unit(seed, 'skin', skinTones.length)
-  const skin = skinTones[skinIndex]
   const background = pick(seed, 'background', backgrounds)
-  const headwear: CrewAvatarHeadwear = chance(seed, 'headwear', 86) ? 'hard-hat' : 'beanie'
-  const headwearColor =
-    headwear === 'hard-hat'
-      ? pickWeighted(seed, 'hat-color', hardHatColors).color
-      : pick(seed, 'beanie-color', beanieColors)
+
+  // The figure is the opposing end of the scale, not a fixed black — a custom
+  // palette of mid-tones still gets a figure that resolves against it.
+  const dark = luminance(background) < 0.35
+  const ink = dark ? '#FAFAFA' : '#101010'
+
+  const hat = pickWeighted(seed, 'hard-hat', hardHats)
+  // A trade color is picked for its hue, then toned to the canvas it lands on.
+  // Yellow on near-white is unreadable at 24px; the same yellow one step down
+  // is still unmistakably yellow.
+  const accent = dark ? shade(hat.color, 0.06) : shade(hat.color, -0.34)
   const eyewearRoll = unit(seed, 'eyewear', 100)
-  const earDefenders = chance(seed, 'ear-defenders', 32)
-  const hiVis = pick(seed, 'vest-color', hiVisVests)
 
   return {
     id: seed.toString(36),
     name,
     background,
-    backdrop: shade(background, chance(seed, 'backdrop-tone', 55) ? 0.16 : -0.16),
-    backdropX: signed(seed, 'backdrop-x', 8, 0.5),
-    backdropY: signed(seed, 'backdrop-y', 8, 0.5),
-    backdropRadius: 12.5 + unit(seed, 'backdrop-radius', 7) * 0.5,
-    skin,
-    ink: shade(skin, -0.82),
-    hair: pick(seed, 'hair', skinIndex >= 4 ? darkHairColors : hairColors),
-    shirt: pick(seed, 'shirt', shirtColors),
-    headwear,
-    headwearColor,
-    headwearAccent:
-      headwear === 'hard-hat' ? shade(headwearColor, -0.16) : shade(headwearColor, 0.18),
-    eyewear: eyewearRoll < 26 ? 'goggles' : eyewearRoll < 52 ? 'safety-glasses' : 'none',
-    earDefenders,
-    earDefenderColor: pick(seed, 'ear-defender-color', earDefenderColors),
-    vest: chance(seed, 'vest', 64),
-    vestColor: hiVis.fill,
-    reflective: hiVis.tape,
-    beard: chance(seed, 'beard', 38),
-    tilt: signed(seed, 'tilt', 6, 1),
+    ring: mix(background, ink, 0.1),
+    ink,
+    inkMuted: mix(ink, background, 0.38),
+    inkFaint: mix(ink, background, 0.66),
+    accent,
+    accentDeep: shade(accent, dark ? -0.22 : -0.18),
+    role: hat.role,
+    headwear: chance(seed, 'headwear', 86) ? 'hard-hat' : 'beanie',
+    eyewear: eyewearRoll < 24 ? 'goggles' : eyewearRoll < 52 ? 'safety-glasses' : 'none',
+    earDefenders: chance(seed, 'ear-defenders', 30),
+    vest: chance(seed, 'vest', 66),
+    beard: chance(seed, 'beard', 36),
+    tilt: signed(seed, 'tilt', 5, 1),
     faceX: signed(seed, 'face-x', 4, 0.3),
-    faceY: signed(seed, 'face-y', 4, 0.25),
-    eyeSpread: unit(seed, 'eye-spread', 9) * 0.2,
-    mouthWidth: 2.5 + unit(seed, 'mouth-width', 7) * 0.2,
-    mouthOpen: chance(seed, 'mouth-open', 34),
+    faceY: signed(seed, 'face-y', 3, 0.25),
+    eyeSpread: unit(seed, 'eye-spread', 7) * 0.2,
   }
 }
 
@@ -295,7 +284,16 @@ export type CrewAvatarShape =
       rx?: number
       fill: string
     }
-  | { id: string; kind: 'circle'; cx: number; cy: number; r: number; fill: string }
+  | {
+      id: string
+      kind: 'circle'
+      cx: number
+      cy: number
+      r: number
+      fill?: string
+      stroke?: string
+      strokeWidth?: number
+    }
   | {
       id: string
       kind: 'path'
@@ -308,48 +306,30 @@ export type CrewAvatarShape =
   | { id: string; kind: 'group'; transform: string; children: CrewAvatarShape[] }
 
 /** Head geometry, shared by the face, the headwear, and the ear defenders. */
-const HEAD_X = 9.4
-const HEAD_TOP = 6.4
-const HEAD_WIDTH = 17.2
-const HEAD_HEIGHT = 17.8
-const SHOULDER_TOP = 25.4
-const COLLAR_BOTTOM = 31.6
+const HEAD_X = 11.6
+const HEAD_TOP = 9.2
+const HEAD_WIDTH = 12.8
+const HEAD_HEIGHT = 13.6
+const HEAD_RADIUS = 4.6
+const SHOULDER_TOP = 27.2
 
 export function crewAvatarShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
   return [
     { id: 'ground', kind: 'rect', x: 0, y: 0, width: S, height: S, fill: spec.background },
     {
-      id: 'backdrop',
-      kind: 'circle',
-      cx: 18 + spec.backdropX,
-      cy: 13 + spec.backdropY,
-      r: spec.backdropRadius,
-      fill: spec.backdrop,
-    },
-    {
       id: 'head',
       kind: 'group',
-      transform: `rotate(${spec.tilt} 18 25)`,
+      transform: `rotate(${spec.tilt} 18 27)`,
       children: headShapes(spec),
     },
     ...bodyShapes(spec),
+    // Last, so it survives every overlap: the disc's own edge.
+    { id: 'ring', kind: 'circle', cx: 18, cy: 18, r: 17.5, stroke: spec.ring, strokeWidth: 1 },
   ]
 }
 
 function headShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
   const shapes: CrewAvatarShape[] = [
-    {
-      id: 'neck',
-      kind: 'rect',
-      x: 15.2,
-      y: 21.4,
-      width: 5.6,
-      height: 6.2,
-      rx: 1.6,
-      fill: shade(spec.skin, -0.14),
-    },
-    { id: 'ear-left', kind: 'circle', cx: 9.2, cy: 17.2, r: 2.2, fill: spec.skin },
-    { id: 'ear-right', kind: 'circle', cx: 26.8, cy: 17.2, r: 2.2, fill: spec.skin },
     {
       id: 'skull',
       kind: 'rect',
@@ -357,21 +337,24 @@ function headShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
       y: HEAD_TOP,
       width: HEAD_WIDTH,
       height: HEAD_HEIGHT,
-      rx: 8,
-      fill: spec.skin,
+      rx: HEAD_RADIUS,
+      fill: spec.ink,
     },
   ]
 
   if (spec.beard) {
+    // A flat block at the jaw, one tonal step off the head so it reads as a
+    // change of surface rather than an outline. Silhouette is all that
+    // survives at 24px anyway.
     shapes.push({
       id: 'beard',
       kind: 'rect',
-      x: 11,
-      y: 17.4,
-      width: 14,
-      height: 7.6,
-      rx: 3.8,
-      fill: spec.hair,
+      x: 12.2,
+      y: 18.4,
+      width: 11.6,
+      height: 5.6,
+      rx: 2.4,
+      fill: spec.inkMuted,
     })
   }
 
@@ -384,38 +367,48 @@ function headShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
   shapes.push(...headwearShapes(spec))
 
   if (spec.earDefenders) {
-    const pad = shade(spec.earDefenderColor, 0.32)
+    // Set outboard of the skull on purpose: a cup that overlaps the head is a
+    // tonal patch, one that breaks the silhouette is a recognizable shape.
     shapes.push(
       {
         id: 'defender-left',
         kind: 'rect',
-        x: 6,
-        y: 13.8,
-        width: 4.8,
-        height: 6.6,
-        rx: 2.4,
-        fill: spec.earDefenderColor,
+        x: 7.6,
+        y: 15.8,
+        width: 3.8,
+        height: 6,
+        rx: 1.9,
+        fill: spec.ink,
       },
-      { id: 'pad-left', kind: 'rect', x: 7.1, y: 15, width: 2.6, height: 4.2, rx: 1.3, fill: pad },
+      {
+        id: 'pad-left',
+        kind: 'rect',
+        x: 8.6,
+        y: 17,
+        width: 1.8,
+        height: 3.6,
+        rx: 0.9,
+        fill: spec.inkFaint,
+      },
       {
         id: 'defender-right',
         kind: 'rect',
-        x: 25.2,
-        y: 13.8,
-        width: 4.8,
-        height: 6.6,
-        rx: 2.4,
-        fill: spec.earDefenderColor,
+        x: 24.6,
+        y: 15.8,
+        width: 3.8,
+        height: 6,
+        rx: 1.9,
+        fill: spec.ink,
       },
       {
         id: 'pad-right',
         kind: 'rect',
-        x: 26.3,
-        y: 15,
-        width: 2.6,
-        height: 4.2,
-        rx: 1.3,
-        fill: pad,
+        x: 25.6,
+        y: 17,
+        width: 1.8,
+        height: 3.6,
+        rx: 0.9,
+        fill: spec.inkFaint,
       },
     )
   }
@@ -423,124 +416,102 @@ function headShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
   return shapes
 }
 
+/**
+ * Eyes and eyewear only. There is no mouth: a smile is the single detail that
+ * turns a mark into a cartoon, and it is the first thing to blur at 24px.
+ * Every opening is the canvas knocked back out of the figure, so the face is
+ * two tones in total no matter which gear this person drew.
+ */
 function faceShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
-  const shapes: CrewAvatarShape[] = []
-  const eyeY = 14.4
-  const mouthY = 19.6
-  const mouth = spec.mouthWidth
-  // A dark smile vanishes into a beard. A bearded mouth is drawn a shade
-  // lighter than the skin instead, which holds up even when hair and skin are
-  // both deep browns.
-  const mouthColor = spec.beard ? shade(spec.skin, 0.2) : spec.ink
-
-  if (spec.eyewear === 'safety-glasses') {
-    shapes.push({
-      id: 'lens-clear',
-      kind: 'rect',
-      x: 9.6,
-      y: 13.2,
-      width: 16.8,
-      height: 4.8,
-      rx: 2.4,
-      fill: LENS_CLEAR,
-    })
-  }
-
-  if (spec.eyewear !== 'goggles') {
-    shapes.push(
+  if (spec.eyewear === 'none') {
+    return [
       {
         id: 'eye-left',
         kind: 'rect',
-        x: round(13.6 - spec.eyeSpread),
-        y: eyeY,
-        width: 2,
-        height: 2.8,
-        rx: 1,
-        fill: spec.ink,
+        x: round(14.2 - spec.eyeSpread),
+        y: 16.6,
+        width: 1.7,
+        height: 2.4,
+        rx: 0.85,
+        fill: spec.background,
       },
       {
         id: 'eye-right',
         kind: 'rect',
-        x: round(20.4 + spec.eyeSpread),
-        y: eyeY,
-        width: 2,
-        height: 2.8,
-        rx: 1,
-        fill: spec.ink,
+        x: round(20.1 + spec.eyeSpread),
+        y: 16.6,
+        width: 1.7,
+        height: 2.4,
+        rx: 0.85,
+        fill: spec.background,
       },
-    )
+    ]
   }
-
-  shapes.push(
-    spec.mouthOpen
-      ? {
-          id: 'mouth',
-          kind: 'path',
-          d: `M${round(18 - mouth)} ${mouthY}a${round(mouth)} ${round(mouth * 0.8)} 0 0 0 ${round(mouth * 2)} 0z`,
-          fill: mouthColor,
-        }
-      : {
-          id: 'mouth',
-          kind: 'path',
-          d: `M${round(18 - mouth)} ${mouthY}q${round(mouth)} ${round(mouth * 0.85)} ${round(mouth * 2)} 0`,
-          stroke: mouthColor,
-          strokeWidth: 1.4,
-          round: true,
-        },
-  )
 
   if (spec.eyewear === 'safety-glasses') {
-    shapes.push(
+    // One hard bar with two lenses cut out of it. Frames drawn as separate
+    // strokes are sub-unit lines that vanish; a knocked-out shape does not.
+    return [
       {
-        id: 'brow-bar',
+        id: 'glasses',
         kind: 'rect',
-        x: 9.6,
-        y: 12.6,
-        width: 16.8,
-        height: 1.4,
-        rx: 0.7,
-        fill: FRAME,
+        x: 11.2,
+        y: 15.6,
+        width: 13.6,
+        height: 4.2,
+        rx: 2.1,
+        fill: spec.inkFaint,
       },
       {
-        id: 'bridge',
+        id: 'lens-left',
         kind: 'rect',
-        x: 16.8,
-        y: 13.8,
-        width: 2.4,
-        height: 1.2,
-        rx: 0.6,
-        fill: FRAME,
+        x: 12.4,
+        y: 16.6,
+        width: 4.2,
+        height: 2.2,
+        rx: 1.1,
+        fill: spec.background,
       },
-    )
+      {
+        id: 'lens-right',
+        kind: 'rect',
+        x: 19.4,
+        y: 16.6,
+        width: 4.2,
+        height: 2.2,
+        rx: 1.1,
+        fill: spec.background,
+      },
+    ]
   }
 
-  if (spec.eyewear === 'goggles') {
-    shapes.push(
-      {
-        id: 'strap',
-        kind: 'rect',
-        x: 6.6,
-        y: 14.6,
-        width: 22.8,
-        height: 1.8,
-        rx: 0.9,
-        fill: FRAME,
-      },
-      {
-        id: 'goggle-lens',
-        kind: 'rect',
-        x: 9.2,
-        y: 12.8,
-        width: 17.6,
-        height: 5.6,
-        rx: 2.8,
-        fill: LENS_DARK,
-      },
-      { id: 'glint', kind: 'path', d: 'M12.6 17.9l3.4-4.6h2.2l-3.4 4.6z', fill: LENS_GLINT },
-    )
-  }
-
-  return shapes
+  // Goggles: the same bar, but round lenses and a strap running past the
+  // skull. Round against the glasses' slots is what tells the two apart at
+  // list size, where a difference in bar height would not.
+  return [
+    {
+      id: 'strap',
+      kind: 'rect',
+      x: 9.6,
+      y: 16.8,
+      width: 16.8,
+      height: 1.6,
+      rx: 0.8,
+      fill: spec.inkFaint,
+    },
+    {
+      id: 'goggle-body',
+      kind: 'rect',
+      x: 11.2,
+      y: 15,
+      width: 13.6,
+      height: 5.2,
+      rx: 2.6,
+      fill: spec.ink,
+    },
+    { id: 'goggle-left', kind: 'circle', cx: 14.9, cy: 17.6, r: 1.5, fill: spec.background },
+    { id: 'goggle-right', kind: 'circle', cx: 21.1, cy: 17.6, r: 1.5, fill: spec.background },
+  ]
 }
 
 function headwearShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
@@ -549,96 +520,67 @@ function headwearShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
       {
         id: 'beanie-dome',
         kind: 'path',
-        d: 'M9.8 12.4a8.2 8.2 0 0 1 16.4 0z',
-        fill: spec.headwearColor,
+        d: 'M11.4 14.4a6.6 6.6 0 0 1 13.2 0z',
+        fill: spec.accent,
       },
-      { id: 'bobble', kind: 'circle', cx: 18, cy: 4.6, r: 1.9, fill: spec.headwearAccent },
       {
         id: 'beanie-band',
         kind: 'rect',
-        x: 9.2,
-        y: 10.6,
-        width: 17.6,
-        height: 3.2,
-        rx: 1.6,
-        fill: spec.headwearAccent,
+        x: 11,
+        y: 13.2,
+        width: 14,
+        height: 2.4,
+        rx: 1.2,
+        fill: spec.accentDeep,
       },
     ]
   }
 
   return [
-    {
-      id: 'hat-dome',
-      kind: 'path',
-      d: 'M9.6 11.4a8.4 8.4 0 0 1 16.8 0z',
-      fill: spec.headwearColor,
-    },
+    { id: 'hat-dome', kind: 'path', d: 'M11.8 13.4a6.2 6.2 0 0 1 12.4 0z', fill: spec.accent },
     {
       id: 'hat-ridge',
       kind: 'rect',
-      x: 17,
-      y: 3.8,
-      width: 2,
-      height: 6.6,
-      rx: 1,
-      fill: spec.headwearAccent,
+      x: 17.3,
+      y: 8,
+      width: 1.4,
+      height: 5,
+      rx: 0.7,
+      fill: spec.accentDeep,
     },
     {
       id: 'hat-brim',
       kind: 'rect',
-      x: 5.6,
-      y: 10.2,
-      width: 24.8,
-      height: 3.4,
-      rx: 1.7,
-      fill: spec.headwearColor,
-    },
-    {
-      id: 'brim-shadow',
-      kind: 'rect',
-      x: HEAD_X,
-      y: 13.6,
-      width: HEAD_WIDTH,
-      height: 0.9,
-      fill: shade(spec.skin, -0.2),
+      x: 7.6,
+      y: 12.4,
+      width: 20.8,
+      height: 2.4,
+      rx: 1.2,
+      fill: spec.accent,
     },
   ]
 }
 
 function bodyShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
-  const shoulders = { x: 3.4, y: SHOULDER_TOP, width: 29.2, height: 16.2, rx: 7.6 }
-  const collar = `M13.6 ${SHOULDER_TOP}L18 ${COLLAR_BOTTOM}l4.4-${round(COLLAR_BOTTOM - SHOULDER_TOP)}z`
+  const shoulders = { x: 6.2, y: SHOULDER_TOP, width: 23.6, height: 12, rx: 5.6 }
 
   if (!spec.vest) {
-    return [
-      { id: 'shoulders', kind: 'rect', ...shoulders, fill: spec.shirt },
-      { id: 'collar', kind: 'path', d: collar, fill: shade(spec.shirt, -0.24) },
-    ]
+    return [{ id: 'shoulders', kind: 'rect', ...shoulders, fill: spec.ink }]
   }
 
+  // Hi-vis without chroma: the vest is the figure's own tone and the tape is
+  // the canvas knocked back out of it, so the banding reads as banding rather
+  // than as a second color competing with the trade on the hat. One chevron
+  // does the whole job: parallel braces plus a waist band turned into a grid
+  // at list size, and the band sat where the disc clips it anyway.
   return [
-    { id: 'shoulders', kind: 'rect', ...shoulders, fill: spec.shirt },
-    { id: 'vest', kind: 'rect', ...shoulders, fill: spec.vestColor },
+    { id: 'shoulders', kind: 'rect', ...shoulders, fill: spec.ink },
     {
-      id: 'brace-left',
-      kind: 'rect',
-      x: 8,
-      y: 26.2,
-      width: 2.4,
-      height: 10,
-      fill: spec.reflective,
+      id: 'chevron',
+      kind: 'path',
+      d: 'M11.8 27.2h2.6L18 30.6l3.6-3.4h2.6L18 33z',
+      fill: spec.background,
     },
-    {
-      id: 'brace-right',
-      kind: 'rect',
-      x: 25.6,
-      y: 26.2,
-      width: 2.4,
-      height: 10,
-      fill: spec.reflective,
-    },
-    { id: 'band', kind: 'rect', x: 5.2, y: 29, width: 25.6, height: 2.4, fill: spec.reflective },
-    { id: 'collar', kind: 'path', d: collar, fill: spec.shirt },
   ]
 }
 
@@ -669,7 +611,16 @@ function attributes(shape: Exclude<CrewAvatarShape, { kind: 'group' }>): string 
         .filter(Boolean)
         .join(' ')
     case 'circle':
-      return `cx="${shape.cx}" cy="${shape.cy}" r="${shape.r}" fill="${shape.fill}"`
+      return [
+        `cx="${shape.cx}"`,
+        `cy="${shape.cy}"`,
+        `r="${shape.r}"`,
+        shape.fill ? `fill="${shape.fill}"` : 'fill="none"',
+        shape.stroke ? `stroke="${shape.stroke}"` : '',
+        shape.strokeWidth ? `stroke-width="${shape.strokeWidth}"` : '',
+      ]
+        .filter(Boolean)
+        .join(' ')
     default:
       return [
         `d="${shape.d}"`,

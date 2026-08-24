@@ -1,6 +1,6 @@
 # Crew Avatar (`@cantera/crew-avatar`)
 
-Deterministic construction-crew SVG avatars — hard hats, hi-vis vests, safety glasses, ear defenders — generated from a name with zero dependencies, boring-avatars style.
+Deterministic construction-crew SVG avatars — monochrome disc, geometric figure, one accent for the trade on the hard hat — generated from a name with zero dependencies, boring-avatars style.
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/crew-avatar`
@@ -14,16 +14,16 @@ Files written into the consumer project:
 
 ## Install notes
 
-The same name always renders the same worker — a salted FNV-1a hash drives every trait, so avatars are SSR-safe and hydration-identical with no randomness at render time. The disc is self-contained: every backdrop clears 3:1 against both white and near-black surfaces, so it needs no theme awareness. Pass title for a meaningful image (role=img); omit it next to a visible name and the mark stays decorative (aria-hidden). crewAvatarSvg(name) returns standalone markup for non-React surfaces; colors overrides the backdrop palette.
+The same name always renders the same worker — a salted FNV-1a hash drives every trait, so avatars are SSR-safe and hydration-identical with no randomness at render time. The mark is monochrome by construction: a near-black or near-white canvas, the figure drawn in whichever end the canvas is not, and exactly one chroma — the hard hat, whose color codes the trade and is repeated as text on spec.role, so nothing depends on reading the color alone. The disc needs no theme awareness: it carries a hairline ring one step off its own canvas, so a light disc keeps its edge on a light page. Pass title for a meaningful image (role=img); omit it next to a visible name and the mark stays decorative (aria-hidden). crewAvatarSvg(name) returns standalone markup for non-React surfaces; colors overrides the canvas palette.
 
 ## Props
 
 - `name` (`string`) — The seed. Casing and surrounding whitespace are normalized, so the same person always gets the same worker.
 - `size` (`number`, default `32`) — Rendered square in pixels. Shapes are tuned to stay legible down to 24px.
-- `colors` (`string[]`) — Backdrop palette override. The defaults clear 3:1 against both white and near-black surfaces; overrides own that contrast responsibility.
+- `colors` (`string[]`) — Canvas palette override. The defaults are the two ends of the neutral scale, never the middle; the figure is drawn in whichever end the canvas is not, so an override of mid-tones owns its own contrast.
 - `title` (`string`) — Accessible name — renders role="img" with a <title>. Omit next to a visible name and the mark stays decorative (aria-hidden).
 
 ## Library exports
 
 - `crewAvatarSvg` (`(name, { size?, colors?, title? }) => string`) — Standalone <svg> markup for non-React surfaces — emails, canvases, OG images.
-- `crewAvatarSpec / crewAvatarShapes` (`functions`) — The resolved trait spec (headwear, vest, eyewear, palette) and the renderer-neutral shape tree both renderers share, for custom rendering.
+- `crewAvatarSpec / crewAvatarShapes` (`functions`) — The resolved trait spec — headwear, vest, eyewear, tones, and role, the trade the hat color codes for — plus the renderer-neutral shape tree both renderers share, for custom rendering.

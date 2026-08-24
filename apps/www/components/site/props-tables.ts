@@ -1313,7 +1313,7 @@ export const apiTables: Record<string, ApiTable[]> = {
           name: 'colors',
           type: 'string[]',
           description:
-            'Backdrop palette override. The defaults clear 3:1 against both white and near-black surfaces; overrides own that contrast responsibility.',
+            'Canvas palette override. The defaults are the two ends of the neutral scale, never the middle; the figure is drawn in whichever end the canvas is not, so an override of mid-tones owns its own contrast.',
         },
         {
           name: 'title',
@@ -1337,7 +1337,7 @@ export const apiTables: Record<string, ApiTable[]> = {
           name: 'crewAvatarSpec / crewAvatarShapes',
           type: 'functions',
           description:
-            'The resolved trait spec (headwear, vest, eyewear, palette) and the renderer-neutral shape tree both renderers share, for custom rendering.',
+            'The resolved trait spec — headwear, vest, eyewear, tones, and role, the trade the hat color codes for — plus the renderer-neutral shape tree both renderers share, for custom rendering.',
         },
       ],
     },

@@ -204,7 +204,7 @@ Item: https://canteraui.xyz/r/hub-sidebar.json
 
 Title: Crew Avatar
 Type: component
-Description: Deterministic construction-crew SVG avatars — hard hats, hi-vis vests, safety glasses, ear defenders — generated from a name with zero dependencies, boring-avatars style.
+Description: Deterministic construction-crew SVG avatars — monochrome disc, geometric figure, one accent for the trade on the hard hat — generated from a name with zero dependencies, boring-avatars style.
 Install: npx shadcn@latest add @cantera/crew-avatar
 Docs: https://canteraui.xyz/components/crew-avatar
 Item: https://canteraui.xyz/r/crew-avatar.json
