@@ -1361,9 +1361,15 @@ export const apiTables: Record<string, ApiTable[]> = {
         },
         {
           name: 'user',
-          type: '{ name: string; detail?: string; avatar?: ReactNode }',
+          type: '{ name: string; detail?: string; avatar?: ReactNode; actions?: HubSidebarUserAction[] }',
           description:
             'Identity row pinned at the very top — avatar (initials fallback) plus name and detail, with the collapse toggle inline on its right; the toggle stays reachable when the rail collapses to icon mode.',
+        },
+        {
+          name: 'user.actions',
+          type: '{ id, label, icon?, onSelect, destructive?, separatorBefore?, disabled? }[]',
+          description:
+            'Account menu items. With any, the identity row becomes the menu trigger (chevron affordance, menu anchored beside the rail — below it on mobile) and repeats the identity as the menu header; with none the row stays a plain label. separatorBefore opens a group; destructive carries the sign-out ink.',
         },
         {
           name: 'header / footer',

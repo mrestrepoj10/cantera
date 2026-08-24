@@ -343,14 +343,26 @@ function FinderTrigger({
     <button
       type="button"
       data-finder-trigger=""
+      // The placeholder is the visible label, but it is the first thing a
+      // collapsed rail hides — so the name is spelled out either way.
+      aria-label={placeholder}
       className={cn(
-        'flex h-8 w-full min-w-0 items-center gap-2 rounded-lg border border-input bg-input/30 px-2.5 text-muted-foreground text-sm outline-none transition-colors hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30',
-        'group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0',
+        'flex h-8 w-full min-w-0 items-center gap-2 rounded-lg border border-input bg-input/30 px-2.5 text-muted-foreground text-sm outline-none transition-[color,background-color,border-color,transform] duration-150 ease-out hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.98] dark:bg-input/30',
+        // In an icon rail it stops being a field and becomes one of the icon
+        // buttons around it: no border, no fill, the rail's own hover ink.
+        // Width stays fluid (w-full) so it narrows with the panel instead of
+        // snapping to a square on the first frame of the collapse.
+        'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:hover:bg-sidebar-accent group-data-[collapsible=icon]:hover:text-sidebar-accent-foreground',
         className,
       )}
       {...props}
     >
-      <SearchIcon aria-hidden="true" className="size-4 shrink-0 opacity-50" />
+      {/* Dimmed beside its placeholder, full strength when it is the whole
+          control — a 50%-opacity glyph alone reads as disabled. */}
+      <SearchIcon
+        aria-hidden="true"
+        className="size-4 shrink-0 opacity-50 group-data-[collapsible=icon]:opacity-100"
+      />
       <span className="flex-1 truncate text-left group-data-[collapsible=icon]:hidden">
         {placeholder}
       </span>

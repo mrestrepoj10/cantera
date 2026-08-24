@@ -108,22 +108,28 @@ function shade(hex: string, amount: number): string {
 }
 
 /**
- * Backdrop colors, mid-tone on purpose: the avatar is a self-contained disc, so
- * it has to hold its edge against a white page and a near-black one without
- * knowing which it landed on. Every entry sits in the 3:1-against-both band —
- * light enough to separate from a dark surface, dark enough to separate from a
- * light one — and each one keeps a light hard hat and a dark jacket readable
- * on top of it.
+ * Backdrop colors: a graphite-to-concrete ramp, near-neutral by design. The
+ * surrounding product is achromatic — color there means status and nothing
+ * else — so a wheel of saturated discs would read as eight meanings nobody
+ * assigned. Holding the backdrops in the theme's grey family leaves the hi-vis
+ * vest and the hard hat as the only chroma in the mark, which is also how a
+ * real site reads.
+ *
+ * Mid-tone on purpose: the avatar is a self-contained disc, so it has to hold
+ * its edge against a white page and a near-black one without knowing which it
+ * landed on. Every entry sits in the 3:1-against-both band (measured), and
+ * each one keeps a light hard hat and a dark jacket readable on top of it.
+ * People stay told apart by gear, skin, and hair — not by hue.
  */
 export const crewAvatarColors = [
-  '#3E6A88',
-  '#2E6B63',
-  '#4E6B34',
-  '#8A6B2E',
-  '#9A5236',
-  '#A04F66',
-  '#6D5FA0',
-  '#5E6E7E',
+  '#5E6469',
+  '#6B6A66',
+  '#67706F',
+  '#726D72',
+  '#6C737A',
+  '#7C7970',
+  '#82817D',
+  '#8A8A8A',
 ] as const
 
 /** Skin tones, light to deep. Face ink is derived per tone, not fixed black. */

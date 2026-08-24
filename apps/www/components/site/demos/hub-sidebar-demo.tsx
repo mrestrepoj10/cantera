@@ -1,5 +1,6 @@
 'use client'
 
+import { BadgeCheckIcon, BellIcon, BuildingIcon, LogOutIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { delay } from '@/components/site/demos/support'
@@ -7,7 +8,7 @@ import { CrewAvatar } from '@/components/ui/crew-avatar'
 import type { FinderEntry, FinderGroup } from '@/components/ui/finder'
 import { HubSidebar } from '@/components/ui/hub-sidebar'
 import type { HubTreeNode } from '@/components/ui/hub-tree'
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import type { BrowsePathSegment } from '@/lib/project-types'
 
 /**
@@ -161,6 +162,34 @@ export function HubSidebarDemo() {
           name: 'Maria Renteria',
           detail: 'Site engineer',
           avatar: <CrewAvatar name="Maria Renteria" size={32} />,
+          actions: [
+            {
+              id: 'account',
+              label: 'Account',
+              icon: <BadgeCheckIcon />,
+              onSelect: () => setMessage('Account settings.'),
+            },
+            {
+              id: 'hubs',
+              label: 'Switch hub',
+              icon: <BuildingIcon />,
+              onSelect: () => setMessage('Switch hub.'),
+            },
+            {
+              id: 'notifications',
+              label: 'Notifications',
+              icon: <BellIcon />,
+              onSelect: () => setMessage('Notification preferences.'),
+            },
+            {
+              id: 'sign-out',
+              label: 'Sign out',
+              icon: <LogOutIcon />,
+              separatorBefore: true,
+              destructive: true,
+              onSelect: () => setMessage('Signed out.'),
+            },
+          ],
         }}
         finder={{
           query,
@@ -186,7 +215,6 @@ export function HubSidebarDemo() {
         className="border-border border-r"
       />
       <SidebarInset className="flex min-w-0 flex-1 flex-col gap-2 p-4">
-        <SidebarTrigger className="self-start" aria-label="Toggle the hub sidebar" />
         <p className="font-medium text-sm">Workspace</p>
         <output className="text-muted-foreground text-xs">{message}</output>
       </SidebarInset>
