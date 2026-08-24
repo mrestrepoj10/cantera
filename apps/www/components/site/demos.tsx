@@ -27,6 +27,7 @@ const demos: Record<string, ComponentType> = {
   'status-tokens': dynamic(() =>
     import('./demos/status-tokens-demo').then((m) => m.StatusTokensDemo),
   ),
+  'acc-sign-in': dynamic(() => import('./demos/acc-sign-in-demo').then((m) => m.AccSignInDemo)),
   'connections-page': dynamic(() =>
     import('./demos/connections-page-demo').then((m) => m.ConnectionsPageDemo),
   ),

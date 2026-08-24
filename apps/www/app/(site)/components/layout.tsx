@@ -1,8 +1,8 @@
 import { ComponentSidebar } from '@/components/site/component-sidebar'
-import { componentRegistryGroups } from '@/components/site/registry'
+import { componentSidebarGroups } from '@/components/site/registry'
 
 export default function ComponentsLayout({ children }: { children: React.ReactNode }) {
-  const groups = componentRegistryGroups.map((group) => ({
+  const groups = componentSidebarGroups.map((group) => ({
     id: group.id,
     title: group.title,
     items: group.items.map(({ name, title }) => ({ name, title })),

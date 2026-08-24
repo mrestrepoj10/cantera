@@ -159,6 +159,18 @@ export const registryGroups: RegistryGroup[] = buildGroups()
 export const blockItems = registryItems.filter((item) => item.type === 'registry:block')
 export const componentRegistryGroups = registryGroups.filter((group) => group.id !== 'blocks')
 
+/**
+ * Docs nav ordering: the pieces you compose with first, then the wired blocks
+ * that compose them, then the shapes underneath. Blocks keep their own section
+ * here rather than being folded in with components — a page you mount and a
+ * component you pass props to are different purchases.
+ */
+export const componentSidebarGroups: RegistryGroup[] = [
+  ...registryGroups.filter((group) => group.id === 'components'),
+  ...registryGroups.filter((group) => group.id === 'blocks'),
+  ...registryGroups.filter((group) => group.id !== 'components' && group.id !== 'blocks'),
+]
+
 const examplesByName = new Map(
   allItems
     .filter((item) => item.type === 'registry:example')

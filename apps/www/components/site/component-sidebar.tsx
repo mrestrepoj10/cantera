@@ -14,6 +14,9 @@ interface SidebarGroup {
   items: SidebarItem[]
 }
 
+const linkClass =
+  'focus-ring flex min-h-8 items-center rounded-md px-2 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:font-medium aria-[current=page]:text-foreground'
+
 function CatalogLinks({ groups, pathname }: { groups: SidebarGroup[]; pathname: string }) {
   return (
     <div className="flex flex-col gap-7">
@@ -32,18 +35,25 @@ function CatalogLinks({ groups, pathname }: { groups: SidebarGroup[]; pathname: 
         >
           Installation
         </Link>
-        <Link
-          href="/blocks"
-          className="focus-ring flex min-h-8 items-center rounded-md px-2 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground"
-        >
-          Blocks
-        </Link>
       </div>
 
       {groups.map((group) => (
         <div key={group.id}>
           <p className="mb-2 font-medium text-muted-foreground text-xs">{group.title}</p>
           <ul>
+            {/* The gallery heads its own section instead of sitting under
+                Getting started, so "Blocks" means one thing in this nav. */}
+            {group.id === 'blocks' && (
+              <li>
+                <Link
+                  href="/blocks"
+                  aria-current={pathname === '/blocks' ? 'page' : undefined}
+                  className={linkClass}
+                >
+                  All blocks
+                </Link>
+              </li>
+            )}
             {group.items.map((item) => {
               const href = `/components/${item.name}`
               const isCurrent = pathname === href
@@ -53,7 +63,7 @@ function CatalogLinks({ groups, pathname }: { groups: SidebarGroup[]; pathname: 
                     href={href}
                     prefetch={true}
                     aria-current={isCurrent ? 'page' : undefined}
-                    className="focus-ring flex min-h-8 items-center rounded-md px-2 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:font-medium aria-[current=page]:text-foreground"
+                    className={linkClass}
                   >
                     {item.title}
                   </Link>
