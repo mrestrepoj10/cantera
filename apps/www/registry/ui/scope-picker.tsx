@@ -150,7 +150,7 @@ function ScopePicker({
         className={collapsibleScopes ? 'rounded-lg border border-border bg-muted/30' : undefined}
       >
         {collapsibleScopes && (
-          <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3 py-2 font-medium text-sm">
+          <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 font-medium text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring">
             {scopeListLabel}
             <span className="font-normal text-muted-foreground text-xs">
               {selected.size} scopes

@@ -96,6 +96,7 @@ export function ModelViewerPageDemo({
       account={{ name: 'Autodesk account' }}
       initialNodes={state.nodes}
       signOutHref={`/api/auth/signout?next=${encodeURIComponent(nextPath)}`}
+      embedded
     />
   )
 }

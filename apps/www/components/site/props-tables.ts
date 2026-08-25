@@ -1486,6 +1486,13 @@ export const apiTables: ApiTablesByItem = {
           description:
             'POST route used by the account control to revoke the grant and clear the session.',
         },
+        {
+          name: 'embedded',
+          type: 'boolean',
+          defaultValue: 'false',
+          description:
+            'Constrains the desktop sidebar and shell height to the nearest positioned preview container. Leave false for the full-page route.',
+        },
       ],
     },
     {

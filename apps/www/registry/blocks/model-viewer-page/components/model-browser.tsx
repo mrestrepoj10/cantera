@@ -25,6 +25,7 @@ export interface ModelBrowserProps {
   treeEndpoint?: string
   viewerTokenEndpoint?: string
   signOutHref?: string
+  embedded?: boolean
 }
 
 interface TreeRequest {
@@ -154,6 +155,7 @@ function ModelBrowser({
   treeEndpoint = '/api/models/tree',
   viewerTokenEndpoint = '/api/viewer-token',
   signOutHref = '/api/auth/signout?next=/sign-in',
+  embedded = false,
 }: ModelBrowserProps) {
   const [nodes, setNodes] = useState(initialNodes)
   const [expandedIds, setExpandedIds] = useState<string[]>([])
@@ -265,7 +267,13 @@ function ModelBrowser({
   }, [finderQuery, nodes])
 
   return (
-    <SidebarProvider className="h-svh min-h-[32rem] overflow-hidden bg-background">
+    <SidebarProvider
+      className={
+        embedded
+          ? 'relative h-[36rem] min-h-[36rem] overflow-hidden bg-background'
+          : 'h-svh min-h-[32rem] overflow-hidden bg-background'
+      }
+    >
       <HubSidebar
         finder={{
           query: finderQuery,
@@ -297,10 +305,18 @@ function ModelBrowser({
           ) : null
         }
         collapsible="icon"
-        className="border-border border-r"
+        className={
+          embedded ? 'border-border border-r md:absolute md:h-full' : 'border-border border-r'
+        }
       />
 
-      <SidebarInset className="h-svh min-h-0 min-w-0 overflow-hidden">
+      <SidebarInset
+        className={
+          embedded
+            ? 'h-full min-h-0 min-w-0 overflow-hidden'
+            : 'h-svh min-h-0 min-w-0 overflow-hidden'
+        }
+      >
         <header className="flex min-h-16 shrink-0 items-center gap-3 border-b bg-background px-2 sm:px-4">
           <SidebarTrigger className="size-11 shrink-0" />
           <span className="hidden size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground sm:grid">
