@@ -15,7 +15,7 @@ cantera is a shadcn registry for construction (AEC) UI — OAuth sign-in and con
 
 - `apps/www/registry/` is the only source of distributed code. The site reads it through tsconfig path fallbacks (`@/components/ui/*` resolves to `registry/ui/*` first; `@/lib/*` walks `registry/lib/*`, then block libs, then `lib/`), so docs and demos render exactly what consumers install. Never duplicate a registry file into `components/` or `lib/`; a block with its own `components/` folder adds a tsconfig path entry.
 - Distributed components are data-agnostic and style-agnostic: typed props in, callbacks out, no fetching, built only on the consumer's shadcn primitives.
-- Generated output is committed and byte-verified. `registry:build` derives the example items, `public/r/`, the llms.txt artifacts, and `skills/cantera/` from `registry.json` + `components/site/props-tables.ts`; every URL comes from `apps/www/lib/site.ts`. Generators stay deterministic — no timestamps, no unordered iteration — because `registry:verify` rebuilds into a scratch directory and compares byte for byte.
+- Generated output is committed and byte-verified. `registry:build` derives the example items, the server-only docs demo registry, `public/r/`, the llms.txt artifacts, and `skills/cantera/` from `registry.json` + `components/site/props-tables.ts`; every URL comes from `apps/www/lib/site.ts`. Generators stay deterministic — no timestamps, no unordered iteration — because `registry:verify` rebuilds into a scratch directory and compares byte for byte.
 - The design contracts are shipping gates, not preferences (see below).
 - aec-auth owns everything token-shaped (refresh, storage, rotation). cantera renders; a block ships thin route wiring at most.
 - React 19 / Next.js App Router only.
@@ -43,7 +43,7 @@ pnpm e2e             # light pass locally: viewer specs skipped
 
 - Most changes need lint + typecheck plus the one e2e spec that covers them (`pnpm exec playwright test <file> -g "<pattern>"`).
 - Do not run `pnpm --filter www build` or the full e2e matrix routinely — CI owns them (production server; viewer specs run when a PR touches viewer paths, and always on main).
-- New item checklist: `registry.json`, source under `registry/`, `components/site/props-tables.ts`, `components/site/registry.ts`, a demo module under `components/site/demos/` plus its `dynamic()` entry in `components/site/demos.tsx` (one module per demo — the map keeps docs pages from bundling the whole demo graph), then `registry:build` + `registry:verify`, all committed.
+- New item checklist: `registry.json`, source under `registry/`, `components/site/props-tables.ts`, `components/site/registry.ts`, and a conventionally named demo under `components/site/demos/` or `registry/examples/`; `registry:build` generates the server-only lazy lookup so docs pages keep one module per demo without a client-side import waterfall. Run `registry:build` + `registry:verify` and commit all output.
 
 ## Design contracts
 

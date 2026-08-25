@@ -176,14 +176,10 @@ async function ComponentPageContent({ params }: PageProps) {
         <section className="flex flex-col gap-3">
           <h2 className="font-medium text-sm">Preview</h2>
           <div className={getPreviewFrameClassName(item.name)}>
-            {/* Each demo is a separate next/dynamic chunk. Keep that client-side
-                suspension local so it cannot replace the prefetched docs page. */}
-            <Suspense fallback={null}>
-              <ComponentDemo
-                name={item.name}
-                viewerUrn={isViewerItem ? process.env.APS_VIEWER_DEMO_URN : undefined}
-              />
-            </Suspense>
+            <ComponentDemo
+              name={item.name}
+              viewerUrn={isViewerItem ? process.env.APS_VIEWER_DEMO_URN : undefined}
+            />
           </div>
         </section>
       )}

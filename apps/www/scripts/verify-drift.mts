@@ -73,11 +73,15 @@ async function compare({ label, committed, rebuilt }: Comparison): Promise<strin
 const scratch = await mkdtemp(path.join(tmpdir(), 'cantera-drift-'))
 
 try {
-  // Generated registry sources first: the example items and their page wrappers
-  // feed everything downstream, so stale ones would look like output drift.
+  // Generated registry sources first: example items feed the distributed
+  // artifacts, and the demo registry feeds the showcase's static docs pages.
   await script('build-examples.mts', ['--check']).catch((error) => {
     console.error(`${error.stdout ?? ''}${error.stderr ?? ''}`.trim())
     throw new Error('generated example items are stale')
+  })
+  await script('build-demo-registry.mts', ['--check']).catch((error) => {
+    console.error(`${error.stdout ?? ''}${error.stderr ?? ''}`.trim())
+    throw new Error('generated server demo registry is stale')
   })
 
   const shadcn = path.join(wwwRoot, 'node_modules/.bin/shadcn')
