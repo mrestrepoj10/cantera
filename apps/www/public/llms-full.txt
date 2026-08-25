@@ -235,7 +235,7 @@ Working example page: npx shadcn@latest add @cantera/scope-picker-demo
 Registry dependencies: badge, button, checkbox, input, label, @cantera/oauth-types, @cantera/status-tokens
 npm dependencies: lucide-react
 
-A controlled OAuth scope picker: checkbox list with descriptions, one-click presets, required scopes pinned on, and an escape hatch for scopes outside the catalog.
+A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog.
 
 Files written into the consumer project:
 
@@ -247,6 +247,9 @@ Files written into the consumer project:
 - `value` (`string[]`) — Selected scope ids. Controlled and taken literally: the picker never calls onChange on mount to backfill required scopes. Union them in where the value is used with withRequiredScopes.
 - `onChange` (`(value: string[]) => void`) — Called with the next selection on every change — catalog order first, custom scopes trailing in insertion order.
 - `presets` (`OAuthScopePreset[]`) — Named bundles rendered as toggle buttons above the list, each showing its label and description, with aria-pressed reflecting whether the current selection matches the bundle.
+- `presetsLabel` (`string`, default `'Presets'`) — Legend for the preset group. Use a task-oriented label such as “Access level” when presets represent user-facing permission tiers.
+- `collapsibleScopes` (`boolean`, default `false`) — Keeps presets prominent while placing the individual scope controls in a native disclosure. The summary reports the selected scope count.
+- `scopeListLabel` (`string`, default `'Advanced permissions'`) — Summary label for the scope disclosure when collapsibleScopes is enabled.
 - `allowCustomScopes` (`boolean`, default `false`) — Adds a field for scopes outside the catalog — granular resource scopes like data:read:<urn>, or anything the provider added since. Custom scopes render with a "custom" badge and round-trip through value / onChange like any other.
 - `customScopeLabel` (`string`, default `'Add a scope'`) — Label for the custom-scope field.
 - `disabled` (`boolean`, default `false`) — Disables the presets, every checkbox, and the custom-scope field.
@@ -902,16 +905,17 @@ Type: block
 Install: npx shadcn@latest add @cantera/model-viewer-page
 Docs: https://canteraui.xyz/components/model-viewer-page
 Item: https://canteraui.xyz/r/model-viewer-page.json
-Registry dependencies: button, @cantera/hub-tree, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
+Registry dependencies: button, card, sidebar, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/provider-sign-in-button, @cantera/scope-picker, @cantera/aps-oauth-preset, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
 npm dependencies: aec-auth, lucide-react
 
-A complete APS project-tree and Autodesk Viewer page: lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
+A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
 
 Files written into the consumer project:
 
 - app/models/page.tsx
 - app/models/loading.tsx
 - components/model-browser.tsx
+- components/scoped-autodesk-sign-in.tsx
 - app/api/models/tree/route.ts
 - app/api/viewer-token/route.ts
 
@@ -922,6 +926,7 @@ Files written into the consumer project:
 - `treeEndpoint` (`string`, default `'/api/models/tree'`) — Session-backed lazy Data Management route implementing the shared kind and id query contract.
 - `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Separate two-legged viewer token route, scoped to viewables:read. Three-legged Data Management tokens never cross into the viewer.
 - `signOutHref` (`string`, default `'/api/auth/signout?next=/sign-in'`) — POST route used by the account control to revoke the grant and clear the session.
+- `embedded` (`boolean`, default `false`) — Constrains the desktop sidebar and shell height to the nearest positioned preview container. Leave false for the full-page route.
 
 #### Tree route
 

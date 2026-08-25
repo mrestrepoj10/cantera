@@ -1,19 +1,16 @@
 'use client'
 
-import { LoaderCircleIcon, LogOutIcon } from 'lucide-react'
+import { Building2Icon, LoaderCircleIcon, LogOutIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { APSViewer } from '@/components/ui/aps-viewer/aps-viewer'
 import { Button } from '@/components/ui/button'
-import {
-  HubTree,
-  type HubTreeBranchNode,
-  type HubTreeNode,
-  type HubTreeVersionNode,
-} from '@/components/ui/hub-tree'
+import { HubSidebar } from '@/components/ui/hub-sidebar'
+import type { HubTreeBranchNode, HubTreeNode, HubTreeVersionNode } from '@/components/ui/hub-tree'
 import { ModelStatusCard } from '@/components/ui/model-status-card'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { UserAccountBadge } from '@/components/ui/user-account-badge'
 import type { OAuthAccount } from '@/lib/oauth-types'
-import type { Item, ItemVersion, ModelTranslation } from '@/lib/project-types'
+import type { BrowsePathSegment, Item, ItemVersion, ModelTranslation } from '@/lib/project-types'
 import { AEC_STARTER_EXTENSIONS } from '@/lib/viewer-extension-types'
 import type { GetAccessToken } from '@/lib/viewer-types'
 
@@ -28,6 +25,7 @@ export interface ModelBrowserProps {
   treeEndpoint?: string
   viewerTokenEndpoint?: string
   signOutHref?: string
+  embedded?: boolean
 }
 
 interface TreeRequest {
@@ -36,6 +34,12 @@ interface TreeRequest {
   projectId?: string
   folderId?: string
   itemId?: string
+}
+
+interface LoadedFinderEntry {
+  item: Item
+  version?: ItemVersion
+  path: BrowsePathSegment[]
 }
 
 function replaceChildren(
@@ -121,12 +125,37 @@ function paramsFor(request: TreeRequest): URLSearchParams {
   return params
 }
 
+function loadedFinderEntries(
+  nodes: HubTreeNode[],
+  path: BrowsePathSegment[] = [],
+  parentItem?: Item,
+): LoadedFinderEntry[] {
+  const entries: LoadedFinderEntry[] = []
+  for (const node of nodes) {
+    if (node.type === 'version') {
+      if (parentItem) entries.push({ item: parentItem, version: node.value, path })
+      continue
+    }
+    if (node.type === 'item') {
+      entries.push({ item: node.value, path })
+      if (node.children?.length) {
+        entries.push(...loadedFinderEntries(node.children, path, node.value))
+      }
+      continue
+    }
+    const nextPath = [...path, { id: node.value.id, name: node.name, type: node.type }]
+    if (node.children?.length) entries.push(...loadedFinderEntries(node.children, nextPath))
+  }
+  return entries
+}
+
 function ModelBrowser({
   account,
   initialNodes = [],
   treeEndpoint = '/api/models/tree',
   viewerTokenEndpoint = '/api/viewer-token',
   signOutHref = '/api/auth/signout?next=/sign-in',
+  embedded = false,
 }: ModelBrowserProps) {
   const [nodes, setNodes] = useState(initialNodes)
   const [expandedIds, setExpandedIds] = useState<string[]>([])
@@ -136,6 +165,7 @@ function ModelBrowser({
   const [treeError, setTreeError] = useState<string>()
   const [selection, setSelection] = useState<{ item: Item; version?: ItemVersion }>()
   const [viewerError, setViewerError] = useState<string>()
+  const [finderQuery, setFinderQuery] = useState('')
 
   useEffect(() => {
     if (initialNodes.length > 0) return
@@ -225,88 +255,123 @@ function ModelBrowser({
       undefined)
     : undefined
 
+  const finderEntries = useMemo(() => {
+    const query = finderQuery.trim().toLocaleLowerCase()
+    if (!query) return []
+    return loadedFinderEntries(nodes).filter((entry) => {
+      const location = entry.path.map((segment) => segment.name).join(' ')
+      return `${entry.item.name} ${entry.version?.displayName ?? ''} ${location}`
+        .toLocaleLowerCase()
+        .includes(query)
+    })
+  }, [finderQuery, nodes])
+
   return (
-    <main className="grid h-svh min-h-[32rem] w-full grid-cols-[20rem_minmax(0,1fr)] overflow-hidden bg-background">
-      <aside className="z-10 flex min-w-0 flex-col border-r bg-background shadow-sm">
-        <header className="flex min-h-16 items-center border-b px-4">
-          <div className="min-w-0">
-            <h1 className="truncate font-heading font-medium text-lg">Models</h1>
-            <p className="truncate text-muted-foreground text-xs">Autodesk project files</p>
-          </div>
-        </header>
-        <div className="min-h-0 flex-1 overflow-y-auto p-2">
-          {rootPending ? (
-            <output className="flex min-h-11 items-center gap-2 px-3 text-muted-foreground text-xs">
-              <span aria-hidden className="grid size-3.5 animate-spin place-items-center">
-                <LoaderCircleIcon className="size-3.5" />
-              </span>
-              Loading hubs
+    <SidebarProvider
+      className={
+        embedded
+          ? 'relative h-[36rem] min-h-[36rem] overflow-hidden bg-background'
+          : 'h-svh min-h-[32rem] overflow-hidden bg-background'
+      }
+    >
+      <HubSidebar
+        finder={{
+          query: finderQuery,
+          onQueryChange: setFinderQuery,
+          groups: [{ id: 'loaded', label: 'Loaded project files', entries: finderEntries }],
+          onItemOpen: ({ item, version }) => openItem(item, version),
+          placeholder: 'Find a loaded file',
+          emptyLabel: 'No loaded files match.',
+        }}
+        tree={{
+          nodes,
+          expandedIds,
+          selectedId,
+          pendingId,
+          onExpand: expand,
+          onCollapse: (node) => setExpandedIds((current) => current.filter((id) => id !== node.id)),
+          onItemOpen: openItem,
+        }}
+        footer={
+          rootPending ? (
+            <output className="flex min-h-11 items-center gap-2 px-2 text-muted-foreground text-xs">
+              <LoaderCircleIcon aria-hidden className="size-3.5 animate-spin" />
+              <span className="group-data-[collapsible=icon]:hidden">Loading hubs</span>
             </output>
-          ) : (
-            <HubTree
-              nodes={nodes}
-              expandedIds={expandedIds}
-              selectedId={selectedId}
-              pendingId={pendingId}
-              onExpand={expand}
-              onCollapse={(node) =>
-                setExpandedIds((current) => current.filter((id) => id !== node.id))
-              }
-              onItemOpen={openItem}
-            />
-          )}
-          {treeError && (
-            <p role="alert" className="px-3 py-3 text-status-danger text-xs">
+          ) : treeError ? (
+            <p role="alert" className="px-2 py-2 text-status-danger text-xs">
               {treeError}
             </p>
-          )}
-        </div>
-      </aside>
+          ) : null
+        }
+        collapsible="icon"
+        className={
+          embedded ? 'border-border border-r md:absolute md:h-full' : 'border-border border-r'
+        }
+      />
 
-      <section className="relative min-w-0 bg-muted" aria-label="Model viewer">
-        {urn && !viewerError ? (
-          <APSViewer
-            urn={urn}
-            getAccessToken={getAccessToken}
-            extensions={AEC_STARTER_EXTENSIONS}
-            profile="aec"
-            toolbar="native"
-            radius={0}
-            className="size-full"
-            onViewerReady={(viewer) => viewer.prefs.set('openPropertiesOnSelect', true)}
-            onError={(error) => setViewerError(error.message)}
-          />
-        ) : (
-          <div className="absolute inset-0 grid place-items-center p-6">
-            {translation ? (
-              <ModelStatusCard translation={translation} className="max-w-lg" />
-            ) : (
-              <div className="max-w-sm text-center">
-                <h2 className="font-heading font-medium text-xl">Choose a model</h2>
-                <p className="mt-2 text-muted-foreground text-sm">
-                  Expand a hub, project, and folder, then open an item to load its tip version.
-                </p>
-              </div>
-            )}
+      <SidebarInset
+        className={
+          embedded
+            ? 'h-full min-h-0 min-w-0 overflow-hidden'
+            : 'h-svh min-h-0 min-w-0 overflow-hidden'
+        }
+      >
+        <header className="flex min-h-16 shrink-0 items-center gap-3 border-b bg-background px-2 sm:px-4">
+          <SidebarTrigger className="size-11 shrink-0" />
+          <span className="hidden size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground sm:grid">
+            <Building2Icon aria-hidden className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate font-heading font-medium text-sm sm:text-base">Model viewer</h1>
+            <p className="truncate text-muted-foreground text-xs">
+              {selection?.item.name ?? 'Autodesk project models'}
+            </p>
           </div>
-        )}
-
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-xl border bg-background/95 p-2 shadow-sm backdrop-blur">
-          <UserAccountBadge account={account} size="sm" />
-          <form action={signOutHref} method="post">
+          <UserAccountBadge account={account} size="sm" className="hidden max-w-52 sm:flex" />
+          <form action={signOutHref} method="post" className="shrink-0">
             <Button
               type="submit"
               variant="ghost"
-              className="min-h-11 gap-1.5 px-3"
+              className="size-11 gap-1.5 px-0 sm:w-auto sm:px-3"
               aria-label="Sign out of Autodesk"
             >
               <LogOutIcon aria-hidden />
-              Sign out
+              <span className="hidden sm:inline">Sign out</span>
             </Button>
           </form>
-        </div>
-      </section>
-    </main>
+        </header>
+
+        <section className="relative min-h-0 min-w-0 flex-1 bg-muted" aria-label="Model viewer">
+          {urn && !viewerError ? (
+            <APSViewer
+              urn={urn}
+              getAccessToken={getAccessToken}
+              extensions={AEC_STARTER_EXTENSIONS}
+              profile="aec"
+              toolbar="native"
+              radius={0}
+              className="size-full"
+              onViewerReady={(viewer) => viewer.prefs.set('openPropertiesOnSelect', true)}
+              onError={(error) => setViewerError(error.message)}
+            />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center p-6">
+              {translation ? (
+                <ModelStatusCard translation={translation} className="max-w-lg" />
+              ) : (
+                <div className="max-w-sm text-center">
+                  <h2 className="font-heading font-medium text-xl">Choose a model</h2>
+                  <p className="mt-2 text-muted-foreground text-sm">
+                    Expand a hub, project, and folder, then open an item to load its tip version.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
 

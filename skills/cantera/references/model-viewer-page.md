@@ -1,12 +1,12 @@
 # Model Viewer Page (`@cantera/model-viewer-page`)
 
-A complete APS project-tree and Autodesk Viewer page: lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
+A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
 
 - Type: block
 - Install: `npx shadcn@latest add @cantera/model-viewer-page`
 - Docs: https://canteraui.xyz/components/model-viewer-page
 - Registry item: https://canteraui.xyz/r/model-viewer-page.json
-- Registry dependencies: button, @cantera/hub-tree, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
+- Registry dependencies: button, card, sidebar, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/provider-sign-in-button, @cantera/scope-picker, @cantera/aps-oauth-preset, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
@@ -14,6 +14,7 @@ Files written into the consumer project:
 - `app/models/page.tsx`
 - `app/models/loading.tsx`
 - `components/model-browser.tsx`
+- `components/scoped-autodesk-sign-in.tsx`
 - `app/api/models/tree/route.ts`
 - `app/api/viewer-token/route.ts`
 
@@ -44,6 +45,7 @@ The cantera showcase emulator supplies the project tree but no SVF geometry. Its
 - `treeEndpoint` (`string`, default `'/api/models/tree'`) — Session-backed lazy Data Management route implementing the shared kind and id query contract.
 - `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Separate two-legged viewer token route, scoped to viewables:read. Three-legged Data Management tokens never cross into the viewer.
 - `signOutHref` (`string`, default `'/api/auth/signout?next=/sign-in'`) — POST route used by the account control to revoke the grant and clear the session.
+- `embedded` (`boolean`, default `false`) — Constrains the desktop sidebar and shell height to the nearest positioned preview container. Leave false for the full-page route.
 
 ## Tree route
 

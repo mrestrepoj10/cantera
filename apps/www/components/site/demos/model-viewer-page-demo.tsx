@@ -4,9 +4,8 @@ import { LoaderCircleIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { ModelBrowser } from '@/components/model-browser'
+import { ScopedAutodeskSignIn } from '@/components/scoped-autodesk-sign-in'
 import type { HubTreeNode } from '@/components/ui/hub-tree'
-import { SignInCard } from '@/components/ui/sign-in-card'
-import { apsProvider } from '@/lib/aps-oauth-preset'
 
 type DemoState =
   | { status: 'loading' }
@@ -72,9 +71,8 @@ export function ModelViewerPageDemo({
   if (state.status === 'signed-out') {
     return (
       <div className="flex min-h-[36rem] w-full items-center justify-center p-6">
-        <SignInCard
-          providers={[apsProvider]}
-          hrefTemplate={`/api/auth/{provider}?next=${encodeURIComponent(nextPath)}`}
+        <ScopedAutodeskSignIn
+          nextPath={nextPath}
           title="Browse models"
           titleAs={titleAs}
           description="Connect the credential-free Autodesk emulator to browse the live project tree."
@@ -98,6 +96,7 @@ export function ModelViewerPageDemo({
       account={{ name: 'Autodesk account' }}
       initialNodes={state.nodes}
       signOutHref={`/api/auth/signout?next=${encodeURIComponent(nextPath)}`}
+      embedded
     />
   )
 }

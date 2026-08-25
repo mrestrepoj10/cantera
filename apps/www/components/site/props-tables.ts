@@ -220,6 +220,26 @@ export const apiTables: ApiTablesByItem = {
             'Named bundles rendered as toggle buttons above the list, each showing its label and description, with aria-pressed reflecting whether the current selection matches the bundle.',
         },
         {
+          name: 'presetsLabel',
+          type: 'string',
+          defaultValue: "'Presets'",
+          description:
+            'Legend for the preset group. Use a task-oriented label such as “Access level” when presets represent user-facing permission tiers.',
+        },
+        {
+          name: 'collapsibleScopes',
+          type: 'boolean',
+          defaultValue: 'false',
+          description:
+            'Keeps presets prominent while placing the individual scope controls in a native disclosure. The summary reports the selected scope count.',
+        },
+        {
+          name: 'scopeListLabel',
+          type: 'string',
+          defaultValue: "'Advanced permissions'",
+          description: 'Summary label for the scope disclosure when collapsibleScopes is enabled.',
+        },
+        {
           name: 'allowCustomScopes',
           type: 'boolean',
           defaultValue: 'false',
@@ -1465,6 +1485,13 @@ export const apiTables: ApiTablesByItem = {
           defaultValue: "'/api/auth/signout?next=/sign-in'",
           description:
             'POST route used by the account control to revoke the grant and clear the session.',
+        },
+        {
+          name: 'embedded',
+          type: 'boolean',
+          defaultValue: 'false',
+          description:
+            'Constrains the desktop sidebar and shell height to the nearest positioned preview container. Leave false for the full-page route.',
         },
       ],
     },

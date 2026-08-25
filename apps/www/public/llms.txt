@@ -18,7 +18,7 @@ Data-agnostic UI: typed props in, callbacks out, no fetching.
 
 - [Provider Sign-In Button](https://canteraui.xyz/components/provider-sign-in-button): A sign-in button and link for a single OAuth provider: brand icon, label, loading state. ProviderSignInButton handles a click; ProviderSignInLink navigates to an auth route.
 - [Sign-In Card](https://canteraui.xyz/components/sign-in-card): A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
-- [Scope Picker](https://canteraui.xyz/components/scope-picker): A controlled OAuth scope picker: checkbox list with descriptions, one-click presets, required scopes pinned on, and an escape hatch for scopes outside the catalog.
+- [Scope Picker](https://canteraui.xyz/components/scope-picker): A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog.
 - [User Account Badge](https://canteraui.xyz/components/user-account-badge): An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.
 - [Token Status](https://canteraui.xyz/components/token-status): Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.
 - [Connection Card](https://canteraui.xyz/components/connection-card): A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions.
@@ -41,7 +41,7 @@ Wired end-to-end flows — pages, route handlers, and the auth glue between them
 
 - [ACC Sign-In](https://canteraui.xyz/components/acc-sign-in): Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.
 - [Connections Page](https://canteraui.xyz/components/connections-page): The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
-- [Model Viewer Page](https://canteraui.xyz/components/model-viewer-page): A complete APS project-tree and Autodesk Viewer page: lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
+- [Model Viewer Page](https://canteraui.xyz/components/model-viewer-page): A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
 
 ## Libraries
 
