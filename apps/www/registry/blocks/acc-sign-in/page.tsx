@@ -1,5 +1,6 @@
 import { TokenError } from 'aec-auth'
 import { cookies, headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 
 import { AccConnectionPanel } from '@/components/acc-connection-panel'
 import { ScopedAutodeskSignIn } from '@/components/scoped-autodesk-sign-in'
@@ -95,6 +96,13 @@ export default async function SignInPage({
   // guessing which destination was meant.
   const { next } = await searchParams
   const nextPath = safeNext(typeof next === 'string' ? next : undefined, '/sign-in')
+  if (nextPath !== '/sign-in') {
+    // ?next= means the same thing signed in or out: an already-signed-in
+    // visitor continues to the destination instead of stalling on the panel.
+    const cookieStore = await cookies()
+    const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)
+    if (session) redirect(nextPath)
+  }
   return (
     <main className="flex flex-1 items-center justify-center p-6">
       <AccSignIn nextPath={nextPath} />
