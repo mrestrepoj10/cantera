@@ -131,7 +131,7 @@
       "type": "registry:component",
       "title": "Scope Picker",
       "author": "MR <contact@bimframe.co>",
-      "description": "A controlled OAuth scope picker: checkbox list with descriptions, one-click presets, required scopes pinned on, and an escape hatch for scopes outside the catalog.",
+      "description": "A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog.",
       "categories": ["authentication", "permissions", "forms"],
       "dependencies": ["lucide-react"],
       "registryDependencies": [
@@ -635,12 +635,18 @@
       "type": "registry:block",
       "title": "Model Viewer Page",
       "author": "MR <contact@bimframe.co>",
-      "description": "A complete APS project-tree and Autodesk Viewer page: lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.",
+      "description": "A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.",
       "categories": ["projects", "files", "viewer", "autodesk"],
       "dependencies": ["aec-auth", "lucide-react"],
       "registryDependencies": [
         "button",
+        "card",
+        "sidebar",
+        "@cantera/hub-sidebar",
         "@cantera/hub-tree",
+        "@cantera/provider-sign-in-button",
+        "@cantera/scope-picker",
+        "@cantera/aps-oauth-preset",
         "@cantera/aps-viewer",
         "@cantera/viewer-extension-types",
         "@cantera/aps-data-preset",
@@ -665,6 +671,11 @@
           "path": "registry/blocks/model-viewer-page/components/model-browser.tsx",
           "type": "registry:component",
           "target": "components/model-browser.tsx"
+        },
+        {
+          "path": "registry/blocks/model-viewer-page/components/scoped-autodesk-sign-in.tsx",
+          "type": "registry:component",
+          "target": "components/scoped-autodesk-sign-in.tsx"
         },
         {
           "path": "registry/blocks/model-viewer-page/api/tree-route.ts",

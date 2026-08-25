@@ -1,9 +1,8 @@
 import { cookies } from 'next/headers'
 
 import { ModelBrowser } from '@/components/model-browser'
-import { SignInCard } from '@/components/ui/sign-in-card'
+import { ScopedAutodeskSignIn } from '@/components/scoped-autodesk-sign-in'
 import { openSession, SESSION_COOKIE } from '@/lib/acc-auth'
-import { apsProvider } from '@/lib/aps-oauth-preset'
 
 export default async function ModelViewerPage() {
   const cookieStore = await cookies()
@@ -12,10 +11,9 @@ export default async function ModelViewerPage() {
   if (!session) {
     return (
       <main className="flex min-h-svh items-center justify-center p-6">
-        <SignInCard
-          providers={[apsProvider]}
-          hrefTemplate="/api/auth/{provider}?next=/models"
-          title="Sign in"
+        <ScopedAutodeskSignIn
+          nextPath="/models"
+          title="Browse models"
           description="Connect your Autodesk account to browse project models."
         />
       </main>
