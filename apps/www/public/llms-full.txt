@@ -348,7 +348,7 @@ Type: block
 Install: npx shadcn@latest add @cantera/acc-sign-in
 Docs: https://canteraui.vercel.app/components/acc-sign-in
 Item: https://canteraui.vercel.app/r/acc-sign-in.json
-Registry dependencies: @cantera/sign-in-card, @cantera/connection-card, @cantera/aps-oauth-preset, @cantera/oauth-types
+Registry dependencies: card, @cantera/provider-sign-in-button, @cantera/scope-picker, @cantera/connection-card, @cantera/aps-oauth-preset, @cantera/oauth-types
 npm dependencies: aec-auth, lucide-react
 
 Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.
@@ -358,6 +358,7 @@ Files written into the consumer project:
 - app/sign-in/page.tsx
 - app/sign-in/loading.tsx
 - components/acc-connection-panel.tsx
+- components/scoped-autodesk-sign-in.tsx
 - lib/acc-auth.ts
 - app/api/auth/[provider]/route.ts
 - app/api/auth/callback/[provider]/route.ts
@@ -905,7 +906,7 @@ Type: block
 Install: npx shadcn@latest add @cantera/model-viewer-page
 Docs: https://canteraui.vercel.app/components/model-viewer-page
 Item: https://canteraui.vercel.app/r/model-viewer-page.json
-Registry dependencies: button, card, sidebar, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/provider-sign-in-button, @cantera/scope-picker, @cantera/aps-oauth-preset, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
+Registry dependencies: button, card, sidebar, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
 npm dependencies: aec-auth, lucide-react
 
 A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
@@ -915,7 +916,6 @@ Files written into the consumer project:
 - app/models/page.tsx
 - app/models/loading.tsx
 - components/model-browser.tsx
-- components/scoped-autodesk-sign-in.tsx
 - app/api/models/tree/route.ts
 - app/api/viewer-token/route.ts
 

@@ -45,6 +45,8 @@ interface ScopedAutodeskSignInProps {
   title?: ReactNode
   titleAs?: 'h1' | 'h2' | 'h3'
   description?: ReactNode
+  /** Where the sign-in starts. Demos point it at an emulator flow. */
+  startPath?: string
 }
 
 function ScopedAutodeskSignIn({
@@ -52,11 +54,12 @@ function ScopedAutodeskSignIn({
   title = 'Connect Autodesk',
   titleAs: Title = 'h1',
   description = 'Choose the access this workspace should request.',
+  startPath = `/api/auth/${apsProvider.id}`,
 }: ScopedAutodeskSignInProps) {
   const [value, setValue] = useState<string[]>(modelViewerPresets[0]?.scopes ?? [])
   const selectedScopes = withRequiredScopes(modelViewerScopes, value)
   const params = new URLSearchParams({ next: nextPath, scopes: selectedScopes.join(' ') })
-  const signInHref = `/api/auth/${apsProvider.id}?${params}`
+  const signInHref = `${startPath}?${params}`
 
   return (
     <Card data-slot="scoped-autodesk-sign-in" className="w-full max-w-2xl">
@@ -80,7 +83,7 @@ function ScopedAutodeskSignIn({
           Continue with Autodesk
         </ProviderSignInLink>
         <p className="text-center text-muted-foreground text-xs">
-          Autodesk will show these permissions again before granting access.
+          Autodesk confirms new permissions the first time you grant them.
         </p>
       </CardContent>
     </Card>

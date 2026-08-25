@@ -2,8 +2,14 @@ import { TokenError } from 'aec-auth'
 import { cookies, headers } from 'next/headers'
 
 import { AccConnectionPanel } from '@/components/acc-connection-panel'
-import { SignInCard } from '@/components/ui/sign-in-card'
-import { APS_PROVIDER_ID, getSessionToken, openSession, SESSION_COOKIE } from '@/lib/acc-auth'
+import { ScopedAutodeskSignIn } from '@/components/scoped-autodesk-sign-in'
+import {
+  APS_PROVIDER_ID,
+  getSessionToken,
+  openSession,
+  SESSION_COOKIE,
+  safeNext,
+} from '@/lib/acc-auth'
 import { apsProvider } from '@/lib/aps-oauth-preset'
 import type { OAuthConnection } from '@/lib/oauth-types'
 
@@ -31,12 +37,11 @@ export async function AccSignIn({
 
   if (!session) {
     return (
-      <SignInCard
-        providers={[apsProvider]}
-        hrefTemplate={`/api/auth/{provider}?next=${encodeURIComponent(nextPath)}`}
+      <ScopedAutodeskSignIn
+        nextPath={nextPath}
         title="Sign in"
         titleAs={headingLevel}
-        description="Connect your Autodesk account to continue."
+        description="Choose the access to grant, then continue with Autodesk."
       />
     )
   }
@@ -81,10 +86,18 @@ export async function AccSignIn({
   )
 }
 
-export default function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>
+}) {
+  // A repeated ?next= arrives as an array; treat it as absent rather than
+  // guessing which destination was meant.
+  const { next } = await searchParams
+  const nextPath = safeNext(typeof next === 'string' ? next : undefined, '/sign-in')
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <AccSignIn />
+      <AccSignIn nextPath={nextPath} />
     </main>
   )
 }

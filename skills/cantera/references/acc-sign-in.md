@@ -6,7 +6,7 @@ Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code e
 - Install: `npx shadcn@latest add @cantera/acc-sign-in`
 - Docs: https://canteraui.vercel.app/components/acc-sign-in
 - Registry item: https://canteraui.vercel.app/r/acc-sign-in.json
-- Registry dependencies: @cantera/sign-in-card, @cantera/connection-card, @cantera/aps-oauth-preset, @cantera/oauth-types
+- Registry dependencies: card, @cantera/provider-sign-in-button, @cantera/scope-picker, @cantera/connection-card, @cantera/aps-oauth-preset, @cantera/oauth-types
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
@@ -14,6 +14,7 @@ Files written into the consumer project:
 - `app/sign-in/page.tsx`
 - `app/sign-in/loading.tsx`
 - `components/acc-connection-panel.tsx`
+- `components/scoped-autodesk-sign-in.tsx`
 - `lib/acc-auth.ts`
 - `app/api/auth/[provider]/route.ts`
 - `app/api/auth/callback/[provider]/route.ts`
@@ -28,7 +29,7 @@ Environment variables added to `.env.local`:
 
 ## Install notes
 
-Installed: app/sign-in/page.tsx with its loading skeleton, the /api/auth/* route handlers, and lib/acc-auth.ts (aec-auth vault wiring).
+Installed: app/sign-in/page.tsx with its loading skeleton, the /api/auth/* route handlers, and lib/acc-auth.ts (aec-auth vault wiring). Signed out, the page renders ScopedAutodeskSignIn — an access-level picker over the APS scope catalog — and forwards the selection to the consent redirect; /sign-in?next=/your-page returns there after the callback.
 
 Environment (added to .env.local as empty keys — fill them in):
 - APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.

@@ -1,7 +1,8 @@
 import { cookies } from 'next/headers'
 
 import { ModelBrowser } from '@/components/model-browser'
-import { ScopedAutodeskSignIn } from '@/components/scoped-autodesk-sign-in'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { openSession, SESSION_COOKIE } from '@/lib/acc-auth'
 
 export default async function ModelViewerPage() {
@@ -11,11 +12,28 @@ export default async function ModelViewerPage() {
   if (!session) {
     return (
       <main className="flex min-h-svh items-center justify-center p-6">
-        <ScopedAutodeskSignIn
-          nextPath="/models"
-          title="Browse models"
-          description="Connect your Autodesk account to browse project models."
-        />
+        <Card className="w-full max-w-sm text-center">
+          <CardHeader>
+            <CardTitle className="text-2xl">
+              <h1>Browse models</h1>
+            </CardTitle>
+            <CardDescription>
+              Sign in with Autodesk to browse project models. You choose what access to grant on the
+              sign-in page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              nativeButton={false}
+              // A navigation, so keep the link role the anchor earns from href.
+              role="link"
+              render={<a href="/sign-in?next=/models" />}
+              className="min-h-11 w-full"
+            >
+              Sign in with Autodesk
+            </Button>
+          </CardContent>
+        </Card>
       </main>
     )
   }
