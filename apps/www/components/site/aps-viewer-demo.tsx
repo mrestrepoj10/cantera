@@ -633,7 +633,8 @@ function readSharedSettings(): Partial<ViewerDemoSettings> | null {
   }
   const extensionIds = (extensions ?? '').split(',').filter((id) => DEMO_EXTENSION_IDS.includes(id))
   const parsedRadius = parseClampedPixels(radius, 0, 32)
-  const parsedScale = scale === null ? null : parseScaleParam(scale)
+  // Empty string too: `?viewerScale=` must keep the default, not parse to 0.
+  const parsedScale = scale ? parseScaleParam(scale) : null
   const settings: Partial<ViewerDemoSettings> = {}
   if (position === 'bottom' || position === 'top' || position === 'left' || position === 'right') {
     settings.position = position
