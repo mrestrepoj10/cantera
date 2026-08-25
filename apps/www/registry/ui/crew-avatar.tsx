@@ -5,7 +5,7 @@ import {
   type CrewAvatarShape,
   crewAvatarShapes,
   crewAvatarSpec,
-} from '@/lib/crew-avatar'
+} from '@/lib/crew-avatar-spec'
 
 export interface CrewAvatarProps
   extends Omit<React.ComponentPropsWithoutRef<'svg'>, 'children' | 'height' | 'title' | 'width'> {

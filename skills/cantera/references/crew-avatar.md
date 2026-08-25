@@ -9,7 +9,7 @@ Deterministic construction-crew SVG avatars — monochrome disc, geometric figur
 
 Files written into the consumer project:
 
-- `lib/crew-avatar.ts`
+- `lib/crew-avatar-spec.ts`
 - `crew-avatar.tsx`
 
 ## Install notes
