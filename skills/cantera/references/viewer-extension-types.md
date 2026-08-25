@@ -4,8 +4,8 @@ A typed catalog of the Autodesk Viewer's public extensions: every loadExtension 
 
 - Type: lib
 - Install: `npx shadcn@latest add @cantera/viewer-extension-types`
-- Docs: https://canteraui.xyz/components/viewer-extension-types
-- Registry item: https://canteraui.xyz/r/viewer-extension-types.json
+- Docs: https://canteraui.vercel.app/components/viewer-extension-types
+- Registry item: https://canteraui.vercel.app/r/viewer-extension-types.json
 
 Files written into the consumer project:
 

@@ -4,8 +4,8 @@ Typed surface for the Autodesk Viewer global runtime — Autodesk's official @ty
 
 - Type: lib
 - Install: `npx shadcn@latest add @cantera/viewer-types`
-- Docs: https://canteraui.xyz/components/viewer-types
-- Registry item: https://canteraui.xyz/r/viewer-types.json
+- Docs: https://canteraui.vercel.app/components/viewer-types
+- Registry item: https://canteraui.vercel.app/r/viewer-types.json
 
 Files written into the consumer project:
 

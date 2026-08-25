@@ -4,8 +4,8 @@ Status line for an OAuth grant: connection state, token expiry, and held scopes.
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/token-status`
-- Docs: https://canteraui.xyz/components/token-status
-- Registry item: https://canteraui.xyz/r/token-status.json
+- Docs: https://canteraui.vercel.app/components/token-status
+- Registry item: https://canteraui.vercel.app/r/token-status.json
 - Registry dependencies: badge, @cantera/status-tokens, @cantera/oauth-types
 - Working example page: `npx shadcn@latest add @cantera/token-status-demo` — installs app/examples/token-status/page.tsx
 

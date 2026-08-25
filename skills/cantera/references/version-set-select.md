@@ -4,8 +4,8 @@ Which issuance of the construction sheets to read from, every option carrying it
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/version-set-select`
-- Docs: https://canteraui.xyz/components/version-set-select
-- Registry item: https://canteraui.xyz/r/version-set-select.json
+- Docs: https://canteraui.vercel.app/components/version-set-select
+- Registry item: https://canteraui.vercel.app/r/version-set-select.json
 - Registry dependencies: select, @cantera/project-types
 - npm dependencies: lucide-react
 - Working example page: `npx shadcn@latest add @cantera/version-set-select-demo` — installs app/examples/version-set-select/page.tsx

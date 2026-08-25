@@ -4,8 +4,8 @@ Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code e
 
 - Type: block
 - Install: `npx shadcn@latest add @cantera/acc-sign-in`
-- Docs: https://canteraui.xyz/components/acc-sign-in
-- Registry item: https://canteraui.xyz/r/acc-sign-in.json
+- Docs: https://canteraui.vercel.app/components/acc-sign-in
+- Registry item: https://canteraui.vercel.app/r/acc-sign-in.json
 - Registry dependencies: @cantera/sign-in-card, @cantera/connection-card, @cantera/aps-oauth-preset, @cantera/oauth-types
 - npm dependencies: aec-auth, lucide-react
 

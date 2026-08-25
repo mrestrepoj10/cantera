@@ -4,8 +4,8 @@ Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs
 
 - Type: lib
 - Install: `npx shadcn@latest add @cantera/aps-data-preset`
-- Docs: https://canteraui.xyz/components/aps-data-preset
-- Registry item: https://canteraui.xyz/r/aps-data-preset.json
+- Docs: https://canteraui.vercel.app/components/aps-data-preset
+- Registry item: https://canteraui.vercel.app/r/aps-data-preset.json
 - Registry dependencies: @cantera/project-types
 
 Files written into the consumer project:

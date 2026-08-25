@@ -4,8 +4,8 @@ The translation state of one design: whether the model is viewable yet, how far 
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/model-status-card`
-- Docs: https://canteraui.xyz/components/model-status-card
-- Registry item: https://canteraui.xyz/r/model-status-card.json
+- Docs: https://canteraui.vercel.app/components/model-status-card
+- Registry item: https://canteraui.vercel.app/r/model-status-card.json
 - Registry dependencies: badge, button, card, @cantera/token-status, @cantera/status-tokens, @cantera/project-types
 - npm dependencies: lucide-react
 - Working example page: `npx shadcn@latest add @cantera/model-status-card-demo` — installs app/examples/model-status-card/page.tsx

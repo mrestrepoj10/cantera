@@ -4,8 +4,8 @@ A provider connection at a glance: account, grant status, scopes, and disconnect
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/connection-card`
-- Docs: https://canteraui.xyz/components/connection-card
-- Registry item: https://canteraui.xyz/r/connection-card.json
+- Docs: https://canteraui.vercel.app/components/connection-card
+- Registry item: https://canteraui.vercel.app/r/connection-card.json
 - Registry dependencies: button, card, @cantera/user-account-badge, @cantera/token-status, @cantera/oauth-types
 - npm dependencies: lucide-react
 - Working example page: `npx shadcn@latest add @cantera/connection-card-demo` — installs app/examples/connection-card/page.tsx

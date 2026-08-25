@@ -8,61 +8,61 @@
 
 ## Docs
 
-- [Installation](https://canteraui.xyz/installation): Add the @cantera namespace to components.json, install items, and override the status tokens.
-- [Components](https://canteraui.xyz/components): Index of every registry item, with a live preview and the exact installed source on each page.
-- [Demo](https://canteraui.xyz/demo): The whole Autodesk OAuth flow, running against an embedded APS emulator — no credentials needed.
+- [Installation](https://canteraui.vercel.app/installation): Add the @cantera namespace to components.json, install items, and override the status tokens.
+- [Components](https://canteraui.vercel.app/components): Index of every registry item, with a live preview and the exact installed source on each page.
+- [Demo](https://canteraui.vercel.app/demo): The whole Autodesk OAuth flow, running against an embedded APS emulator — no credentials needed.
 
 ## Components
 
 Data-agnostic UI: typed props in, callbacks out, no fetching.
 
-- [Provider Sign-In Button](https://canteraui.xyz/components/provider-sign-in-button): A sign-in button and link for a single OAuth provider: brand icon, label, loading state. ProviderSignInButton handles a click; ProviderSignInLink navigates to an auth route.
-- [Sign-In Card](https://canteraui.xyz/components/sign-in-card): A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
-- [Scope Picker](https://canteraui.xyz/components/scope-picker): A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog.
-- [User Account Badge](https://canteraui.xyz/components/user-account-badge): An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.
-- [Token Status](https://canteraui.xyz/components/token-status): Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.
-- [Connection Card](https://canteraui.xyz/components/connection-card): A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions.
-- [Hub Switcher](https://canteraui.xyz/components/hub-switcher): The hub context switch: which ACC hub — or any Hub — the rest of the screen works against, with region context and a pending state for the switch itself.
-- [Project Picker](https://canteraui.xyz/components/project-picker): The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs.
-- [Version Set Select](https://canteraui.xyz/components/version-set-select): Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake.
-- [Hub Browser](https://canteraui.xyz/components/hub-browser): A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics.
-- [Hub Tree](https://canteraui.xyz/components/hub-tree): A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation.
-- [Finder](https://canteraui.xyz/components/finder): Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives.
-- [Hub Sidebar](https://canteraui.xyz/components/hub-sidebar): The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.
-- [Crew Avatar](https://canteraui.xyz/components/crew-avatar): Deterministic construction-crew SVG avatars — monochrome disc, geometric figure, one accent for the trade on the hard hat — generated from a name with zero dependencies, boring-avatars style.
-- [File Picker Dialog](https://canteraui.xyz/components/file-picker-dialog): Hub Browser inside a dialog, with tip-or-version selection and an explicit cancel action.
-- [APS Viewer](https://canteraui.xyz/components/aps-viewer): A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks.
-- [Model Status Card](https://canteraui.xyz/components/model-status-card): The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract.
-- [File Drop Zone](https://canteraui.xyz/components/file-drop-zone): A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract.
+- [Provider Sign-In Button](https://canteraui.vercel.app/components/provider-sign-in-button): A sign-in button and link for a single OAuth provider: brand icon, label, loading state. ProviderSignInButton handles a click; ProviderSignInLink navigates to an auth route.
+- [Sign-In Card](https://canteraui.vercel.app/components/sign-in-card): A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
+- [Scope Picker](https://canteraui.vercel.app/components/scope-picker): A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog.
+- [User Account Badge](https://canteraui.vercel.app/components/user-account-badge): An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.
+- [Token Status](https://canteraui.vercel.app/components/token-status): Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.
+- [Connection Card](https://canteraui.vercel.app/components/connection-card): A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions.
+- [Hub Switcher](https://canteraui.vercel.app/components/hub-switcher): The hub context switch: which ACC hub — or any Hub — the rest of the screen works against, with region context and a pending state for the switch itself.
+- [Project Picker](https://canteraui.vercel.app/components/project-picker): The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs.
+- [Version Set Select](https://canteraui.vercel.app/components/version-set-select): Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake.
+- [Hub Browser](https://canteraui.vercel.app/components/hub-browser): A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics.
+- [Hub Tree](https://canteraui.vercel.app/components/hub-tree): A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation.
+- [Finder](https://canteraui.vercel.app/components/finder): Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives.
+- [Hub Sidebar](https://canteraui.vercel.app/components/hub-sidebar): The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.
+- [Crew Avatar](https://canteraui.vercel.app/components/crew-avatar): Deterministic construction-crew SVG avatars — monochrome disc, geometric figure, one accent for the trade on the hard hat — generated from a name with zero dependencies, boring-avatars style.
+- [File Picker Dialog](https://canteraui.vercel.app/components/file-picker-dialog): Hub Browser inside a dialog, with tip-or-version selection and an explicit cancel action.
+- [APS Viewer](https://canteraui.vercel.app/components/aps-viewer): A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks.
+- [Model Status Card](https://canteraui.vercel.app/components/model-status-card): The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract.
+- [File Drop Zone](https://canteraui.vercel.app/components/file-drop-zone): A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract.
 
 ## Blocks
 
 Wired end-to-end flows — pages, route handlers, and the auth glue between them.
 
-- [ACC Sign-In](https://canteraui.xyz/components/acc-sign-in): Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.
-- [Connections Page](https://canteraui.xyz/components/connections-page): The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
-- [Model Viewer Page](https://canteraui.xyz/components/model-viewer-page): A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
+- [ACC Sign-In](https://canteraui.vercel.app/components/acc-sign-in): Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.
+- [Connections Page](https://canteraui.vercel.app/components/connections-page): The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
+- [Model Viewer Page](https://canteraui.vercel.app/components/model-viewer-page): A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
 
 ## Libraries
 
 The types the components speak, and the provider presets that translate into them.
 
-- [OAuth Types](https://canteraui.xyz/components/oauth-types): Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.
-- [APS OAuth Preset](https://canteraui.xyz/components/aps-oauth-preset): Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.
-- [Project Types](https://canteraui.xyz/components/project-types): Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into.
-- [APS Data Preset](https://canteraui.xyz/components/aps-data-preset): Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.
-- [Viewer Types](https://canteraui.xyz/components/viewer-types): Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks.
-- [Viewer Extension Types](https://canteraui.xyz/components/viewer-extension-types): A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.
-- [Upload Types](https://canteraui.xyz/components/upload-types): Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.
+- [OAuth Types](https://canteraui.vercel.app/components/oauth-types): Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.
+- [APS OAuth Preset](https://canteraui.vercel.app/components/aps-oauth-preset): Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.
+- [Project Types](https://canteraui.vercel.app/components/project-types): Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into.
+- [APS Data Preset](https://canteraui.vercel.app/components/aps-data-preset): Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.
+- [Viewer Types](https://canteraui.vercel.app/components/viewer-types): Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks.
+- [Viewer Extension Types](https://canteraui.vercel.app/components/viewer-extension-types): A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.
+- [Upload Types](https://canteraui.vercel.app/components/upload-types): Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.
 
 ## Tokens
 
 CSS variables installed into the consumer theme.
 
-- [Status Tokens](https://canteraui.xyz/components/status-tokens): Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.
+- [Status Tokens](https://canteraui.vercel.app/components/status-tokens): Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.
 
 ## Optional
 
-- [Full reference](https://canteraui.xyz/llms-full.txt): Every item's description, install command, dependencies, props, exports, and data attributes, plus the design contracts behind them.
-- [Registry index](https://canteraui.xyz/r/llms.txt): The same item list, served next to the registry JSON.
-- [Registry manifest](https://canteraui.xyz/r/registry.json): The machine-readable shadcn registry.
+- [Full reference](https://canteraui.vercel.app/llms-full.txt): Every item's description, install command, dependencies, props, exports, and data attributes, plus the design contracts behind them.
+- [Registry index](https://canteraui.vercel.app/r/llms.txt): The same item list, served next to the registry JSON.
+- [Registry manifest](https://canteraui.vercel.app/r/registry.json): The machine-readable shadcn registry.

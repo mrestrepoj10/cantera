@@ -4,8 +4,8 @@ A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and 
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/hub-tree`
-- Docs: https://canteraui.xyz/components/hub-tree
-- Registry item: https://canteraui.xyz/r/hub-tree.json
+- Docs: https://canteraui.vercel.app/components/hub-tree
+- Registry item: https://canteraui.vercel.app/r/hub-tree.json
 - Registry dependencies: @cantera/project-types, @cantera/status-tokens
 - npm dependencies: lucide-react
 

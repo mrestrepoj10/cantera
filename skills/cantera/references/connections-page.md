@@ -4,8 +4,8 @@ The page that manages every provider grant: one card per connection, with connec
 
 - Type: block
 - Install: `npx shadcn@latest add @cantera/connections-page`
-- Docs: https://canteraui.xyz/components/connections-page
-- Registry item: https://canteraui.xyz/r/connections-page.json
+- Docs: https://canteraui.vercel.app/components/connections-page
+- Registry item: https://canteraui.vercel.app/r/connections-page.json
 - Registry dependencies: button, @cantera/connection-card, @cantera/provider-sign-in-button, @cantera/token-status, @cantera/user-account-badge, @cantera/acc-sign-in, @cantera/aps-oauth-preset, @cantera/oauth-types, @cantera/status-tokens
 - npm dependencies: aec-auth, lucide-react
 

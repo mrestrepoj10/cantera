@@ -4,8 +4,8 @@ Query box over consumer-supplied result groups — recents, pins, the current le
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/finder`
-- Docs: https://canteraui.xyz/components/finder
-- Registry item: https://canteraui.xyz/r/finder.json
+- Docs: https://canteraui.vercel.app/components/finder
+- Registry item: https://canteraui.vercel.app/r/finder.json
 - Registry dependencies: button, command, @cantera/project-types, @cantera/status-tokens
 - npm dependencies: lucide-react
 

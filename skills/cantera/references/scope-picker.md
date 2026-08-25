@@ -4,8 +4,8 @@ A controlled OAuth scope picker: task-oriented presets, an optional advanced-per
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/scope-picker`
-- Docs: https://canteraui.xyz/components/scope-picker
-- Registry item: https://canteraui.xyz/r/scope-picker.json
+- Docs: https://canteraui.vercel.app/components/scope-picker
+- Registry item: https://canteraui.vercel.app/r/scope-picker.json
 - Registry dependencies: badge, button, checkbox, input, label, @cantera/oauth-types, @cantera/status-tokens
 - npm dependencies: lucide-react
 - Working example page: `npx shadcn@latest add @cantera/scope-picker-demo` — installs app/examples/scope-picker/page.tsx
