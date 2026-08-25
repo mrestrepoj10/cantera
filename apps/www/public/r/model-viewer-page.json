@@ -3,14 +3,13 @@
   "name": "model-viewer-page",
   "title": "Model Viewer Page",
   "author": "MR <contact@bimframe.co>",
-  "description": "A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.",
+  "description": "A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.",
   "dependencies": [
     "aec-auth",
     "lucide-react"
   ],
   "registryDependencies": [
     "button",
-    "card",
     "sidebar",
     "@cantera/hub-sidebar",
     "@cantera/hub-tree",
@@ -26,7 +25,7 @@
   "files": [
     {
       "path": "registry/blocks/model-viewer-page/page.tsx",
-      "content": "import { cookies } from 'next/headers'\n\nimport { ModelBrowser } from '@/components/model-browser'\nimport { Button } from '@/components/ui/button'\nimport { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'\nimport { openSession, SESSION_COOKIE } from '@/lib/acc-auth'\n\nexport default async function ModelViewerPage() {\n  const cookieStore = await cookies()\n  const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)\n\n  if (!session) {\n    return (\n      <main className=\"flex min-h-svh items-center justify-center p-6\">\n        <Card className=\"w-full max-w-sm text-center\">\n          <CardHeader>\n            <CardTitle className=\"text-2xl\">\n              <h1>Browse models</h1>\n            </CardTitle>\n            <CardDescription>\n              Sign in with Autodesk to browse project models. You choose what access to grant on the\n              sign-in page.\n            </CardDescription>\n          </CardHeader>\n          <CardContent>\n            <Button\n              nativeButton={false}\n              // A navigation, so keep the link role the anchor earns from href.\n              role=\"link\"\n              render={<a href=\"/sign-in?next=/models\" />}\n              className=\"min-h-11 w-full\"\n            >\n              Sign in with Autodesk\n            </Button>\n          </CardContent>\n        </Card>\n      </main>\n    )\n  }\n\n  return (\n    <ModelBrowser\n      account={{ name: session.name, email: session.email, avatarUrl: session.avatarUrl }}\n    />\n  )\n}\n",
+      "content": "import { cookies } from 'next/headers'\n\nimport { ModelBrowser } from '@/components/model-browser'\nimport { ScopedAutodeskSignIn } from '@/components/scoped-autodesk-sign-in'\nimport { openSession, SESSION_COOKIE } from '@/lib/acc-auth'\n\nexport default async function ModelViewerPage() {\n  const cookieStore = await cookies()\n  const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)\n\n  if (!session) {\n    return (\n      <main className=\"flex min-h-svh items-center justify-center p-6\">\n        <ScopedAutodeskSignIn\n          nextPath=\"/models\"\n          title=\"Browse models\"\n          description=\"Connect your Autodesk account to browse project models.\"\n        />\n      </main>\n    )\n  }\n\n  return (\n    <ModelBrowser\n      account={{ name: session.name, email: session.email, avatarUrl: session.avatarUrl }}\n    />\n  )\n}\n",
       "type": "registry:page",
       "target": "app/models/page.tsx"
     },
@@ -61,7 +60,7 @@
     "SESSION_SECRET": "",
     "APS_AUTH_BASE_URL": ""
   },
-  "docs": "Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-sign-in dependency supplies the OAuth routes, lib/acc-auth.ts, and the /sign-in page with its scope picker — signed out, /models prompts and routes there with next=/models, so one surface owns scope selection.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.\n- SESSION_SECRET — required in production. Generate one with `openssl rand -base64 32`.\n- APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS. A relative value such as \"/emulate/aps\" is useful only when your app mounts a compatible embedded emulator at that path.\n\nThe default aec-auth vault from acc-sign-in is in-memory: appropriate for a demo, not production. Replace it with a durable encrypted VaultStore before real users connect.\n\nThe cantera showcase emulator supplies the project tree but no SVF geometry. Its seeded demo links one tip version to an externally translated sample URN when credentials are configured; every other item intentionally renders the no-geometry state. Your application should store real derivative URNs on normalized item versions.",
+  "docs": "Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-sign-in dependency supplies the OAuth routes, lib/acc-auth.ts, and the /sign-in page. Signed out, /models renders the same ScopedAutodeskSignIn component the /sign-in page uses, returning to /models after the callback — identical scope selection on both surfaces, no extra hop.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.\n- SESSION_SECRET — required in production. Generate one with `openssl rand -base64 32`.\n- APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS. A relative value such as \"/emulate/aps\" is useful only when your app mounts a compatible embedded emulator at that path.\n\nThe default aec-auth vault from acc-sign-in is in-memory: appropriate for a demo, not production. Replace it with a durable encrypted VaultStore before real users connect.\n\nThe cantera showcase emulator supplies the project tree but no SVF geometry. Its seeded demo links one tip version to an externally translated sample URN when credentials are configured; every other item intentionally renders the no-geometry state. Your application should store real derivative URNs on normalized item versions.",
   "categories": [
     "projects",
     "files",

@@ -41,7 +41,7 @@ Wired end-to-end flows — pages, route handlers, and the auth glue between them
 
 - [ACC Sign-In](https://canteraui.vercel.app/components/acc-sign-in): Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.
 - [Connections Page](https://canteraui.vercel.app/components/connections-page): The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
-- [Model Viewer Page](https://canteraui.vercel.app/components/model-viewer-page): A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
+- [Model Viewer Page](https://canteraui.vercel.app/components/model-viewer-page): A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.
 
 ## Libraries
 

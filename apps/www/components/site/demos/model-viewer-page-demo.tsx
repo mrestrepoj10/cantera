@@ -4,8 +4,7 @@ import { LoaderCircleIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { ModelBrowser } from '@/components/model-browser'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ScopedAutodeskSignIn } from '@/components/scoped-autodesk-sign-in'
 import type { HubTreeNode } from '@/components/ui/hub-tree'
 
 type DemoState =
@@ -70,32 +69,14 @@ export function ModelViewerPageDemo({
   }
 
   if (state.status === 'signed-out') {
-    const Title = titleAs
     return (
       <div className="flex min-h-[36rem] w-full items-center justify-center p-6">
-        {/* The installed page routes to /sign-in?next=/models; the showcase has
-            no /sign-in, so the demo's prompt starts the emulator flow directly. */}
-        <Card className="w-full max-w-sm text-center">
-          <CardHeader>
-            <CardTitle className="text-2xl">
-              <Title>Browse models</Title>
-            </CardTitle>
-            <CardDescription>
-              Sign in with the credential-free Autodesk emulator to browse the live project tree.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              nativeButton={false}
-              // A navigation, so keep the link role the anchor earns from href.
-              role="link"
-              render={<a href={`/api/auth/aps?next=${encodeURIComponent(nextPath)}`} />}
-              className="min-h-11 w-full"
-            >
-              Sign in with Autodesk
-            </Button>
-          </CardContent>
-        </Card>
+        <ScopedAutodeskSignIn
+          nextPath={nextPath}
+          title="Browse models"
+          titleAs={titleAs}
+          description="Connect the credential-free Autodesk emulator to browse the live project tree."
+        />
       </div>
     )
   }

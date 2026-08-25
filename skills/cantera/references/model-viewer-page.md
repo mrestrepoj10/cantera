@@ -1,12 +1,12 @@
 # Model Viewer Page (`@cantera/model-viewer-page`)
 
-A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, a full-bleed native viewer, account controls, and untranslated-model states.
+A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.
 
 - Type: block
 - Install: `npx shadcn@latest add @cantera/model-viewer-page`
 - Docs: https://canteraui.vercel.app/components/model-viewer-page
 - Registry item: https://canteraui.vercel.app/r/model-viewer-page.json
-- Registry dependencies: button, card, sidebar, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
+- Registry dependencies: button, sidebar, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
@@ -26,7 +26,7 @@ Environment variables added to `.env.local`:
 
 ## Install notes
 
-Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-sign-in dependency supplies the OAuth routes, lib/acc-auth.ts, and the /sign-in page with its scope picker — signed out, /models prompts and routes there with next=/models, so one surface owns scope selection.
+Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-sign-in dependency supplies the OAuth routes, lib/acc-auth.ts, and the /sign-in page. Signed out, /models renders the same ScopedAutodeskSignIn component the /sign-in page uses, returning to /models after the callback — identical scope selection on both surfaces, no extra hop.
 
 Environment (added to .env.local as empty keys — fill them in):
 - APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.
