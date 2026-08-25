@@ -3,6 +3,13 @@ import { expect, test } from '@playwright/test'
 import { waitForHydration } from './hydration'
 import { gotoViewerDemo, waitForViewerModel } from './viewer'
 
+declare global {
+  interface Window {
+    /** Test-only: the documentElement class captured on the first painted frame. */
+    __firstFrameClass?: string
+  }
+}
+
 /**
  * Dark mode is a shipping surface, not a nicety: the components are
  * contrast-verified in both appearances, so the appearance has to be correct
@@ -91,8 +98,7 @@ test.describe('no flash of the wrong theme', () => {
     await page.addInitScript(() => {
       const record = () => {
         if (document.body) {
-          ;(window as unknown as { __firstFrameClass?: string }).__firstFrameClass =
-            document.documentElement.className
+          window.__firstFrameClass = document.documentElement.className
           return
         }
         requestAnimationFrame(record)
@@ -103,9 +109,7 @@ test.describe('no flash of the wrong theme', () => {
     await page.goto('/components')
     await waitForHydration(page)
 
-    const firstFrameClass = await page.evaluate(
-      () => (window as unknown as { __firstFrameClass?: string }).__firstFrameClass,
-    )
+    const firstFrameClass = await page.evaluate(() => window.__firstFrameClass)
     expect(firstFrameClass, 'no frame was recorded').toBeDefined()
     expect(firstFrameClass, 'the first painted frame was not dark').toContain('dark')
 

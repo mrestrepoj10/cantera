@@ -50,7 +50,11 @@ export function getRegistryItem(name: string): RegistryItem | undefined {
   return itemsByName.get(name)
 }
 
-const previewFrameClasses: Record<string, string> = {
+interface PreviewFrameClassByItem {
+  [item: string]: string
+}
+
+const previewFrameClasses: PreviewFrameClassByItem = {
   'hub-browser': 'flex min-h-64 items-stretch rounded-lg border border-border p-4 sm:p-6',
   'hub-tree': 'flex min-h-[28rem] items-stretch rounded-lg border border-border p-4 sm:p-6',
   finder:

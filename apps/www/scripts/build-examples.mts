@@ -48,7 +48,11 @@ const examplesDir = path.join(wwwRoot, 'registry/examples')
 const pagesDir = path.join(examplesDir, 'pages')
 
 /** How wide the generated page renders each demo. The only per-example knob. */
-const PAGE_WIDTH: Record<string, string> = {
+interface PageWidthByExample {
+  [example: string]: string
+}
+
+const PAGE_WIDTH: PageWidthByExample = {
   'file-drop-zone': 'max-w-lg',
   'provider-sign-in-button': 'max-w-sm',
   'sign-in-card': 'max-w-md',
@@ -96,15 +100,19 @@ export default function Page() {
 `
 }
 
+/** A dependency edge: a registry item, an npm package, or neither when the
+ * consumer project already provides the module. */
+interface ResolvedDependency {
+  registry?: string
+  npm?: string
+}
+
 /**
  * Resolves one import into the dependency that satisfies it: a cantera item, a
  * shadcn primitive, an npm package, or nothing at all when the consumer project
  * already provides it.
  */
-function resolveDependency(
-  specifier: string,
-  providers: Map<string, string>,
-): { registry?: string; npm?: string } {
+function resolveDependency(specifier: string, providers: Map<string, string>): ResolvedDependency {
   if (isAliasSpecifier(specifier)) {
     const target = aliasTargetFor(specifier)
     if (PROJECT_PROVIDED_MODULES.has(target)) return {}
@@ -189,7 +197,9 @@ async function buildExamples(registry: Registry): Promise<{
       author: base.author,
       description: `A full page rendering ${base.title}, with its own sample data — what "Open in v0" hands over, and what to copy when wiring the component into a real screen.`,
       categories: base.categories,
-      ...(dependencies.size > 0 ? { dependencies: [...dependencies].sort() } : {}),
+      // undefined-valued keys are dropped by JSON serialization, so the
+      // emitted item is byte-identical to a conditionally-present field.
+      dependencies: dependencies.size > 0 ? [...dependencies].sort() : undefined,
       registryDependencies: sortDependencies([...registryDependencies]),
       files: [
         {

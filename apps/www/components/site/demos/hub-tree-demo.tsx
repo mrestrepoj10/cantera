@@ -57,7 +57,11 @@ const modelItem: HubTreeItemNode = {
   hasChildren: true,
 }
 
-const childNodes: Record<string, HubTreeNode[]> = {
+interface ChildrenByNodeId {
+  [nodeId: string]: HubTreeNode[]
+}
+
+const childNodes: ChildrenByNodeId = {
   'hub:ridgeline': [
     {
       id: 'project:ridgeline:project-summit',

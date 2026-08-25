@@ -10,6 +10,7 @@ export {
   type APSExtensionResult,
   type APSPropertiesResult,
   type APSSelection,
+  type APSViewerHandle,
   type BuildContextMenu,
   useAPSAutoResize,
   useAPSCamera,

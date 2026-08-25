@@ -133,7 +133,11 @@ const EXTENSION_SECTIONS = [
 ] as const
 
 /** Friendly names where splitting the id reads badly. */
-const EXTENSION_LABELS: Record<string, string> = {
+interface ExtensionLabelById {
+  [extensionId: string]: string
+}
+
+const EXTENSION_LABELS: ExtensionLabelById = {
   'Autodesk.Viewing.MarkupsGui': 'Markups toolbar',
   'Autodesk.Viewing.MarkupsCore': 'Markups core',
   'Autodesk.BimWalk': 'BIM walk',
@@ -218,12 +222,12 @@ const themeOptions: { value: ViewerTheme; label: string }[] = [
   { value: 'dark', label: 'Dark' },
 ]
 
-const columnClasses: Record<1 | 2 | 3 | 4, string> = {
+const columnClasses = {
   1: 'grid-cols-1',
   2: 'grid-cols-2',
   3: 'grid-cols-3',
   4: 'grid-cols-4',
-}
+} satisfies Record<1 | 2 | 3 | 4, string>
 
 interface ControlGroupProps<T extends string> {
   label: string
@@ -639,10 +643,10 @@ function buildShareParams(settings: ViewerDemoSettings): string {
 }
 
 /** Accepts the presets plus a bare pixel number (e.g. ?viewerScale=48). */
-function parseScaleParam(raw: string): { scale: APSViewerToolbarScale } | Record<string, never> {
-  if (['sm', 'md', 'lg'].includes(raw)) return { scale: raw as APSViewerToolbarScale }
+function parseScaleParam(raw: string): APSViewerToolbarScale | null {
+  if (raw === 'sm' || raw === 'md' || raw === 'lg') return raw
   const px = Number(raw)
-  return Number.isFinite(px) ? { scale: px } : {}
+  return Number.isFinite(px) ? px : null
 }
 
 function parseClampedPixels(raw: string | null, min: number, max: number): number | null {
@@ -672,17 +676,18 @@ function readSharedSettings(): Partial<ViewerDemoSettings> | null {
   }
   const extensionIds = (extensions ?? '').split(',').filter((id) => DEMO_EXTENSION_IDS.includes(id))
   const parsedRadius = parseClampedPixels(radius, 0, 32)
-  return {
-    ...(position && ['bottom', 'top', 'left', 'right'].includes(position)
-      ? { position: position as APSViewerToolbarPosition }
-      : {}),
-    ...(scale ? parseScaleParam(scale) : {}),
-    ...(parsedRadius === null ? {} : { radius: parsedRadius }),
-    ...(toolbar === 'none' ? { toolbar: false } : toolbar === 'native' ? { toolbar: true } : {}),
-    ...(viewCube === 'off' ? { viewCube: false } : viewCube === 'on' ? { viewCube: true } : {}),
-    ...(theme === 'light' || theme === 'dark' ? { theme } : {}),
-    ...(extensionIds.length > 0 ? { extensions: extensionIds } : {}),
+  const parsedScale = scale === null ? null : parseScaleParam(scale)
+  const settings: Partial<ViewerDemoSettings> = {}
+  if (position === 'bottom' || position === 'top' || position === 'left' || position === 'right') {
+    settings.position = position
   }
+  if (parsedScale !== null) settings.scale = parsedScale
+  if (parsedRadius !== null) settings.radius = parsedRadius
+  if (toolbar === 'none' || toolbar === 'native') settings.toolbar = toolbar === 'native'
+  if (viewCube === 'off' || viewCube === 'on') settings.viewCube = viewCube === 'on'
+  if (theme === 'light' || theme === 'dark') settings.theme = theme
+  if (extensionIds.length > 0) settings.extensions = extensionIds
+  return settings
 }
 
 const TABS = [

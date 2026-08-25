@@ -52,7 +52,11 @@ interface DemoProject {
  * from `demoManifests` below has never been translated, so the manifest
  * endpoint 404s and the workflow renders it as queued.
  */
-const designUrns: Record<string, string> = {
+interface UrnByFileName {
+  [fileName: string]: string
+}
+
+const designUrns: UrnByFileName = {
   'summit-tower-arch.rvt':
     'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y2FudGVyYS1kZW1vL3N1bW1pdC10b3dlci1hcmNoLnJ2dA',
   'summit-tower-struct.rvt':
@@ -324,19 +328,20 @@ const demoManifests: NonNullable<ApsSeedConfig['manifests']> = {
     region: 'EMEA',
     derivatives: [svfDerivative('harbor-point-arch.rvt', 'success')],
   },
-  ...(demoViewerUrn
-    ? {
-        [demoViewerUrn]: {
-          status: 'success',
-          progress: 'complete',
-          hasThumbnail: 'true',
-          derivatives: [
-            svfDerivative('cantera-viewer-sample', 'success'),
-            thumbnailDerivative('success'),
-          ],
-        },
-      }
-    : {}),
+}
+
+// The live-viewer URN comes from the environment, so its manifest joins the
+// seed only when the demo is configured.
+if (demoViewerUrn) {
+  demoManifests[demoViewerUrn] = {
+    status: 'success',
+    progress: 'complete',
+    hasThumbnail: 'true',
+    derivatives: [
+      svfDerivative('cantera-viewer-sample', 'success'),
+      thumbnailDerivative('success'),
+    ],
+  }
 }
 
 const projectIds = [...demoProjects.map((project) => project.id), ...EMULATOR_DEFAULT_PROJECT_IDS]

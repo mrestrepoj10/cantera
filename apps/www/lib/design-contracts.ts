@@ -15,12 +15,7 @@ export interface DesignContract {
   body: string
 }
 
-export function designContracts(
-  namespace: string,
-): Record<
-  'statusVocabulary' | 'asyncPending' | 'fieldDensity' | 'installedSpecifiers' | 'iconSizing',
-  DesignContract
-> {
+export function designContracts(namespace: string) {
   return {
     statusVocabulary: {
       title: 'Status vocabulary',
@@ -42,5 +37,8 @@ export function designContracts(
       title: 'Icon sizing',
       body: `Preset provider marks carry their own \`className="size-4"\`, so one renders correctly wherever it is dropped. A \`[&_svg]:size-*\` wrapper still wins on specificity where a surface wants another size — use the wrapper, not a rewritten mark, and keep \`aria-hidden\` on decorative marks.`,
     },
-  }
+  } satisfies Record<
+    'statusVocabulary' | 'asyncPending' | 'fieldDensity' | 'installedSpecifiers' | 'iconSizing',
+    DesignContract
+  >
 }

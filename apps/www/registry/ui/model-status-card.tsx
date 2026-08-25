@@ -16,21 +16,21 @@ import { cn } from '@/lib/utils'
  * yet is absence, not a warning. Timeout is warning, not danger: a retry away,
  * like an expired token. Failed is the one state the user must act on.
  */
-const translationTone: Record<ModelTranslationStatus, StatusTone> = {
+const translationTone = {
   pending: 'neutral',
   inprogress: 'neutral',
   success: 'success',
   failed: 'danger',
   timeout: 'warning',
-}
+} satisfies Record<ModelTranslationStatus, StatusTone>
 
-const translationLabel: Record<ModelTranslationStatus, string> = {
+const translationLabel = {
   pending: 'Queued',
   inprogress: 'Translating',
   success: 'Ready',
   failed: 'Failed',
   timeout: 'Timed out',
-}
+} satisfies Record<ModelTranslationStatus, string>
 
 interface ModelStatusCardProps extends React.ComponentProps<typeof Card> {
   translation: ModelTranslation

@@ -34,8 +34,10 @@ cantera is a shadcn registry for construction (AEC) UI — OAuth sign-in and con
 Use `pnpm` for everything. Run the smallest check that proves your change — CI runs the full suite on every PR and is the merge gate.
 
 ```sh
-pnpm lint            # biome (single quotes, no semicolons, 100-col lines) + the consumer-dialect
-                     # ESLint gate over apps/www/registry/** (eslint-config-next, zero warnings)
+pnpm lint            # biome (single quotes, no semicolons, 100-col lines), the anti-slop oxlint
+                     # plugin (.oxlintrc.json — type-laundering patterns; rules tuned there with
+                     # reasons), and the consumer-dialect ESLint gate over apps/www/registry/**
+                     # (eslint-config-next, zero warnings)
 pnpm typecheck
 pnpm registry:build  # REQUIRED after touching apps/www/registry/** or registry.json — commit its output
 pnpm registry:verify # when registry:build ran: install closure, npm-dep coverage, drift, and the

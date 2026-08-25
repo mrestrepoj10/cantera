@@ -137,21 +137,21 @@ function relativeTime(value: Date | string | number | undefined, locale?: string
   return relativeTimeFormatter(locale).format(Math.round(seconds / divisor), unit)
 }
 
-const translationLabels: Record<ModelTranslationStatus, string> = {
+const translationLabels = {
   pending: 'Not translated',
   inprogress: 'Translating',
   success: 'Viewable',
   failed: 'Failed',
   timeout: 'Timed out',
-}
+} satisfies Record<ModelTranslationStatus, string>
 
-const translationClasses: Record<ModelTranslationStatus, string> = {
+const translationClasses = {
   pending: 'bg-status-neutral text-status-neutral-foreground',
   inprogress: 'bg-status-warning text-status-warning-foreground',
   success: 'bg-status-success text-status-success-foreground',
   failed: 'bg-status-danger text-status-danger-foreground',
   timeout: 'bg-status-danger text-status-danger-foreground',
-}
+} satisfies Record<ModelTranslationStatus, string>
 
 function TranslationBadge({ status }: { status: ModelTranslationStatus }) {
   return (

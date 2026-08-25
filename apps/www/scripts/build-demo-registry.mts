@@ -31,7 +31,11 @@ interface DemoSource {
   sourcePath: string
 }
 
-const overrides: Record<string, DemoSource> = {
+interface DemoSourceByItem {
+  [item: string]: DemoSource
+}
+
+const overrides: DemoSourceByItem = {
   'aps-viewer': {
     component: 'APSViewerDemo',
     module: './aps-viewer-demo',

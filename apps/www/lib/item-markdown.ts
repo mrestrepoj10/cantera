@@ -33,7 +33,11 @@ export interface MarkdownItem {
   docs?: string
 }
 
-const TYPE_LABELS: Record<string, string> = {
+interface LabelByRegistryType {
+  [type: string]: string
+}
+
+const TYPE_LABELS: LabelByRegistryType = {
   'registry:component': 'component',
   'registry:block': 'block',
   'registry:lib': 'lib',

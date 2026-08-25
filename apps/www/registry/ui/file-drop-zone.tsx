@@ -278,12 +278,12 @@ function percentFormatter(locale?: string): Intl.NumberFormat {
   return new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 })
 }
 
-const phaseLabels: Record<Exclude<ZonePhase, 'idle' | 'uploading'>, string> = {
+const phaseLabels = {
   dragover: 'Release to add files',
   processing: 'Processing',
   complete: 'Upload complete',
   error: 'Some files need attention',
-}
+} satisfies Record<Exclude<ZonePhase, 'idle' | 'uploading'>, string>
 
 interface FileDropZoneProps
   extends Omit<

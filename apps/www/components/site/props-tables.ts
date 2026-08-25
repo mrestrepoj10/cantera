@@ -31,7 +31,11 @@ export interface ApiTable {
   rows: ApiRow[]
 }
 
-export const apiTables: Record<string, ApiTable[]> = {
+interface ApiTablesByItem {
+  [item: string]: ApiTable[]
+}
+
+export const apiTables: ApiTablesByItem = {
   'provider-sign-in-button': [
     {
       caption: 'ProviderSignInButton props',
@@ -2039,7 +2043,11 @@ export interface LibUsage {
 }
 
 /** Code-oriented explanations for lib items, shown in place of a live preview. */
-export const libUsage: Record<string, LibUsage> = {
+interface LibUsageByItem {
+  [item: string]: LibUsage
+}
+
+export const libUsage: LibUsageByItem = {
   'oauth-types': {
     intro:
       'The lingua franca every cantera component speaks. Components take these shapes as props and never fetch data themselves — adapters translate provider payloads into them, so Autodesk, Procore, or your own provider all render with the same components.',

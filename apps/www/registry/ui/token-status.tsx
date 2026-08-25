@@ -20,35 +20,35 @@ type StatusTone = 'success' | 'warning' | 'danger' | 'neutral'
  * Solid fills, not low-alpha tints: a tablet in direct sunlight loses a 10%
  * tint entirely. Every pair below is contrast-verified in both appearances.
  */
-const statusToneClasses: Record<StatusTone, string> = {
+const statusToneClasses = {
   success: 'bg-status-success text-status-success-foreground',
   warning: 'bg-status-warning text-status-warning-foreground',
   danger: 'bg-status-danger text-status-danger-foreground',
   neutral: 'bg-status-neutral text-status-neutral-foreground',
-}
+} satisfies Record<StatusTone, string>
 
 /** The same tones as ink, for text sitting on the page or on a `-surface`. */
-const statusInkClasses: Record<StatusTone, string> = {
+const statusInkClasses = {
   success: 'text-status-success',
   warning: 'text-status-warning',
   danger: 'text-status-danger',
   neutral: 'text-status-neutral',
-}
+} satisfies Record<StatusTone, string>
 
-const statusTone: Record<OAuthConnectionStatus, StatusTone> = {
+const statusTone = {
   connected: 'success',
   // Expiry is recoverable — a refresh away, not a failure. Warning, not danger.
   expired: 'warning',
   error: 'danger',
   disconnected: 'neutral',
-}
+} satisfies Record<OAuthConnectionStatus, StatusTone>
 
-const statusLabel: Record<OAuthConnectionStatus, string> = {
+const statusLabel = {
   connected: 'Connected',
   expired: 'Expired',
   error: 'Error',
   disconnected: 'Not connected',
-}
+} satisfies Record<OAuthConnectionStatus, string>
 
 /** One formatter per locale, not per render — construction is the expensive
  * part of Intl, and every status line sharing a locale shares it. */

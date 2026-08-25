@@ -30,11 +30,11 @@ const initialFiles: UploadFile[] = [
   },
 ]
 
-const rejectionCopy: Record<UploadRejection['reason'], string> = {
+const rejectionCopy = {
   'file-type': 'not an accepted format',
   'file-size': 'over the size limit',
   'file-count': 'too many files',
-}
+} satisfies Record<UploadRejection['reason'], string>
 
 /** Steady per-file upload speed, varied a little by id so bars diverge. */
 function stepFor(id: string): number {

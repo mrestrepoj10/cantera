@@ -36,7 +36,11 @@ function getHighlighter(): Promise<Highlighter> {
   return highlighterPromise
 }
 
-const extensionLangs: Record<string, CodeLang> = {
+interface LangByExtension {
+  [extension: string]: CodeLang
+}
+
+const extensionLangs: LangByExtension = {
   tsx: 'tsx',
   ts: 'ts',
   json: 'json',

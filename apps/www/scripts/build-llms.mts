@@ -65,13 +65,13 @@ const TYPE_SECTIONS: { type: RegistryItem['type']; heading: string; blurb: strin
   },
 ]
 
-const TYPE_LABELS: Record<RegistryItem['type'], string> = {
+const TYPE_LABELS = {
   'registry:component': 'component',
   'registry:block': 'block',
   'registry:lib': 'lib',
   'registry:item': 'tokens (CSS variables plus a typed accessor)',
   'registry:example': 'example page',
-}
+} satisfies Record<RegistryItem['type'], string>
 
 /**
  * The contracts an agent has to know to use a component correctly — the

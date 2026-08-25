@@ -485,9 +485,10 @@ export function APSViewer({
         className={className}
         style={{
           position: 'relative',
-          ...(frameRadius === undefined
-            ? {}
-            : { borderRadius: frameRadius, overflow: 'hidden' as const }),
+          // React drops undefined style values, so the unclipped default
+          // renders without either property.
+          borderRadius: frameRadius,
+          overflow: frameRadius === undefined ? undefined : 'hidden',
           ...style,
         }}
         data-aps-viewer=""

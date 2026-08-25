@@ -8,15 +8,17 @@
     "typecheck": "turbo run typecheck",
     "registry:build": "turbo run registry:build",
     "registry:verify": "turbo run registry:verify",
-    "lint": "biome check . && pnpm --filter www run lint:registry",
+    "lint": "biome check . && oxlint && pnpm --filter www run lint:registry",
     "format": "biome format --write .",
     "e2e": "playwright test"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",
     "@next/playwright": "16.3.2",
+    "@oxlint/plugins": "1.80.0",
     "@playwright/test": "^1.62.1",
     "agent-browser": "^0.34.0",
+    "oxlint": "1.80.0",
     "turbo": "^2.10.9"
   }
 }

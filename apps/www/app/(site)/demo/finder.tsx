@@ -36,10 +36,7 @@ function readRecents(): RecentOpen[] {
 }
 
 /** Loaded in an effect so the server and hydration renders agree. */
-export function useRecentOpens(): {
-  recents: RecentOpen[]
-  remember: (open: RecentOpen) => void
-} {
+export function useRecentOpens() {
   const [recents, setRecents] = useState<RecentOpen[]>([])
 
   useEffect(() => {

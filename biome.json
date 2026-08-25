@@ -9,6 +9,7 @@
       "!**/.turbo",
       "!**/next-env.d.ts",
       "!vendor",
+      "!tools/oxlint/anti-slop",
       "!**/public/r",
       "!test-results",
       "!playwright-report",

@@ -11,11 +11,16 @@ import type {
   Vec3,
 } from '@/lib/viewer-types'
 
+export interface APSViewerHandle {
+  viewer: APSViewer3D | null
+  isReady: boolean
+}
+
 /**
  * The live viewer instance (or null until ready). Re-renders when the viewer
  * mounts, attaches, or is torn down.
  */
-export function useAPSViewer(): { viewer: APSViewer3D | null; isReady: boolean } {
+export function useAPSViewer(): APSViewerHandle {
   const store = useAPSViewerStore()
   const viewer = useSyncExternalStore(store.subscribe, store.getViewer, ViewerStore.getServerViewer)
   return { viewer, isReady: viewer !== null }
