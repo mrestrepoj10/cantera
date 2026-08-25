@@ -491,9 +491,9 @@
       "categories": ["identity", "avatars"],
       "files": [
         {
-          "path": "registry/lib/crew-avatar.ts",
+          "path": "registry/lib/crew-avatar-spec.ts",
           "type": "registry:lib",
-          "target": "lib/crew-avatar.ts"
+          "target": "lib/crew-avatar-spec.ts"
         },
         {
           "path": "registry/ui/crew-avatar.tsx",

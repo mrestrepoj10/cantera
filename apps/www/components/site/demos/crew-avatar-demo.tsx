@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { CrewAvatar } from '@/components/ui/crew-avatar'
 import { Input } from '@/components/ui/input'
-import { crewAvatarSpec } from '@/lib/crew-avatar'
+import { crewAvatarSpec } from '@/lib/crew-avatar-spec'
 
 const crew = [
   'Maria Renteria',

@@ -58,6 +58,29 @@ function explain(target: string, closure: ReturnType<typeof resolveClosure>): st
     : 'nothing in the registry installs that path'
 }
 
+// The shadcn CLI rewrites an alias import to whichever of the item's own files
+// shares the specifier's basename, extension ignored — so two files with the same
+// basename make one unreachable and the importer ends up pointing at itself. The
+// registry JSON stays correct either way, which is why only an install shows it.
+// Only alias-importable files can collide: everything under app/ is reached by
+// filename, never imported, so a block's several route.ts are not a conflict.
+for (const item of registry.items) {
+  const byBasename = new Map<string, string[]>()
+  for (const file of item.files ?? []) {
+    const installed = installedPath(file)
+    if (installed.startsWith('app/')) continue
+    const base = path.posix.basename(withoutExtension(installed))
+    byBasename.set(base, [...(byBasename.get(base) ?? []), installed])
+  }
+  for (const [base, paths] of byBasename) {
+    if (paths.length > 1) {
+      violations.push(
+        `${namespace}/${item.name}: ${paths.join(' and ')} share the basename "${base}" — the CLI rewrites imports to the wrong one, so rename one of them`,
+      )
+    }
+  }
+}
+
 for (const item of registry.items) {
   const closure = resolveClosure(byName, item)
   for (const missing of closure.missing) {
