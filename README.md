@@ -40,7 +40,7 @@ Agents: install the skill with `npx skills add mrestrepoj10/cantera` for the reg
 | `oauth-types` | lib | Generic OAuth types: providers, scopes, connections, accounts. The lingua franca adapters translate into. |
 | `aps-oauth-preset` | lib | Autodesk (APS / ACC) preset: provider metadata, scope catalog, scope bundles, adapters. |
 | `status-tokens` | tokens | The semantic status palette as CSS variables, plus `statusCssVars` — the same twelve tokens typed, for inline styles and chart series. |
-| `provider-sign-in-button` | component | Sign-in button for one provider: brand icon, label, loading state. Link or click handler. |
+| `provider-sign-in-button` | component | Sign-in button and link for one provider: brand icon, label, loading state. |
 | `sign-in-card` | component | Multi-provider sign-in chooser. Server-renderable via href template, or client-driven. |
 | `scope-picker` | component | Controlled scope picker: descriptions, one-click presets, required scopes pinned on. |
 | `user-account-badge` | component | Avatar-and-name chip for a connected account. Server-safe. |

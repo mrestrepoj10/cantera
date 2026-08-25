@@ -18,6 +18,10 @@ function settle(): Promise<void> {
 
 export function ConnectionCardDemo() {
   const [connected, setConnected] = useState(true)
+  // Lazy initializer: render stays pure, the deadline is fresh per mount —
+  // never baked in at module load, where a long-lived server would serve an
+  // already-expired demo.
+  const [expiresAt] = useState(() => Date.now() + 42 * 60_000)
 
   const connection: OAuthConnection = connected
     ? {
@@ -25,7 +29,7 @@ export function ConnectionCardDemo() {
         status: 'connected',
         account,
         scopes,
-        expiresAt: Date.now() + 42 * 60_000,
+        expiresAt,
       }
     : { provider: apsProvider, status: 'disconnected' }
 

@@ -1,6 +1,6 @@
 # Provider Sign-In Button (`@cantera/provider-sign-in-button`)
 
-A sign-in button for a single OAuth provider: brand icon, label, loading state. Works as a link or a click handler.
+A sign-in button and link for a single OAuth provider: brand icon, label, loading state. ProviderSignInButton handles a click; ProviderSignInLink navigates to an auth route.
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/provider-sign-in-button`
@@ -14,14 +14,24 @@ Files written into the consumer project:
 
 - `provider-sign-in-button.tsx`
 
-## Props
+## ProviderSignInButton props
 
 - `provider` (`OAuthProvider`) — The provider to render: id, name, and an optional brand icon.
-- `href` (`string`) — Navigate to an auth route instead of handling a click; renders an anchor, and stays an anchor while pending. Mutually exclusive with onSignIn — passing both is a type error.
-- `onSignIn` (`() => void | Promise<void>`) — Called with no arguments on click; renders a button. A returned promise drives the pending state for you. Mutually exclusive with href.
+- `onSignIn` (`() => void | Promise<void>`) — Called with no arguments on click. A returned promise drives the pending state for you. For navigation to an auth route, use ProviderSignInLink instead.
 - `loading` (`boolean`, default `false`) — Pending: the label stays, the icon crossfades to a spinner over 150ms, and activation is blocked via aria-disabled so focus is never dropped.
 - `disabled` (`boolean`, default `false`) — Rendered as aria-disabled, never the native attribute, so the control keeps focus and a screen reader user can still find it.
 - `variant` (`'default' | 'outline' | 'secondary' | 'ghost'`, default `'outline'`) — Button variant, forwarded to the shadcn button styles.
 - `size` (`'default' | 'sm' | 'lg'`, default `'lg'`) — Button size. Everything but sm carries the 44px minimum touch target; sm is the opt-in compact escape hatch.
 - `children` (`ReactNode`, default `'Continue with {provider.name}'`) — Custom label replacing the default text.
-- `...props` (`ComponentProps<'a'> | ComponentProps<'button'>`) — Remaining props go to whichever element renders — anchor props with href, button props without — and are typed for it.
+- `...props` (`ComponentProps<'button'>`) — Remaining props go to the button element and are typed for it.
+
+## ProviderSignInLink props
+
+- `provider` (`OAuthProvider`) — The provider to render: id, name, and an optional brand icon.
+- `href` (`string`) — The provider auth route to navigate to. Always renders an anchor — loading included — so the browser semantics of a link are never lost.
+- `loading` (`boolean`, default `false`) — Pending: the label stays, the icon crossfades to a spinner over 150ms, and navigation is blocked via aria-disabled so focus is never dropped.
+- `disabled` (`boolean`, default `false`) — Rendered as aria-disabled, never the native attribute, so the control keeps focus and a screen reader user can still find it.
+- `variant` (`'default' | 'outline' | 'secondary' | 'ghost'`, default `'outline'`) — Button variant, forwarded to the shadcn button styles.
+- `size` (`'default' | 'sm' | 'lg'`, default `'lg'`) — Button size. Everything but sm carries the 44px minimum touch target; sm is the opt-in compact escape hatch.
+- `children` (`ReactNode`, default `'Continue with {provider.name}'`) — Custom label replacing the default text.
+- `...props` (`ComponentProps<'a'>`) — Remaining props go to the anchor element and are typed for it.

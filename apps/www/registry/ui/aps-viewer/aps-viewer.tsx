@@ -1,6 +1,13 @@
 'use client'
 
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import { APSViewerContext } from '@/components/ui/aps-viewer/context'
 import {
   acquireViewerRuntime,
@@ -22,7 +29,6 @@ import type {
   APSModel,
   APSViewer3D,
   APSViewerProfile,
-  APSViewerStatus,
   GetAccessToken,
 } from '@/lib/viewer-types'
 
@@ -165,7 +171,9 @@ export function APSViewer({
 }: APSViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [store] = useState(() => new ViewerStore())
-  const [status, setStatus] = useState<APSViewerStatus>('idle')
+  // Lifecycle status lives in the store: the viewer is an external imperative
+  // resource, so its lifecycle is external state, not component state.
+  const status = useSyncExternalStore(store.subscribe, store.getStatus, ViewerStore.getServerStatus)
   const [viewerEpoch, setViewerEpoch] = useState(0)
   const viewerRef = useRef<APSViewer3D | null>(null)
   const viewCubeRef = useRef(viewCube)
@@ -173,10 +181,12 @@ export function APSViewer({
   const frameRadius =
     radius === undefined || !Number.isFinite(radius) ? undefined : Math.min(32, Math.max(0, radius))
 
-  // Latest-callback refs so effect deps stay minimal and consumers can pass
-  // inline closures without recreating the viewer. `shutdownOnUnmount` rides
-  // along: it is only read at cleanup, and listing it as a dependency would
-  // tear down the WebGL context just to change what the next unmount does.
+  // Latest-value refs so effect deps stay minimal and consumers can pass
+  // inline closures and literals without recreating the viewer.
+  // `shutdownOnUnmount` is only read at cleanup; `viewerConfig` and
+  // `extensions` are captured when the viewer is created — listing any of
+  // them as a dependency would tear down the WebGL context whenever a
+  // consumer passes a fresh object or array literal.
   const callbacksRef = useRef({
     getAccessToken,
     onViewerReady,
@@ -184,6 +194,8 @@ export function APSViewer({
     onError,
     onExtensionError,
     shutdownOnUnmount,
+    viewerConfig,
+    extensions,
   })
   // Synced after commit, not during render: a render React discards (Strict
   // Mode, a concurrent restart) must never leave its callbacks behind.
@@ -195,6 +207,8 @@ export function APSViewer({
       onError,
       onExtensionError,
       shutdownOnUnmount,
+      viewerConfig,
+      extensions,
     }
   })
 
@@ -206,14 +220,13 @@ export function APSViewer({
     toolbarOptionsRef.current = { position: toolbarPosition, scale: toolbarScale }
   }, [toolbarPosition, toolbarScale])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: viewerConfig, extensions, and the initial viewCube value are intentionally captured at creation time
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
     let disposed = false
     let viewer: APSViewer3D | null = null
 
-    setStatus('loading-runtime')
+    store.setStatus('loading-runtime')
     acquireViewerRuntime({
       getAccessToken: () => callbacksRef.current.getAccessToken(),
       version,
@@ -224,7 +237,10 @@ export function APSViewer({
         // Strict Mode: the first effect's cleanup may already have run.
         if (disposed) return
         const Ctor = toolbar === 'none' ? autodesk.Viewing.Viewer3D : autodesk.Viewing.GuiViewer3D
-        viewer = new Ctor(container, withInitialViewCube(viewerConfig, viewCube))
+        viewer = new Ctor(
+          container,
+          withInitialViewCube(callbacksRef.current.viewerConfig, viewCubeRef.current),
+        )
         const startCode = viewer.start()
         if (startCode > 0) {
           throw new Error(`cantera aps-viewer: viewer.start() failed with code ${startCode}`)
@@ -268,7 +284,7 @@ export function APSViewer({
               callbacksRef.current.onExtensionError?.(APS_VIEWER_TOOLBAR_EXTENSION_ID, wrapped)
             })
         }
-        for (const request of extensions ?? []) {
+        for (const request of callbacksRef.current.extensions ?? []) {
           const { id, options } = toExtensionEntry(request)
           store.setExtensionStatus(id, 'loading')
           boundViewer
@@ -287,17 +303,18 @@ export function APSViewer({
               callbacksRef.current.onExtensionError?.(id, wrapped)
             })
         }
-        setStatus('ready')
+        store.setStatus('ready')
         callbacksRef.current.onViewerReady?.(viewer)
       })
       .catch((error: Error) => {
         if (disposed) return
-        setStatus('error')
+        store.setStatus('error')
         callbacksRef.current.onError?.(error)
       })
 
     return () => {
       disposed = true
+      // detach() also resets the store's status to 'idle'.
       store.detach()
       if (viewer) {
         viewer.unloadExtension(APS_VIEWER_TOOLBAR_EXTENSION_ID)
@@ -306,7 +323,6 @@ export function APSViewer({
         viewerRef.current = null
       }
       releaseViewerRuntime({ shutdown: callbacksRef.current.shutdownOnUnmount })
-      setStatus('idle')
     }
   }, [version, env, api, toolbar, profile, store])
 
@@ -389,10 +405,12 @@ export function APSViewer({
   useEffect(
     () =>
       onViewerTokenError((error) => {
-        setStatus((previous) => (previous === 'ready' ? previous : 'error'))
+        // A ready viewer keeps rendering with its last good token; anything
+        // earlier in the lifecycle cannot finish loading without one.
+        if (store.getStatus() !== 'ready') store.setStatus('error')
         callbacksRef.current.onError?.(error)
       }),
-    [],
+    [store],
   )
 
   useEffect(() => {

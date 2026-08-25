@@ -15,7 +15,7 @@ Files written into the consumer project:
 
 ## Props
 
-- `providers` (`OAuthProvider[]`) — Providers to offer, rendered as one ProviderSignInButton each.
+- `providers` (`OAuthProvider[]`) — Providers to offer, rendered as one ProviderSignInLink (with hrefTemplate) or ProviderSignInButton each.
 - `hrefTemplate` (`string`) — Href for a provider auth route; "{provider}" is replaced with the provider id, e.g. "/api/auth/{provider}". Serializable, so the card can be rendered from a server component.
 - `onSignIn` (`(providerId: string) => void | Promise<void>`) — Click handler alternative to hrefTemplate, for client-side flows. A returned promise drives the pending state for that provider.
 - `loadingProvider` (`string`) — Id of the provider currently authenticating, to show its spinner. While one provider is pending its siblings lock — one OAuth flow at a time, since a second redirect would race the first.

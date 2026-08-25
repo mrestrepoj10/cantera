@@ -2,12 +2,13 @@
  * Hand-authored API tables for the docs pages.
  *
  * Deliberately hand-written rather than generated: the props that matter most
- * here are the ones a type printer renders worst — `ProviderSignInButton` is a
- * discriminated union whose whole point is that `href` and `onSignIn` exclude
- * each other, and the pending/disabled props carry contracts (aria-disabled,
- * label preserved, control never unmounted) that live in the doc comment, not
- * in the type. Generating these would cost a docgen pipeline and lose exactly
- * the information the tables exist to convey. Keep them in sync by hand with
+ * here are the ones a type printer renders worst — `ProviderSignInLink` and
+ * `ProviderSignInButton` split the link and click flows so each element's
+ * props are typed for it, and the pending/disabled props carry contracts
+ * (aria-disabled, label preserved, control never unmounted) that live in the
+ * doc comment, not in the type. Generating these would cost a docgen pipeline
+ * and lose exactly the information the tables exist to convey. Keep them in
+ * sync by hand with
  * the interfaces in registry/ui and the exports in registry/lib.
  */
 
@@ -33,7 +34,7 @@ export interface ApiTable {
 export const apiTables: Record<string, ApiTable[]> = {
   'provider-sign-in-button': [
     {
-      caption: 'Props',
+      caption: 'ProviderSignInButton props',
       nameHeader: 'Prop',
       showDefault: true,
       rows: [
@@ -43,16 +44,10 @@ export const apiTables: Record<string, ApiTable[]> = {
           description: 'The provider to render: id, name, and an optional brand icon.',
         },
         {
-          name: 'href',
-          type: 'string',
-          description:
-            'Navigate to an auth route instead of handling a click; renders an anchor, and stays an anchor while pending. Mutually exclusive with onSignIn — passing both is a type error.',
-        },
-        {
           name: 'onSignIn',
           type: '() => void | Promise<void>',
           description:
-            'Called with no arguments on click; renders a button. A returned promise drives the pending state for you. Mutually exclusive with href.',
+            'Called with no arguments on click. A returned promise drives the pending state for you. For navigation to an auth route, use ProviderSignInLink instead.',
         },
         {
           name: 'loading',
@@ -89,9 +84,64 @@ export const apiTables: Record<string, ApiTable[]> = {
         },
         {
           name: '...props',
-          type: "ComponentProps<'a'> | ComponentProps<'button'>",
+          type: "ComponentProps<'button'>",
+          description: 'Remaining props go to the button element and are typed for it.',
+        },
+      ],
+    },
+    {
+      caption: 'ProviderSignInLink props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'provider',
+          type: 'OAuthProvider',
+          description: 'The provider to render: id, name, and an optional brand icon.',
+        },
+        {
+          name: 'href',
+          type: 'string',
           description:
-            'Remaining props go to whichever element renders — anchor props with href, button props without — and are typed for it.',
+            'The provider auth route to navigate to. Always renders an anchor — loading included — so the browser semantics of a link are never lost.',
+        },
+        {
+          name: 'loading',
+          type: 'boolean',
+          defaultValue: 'false',
+          description:
+            'Pending: the label stays, the icon crossfades to a spinner over 150ms, and navigation is blocked via aria-disabled so focus is never dropped.',
+        },
+        {
+          name: 'disabled',
+          type: 'boolean',
+          defaultValue: 'false',
+          description:
+            'Rendered as aria-disabled, never the native attribute, so the control keeps focus and a screen reader user can still find it.',
+        },
+        {
+          name: 'variant',
+          type: "'default' | 'outline' | 'secondary' | 'ghost'",
+          defaultValue: "'outline'",
+          description: 'Button variant, forwarded to the shadcn button styles.',
+        },
+        {
+          name: 'size',
+          type: "'default' | 'sm' | 'lg'",
+          defaultValue: "'lg'",
+          description:
+            'Button size. Everything but sm carries the 44px minimum touch target; sm is the opt-in compact escape hatch.',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          defaultValue: "'Continue with {provider.name}'",
+          description: 'Custom label replacing the default text.',
+        },
+        {
+          name: '...props',
+          type: "ComponentProps<'a'>",
+          description: 'Remaining props go to the anchor element and are typed for it.',
         },
       ],
     },
@@ -105,7 +155,8 @@ export const apiTables: Record<string, ApiTable[]> = {
         {
           name: 'providers',
           type: 'OAuthProvider[]',
-          description: 'Providers to offer, rendered as one ProviderSignInButton each.',
+          description:
+            'Providers to offer, rendered as one ProviderSignInLink (with hrefTemplate) or ProviderSignInButton each.',
         },
         {
           name: 'hrefTemplate',
@@ -2075,7 +2126,7 @@ import { APSViewer } from '@/components/ui/aps-viewer'
   },
   'viewer-types': {
     intro:
-      'The Autodesk Viewer ships as a browser global rather than an ESM package. These zero-dependency structural types describe only the public surface cantera touches, so your callback, extension, and hook code stays typed without coupling to a separate runtime package.',
+      "The Autodesk Viewer ships as a browser global rather than an ESM package. These types re-export Autodesk's official @types/forge-viewer definitions (a dev dependency — the full Autodesk.Viewing namespace, typed) under stable APS* names, plus cantera's domain types for cameras, properties, and token callbacks.",
     example: `import type { GetAccessToken } from '@/lib/viewer-types'
 
 const getAccessToken: GetAccessToken = async () => {

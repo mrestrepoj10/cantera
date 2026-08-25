@@ -212,6 +212,13 @@ export default function InstallationPage() {
 
         <Section id="why" title="Why it is built this way">
           <p className="text-muted-foreground text-sm">
+            Every item is CI-verified to install lint-clean: the whole registry is laid out in a
+            scratch consumer project and run through a fresh create-next-app&apos;s own gates —
+            ESLint with eslint-config-next at zero warnings, and strict tsc — on every change. Your
+            first <code className="font-mono text-code">lint</code> after an install has nothing to
+            say about code you did not write.
+          </p>
+          <p className="text-muted-foreground text-sm">
             The rules behind the tokens, the pending states, and the 44px targets are written down:{' '}
             <Link
               href="/philosophy"

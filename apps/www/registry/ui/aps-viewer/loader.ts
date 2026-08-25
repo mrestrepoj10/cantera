@@ -129,10 +129,10 @@ export function acquireViewerRuntime(options: ViewerRuntimeOptions): Promise<Aut
             env,
             api,
             language,
-            getAccessToken: (onTokenReady: (token: string, expiresInSeconds: number) => void) => {
+            getAccessToken: (onTokenReady?: (token: string, expiresInSeconds: number) => void) => {
               getAccessToken()
                 .then(({ accessToken, expiresInSeconds }) =>
-                  onTokenReady(accessToken, expiresInSeconds),
+                  onTokenReady?.(accessToken, expiresInSeconds),
                 )
                 .catch(reportTokenError)
             },

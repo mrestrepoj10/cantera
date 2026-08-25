@@ -12,8 +12,8 @@ const procoreProvider: OAuthProvider = { id: 'procore', name: 'Procore' }
  * wire: the label stays put, the mark crossfades to a spinner, and activation is
  * blocked with `aria-disabled` rather than the native attribute.
  *
- * In a real app this is usually an `href` to the auth route instead —
- * `<ProviderSignInButton provider={apsProvider} href="/api/auth/aps" />`.
+ * In a real app this is usually a navigation to the auth route instead —
+ * `<ProviderSignInLink provider={apsProvider} href="/api/auth/aps" />`.
  */
 function startSignIn(): Promise<void> {
   return new Promise((resolve) => {

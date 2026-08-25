@@ -84,8 +84,10 @@ export function useAPSCamera(): APSCamera {
       setView: (position: Vec3, target: Vec3, up?: Vec3) => {
         const viewer = store.getViewer()
         if (!viewer) return
-        viewer.navigation.setView(position, target)
-        if (up) viewer.navigation.setCameraUpVector(up)
+        // LMV accepts plain {x, y, z} vectors at runtime; the official typings
+        // ask for THREE.Vector3, which is structurally a superset of Vec3.
+        viewer.navigation.setView(position as THREE.Vector3, target as THREE.Vector3)
+        if (up) viewer.navigation.setCameraUpVector(up as THREE.Vector3)
       },
       fitToView: () => store.getViewer()?.fitToView(null),
     }),
@@ -98,9 +100,13 @@ export function useAPSCamera(): APSCamera {
 /**
  * Subscribes a handler to any raw viewer event (e.g.
  * `Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT`) with automatic cleanup.
- * The handler is kept in a ref, so inline closures are fine.
+ * The handler is kept in a ref, so inline closures are fine. Type the payload
+ * through the type parameter: `useAPSViewerEvent<{ dbIdArray: number[] }>(...)`.
  */
-export function useAPSViewerEvent(eventType: string, handler: (event: any) => void): void {
+export function useAPSViewerEvent<EventType = unknown>(
+  eventType: string,
+  handler: (event: EventType) => void,
+): void {
   const { viewer } = useAPSViewer()
   const handlerRef = useRef(handler)
   // Synced after commit, not during render: a render React discards (Strict
@@ -111,7 +117,7 @@ export function useAPSViewerEvent(eventType: string, handler: (event: any) => vo
 
   useEffect(() => {
     if (!viewer) return
-    const listener = (event: any) => handlerRef.current(event)
+    const listener = (event: EventType) => handlerRef.current(event)
     viewer.addEventListener(eventType, listener)
     return () => viewer.removeEventListener(eventType, listener)
   }, [viewer, eventType])
@@ -123,45 +129,59 @@ export interface APSPropertiesResult {
   error: Error | null
 }
 
+const EMPTY_PROPERTIES: APSPropertiesResult = Object.freeze({
+  data: [],
+  isLoading: false,
+  error: null,
+})
+
 /**
  * Async property fetch for a set of dbIds. Pass `useAPSSelection().dbIds`
- * to get live properties-of-selection. Results are cancelled on change,
- * so stale responses never overwrite fresh ones.
+ * to get live properties-of-selection. Results are keyed by the request they
+ * answer, so stale responses never overwrite fresh ones — and `key` is the
+ * serialized identity of dbIds, so a consumer passing a freshly-computed
+ * array every render does not refetch. While a fetch is in flight the
+ * previous results stay visible with `isLoading: true`.
  */
 export function useAPSProperties(dbIds: readonly number[]): APSPropertiesResult {
   const { viewer } = useAPSViewer()
-  const [state, setState] = useState<APSPropertiesResult>({
-    data: [],
-    isLoading: false,
-    error: null,
-  })
   const key = dbIds.join(',')
+  // Written only from async callbacks; the reset and loading states derive
+  // during render by comparing against the last settled request.
+  const [settled, setSettled] = useState<{
+    viewer: APSViewer3D
+    key: string
+    data: APSPropertyResult[]
+    error: Error | null
+  } | null>(null)
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `key` is the serialized identity of dbIds — depending on the array itself would refetch on every render
   useEffect(() => {
-    if (!viewer || dbIds.length === 0) {
-      setState({ data: [], isLoading: false, error: null })
-      return
-    }
+    if (!viewer || key === '') return
     let cancelled = false
-    setState((prev) => ({ ...prev, isLoading: true, error: null }))
 
     Promise.all(
-      dbIds.map(
+      key.split(',').map(
         (dbId) =>
           new Promise<APSPropertyResult>((resolve, reject) =>
-            viewer.getProperties(dbId, resolve, reject),
+            viewer.getProperties(
+              Number(dbId),
+              // The official typings mark name/externalId optional; LMV
+              // populates both for every real dbId.
+              (result) => resolve(result as APSPropertyResult),
+              reject,
+            ),
           ),
       ),
     )
       .then((data) => {
-        if (!cancelled) setState({ data, isLoading: false, error: null })
+        if (!cancelled) setSettled({ viewer, key, data, error: null })
       })
       .catch((error) => {
         if (!cancelled)
-          setState({
+          setSettled({
+            viewer,
+            key,
             data: [],
-            isLoading: false,
             error: error instanceof Error ? error : new Error(String(error)),
           })
       })
@@ -171,7 +191,21 @@ export function useAPSProperties(dbIds: readonly number[]): APSPropertiesResult 
     }
   }, [viewer, key])
 
-  return state
+  return useMemo(() => {
+    if (!viewer || key === '') return EMPTY_PROPERTIES
+    if (settled && settled.viewer === viewer && settled.key === key) {
+      return { data: settled.data, isLoading: false, error: settled.error }
+    }
+    // In flight: keep what last settled so lists do not blank out — but only
+    // from the same viewer instance. A recreated viewer may hold a different
+    // model, and its predecessor's properties must never pose as this
+    // request's data.
+    return {
+      data: settled && settled.viewer === viewer ? settled.data : [],
+      isLoading: true,
+      error: null,
+    }
+  }, [viewer, key, settled])
 }
 
 let contextMenuCallbackId = 0
@@ -230,6 +264,12 @@ export interface APSExtensionResult {
   error: Error | null
 }
 
+const IDLE_EXTENSION: APSExtensionResult = Object.freeze({
+  status: 'idle',
+  extension: null,
+  error: null,
+})
+
 /**
  * Shallow equality over option bags. Options may hold SDK objects, circular
  * structures, or functions — never serialize them; compare by key identity.
@@ -256,11 +296,15 @@ function sameOptions(a?: Record<string, unknown>, b?: Record<string, unknown>): 
  */
 export function useAPSExtension(id: string, options?: Record<string, unknown>): APSExtensionResult {
   const { viewer } = useAPSViewer()
-  const [state, setState] = useState<APSExtensionResult>({
-    status: 'idle',
-    extension: null,
-    error: null,
-  })
+  // Written only from async callbacks; `idle` (no viewer) and `loading`
+  // derive during render by comparing against the last settled load.
+  const [settled, setSettled] = useState<{
+    viewer: APSViewer3D
+    id: string
+    status: 'ready' | 'error'
+    extension: unknown
+    error: Error | null
+  } | null>(null)
   const optionsRef = useRef(options)
   const appliedOptionsRef = useRef(options)
   // Synced after commit, not during render — see useAPSViewerEvent. Declared
@@ -270,23 +314,27 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
   })
 
   useEffect(() => {
-    if (!viewer) {
-      setState({ status: 'idle', extension: null, error: null })
-      return
-    }
+    if (!viewer) return
     let cancelled = false
-    setState({ status: 'loading', extension: null, error: null })
     appliedOptionsRef.current = optionsRef.current
     viewer
       .loadExtension(id, optionsRef.current)
       .then((extension) => {
         if (cancelled) return
-        setState({ status: 'ready', extension: extension ?? viewer.getExtension(id), error: null })
+        setSettled({
+          viewer,
+          id,
+          status: 'ready',
+          extension: extension ?? viewer.getExtension(id),
+          error: null,
+        })
       })
       .catch((error) => {
         if (cancelled) return
         console.error(`cantera aps-viewer: failed to load extension "${id}"`, error)
-        setState({
+        setSettled({
+          viewer,
+          id,
           status: 'error',
           extension: null,
           error: error instanceof Error ? error : new Error(String(error)),
@@ -302,9 +350,17 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
     }
   }, [viewer, id])
 
-  const { status, extension } = state
-  // Keyed on the fields it reads, not the whole state object, so an unrelated
-  // state change (a new error) cannot re-run the option pass.
+  const result = useMemo<APSExtensionResult>(() => {
+    if (!viewer) return IDLE_EXTENSION
+    if (settled && settled.viewer === viewer && settled.id === id) {
+      return { status: settled.status, extension: settled.extension, error: settled.error }
+    }
+    return { status: 'loading', extension: null, error: null }
+  }, [viewer, id, settled])
+
+  const { status, extension } = result
+  // Keyed on the fields it reads, not the whole result object, so an
+  // unrelated change (a new error) cannot re-run the option pass.
   useEffect(() => {
     if (status !== 'ready' || sameOptions(appliedOptionsRef.current, options)) return
     appliedOptionsRef.current = options
@@ -314,7 +370,7 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
     loaded?.setOptions?.(options ?? {})
   }, [status, extension, options])
 
-  return state
+  return result
 }
 
 /** Convenience: viewer resize bound to a ResizeObserver on its container. */
