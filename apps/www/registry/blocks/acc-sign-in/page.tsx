@@ -89,9 +89,12 @@ export async function AccSignIn({
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>
+  searchParams: Promise<{ next?: string | string[] }>
 }) {
-  const nextPath = safeNext((await searchParams).next, '/sign-in')
+  // A repeated ?next= arrives as an array; treat it as absent rather than
+  // guessing which destination was meant.
+  const { next } = await searchParams
+  const nextPath = safeNext(typeof next === 'string' ? next : undefined, '/sign-in')
   return (
     <main className="flex flex-1 items-center justify-center p-6">
       <AccSignIn nextPath={nextPath} />
