@@ -53,3 +53,4 @@ The cantera showcase emulator supplies the project tree but no SVF geometry. Its
 - `kind=top-folders` (`hubId, projectId`) — Loads a project’s top folders.
 - `kind=folder-contents` (`projectId, folderId`) — Loads folders and items under one folder.
 - `kind=versions` (`projectId, itemId`) — Loads immutable versions under one item.
+- `kind=search` (`projectId, folderId, q`) — Recursively searches unopened descendants of one folder and returns matching tip versions for the scoped finder.

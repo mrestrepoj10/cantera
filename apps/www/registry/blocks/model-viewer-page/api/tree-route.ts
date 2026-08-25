@@ -22,6 +22,7 @@ import {
   fromApsProject,
   fromApsVersion,
 } from '@/lib/aps-data-preset'
+import type { Item, ItemVersion } from '@/lib/project-types'
 
 interface JsonApiDocument<T> {
   data?: T
@@ -37,12 +38,25 @@ interface TypedItemDoc extends ApsItemDoc {
   type: 'items'
 }
 
-type TreeKind = 'hubs' | 'projects' | 'top-folders' | 'folder-contents' | 'versions'
+interface SearchVersionDoc extends ApsVersionDoc {
+  relationships?: ApsVersionDoc['relationships'] & {
+    item?: { data?: { id?: string } | null }
+  }
+}
+
+interface SearchEntry {
+  item: Item
+  version: ItemVersion
+}
+
+type TreeKind = 'hubs' | 'projects' | 'top-folders' | 'folder-contents' | 'versions' | 'search'
+type BrowseKind = Exclude<TreeKind, 'search'>
 
 class MissingQueryParameterError extends Error {}
 
 const FOLDER_PAGE_LIMIT = 200
 const MAX_FOLDER_PAGES = 20
+const SEARCH_MIN_QUERY_LENGTH = 2
 
 function apiBase(origin: string): string {
   const configured = process.env.APS_AUTH_BASE_URL
@@ -147,8 +161,49 @@ async function loadFolderContents(
   )
 }
 
+async function searchFolder(
+  base: string,
+  token: Awaited<ReturnType<typeof getSessionToken>>,
+  projectId: string,
+  folderId: string,
+  query: string,
+): Promise<SearchEntry[]> {
+  const documents: JsonApiDocument<SearchVersionDoc[]>[] = []
+  for (let page = 0; page < MAX_FOLDER_PAGES; page += 1) {
+    const searchUrl = new URL(
+      `${base}/data/v1/projects/${segment(projectId)}/folders/${segment(folderId)}/search`,
+    )
+    searchUrl.searchParams.set('filter[attributes.displayName]-contains', query)
+    searchUrl.searchParams.set('page[number]', String(page))
+    searchUrl.searchParams.set('page[limit]', String(FOLDER_PAGE_LIMIT))
+    const document = await apsGet<JsonApiDocument<SearchVersionDoc[]>>(searchUrl.href, token)
+    documents.push(document)
+    if (!document.links?.next) break
+  }
+
+  return documents.flatMap((document) =>
+    (document.data ?? []).flatMap((doc) => {
+      const itemId = doc.relationships?.item?.data?.id
+      if (!itemId) return []
+      const version = fromApsVersion(doc)
+      return [
+        {
+          item: {
+            id: itemId,
+            name: version.displayName,
+            type: 'item' as const,
+            tip: version,
+            translationStatus: version.derivativeUrn ? ('success' as const) : ('pending' as const),
+          },
+          version,
+        },
+      ]
+    }),
+  )
+}
+
 async function loadNodes(
-  kind: TreeKind,
+  kind: BrowseKind,
   searchParams: URLSearchParams,
   base: string,
   token: Awaited<ReturnType<typeof getSessionToken>>,
@@ -197,11 +252,15 @@ async function loadNodes(
  * GET /api/models/tree?kind=top-folders&hubId=...&projectId=...
  * GET /api/models/tree?kind=folder-contents&projectId=...&folderId=...
  * GET /api/models/tree?kind=versions&projectId=...&itemId=...
+ * GET /api/models/tree?kind=search&projectId=...&folderId=...&q=...
  */
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url)
   const kind = url.searchParams.get('kind') as TreeKind | null
-  if (!kind || !['hubs', 'projects', 'top-folders', 'folder-contents', 'versions'].includes(kind)) {
+  if (
+    !kind ||
+    !['hubs', 'projects', 'top-folders', 'folder-contents', 'versions', 'search'].includes(kind)
+  ) {
     return Response.json({ error: 'Unknown tree request.' }, { status: 400 })
   }
 
@@ -212,6 +271,20 @@ export async function GET(request: Request): Promise<Response> {
       return Response.json({ error: 'Sign in with Autodesk to browse models.' }, { status: 401 })
     }
     const token = await getSessionToken(url.origin, session)
+    if (kind === 'search') {
+      const query = required(url.searchParams, 'q').trim()
+      if (query.length < SEARCH_MIN_QUERY_LENGTH) {
+        return Response.json({ entries: [] }, { headers: { 'Cache-Control': 'no-store' } })
+      }
+      const entries = await searchFolder(
+        apiBase(url.origin),
+        token,
+        required(url.searchParams, 'projectId'),
+        required(url.searchParams, 'folderId'),
+        query,
+      )
+      return Response.json({ entries }, { headers: { 'Cache-Control': 'no-store' } })
+    }
     const nodes = await loadNodes(kind, url.searchParams, apiBase(url.origin), token)
     return Response.json({ nodes }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {

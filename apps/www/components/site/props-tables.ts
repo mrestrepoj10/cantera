@@ -1524,6 +1524,12 @@ export const apiTables: ApiTablesByItem = {
           type: 'projectId, itemId',
           description: 'Loads immutable versions under one item.',
         },
+        {
+          name: 'kind=search',
+          type: 'projectId, folderId, q',
+          description:
+            'Recursively searches unopened descendants of one folder and returns matching tip versions for the scoped finder.',
+        },
       ],
     },
   ],

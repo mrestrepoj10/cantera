@@ -33,7 +33,8 @@ test('model viewer shell browses, finds, and adapts without clipping', async ({ 
     await tree.getByRole('treeitem', { name, exact: true }).click()
   }
 
-  await page.getByRole('button', { name: 'Find a loaded file' }).click()
+  // Clicking through to Coordination scoped the finder, which renames its trigger.
+  await page.getByRole('button', { name: 'Search in Coordination' }).click()
   const finder = page.getByRole('dialog', { name: 'Find a file' })
   await finder.getByRole('combobox', { name: 'Find a file' }).fill('structural')
   await finder.getByRole('option', { name: /structural\.rvt/ }).click()
