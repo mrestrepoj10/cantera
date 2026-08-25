@@ -196,8 +196,15 @@ export function useAPSProperties(dbIds: readonly number[]): APSPropertiesResult 
     if (settled && settled.viewer === viewer && settled.key === key) {
       return { data: settled.data, isLoading: false, error: settled.error }
     }
-    // In flight: keep whatever settled last so lists do not blank out.
-    return { data: settled?.data ?? [], isLoading: true, error: null }
+    // In flight: keep what last settled so lists do not blank out — but only
+    // from the same viewer instance. A recreated viewer may hold a different
+    // model, and its predecessor's properties must never pose as this
+    // request's data.
+    return {
+      data: settled && settled.viewer === viewer ? settled.data : [],
+      isLoading: true,
+      error: null,
+    }
   }, [viewer, key, settled])
 }
 

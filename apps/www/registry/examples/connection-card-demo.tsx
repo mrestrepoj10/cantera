@@ -8,9 +8,6 @@ import type { OAuthConnection } from '@/lib/oauth-types'
 
 const account = { name: 'Dana Alvarez', email: 'dana@ridgelinebuilders.com' }
 const scopes = ['data:read', 'viewables:read']
-// Stamped once at module load: render must stay pure, and a demo expiry does
-// not need to tick.
-const expiresAt = Date.now() + 42 * 60_000
 
 /** Stands in for the round trip a real disconnect or reconnect makes. */
 function settle(): Promise<void> {
@@ -21,6 +18,10 @@ function settle(): Promise<void> {
 
 export function ConnectionCardDemo() {
   const [connected, setConnected] = useState(true)
+  // Lazy initializer: render stays pure, the deadline is fresh per mount —
+  // never baked in at module load, where a long-lived server would serve an
+  // already-expired demo.
+  const [expiresAt] = useState(() => Date.now() + 42 * 60_000)
 
   const connection: OAuthConnection = connected
     ? {
