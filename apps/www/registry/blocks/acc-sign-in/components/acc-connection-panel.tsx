@@ -14,16 +14,10 @@ interface AccConnectionPanelProps {
   signInHref: string
 }
 
-/**
- * Client wrapper around ConnectionCard for the acc-sign-in block: disconnect
- * posts to the signout route, reconnect restarts the consent flow.
- */
 function AccConnectionPanel({ connection, signOutHref, signInHref }: AccConnectionPanelProps) {
   const router = useRouter()
   const [disconnecting, setDisconnecting] = useState(false)
   const [reconnecting, setReconnecting] = useState(false)
-  // A transition keeps the disconnect pending until the server page has
-  // actually re-rendered, rather than for the length of a fire-and-forget call.
   const [, startRefresh] = useTransition()
 
   async function disconnect() {
@@ -31,10 +25,8 @@ function AccConnectionPanel({ connection, signOutHref, signInHref }: AccConnecti
     try {
       await fetch(signOutHref, { method: 'POST', redirect: 'manual' })
     } finally {
-      // Clearing pending is part of the same transition as the refresh, so the
-      // Disconnect control keeps its spinner until the re-rendered server page
-      // commits — never actionable again beside a stale connected row. The
-      // refresh runs on failure too: the server view is the truth either way.
+      // Pending clears inside the transition so the button keeps its spinner
+      // until the re-rendered server page commits; refresh runs on failure too.
       startRefresh(() => {
         router.refresh()
         setDisconnecting(false)

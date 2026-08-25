@@ -4,15 +4,12 @@ import { cn } from '@/lib/utils'
 interface CodeBlockProps {
   code: string
   filename?: string
-  /** Defaults to the language implied by `filename`, then to tsx. */
   lang?: CodeLang
   className?: string
 }
 
-/**
- * Registry source, syntax-highlighted at build time. Server-only: shiki runs
- * during the render, so nothing about highlighting reaches the client bundle.
- */
+// Server-only: shiki runs during the render, so nothing about highlighting
+// reaches the client bundle.
 async function CodeBlock({ code, filename, lang, className }: CodeBlockProps) {
   const html = await highlightCode(code, lang ?? langForFilename(filename))
 

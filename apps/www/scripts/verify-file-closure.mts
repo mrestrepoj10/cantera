@@ -1,24 +1,6 @@
-/**
- * Verifier 1 of 3: every installable item ships its complete import closure.
- *
- * `npx shadcn add @cantera/<item>` copies files into a project that has none of
- * this repo's tsconfig paths. So every import inside an item's files has to be
- * satisfied by something the install actually produces: another file in the same
- * item, a file from a `@cantera/*` registry dependency (followed transitively
- * through registry.json), a shadcn primitive declared by its plain name, or a
- * module `shadcn init` already created. Anything else installs broken — the
- * failure mode a registry cannot self-detect, because the site's path fallbacks
- * make it compile here.
- *
- * The check is done against *installed* paths, not repo paths: a file's type and
- * target decide where the CLI writes it, so a `registry:component` file lands in
- * `components/` while `@/components/ui/x` reads from `components/ui/`. That
- * mismatch is invisible in this repo and fatal in a consumer's.
- *
- * It also rejects CJS `require()` and `@/registry/...` specifiers: the first
- * breaks ESM-only consumers (Vite), the second is a repo path that means nothing
- * once installed.
- */
+// Every import in an item's files must be satisfied by something the install
+// produces, checked against *installed* paths. The repo's tsconfig fallbacks make
+// a broken install compile here, so this failure mode is invisible without it.
 
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -47,7 +29,6 @@ function report(item: RegistryItem, file: string, message: string): void {
 const registry = await readRegistry()
 const byName = new Map(registry.items.map((item) => [item.name, item]))
 
-/** Every module any item installs, so a miss can name the item that owns it. */
 const owners = new Map<string, { item: string; module: string }>()
 for (const item of registry.items) {
   for (const file of item.files ?? []) {
@@ -58,7 +39,6 @@ for (const item of registry.items) {
   }
 }
 
-/** Turns an unsatisfied import into the fix for it. */
 function explain(target: string, closure: ReturnType<typeof resolveClosure>): string {
   const owner = owners.get(target)
   if (owner) {
@@ -66,7 +46,6 @@ function explain(target: string, closure: ReturnType<typeof resolveClosure>): st
       ? `${namespace}/${owner.item} is a dependency but installs it elsewhere`
       : `add ${namespace}/${owner.item} to registryDependencies`
   }
-  // Same file name, different install directory: a wrong file type or target.
   const base = path.posix.basename(target)
   const misplaced = [...owners.values()].find(
     (candidate) => path.posix.basename(candidate.module) === base,
@@ -104,8 +83,6 @@ for (const item of registry.items) {
       }
 
       if (isRelativeSpecifier(specifier)) {
-        // A relative import only survives the install when both files land in
-        // the same installed directory, whatever their layout is in the repo.
         const resolved = path.posix.normalize(
           path.posix.join(path.posix.dirname(file.path), specifier),
         )
@@ -133,7 +110,6 @@ for (const item of registry.items) {
       const target = aliasTargetFor(specifier)
       if (PROJECT_PROVIDED_MODULES.has(target)) continue
       if (closure.modules.has(target)) continue
-      // A shadcn primitive: satisfied by declaring its plain registry name.
       if (
         target.startsWith('components/ui/') &&
         closure.primitives.has(path.posix.basename(target))

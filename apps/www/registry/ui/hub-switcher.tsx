@@ -15,28 +15,16 @@ import { cn } from '@/lib/utils'
 
 interface HubSwitcherProps {
   hubs: Hub[]
-  /** Selected hub id (controlled). */
   value?: string
-  /** Initially selected hub id (uncontrolled). */
   defaultValue?: string
-  /**
-   * Called with the chosen hub id. Return a promise and the switcher drives
-   * its own pending state for the duration — or drive it with `pending`.
-   */
+  /** Promise-returning handlers drive the switcher's pending state. */
   onValueChange?: (hubId: string) => void | Promise<void>
-  /**
-   * Pending: the trigger keeps showing the current hub, crossfades in a
-   * spinner, and goes read-only — still focusable, never unmounted.
-   */
   pending?: boolean
   disabled?: boolean
   placeholder?: string
-  /** Shown inside the open list when there are no hubs at all. */
   emptyMessage?: string
-  /**
-   * Accessible name for the trigger. A combobox never takes its name from its
-   * content — without this the control announces its value but not what it is.
-   */
+  /** A combobox never takes its name from its content — without this the
+   * control announces its value but not what it is. */
   'aria-label'?: string
   className?: string
 }
@@ -47,10 +35,6 @@ function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
   return value != null && typeof (value as Promise<void>).then === 'function'
 }
 
-/**
- * The hub context switch — which ACC hub (or Procore company, or any Hub) the
- * rest of the screen works against. A select, not a combobox: hubs are few.
- */
 function HubSwitcher({
   hubs,
   value,
@@ -71,8 +55,8 @@ function HubSwitcher({
     <Select
       value={value}
       defaultValue={defaultValue}
-      // Read-only while busy: the popup cannot open, the trigger keeps focus
-      // and its label — pending never unmounts or collapses the control.
+      // Read-only while busy: the popup cannot open, but the trigger keeps
+      // focus and its label.
       readOnly={busy}
       disabled={disabled}
       onValueChange={(next: string | null) => {
@@ -90,15 +74,12 @@ function HubSwitcher({
         data-slot="hub-switcher"
         aria-label={ariaLabel}
         aria-busy={busy || undefined}
-        // gap-0 so the collapsed spinner slot leaves no phantom inset at rest
-        // (the chevron gets its margin back explicitly); the pseudo-element
-        // extends the hit area to the 44px field-density floor.
+        // The pseudo-element extends the hit area to the 44px floor.
         className={cn(
           'relative w-full gap-0 after:absolute after:-inset-y-2 after:inset-x-0 [&>svg]:ml-1.5',
           className,
         )}
       >
-        {/* Collapsed at rest; morphs open while busy with the icon crossfade. */}
         <span
           aria-hidden
           className={cn(

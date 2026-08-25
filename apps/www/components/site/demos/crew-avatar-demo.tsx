@@ -21,11 +21,8 @@ const crew = [
   'Hank Molloy',
 ]
 
-/** Type any name: the same name always produces the same worker. */
 export function CrewAvatarDemo() {
   const [name, setName] = useState('Maria Renteria')
-  // The hat color codes a trade. Reading it back as text is the point: the
-  // color is never the only place the fact lives.
   const { role } = crewAvatarSpec(name)
 
   return (

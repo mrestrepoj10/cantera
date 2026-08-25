@@ -1,7 +1,5 @@
 import registryJson from '@/registry.json'
 
-// Re-exported so the docs pages keep one import for "the registry", while the
-// command itself stays next to the URLs it is paired with in lib/site.
 export { installCommandFor } from '@/lib/site'
 
 export interface RegistryFile {
@@ -12,10 +10,6 @@ export interface RegistryFile {
 
 export interface RegistryItem {
   name: string
-  /**
-   * `registry:item` is the cssVars-led shape (status-tokens); `registry:example`
-   * is a generated v0 landing page, not a catalog entry.
-   */
   type:
     | 'registry:lib'
     | 'registry:component'
@@ -35,15 +29,9 @@ export interface RegistryItem {
 
 const allItems = registryJson.items as RegistryItem[]
 
-/**
- * The catalog: every item a consumer browses. Example items are excluded on
- * purpose — they are generated pages that exist so "Open in v0" has something
- * real to open, and listing them would double the grid, the nav, and the docs
- * routes with entries that document nothing.
- */
+// Example items are generated v0 landing pages, excluded from every catalog surface.
 export const registryItems = allItems.filter((item) => item.type !== 'registry:example')
 
-/** Lookups run per docs render, so they index by name once at module load. */
 const itemsByName = new Map(registryItems.map((item) => [item.name, item]))
 
 export function getRegistryItem(name: string): RegistryItem | undefined {
@@ -66,7 +54,6 @@ const previewFrameClasses: PreviewFrameClassByItem = {
   'file-drop-zone': 'flex min-h-[26rem] items-start rounded-lg border border-border p-4 sm:p-6',
 }
 
-/** Docs previews default to centered component scale; canvas-like items opt into a full frame. */
 export function getPreviewFrameClassName(name: string): string {
   return (
     previewFrameClasses[name] ??
@@ -74,22 +61,15 @@ export function getPreviewFrameClassName(name: string): string {
   )
 }
 
-/** A titled section of the catalog: one kind of registry item, in registry.json order. */
 export interface RegistryGroup {
-  /** Stable slug — used for React keys and heading ids. */
   id: string
   title: string
-  /** One sentence on what this kind of item is. */
   description: string
   items: RegistryItem[]
 }
 
-/**
- * Grouping is derived from the item `type`, never from a hardcoded list of
- * names — a new item lands in its section the moment registry.json gains it.
- * The one name-shaped rule is the `-types` suffix, which is how the lib items
- * split between shared prop shapes and provider adapters.
- */
+// Grouping derives from item `type`, never a hardcoded name list; the one
+// name-shaped rule is the `-types` suffix splitting shared shapes from adapters.
 type GroupDefinition = Omit<RegistryGroup, 'items'> & {
   match: (item: RegistryItem) => boolean
 }
@@ -129,7 +109,6 @@ const groupDefinitions: GroupDefinition[] = [
   },
 ]
 
-/** Anything a future `type` introduces lands here rather than dropping out of the catalog. */
 const otherGroup: Omit<RegistryGroup, 'items'> = {
   id: 'other',
   title: 'Other items',
@@ -156,19 +135,11 @@ function buildGroups(): RegistryGroup[] {
   return groups
 }
 
-/** The catalog, split into titled sections by kind. Empty sections are omitted. */
 export const registryGroups: RegistryGroup[] = buildGroups()
 
-/** Full-page blocks have their own gallery; the component catalog stays component-scale. */
 export const blockItems = registryItems.filter((item) => item.type === 'registry:block')
 export const componentRegistryGroups = registryGroups.filter((group) => group.id !== 'blocks')
 
-/**
- * Docs nav ordering: the pieces you compose with first, then the wired blocks
- * that compose them, then the shapes underneath. Blocks keep their own section
- * here rather than being folded in with components — a page you mount and a
- * component you pass props to are different purchases.
- */
 export const componentSidebarGroups: RegistryGroup[] = [
   ...registryGroups.filter((group) => group.id === 'components'),
   ...registryGroups.filter((group) => group.id === 'blocks'),
@@ -181,7 +152,6 @@ const examplesByName = new Map(
     .map((item) => [item.name, item] as const),
 )
 
-/** The generated example page for an item, when it has one. */
 export function getExampleItem(name: string): RegistryItem | undefined {
   return examplesByName.get(`${name}-demo`)
 }

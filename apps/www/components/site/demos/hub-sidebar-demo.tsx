@@ -10,10 +10,6 @@ import type { HubTreeNode } from '@/components/ui/hub-tree'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import type { BrowsePathSegment } from '@/lib/project-types'
 
-/**
- * Node ids follow the path chain, so revealing a finder entry is a pure
- * mapping from its `path` to tree ids — no lookup table.
- */
 function nodeId(path: BrowsePathSegment[], index: number): string {
   return path
     .slice(0, index + 1)
@@ -104,12 +100,6 @@ const nodes: HubTreeNode[] = [
   },
 ]
 
-/**
- * The finder wired to the tree: searching surfaces deep entries, and reveal
- * is one state update — the entry's path becomes `expandedIds` plus
- * `selectedId`. The provider is scoped to the preview frame, so the sidebar
- * renders inside it rather than against the viewport.
- */
 export function HubSidebarDemo() {
   const [query, setQuery] = useState('')
   const [expandedIds, setExpandedIds] = useState<string[]>([nodeId(hubPath, 0)])

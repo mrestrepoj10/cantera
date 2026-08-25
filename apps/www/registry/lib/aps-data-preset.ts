@@ -9,17 +9,9 @@ import type {
   SheetVersionSet,
 } from '@/lib/project-types'
 
-/**
- * Autodesk Platform Services (APS / ACC) data preset: adapters from the Data
- * Management, Model Derivative, and ACC Sheets payloads into cantera's project
- * types.
- *
- * This is data translation, not a client — fetching and token handling belong
- * to your auth layer (e.g. aec-auth, https://github.com/mrestrepoj10/aec-auth).
- * Each input interface is the structural subset of the response the adapter
- * actually reads, so any payload with these fields adapts, including the APS
- * emulator's.
- */
+// Data translation, not a client — fetching and token handling belong to your
+// auth layer. Each input interface is the structural subset the adapter reads,
+// so any payload with these fields adapts, including the emulator's.
 
 interface ApsNamedResource {
   id: string
@@ -29,7 +21,7 @@ interface ApsNamedResource {
   }
 }
 
-/** JSON:API resources are inconsistent about `name` versus `displayName`. */
+// JSON:API resources are inconsistent about `name` versus `displayName`.
 function resourceName(resource: ApsNamedResource): string {
   return resource.attributes?.displayName ?? resource.attributes?.name ?? resource.id
 }
@@ -38,12 +30,10 @@ interface ApsRelationship {
   data?: { id?: string } | null
 }
 
-/** Read the related resource id without coupling adapters to links or metadata. */
 function relationshipId(relationship: ApsRelationship | undefined): string | undefined {
   return relationship?.data?.id
 }
 
-/** Subset of a Data Management hub resource (`GET /project/v1/hubs`). */
 export interface ApsHubDoc {
   id: string
   attributes?: {
@@ -52,7 +42,6 @@ export interface ApsHubDoc {
   }
 }
 
-/** Translate a Data Management hub resource into a cantera Hub. */
 export function fromApsHub(doc: ApsHubDoc): Hub {
   return {
     id: doc.id,
@@ -61,7 +50,6 @@ export function fromApsHub(doc: ApsHubDoc): Hub {
   }
 }
 
-/** Subset of a Data Management project resource (`GET /project/v1/hubs/{hub}/projects`). */
 export interface ApsProjectDoc {
   id: string
   attributes?: {
@@ -76,7 +64,6 @@ export interface ApsProjectDoc {
   }
 }
 
-/** Translate a Data Management project resource into a cantera Project. */
 export function fromApsProject(doc: ApsProjectDoc): Project {
   return {
     id: doc.id,
@@ -85,7 +72,6 @@ export function fromApsProject(doc: ApsProjectDoc): Project {
   }
 }
 
-/** Subset of a Data Management folder resource. */
 export interface ApsFolderDoc extends ApsNamedResource {
   attributes?: ApsNamedResource['attributes'] & {
     lastModifiedTime?: string
@@ -95,7 +81,6 @@ export interface ApsFolderDoc extends ApsNamedResource {
   }
 }
 
-/** Translate a Data Management folder resource into a navigable Folder. */
 export function fromApsFolder(doc: ApsFolderDoc): Folder {
   return {
     id: doc.id,
@@ -107,7 +92,6 @@ export function fromApsFolder(doc: ApsFolderDoc): Folder {
   }
 }
 
-/** Subset of a Data Management version resource. */
 export interface ApsVersionDoc extends ApsNamedResource {
   attributes?: ApsNamedResource['attributes'] & {
     versionNumber?: number
@@ -121,7 +105,6 @@ export interface ApsVersionDoc extends ApsNamedResource {
   }
 }
 
-/** Translate one immutable APS item version, including its derivative URN. */
 export function fromApsVersion(doc: ApsVersionDoc): ItemVersion {
   return {
     id: doc.id,
@@ -134,7 +117,6 @@ export function fromApsVersion(doc: ApsVersionDoc): ItemVersion {
   }
 }
 
-/** Subset of a Data Management item resource. */
 export interface ApsItemDoc extends ApsNamedResource {
   attributes?: ApsNamedResource['attributes'] & {
     lastModifiedTime?: string
@@ -146,10 +128,8 @@ export interface ApsItemDoc extends ApsNamedResource {
   }
 }
 
-/**
- * Translate an APS item. Pass the tip resource from a JSON:API `included`
- * array when available; it is ignored if it does not match the item relation.
- */
+/** Pass the tip resource from the JSON:API `included` array when available;
+ * it is ignored if it does not match the item's tip relation. */
 export function fromApsItem(doc: ApsItemDoc, tipDoc?: ApsVersionDoc): Item {
   const tipId = relationshipId(doc.relationships?.tip)
   const tip = tipDoc && (!tipId || tipDoc.id === tipId) ? fromApsVersion(tipDoc) : undefined
@@ -172,16 +152,12 @@ const translationStatuses: ModelTranslationStatus[] = [
   'timeout',
 ]
 
-/**
- * Normalize a manifest status string into the translation vocabulary. Unknown
- * strings read as "pending" — the one state that promises nothing.
- */
+// Unknown strings read as "pending" — the one state that promises nothing.
 export function toTranslationStatus(status: string | undefined): ModelTranslationStatus {
   const normalized = status?.toLowerCase()
   return translationStatuses.find((known) => known === normalized) ?? 'pending'
 }
 
-/** Subset of a Model Derivative manifest (`GET /modelderivative/v2/designdata/{urn}/manifest`). */
 export interface ApsManifestDoc {
   urn: string
   status?: string
@@ -193,11 +169,7 @@ export interface ApsManifestDoc {
   }[]
 }
 
-/**
- * Translate a Model Derivative manifest into a cantera ModelTranslation. The
- * design name comes from the first named derivative (the manifest itself has
- * none); outputs list each derivative's outputType once, in manifest order.
- */
+// The design name comes from the first named derivative: the manifest itself has none.
 export function fromApsManifest(doc: ApsManifestDoc): ModelTranslation {
   const derivatives = doc.derivatives ?? []
   const outputs: string[] = []
@@ -220,14 +192,12 @@ export function fromApsManifest(doc: ApsManifestDoc): ModelTranslation {
   }
 }
 
-/** Subset of an ACC Sheets version set (`GET /construction/sheets/v1/projects/{project}/version-sets`). */
 export interface AccVersionSetDoc {
   id: string
   name?: string
   issuanceDate?: string
 }
 
-/** Translate an ACC Sheets version set into a cantera SheetVersionSet. */
 export function fromAccVersionSet(doc: AccVersionSetDoc): SheetVersionSet {
   return {
     id: doc.id,

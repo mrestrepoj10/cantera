@@ -10,15 +10,9 @@ type Listener = () => void
 const EMPTY_SELECTION: readonly number[] = Object.freeze([])
 const EMPTY_EXTENSIONS: Readonly<Record<string, APSExtensionStatus>> = Object.freeze({})
 
-/**
- * Bridges the viewer's imperative event bus into a React 18/19 external
- * store. Snapshots are cached and replaced only when the underlying event
- * fires, so `useSyncExternalStore` gets referentially stable values and
- * never tears or loops.
- *
- * Camera changes fire once per animation frame during orbits, so camera
- * snapshots are coalesced through requestAnimationFrame.
- */
+// Snapshots are cached and replaced only when the underlying viewer event
+// fires, so `useSyncExternalStore` gets referentially stable values and never
+// tears. Camera changes coalesce through requestAnimationFrame.
 export class ViewerStore {
   private viewer: APSViewer3D | null = null
   private listeners = new Set<Listener>()
@@ -47,8 +41,8 @@ export class ViewerStore {
     on(viewing.CAMERA_CHANGE_EVENT, () => this.scheduleCameraSnapshot())
     on(viewing.GEOMETRY_LOADED_EVENT, () => {
       this.modelLoaded = true
-      // First camera snapshot once geometry exists, so useAPSCamera has an
-      // initial value without waiting for the user to move the camera.
+      // First snapshot at geometry, so useAPSCamera has an initial value
+      // before the user moves the camera.
       this.scheduleCameraSnapshot()
       this.emit()
     })
@@ -56,34 +50,23 @@ export class ViewerStore {
     this.emit()
   }
 
-  /**
-   * Drops the model-loaded snapshot without tearing the viewer down. A URN
-   * swap reuses the same store, so the flag has to fall back to false while
-   * the next document loads — otherwise overlays keyed off
-   * `useAPSModelLoaded()` disappear before there is anything to look at.
-   */
+  /** A URN swap reuses this store, so the flag falls back to false while the
+   * next document loads. */
   resetModel(): void {
     if (!this.modelLoaded) return
     this.modelLoaded = false
     this.emit()
   }
 
-  /**
-   * Viewer lifecycle status. Owned by the store — the viewer is an external
-   * imperative resource, so its lifecycle is external state, written by
-   * `<APSViewer>` as it acquires and releases the runtime.
-   */
+  /** The viewer is an external imperative resource, so its lifecycle is
+   * external state — written by `<APSViewer>`, never component state. */
   setStatus(status: APSViewerStatus): void {
     if (this.status === status) return
     this.status = status
     this.emit()
   }
 
-  /**
-   * Load lifecycle of the extensions the viewer component was asked to load,
-   * as a frozen snapshot keyed by extension id — replaced, never mutated, so
-   * `useSyncExternalStore` sees each transition.
-   */
+  /** Replaced, never mutated, so `useSyncExternalStore` sees each transition. */
   setExtensionStatus(id: string, status: APSExtensionStatus): void {
     if (this.extensions[id] === status) return
     this.extensions = Object.freeze({ ...this.extensions, [id]: status })
@@ -124,7 +107,6 @@ export class ViewerStore {
   getExtensionStatuses = (): Readonly<Record<string, APSExtensionStatus>> => this.extensions
   getStatus = (): APSViewerStatus => this.status
 
-  /** Server snapshots for useSyncExternalStore — stable, empty values. */
   static getServerViewer = (): APSViewer3D | null => null
   static getServerSelection = (): readonly number[] => EMPTY_SELECTION
   static getServerCamera = (): APSCameraState | null => null

@@ -8,14 +8,7 @@ import {
   stateCookie,
 } from '@/lib/acc-auth'
 
-/**
- * Starts the 3-legged APS sign-in: builds the consent URL and redirects.
- * Install target: app/api/auth/[provider]/route.ts
- *
- * Query params:
- * - next   — same-origin path to return to after sign-in (default /sign-in).
- * - scopes — space- or comma-separated scope override.
- */
+/** Install target: app/api/auth/[provider]/route.ts */
 export async function GET(request: Request, ctx: { params: Promise<{ provider: string }> }) {
   const { provider } = await ctx.params
   if (provider !== APS_PROVIDER_ID) {

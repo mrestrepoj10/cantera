@@ -1,11 +1,5 @@
 import { statusCssVars } from '@/lib/status-tokens'
 
-/**
- * One color, one meaning. Recoverable states are warning, not danger; absence is
- * neutral, not an error. The classes come from the installed CSS variables, and
- * `statusCssVars` carries the same twelve tokens for the places a class cannot
- * reach — here, the inline swatch a chart series would use.
- */
 const tones = [
   {
     name: 'success',
@@ -37,7 +31,6 @@ const tones = [
   },
 ]
 
-/** Server-safe: no state, no effects, nothing to hydrate. */
 export function StatusTokensDemo() {
   return (
     <div className="flex w-full flex-col gap-4">

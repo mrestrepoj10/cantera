@@ -124,11 +124,6 @@ function versionNode(doc: ApsVersionDoc, itemId: string): HubTreeNode {
   }
 }
 
-/**
- * One lazy Data Management tree read for the showcase. APS payloads are
- * normalized before crossing the HTTP boundary, and tree ids are namespaced
- * independently from the raw provider ids retained in each node's value.
- */
 export async function loadHubTreeNodes(
   origin: string,
   token: AccessToken,

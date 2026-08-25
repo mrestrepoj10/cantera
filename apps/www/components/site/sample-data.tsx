@@ -1,15 +1,8 @@
 import type { OAuthAccount, OAuthProvider } from '@/lib/oauth-types'
 
-/**
- * Sample data for the site demos. The Autodesk side comes from the real
- * aps-oauth-preset registry item; this hand-rolled provider proves the
- * components are data-agnostic — any OAuthProvider shape renders.
- */
 export const procoreProvider: OAuthProvider = {
   id: 'procore',
   name: 'Procore',
-  // Same sizing contract as the preset marks: a default size, overridable by
-  // a `[&_svg]:size-*` wrapper.
   icon: (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="size-4">
       <path d="M3 4h18v7h-4.6V8.4H7.6v7.2h8.8V13H21v7H3z" />
@@ -26,7 +19,6 @@ export const sampleForeman: OAuthAccount = {
   name: 'Luis Ibarra',
 }
 
-/** A second hand-rolled provider, so the connections demo shows a mixed list. */
 export const fieldlinkProvider: OAuthProvider = {
   id: 'fieldlink',
   name: 'FieldLink',
@@ -37,10 +29,7 @@ export const fieldlinkProvider: OAuthProvider = {
   ),
 }
 
-/**
- * No mark at all. `provider.icon` is optional, and every surface has to render
- * a provider without one — this is the demo row that proves it.
- */
+/** No mark: every surface must render a provider without one. */
 export const siteworksProvider: OAuthProvider = {
   id: 'siteworks',
   name: 'Siteworks',

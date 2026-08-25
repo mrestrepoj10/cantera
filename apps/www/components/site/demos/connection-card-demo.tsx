@@ -24,8 +24,6 @@ export function ConnectionCardDemo() {
       />
       <ConnectionCard
         connection={connection}
-        // Both handlers return a promise, so the card drives its own pending
-        // state: the button keeps its label, spins, and stays put.
         onDisconnect={async () => {
           await delay()
           setState('disconnected')

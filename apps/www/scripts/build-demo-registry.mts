@@ -1,21 +1,3 @@
-/**
- * Generates the server-only lookup that renders live demos in component docs.
- *
- * Demo modules stay split into one lazy import each, but the lookup itself runs
- * in the Server Component tree. Next can therefore resolve the selected demo
- * while prerendering or prefetching the route instead of discovering its module
- * from a client-only map after navigation.
- *
- * Sources are selected by convention, in catalog order:
- * - `components/site/demos/<item>-demo.tsx` for showcase-specific compositions.
- * - `registry/examples/<item>-demo.tsx` when the distributed example is also
- *   the showcase preview.
- * - An explicit override for previews that need a non-standard module or prop.
- *
- * Deterministic and idempotent: `--check` fails when the committed lookup is
- * stale, and `registry:verify` runs that check before verifying other output.
- */
-
 import { readdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 

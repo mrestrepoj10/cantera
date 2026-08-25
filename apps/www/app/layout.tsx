@@ -24,14 +24,9 @@ export const metadata: Metadata = {
     'Construction UI. shadcn-native. Components for AEC data — ACC-ready, source-agnostic.',
 }
 
-/**
- * Applies the appearance class from <head>, before <body> exists — so the very
- * first paintable frame is already themed. next-themes' own script sits at the
- * top of <body>, and a slow-streaming document can paint the body's background
- * before reaching it; running from <head> closes that window. Mirrors the
- * provider's config (class strategy, "theme" storage key, system default), and
- * next-themes re-applies the same result when its script runs.
- */
+// Runs from <head>, before <body> exists: a slow-streaming document can paint
+// the body's background before next-themes' own script at the top of <body>.
+// Mirrors the provider's config; next-themes re-applies the same result.
 const appearanceScript = `try{var t=localStorage.getItem('theme');var d=t==='dark'||((t===null||t==='system')&&matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;r.classList.toggle('dark',d);r.style.colorScheme=d?'dark':'light'}catch(e){}`
 
 export default function RootLayout({

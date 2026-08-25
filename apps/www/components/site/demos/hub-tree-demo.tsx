@@ -161,7 +161,6 @@ function wait(ms = 450): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
 
-/** A self-contained controlled tree showing per-node lazy expansion. */
 export function HubTreeDemo() {
   const [nodes, setNodes] = useState(initialNodes)
   const [expandedIds, setExpandedIds] = useState<string[]>([])

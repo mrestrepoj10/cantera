@@ -15,13 +15,9 @@ interface ConnectionCardProps extends React.ComponentProps<typeof Card> {
   connection: OAuthConnection
   onDisconnect?: () => void | Promise<void>
   onReconnect?: () => void | Promise<void>
-  /**
-   * Pending state for the disconnect action. The button stays mounted, keeps
-   * its label, and shows a spinner — never pass `undefined` for the handler to
-   * express "busy", that unmounts the control under the user's cursor.
-   */
+  /** Never pass `undefined` for the handler to express "busy" — that unmounts
+   * the control under the user's cursor. */
   disconnectPending?: boolean
-  /** Pending state for the connect / reconnect action. */
   reconnectPending?: boolean
   showScopes?: boolean
 }
@@ -40,13 +36,6 @@ function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
   return value != null && typeof (value as Promise<void>).then === 'function'
 }
 
-/**
- * An action that follows the async-pending contract: disabled with a spinner
- * while it keeps its label, focusable throughout (`focusableWhenDisabled`
- * renders aria-disabled, not the native attribute), and never unmounted
- * mid-request. The spinner slot collapses at rest so the label sits centered,
- * and morphs open smoothly while busy.
- */
 function ConnectionAction({
   pending,
   onAction,
@@ -64,9 +53,7 @@ function ConnectionAction({
       disabled={busy}
       focusableWhenDisabled
       aria-busy={busy || undefined}
-      // Visually compact so it never outweighs the provider identity beside it;
-      // the pseudo-element extends the hit area to the 44px field-density floor,
-      // same pattern as the checkbox primitive.
+      // The pseudo-element extends the hit area to the 44px floor.
       className={cn('relative gap-0 after:absolute after:-inset-y-2 after:inset-x-0', className)}
       onClick={() => {
         const result = onAction()
@@ -78,9 +65,6 @@ function ConnectionAction({
         )
       }}
     >
-      {/* Collapsed at rest so the label sits centered; morphs open while busy.
-          Width + icon transitions are interruptible, and the spinner enters
-          with the opacity/scale/blur crossfade rather than a bare fade. */}
       <span
         aria-hidden
         className={cn(
@@ -104,10 +88,6 @@ function ConnectionAction({
   )
 }
 
-/**
- * A provider connection at a glance: who is connected, grant status, scopes,
- * and disconnect / reconnect actions. One card per provider grant.
- */
 function ConnectionCard({
   connection,
   onDisconnect,
@@ -138,12 +118,8 @@ function ConnectionCard({
               </ConnectionAction>
             )}
             {status === 'connected' && onDisconnect && (
-              // Disconnecting revokes a grant — destructive, not a neutral outline.
-              // The ink comes from the status palette rather than the variant's
-              // own --destructive: the primitives render destructive ink on a
-              // 10% tint of itself, which measures 4.06:1 on a stock shadcn
-              // theme. --status-danger clears 5:1 on that same tint, and ships
-              // with this component through token-status. The tint stays.
+              // --status-danger ink instead of the variant's own --destructive:
+              // destructive ink on its 10% tint misses AA on a stock theme.
               <ConnectionAction
                 pending={disconnectPending}
                 onAction={onDisconnect}

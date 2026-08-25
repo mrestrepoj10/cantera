@@ -1,23 +1,6 @@
-/**
- * Deterministic crew avatars — the same name always draws the same worker.
- *
- * The seed name is hashed once and every decision after that is a slice of the
- * hash: canvas tone, face offset, which safety gear this person wears. No
- * `Math.random`, no `Date`, no dependency — server and client produce the same
- * markup, so an avatar never flickers on hydration.
- *
- * The mark is monochrome by construction. A near-black or near-white canvas,
- * a figure drawn in the opposing tone plus two mixes of it, and exactly one
- * chroma: the hard hat, whose color is the trade it codes for on a real site.
- * Nothing else is colored, because nothing else means anything.
- *
- * Everything is drawn in a 36-unit square and clipped to a circle. Shapes are
- * deliberately blunt: these are read at 24-32px in a crew list, where a
- * one-unit detail is mud. The rule of thumb is that nothing narrower than two
- * units carries meaning on its own.
- */
+// Every decision is a slice of the name's hash — no Math.random, no Date — so
+// server and client render identical markup and avatars never flicker on hydration.
 
-/** The user-space square every coordinate below lives in. */
 export const CREW_AVATAR_VIEWBOX = 36
 
 const S = CREW_AVATAR_VIEWBOX
@@ -25,7 +8,7 @@ const S = CREW_AVATAR_VIEWBOX
 const FNV_OFFSET_BASIS = 0x811c9dc5
 const FNV_PRIME = 0x01000193
 
-/** 32-bit FNV-1a. `basis` doubles as a salt so one name yields many streams. */
+// `basis` doubles as a salt so one name yields many independent streams.
 function fnv1a(value: string, basis: number): number {
   let hash = basis
   for (let index = 0; index < value.length; index++) {
@@ -35,16 +18,10 @@ function fnv1a(value: string, basis: number): number {
   return hash >>> 0
 }
 
-/**
- * Case and surrounding space are not identity — "Maria Renteria" and
- * "maria renteria " are the same person on a crew list, so they get the same
- * face.
- */
 function seedFromName(name: string): number {
   return fnv1a(name.trim().toLowerCase(), FNV_OFFSET_BASIS)
 }
 
-/** One independent 32-bit stream per named trait. */
 function trait(seed: number, key: string): number {
   return fnv1a(key, seed)
 }
@@ -61,7 +38,7 @@ function pick<T>(seed: number, key: string, list: readonly T[]): T {
   return list[trait(seed, key) % list.length]
 }
 
-/** Magnitude from the low bits, sign from the high bits, so they stay independent. */
+// Magnitude from the low bits, sign from the high bits, so they stay independent.
 function signed(seed: number, key: string, steps: number, step: number): number {
   const value = trait(seed, key)
   const magnitude = (value % (steps + 1)) * step
@@ -108,11 +85,7 @@ function toHex(rgb: number[]): string {
     .join('')}`
 }
 
-/**
- * Mix two colors by weight. Consumer-supplied colors reach this, so an
- * unparseable value passes through untouched rather than collapsing the whole
- * avatar to black.
- */
+// Consumer-supplied colors reach this: an unparseable value passes through untouched.
 function mix(from: string, to: string, weight: number): string {
   const a = channels(from)
   const b = channels(to)
@@ -120,12 +93,10 @@ function mix(from: string, to: string, weight: number): string {
   return toHex(a.map((channel, index) => channel + (b[index] - channel) * weight))
 }
 
-/** Mix toward white (positive) or black (negative). */
 function shade(hex: string, amount: number): string {
   return mix(hex, amount < 0 ? '#000000' : '#ffffff', Math.abs(amount))
 }
 
-/** Relative luminance, WCAG definition. Unparseable colors read as mid. */
 function luminance(hex: string): number {
   const rgb = channels(hex)
   if (!rgb) return 0.5
@@ -136,16 +107,6 @@ function luminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 
-/**
- * Canvas tones: the Geist neutral scale at its two ends, never the middle.
- * A mid-grey disc is the one thing that reads as unresolved against both a
- * white page and a near-black one, so the canvas commits — near-black or
- * near-white — and the figure is drawn in whichever end the canvas is not.
- * Identity comes from gear, stance, and trade color, not from hue.
- *
- * The consequence is that a light disc on a light page has no edge of its own,
- * which is why every avatar draws a hairline ring one step off the canvas.
- */
 export const crewAvatarColors = [
   '#0A0A0A',
   '#141414',
@@ -157,14 +118,6 @@ export const crewAvatarColors = [
   '#FAFAFA',
 ] as const
 
-/**
- * Hard hat color is the one piece of chroma in the mark, and it is not
- * decoration: on a real site white is supervision and engineering, yellow is
- * general labor, orange is signaling and traffic, blue is the technical
- * trades, green is safety, red is emergency response. The weights approximate
- * the mix on an actual crew rather than an even spread. `spec.role` carries
- * the same fact as text, so nothing depends on reading the color alone.
- */
 export type CrewAvatarRole =
   | 'labor'
   | 'supervisor'
@@ -187,7 +140,6 @@ export type CrewAvatarHeadwear = 'hard-hat' | 'beanie'
 export type CrewAvatarEyewear = 'none' | 'safety-glasses' | 'goggles'
 
 export interface CrewAvatarOptions {
-  /** Canvas palette override, the way boring-avatars takes `colors`. */
   colors?: readonly string[]
 }
 
@@ -195,19 +147,12 @@ export interface CrewAvatarSpec {
   /** Stable base36 form of the seed hash — safe as a DOM id fragment. */
   id: string
   name: string
-  /** The disc. */
   background: string
-  /** Hairline ring, one step off the canvas, so a light disc keeps an edge. */
   ring: string
-  /** The figure, drawn in whichever end of the scale the canvas is not. */
   ink: string
-  /** The figure mixed 38% toward the canvas — the beard block. */
   inkMuted: string
-  /** The figure mixed 66% toward the canvas — eyewear frames and ear pads. */
   inkFaint: string
-  /** Trade color, toned to sit at least 3:1 on this canvas. */
   accent: string
-  /** One step down from the accent, for the hat ridge and the beanie band. */
   accentDeep: string
   /** What the hat color codes for, as text. Never rely on the color alone. */
   role: CrewAvatarRole
@@ -223,25 +168,17 @@ export interface CrewAvatarSpec {
   eyeSpread: number
 }
 
-/**
- * Resolve a name into every visual decision. Pure and total: any string, even
- * an empty one, yields a complete spec.
- */
+/** Pure and total: any string, even an empty one, yields a complete spec. */
 export function crewAvatarSpec(name: string, options: CrewAvatarOptions = {}): CrewAvatarSpec {
   const seed = seedFromName(name)
   const backgrounds =
     options.colors && options.colors.length > 0 ? options.colors : crewAvatarColors
   const background = pick(seed, 'background', backgrounds)
 
-  // The figure is the opposing end of the scale, not a fixed black — a custom
-  // palette of mid-tones still gets a figure that resolves against it.
   const dark = luminance(background) < 0.35
   const ink = dark ? '#FAFAFA' : '#101010'
 
   const hat = pickWeighted(seed, 'hard-hat', hardHats)
-  // A trade color is picked for its hue, then toned to the canvas it lands on.
-  // Yellow on near-white is unreadable at 24px; the same yellow one step down
-  // is still unmistakably yellow.
   const accent = dark ? shade(hat.color, 0.06) : shade(hat.color, -0.34)
   const eyewearRoll = unit(seed, 'eyewear', 100)
 
@@ -268,11 +205,8 @@ export function crewAvatarSpec(name: string, options: CrewAvatarOptions = {}): C
   }
 }
 
-/**
- * A renderer-neutral shape list. Both the JSX component and the markup string
- * walk this, so the two can never drift apart. `id` is a React key, never a DOM
- * id — emitting it would collide the moment two avatars share a page.
- */
+// `id` is a React key, never a DOM id — emitting it would collide when two
+// avatars share a page.
 export type CrewAvatarShape =
   | {
       id: string
@@ -305,7 +239,6 @@ export type CrewAvatarShape =
     }
   | { id: string; kind: 'group'; transform: string; children: CrewAvatarShape[] }
 
-/** Head geometry, shared by the face, the headwear, and the ear defenders. */
 const HEAD_X = 11.6
 const HEAD_TOP = 9.2
 const HEAD_WIDTH = 12.8
@@ -323,7 +256,6 @@ export function crewAvatarShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
       children: headShapes(spec),
     },
     ...bodyShapes(spec),
-    // Last, so it survives every overlap: the disc's own edge.
     { id: 'ring', kind: 'circle', cx: 18, cy: 18, r: 17.5, stroke: spec.ring, strokeWidth: 1 },
   ]
 }
@@ -343,9 +275,6 @@ function headShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
   ]
 
   if (spec.beard) {
-    // A flat block at the jaw, one tonal step off the head so it reads as a
-    // change of surface rather than an outline. Silhouette is all that
-    // survives at 24px anyway.
     shapes.push({
       id: 'beard',
       kind: 'rect',
@@ -367,8 +296,6 @@ function headShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
   shapes.push(...headwearShapes(spec))
 
   if (spec.earDefenders) {
-    // Set outboard of the skull on purpose: a cup that overlaps the head is a
-    // tonal patch, one that breaks the silhouette is a recognizable shape.
     shapes.push(
       {
         id: 'defender-left',
@@ -416,12 +343,6 @@ function headShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
   return shapes
 }
 
-/**
- * Eyes and eyewear only. There is no mouth: a smile is the single detail that
- * turns a mark into a cartoon, and it is the first thing to blur at 24px.
- * Every opening is the canvas knocked back out of the figure, so the face is
- * two tones in total no matter which gear this person drew.
- */
 function faceShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
   if (spec.eyewear === 'none') {
     return [
@@ -449,8 +370,6 @@ function faceShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
   }
 
   if (spec.eyewear === 'safety-glasses') {
-    // One hard bar with two lenses cut out of it. Frames drawn as separate
-    // strokes are sub-unit lines that vanish; a knocked-out shape does not.
     return [
       {
         id: 'glasses',
@@ -485,9 +404,6 @@ function faceShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
     ]
   }
 
-  // Goggles: the same bar, but round lenses and a strap running past the
-  // skull. Round against the glasses' slots is what tells the two apart at
-  // list size, where a difference in bar height would not.
   return [
     {
       id: 'strap',
@@ -568,11 +484,6 @@ function bodyShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
     return [{ id: 'shoulders', kind: 'rect', ...shoulders, fill: spec.ink }]
   }
 
-  // Hi-vis without chroma: the vest is the figure's own tone and the tape is
-  // the canvas knocked back out of it, so the banding reads as banding rather
-  // than as a second color competing with the trade on the hat. One chevron
-  // does the whole job: parallel braces plus a waist band turned into a grid
-  // at list size, and the band sat where the disc clips it anyway.
   return [
     { id: 'shoulders', kind: 'rect', ...shoulders, fill: spec.ink },
     {
@@ -584,7 +495,6 @@ function bodyShapes(spec: CrewAvatarSpec): CrewAvatarShape[] {
   ]
 }
 
-/** Two decimals is under a tenth of a device pixel at 64px — plenty. */
 function round(value: number): number {
   return Math.round(value * 100) / 100
 }
@@ -650,10 +560,6 @@ export interface CrewAvatarSvgOptions extends CrewAvatarOptions {
   title?: string
 }
 
-/**
- * The same avatar as a standalone markup string, for previews, emails, and
- * anything outside React.
- */
 export function crewAvatarSvg(name: string, options: CrewAvatarSvgOptions = {}): string {
   const { size = 32, title, ...rest } = options
   const spec = crewAvatarSpec(name, rest)

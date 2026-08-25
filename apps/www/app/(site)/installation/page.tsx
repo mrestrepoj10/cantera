@@ -11,7 +11,6 @@ export const metadata: Metadata = {
     'Add the @cantera registry to your shadcn project, install items with the CLI, and theme the status tokens.',
 }
 
-/** `shadcn init`, in each package manager's idiom. */
 const initCommands = {
   npm: 'npx shadcn@latest init',
   pnpm: 'pnpm dlx shadcn@latest init',

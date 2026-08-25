@@ -111,8 +111,7 @@ const relativeTimeRanges: [Intl.RelativeTimeFormatUnit, number][] = [
   ['minute', 60],
 ]
 
-/** One formatter per locale, not per row per render — construction is the
- * expensive part of Intl, and every row in the list shares it. */
+// One formatter per locale, not per render: construction is the expensive part of Intl.
 const relativeTimeFormatters = new Map<string, Intl.RelativeTimeFormat>()
 
 function relativeTimeFormatter(locale?: string): Intl.RelativeTimeFormat {
@@ -297,10 +296,8 @@ function VersionPicker({
           <Button
             type="button"
             variant="ghost"
-            // A version is a secondary affordance next to the row's own
-            // action, so it carries no box: the pseudo-element restores a
-            // 56px hit target — the row's full height — around a 32px
-            // control, without the mass.
+            // The pseudo-element restores the row's full 56px hit target
+            // around a 32px control.
             className="relative shrink-0 gap-1 self-center px-2 after:absolute after:-inset-x-1 after:-inset-y-3 focus-visible:border-ring"
             disabled={loading || opening}
             focusableWhenDisabled
@@ -371,13 +368,8 @@ function VersionPicker({
             {active.versions.map((version) => {
               const current = version.versionNumber === item.tip?.versionNumber
               const created = relativeTime(version.createTime, locale)
-              // The popover header already names the file, so a displayName
-              // that repeats it earns no line of its own — when it does, the
-              // version's age leads instead.
               const title = version.displayName === item.name ? undefined : version.displayName
               const primary = title ?? created ?? `Version ${version.versionNumber}`
-              // Two lines every row, always: a wrapping line would make the
-              // list ragged, and the badge widths already vary.
               const secondary = [title && created, version.createdBy, current && 'Current']
                 .filter(Boolean)
                 .join(' · ')
@@ -392,8 +384,8 @@ function VersionPicker({
                     focusableWhenDisabled
                     aria-busy={opening || undefined}
                     aria-current={current || undefined}
-                    // The number lives in a chip and the state in a badge, so
-                    // the name is spelled out rather than left to concatenation.
+                    // The name is spelled out so voice control can reach the
+                    // control by what it reads (WCAG 2.5.3).
                     aria-label={[
                       `Version ${version.versionNumber}`,
                       current && 'current',

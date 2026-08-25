@@ -22,16 +22,8 @@ import {
 } from '@/lib/upload-types'
 import { cn } from '@/lib/utils'
 
-/**
- * The drafting-grid surface. One dot grid, five behaviors: still while idle,
- * magnetized around the pointer during a drag, plotted bottom-up by upload
- * progress, wandered by a masked glow while the provider translates, and
- * settled into a status tint when the work ends. A radial "title block"
- * clearing keeps the center free of dots so the label never competes with
- * its own backdrop. Zone-phase selectors are scoped under the data-slot;
- * the shimmer and label classes are global so a standalone
- * FileDropZoneItem gets them too. Colors come from theme and status tokens.
- */
+// Zone-phase selectors are scoped under the data-slot; the shimmer and label
+// classes stay global so a standalone FileDropZoneItem gets them too.
 export const FILE_DROP_ZONE_CSS = `
 [data-slot='file-drop-zone'] .cantera-fdz-layer {
   position: absolute;
@@ -218,12 +210,6 @@ export const FILE_DROP_ZONE_CSS = `
 
 type ZonePhase = 'idle' | 'dragover' | 'uploading' | 'processing' | 'complete' | 'error'
 
-/**
- * The zone summarizes its files as one phase. Bytes in flight outrank
- * everything (queued counts — the batch is still landing), then provider
- * work, then errors, and the zone only reads complete when every file made
- * it. An empty zone is idle.
- */
 function derivePhase(files: UploadFile[]): Exclude<ZonePhase, 'dragover'> {
   if (files.some((f) => f.phase === 'uploading' || f.phase === 'queued')) return 'uploading'
   if (files.some((f) => f.phase === 'processing')) return 'processing'
@@ -232,11 +218,8 @@ function derivePhase(files: UploadFile[]): Exclude<ZonePhase, 'dragover'> {
   return 'idle'
 }
 
-/**
- * Equal-weight mean across files still in play; a finished or processing
- * file counts as landed. Byte-weighting would be more precise but needs
- * every size up front, which streams and folder drops do not guarantee.
- */
+// Equal-weight mean: byte-weighting needs every size up front, which streams
+// and folder drops do not guarantee.
 function overallProgress(files: UploadFile[]): number {
   const active = files.filter((f) => f.phase !== 'error')
   if (active.length === 0) return 0
@@ -248,7 +231,6 @@ function overallProgress(files: UploadFile[]): number {
   return landed / active.length
 }
 
-/** ".rvt,.ifc" → "RVT, IFC" for the default hint. MIME entries are skipped. */
 function acceptSummary(accept?: string): string | null {
   if (!accept) return null
   const extensions = accept
@@ -259,17 +241,14 @@ function acceptSummary(accept?: string): string | null {
   return extensions.length > 0 ? extensions.join(', ') : null
 }
 
-/** "summit-tower.rvt" → "RVT", for the per-file format chip. */
 function fileExtension(name: string): string | null {
   const dot = name.lastIndexOf('.')
   if (dot <= 0 || dot === name.length - 1) return null
   return name.slice(dot + 1).toUpperCase()
 }
 
-/**
- * Thenable check, not `instanceof Promise`: a polyfilled or cross-realm
- * promise is still a pending round trip the retry button must reflect.
- */
+// Thenable check, not `instanceof Promise`: a polyfilled or cross-realm
+// promise still counts.
 function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
   return value != null && typeof (value as Promise<void>).then === 'function'
 }
@@ -290,56 +269,30 @@ interface FileDropZoneProps
     React.ComponentProps<'div'>,
     'onDrop' | 'onDragOver' | 'onDragEnter' | 'onDragLeave'
   > {
-  /**
-   * The files to render, controlled by the consumer. The zone derives its
-   * surface phase from them: any uploading file plots the grid, any
-   * processing file starts the ambient glow, and the grid settles into a
-   * status tint when everything lands or fails.
-   */
   files?: UploadFile[]
-  /**
-   * Files that passed validation, from a drop or the picker. The component
-   * never uploads — start the transfer here and drive `files` as it moves.
-   */
+  /** Validated files from a drop or the picker. The component never uploads —
+   * start the transfer here and drive `files` as it moves. */
   onDropFiles?: (files: File[]) => void | Promise<void>
-  /** Files refused before any upload started, with the rule each broke. */
   onReject?: (rejections: UploadRejection[]) => void
-  /**
-   * Retry for a failed file. Promise-returning handlers drive the pending
-   * state; the button keeps its label, spins, and stays put.
-   */
+  /** Promise-returning handlers drive the retry button's pending state. */
   onRetry?: (file: UploadFile) => void | Promise<void>
   /** Remove a file's row — cancel in flight, clear it after it settled. */
   onRemove?: (file: UploadFile) => void
-  /** Native accept grammar: extensions, MIME types, `type/*` wildcards. */
   accept?: string
-  /** Cap on tracked files; extras reject as `file-count`. */
   maxFiles?: number
-  /** Per-file byte ceiling; larger files reject as `file-size`. */
   maxSize?: number
-  /** Accept several files per gesture. On by default — drops usually batch. */
   multiple?: boolean
   disabled?: boolean
-  /** Idle headline. The zone swaps it for phase copy while work is running. */
   label?: string
-  /** Caption under the headline. Defaults to the accept and size rules. */
   hint?: string
-  /**
-   * Render the built-in file rows. Files keep driving the grid either way;
-   * turn this off to lay rows out yourself with FileDropZoneItem.
-   */
+  /** Files keep driving the grid either way — turn this off to lay rows out
+   * yourself with FileDropZoneItem. */
   showList?: boolean
   /** Comfortable keeps 44px rows; compact is the desktop escape hatch. */
   density?: 'comfortable' | 'compact'
-  /** BCP 47 tag for sizes and percentages. Defaults locale-neutral. */
   locale?: string
 }
 
-/**
- * A drafting-grid drop zone for heavy AEC files. The dot grid magnetizes
- * under a dragged file, plots bottom-up as bytes land, and glows while the
- * provider translates — with per-file rows on the async-pending contract.
- */
 function FileDropZone({
   files = [],
   onDropFiles,
@@ -374,8 +327,8 @@ function FileDropZone({
 
   const percentFormat = useMemo(() => percentFormatter(locale), [locale])
 
-  // An Escape-cancelled drag or a drop outside the page does not always
-  // fire dragleave, which would leave the grid magnetized forever.
+  // An Escape-cancelled drag or a drop outside the page does not always fire
+  // dragleave, which would leave the grid magnetized forever.
   useEffect(() => {
     if (!dragging) return
     const reset = () => {
@@ -409,8 +362,8 @@ function FileDropZone({
           ? (processingFile?.processingLabel ?? phaseLabels.processing)
           : phaseLabels[phase]
 
-  // Announce phase changes, not percentages — progress lives on the rows'
-  // progressbar roles; a live region repeating numbers is chatter.
+  // Announce phase changes, not percentages — a live region repeating numbers
+  // is chatter.
   const announcement = phase === 'idle' || phase === 'dragover' ? '' : zoneLabel
 
   function process(incoming: File[]) {
@@ -445,8 +398,8 @@ function FileDropZone({
   function handleDragOver(event: React.DragEvent<HTMLDivElement>) {
     if (!dragHasFiles(event)) return
     event.preventDefault()
-    // The magnet follows the pointer through CSS vars written straight to
-    // the DOM — dragover fires continuously and must not render.
+    // CSS vars written straight to the DOM: dragover fires continuously and
+    // must not render.
     const surface = surfaceRef.current
     if (!surface) return
     const rect = surface.getBoundingClientRect()
@@ -553,8 +506,7 @@ function FileDropZone({
           />
         </span>
         <span className="relative z-10 flex items-baseline gap-2 font-medium text-sm">
-          {/* Keyed by text so each phase label re-enters through the
-              starting-style fade — a soft swap instead of a hard cut. */}
+          {/* Keyed by text so each phase label re-enters through the starting-style fade. */}
           <span
             key={zoneLabel}
             className={cn('cantera-fdz-label', phase === 'processing' && 'cantera-fdz-shimmer')}
@@ -610,28 +562,16 @@ function FileDropZone({
 }
 
 interface FileDropZoneItemProps extends React.ComponentProps<'li'> {
-  /** The file to render: name, format and size chip, and phase treatment. */
   file: UploadFile
-  /**
-   * Retry for a failed file. Promise-returning handlers drive the pending
-   * state; the button keeps its label, spins, and stays put.
-   */
+  /** Promise-returning handlers drive the retry button's pending state. */
   onRetry?: (file: UploadFile) => void | Promise<void>
-  /** Pending state for the retry action, drivable from outside. */
   retryPending?: boolean
   /** Remove the row — cancel in flight, clear it after it settled. */
   onRemove?: (file: UploadFile) => void
-  /** Comfortable keeps the 44px field target; compact is the escape hatch. */
   density?: 'comfortable' | 'compact'
-  /** BCP 47 tag for sizes and percentages. Defaults locale-neutral. */
   locale?: string
 }
 
-/**
- * One file row: name, format and size chip, and the phase treatment —
- * progressbar, shimmer label, check, or error with retry. Rendered by the
- * zone's built-in list, and exported for laying rows out anywhere else.
- */
 function FileDropZoneItem({
   file,
   onRetry,

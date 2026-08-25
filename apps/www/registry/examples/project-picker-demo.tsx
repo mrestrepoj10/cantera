@@ -26,11 +26,7 @@ const listStates: { id: ListState; label: string }[] = [
   { id: 'error', label: 'Error' },
 ]
 
-/**
- * The picker with its whole fetch vocabulary: the ready list grouped by hub,
- * the still loading skeleton, and the error wired to a retry. Selection is
- * uncontrolled here — pass `value` to control it.
- */
+/** Selection is uncontrolled here — pass `value` to control it. */
 export function ProjectPickerDemo() {
   const [state, setState] = useState<ListState>('ready')
   const [projectId, setProjectId] = useState<string>()

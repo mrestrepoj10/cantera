@@ -1,18 +1,9 @@
 import { getExampleItem, getRegistryItem, registryItems } from '@/components/site/registry'
 import { itemMarkdown } from '@/lib/item-markdown'
 
-/**
- * The markdown twin of every docs page: `/components/<name>.md`.
- *
- * Same URL as the page plus an extension, so a reader who wants the source
- * text — or an agent handed the link — gets markdown at a guessable address,
- * with no redirect and no HTML to strip. The body comes from
- * `lib/item-markdown.ts`, the serializer that also writes the agent skill's
- * per-item references, so the two can never disagree.
- *
- * Prerendered: the param list is the catalog. Unknown names still resolve to
- * an explicit 404 below, which is compatible with Cache Components.
- */
+// The docs page's URL plus `.md`, served with no redirect. Prerendered: the
+// param list is the catalog, and unknown names still resolve to an explicit
+// 404, which Cache Components requires.
 
 export function generateStaticParams() {
   return registryItems.map((item) => ({ name: item.name }))

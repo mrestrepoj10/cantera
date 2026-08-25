@@ -121,7 +121,6 @@ function paramsFor(request: TreeRequest): URLSearchParams {
   return params
 }
 
-/** Client wiring for the model-viewer-page block: lazy tree reads and model selection. */
 function ModelBrowser({
   account,
   initialNodes = [],

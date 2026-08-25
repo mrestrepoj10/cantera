@@ -1,7 +1,6 @@
 import { UserAccountBadge } from '@/components/ui/user-account-badge'
 import { apsProvider } from '@/lib/aps-oauth-preset'
 
-/** Server-safe: no state, no effects, nothing to hydrate. */
 export function UserAccountBadgeDemo() {
   return (
     <div className="flex w-full flex-col gap-4">

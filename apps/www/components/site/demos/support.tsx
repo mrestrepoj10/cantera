@@ -7,12 +7,6 @@ import type { OAuthConnection } from '@/lib/oauth-types'
 import type { Hub, Project } from '@/lib/project-types'
 import { cn } from '@/lib/utils'
 
-/**
- * Shared plumbing for the per-item demo modules in this directory. Each demo
- * lives in its own module so the docs pages can load exactly one of them via
- * dynamic import — this file holds only what several demos genuinely share.
- */
-
 /** Expiry set after mount so statically generated pages never render a stale relative time. */
 export function useDemoExpiry(minutesFromNow: number): Date | undefined {
   const [expiry, setExpiry] = useState<Date>()
@@ -22,18 +16,12 @@ export function useDemoExpiry(minutesFromNow: number): Date | undefined {
   return expiry
 }
 
-/** A promise that settles like a real round trip, so pending states are visible. */
 export function delay(ms = 900): Promise<void> {
   return new Promise((resolve) => {
     window.setTimeout(resolve, ms)
   })
 }
 
-/**
- * The status vocabulary, as a demo control. "Expiring soon" is not a separate
- * OAuthConnectionStatus — it is a connected grant near its expiry, which is
- * exactly the point: the components derive the warning tone themselves.
- */
 export type DemoState = 'connected' | 'expiring' | 'expired' | 'error' | 'disconnected'
 
 export const demoStates: { id: DemoState; label: string }[] = [
@@ -48,7 +36,6 @@ interface StateSwitcherProps<T extends string> {
   value: T
   onChange: (value: T) => void
   label: string
-  /** The states to offer. Generic so each demo names its own vocabulary. */
   states: { id: T; label: string }[]
 }
 
@@ -81,7 +68,6 @@ export function StateSwitcher<T extends string>({
   )
 }
 
-/** The connection each demo state describes, for one provider. */
 export function useDemoConnection(state: DemoState): OAuthConnection {
   const soonExpiry = useDemoExpiry(3)
   const laterExpiry = useDemoExpiry(42)

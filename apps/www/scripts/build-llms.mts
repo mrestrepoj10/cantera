@@ -1,26 +1,3 @@
-/**
- * Generates the agent-facing indexes that ride along with the built registry.
- *
- * Three files, three audiences:
- * - `public/r/llms.txt` — next to the registry JSON, for an agent that already
- *   found the registry and needs to know what is installable and how.
- * - `public/llms.txt` — the llmstxt.org site index: what this project is, and
- *   where each docs page lives.
- * - `public/llms-full.txt` — the whole reference in one fetch: design contracts
- *   first, then every item with its props, exports, and data attributes.
- *
- * Everything is derived from `registry.json` and `components/site/props-tables.ts`
- * in file order, with no timestamps and no randomness: these are committed build
- * artifacts and CI fails the build if they drift. Run via `pnpm registry:build`,
- * which chains this after `shadcn build`.
- *
- * Run with node's native TypeScript support (node >= 23.6): `.mts` so node
- * treats it as ESM (apps/www is a CommonJS package), and explicit `.ts` import
- * specifiers because that is what an ES module resolver needs. The
- * MODULE_TYPELESS_PACKAGE_JSON warning is disabled in the npm script: it fires
- * once for the typeless `.ts` file this imports, and says nothing actionable.
- */
-
 import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -41,7 +18,6 @@ const wwwRoot = path.join(import.meta.dirname, '..')
 const SUMMARY =
   "cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, plus an end-to-end Autodesk (APS / ACC) sign-in block. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme."
 
-/** Section headings in `llms.txt`, keyed by registry item type, in render order. */
 const TYPE_SECTIONS: { type: RegistryItem['type']; heading: string; blurb: string }[] = [
   {
     type: 'registry:component',
@@ -73,11 +49,6 @@ const TYPE_LABELS = {
   'registry:example': 'example page',
 } satisfies Record<RegistryItem['type'], string>
 
-/**
- * The contracts an agent has to know to use a component correctly — the
- * semantics that live in a prose contract rather than in a type signature.
- * Canonical text: `apps/www/lib/design-contracts.ts`.
- */
 const DESIGN_CONTRACTS = Object.values(designContracts(registryNamespace))
   .map((contract) => `### ${contract.title}\n\n${contract.body}`)
   .join('\n\n')
@@ -86,7 +57,6 @@ interface Registry {
   items: RegistryItem[]
 }
 
-/** One API table as a flat list — friendlier than a markdown table for types full of pipes. */
 function serializeTable(table: ApiTable): string {
   const rows = table.rows.map((row) => {
     const qualifier =
@@ -109,7 +79,6 @@ function itemDependencies(item: RegistryItem): string[] {
   return lines
 }
 
-/** `public/r/llms.txt` — the installable surface, for an agent at the registry. */
 function buildRegistryIndex(items: RegistryItem[]): string {
   const header = [
     '# cantera registry',
@@ -147,7 +116,6 @@ function buildRegistryIndex(items: RegistryItem[]): string {
   return `${[header, ...entries].join('\n\n')}\n`
 }
 
-/** `public/llms.txt` — the llmstxt.org site index. */
 function buildSiteIndex(items: RegistryItem[]): string {
   const sections = TYPE_SECTIONS.flatMap(({ type, heading, blurb }) => {
     const matching = items.filter((item) => item.type === type)
@@ -187,7 +155,6 @@ function buildSiteIndex(items: RegistryItem[]): string {
   return `${[header, docs, ...sections, optional].join('\n\n')}\n`
 }
 
-/** `public/llms-full.txt` — contracts plus the complete per-item API. */
 function buildFullReference(items: RegistryItem[], examples: Set<string>): string {
   const header = [
     '# cantera — full reference',
@@ -254,19 +221,13 @@ function buildFullReference(items: RegistryItem[], examples: Set<string>): strin
 }
 
 async function main() {
-  // `--out-dir` lets the drift verifier rebuild into a scratch directory and
-  // compare, rather than trusting that the committed artifacts are current.
   const outIndex = process.argv.indexOf('--out-dir')
   const outDir = outIndex === -1 ? path.join(wwwRoot, 'public') : process.argv[outIndex + 1]
 
   const registry = JSON.parse(
     await readFile(path.join(wwwRoot, 'registry.json'), 'utf8'),
   ) as Registry
-  // Example items are v0 landing pages, not catalog entries: they carry no API
-  // of their own and would only pad an index an agent reads to choose an item.
   const items = registry.items.filter((item) => item.type !== 'registry:example')
-  // Example items are not listed themselves; each one is named on the item it
-  // demonstrates, so an agent reading the reference knows a working page exists.
   const examples = new Set(
     registry.items
       .filter((item) => item.type === 'registry:example')

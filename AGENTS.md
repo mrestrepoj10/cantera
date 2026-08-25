@@ -61,6 +61,7 @@ Canonical text lives in `apps/www/lib/design-contracts.ts` — the llms.txt arti
 
 ## Conventions
 
+- Comments are freight. Registry sources ship verbatim into consumer projects, and every comment line rides along and rots there. Default to zero — names, types, and structure carry the meaning. A comment earns its line only when it states a constraint the code cannot express (a workaround's reason, an invariant that looks removable), tells the consumer what to replace (sample data in examples and blocks), or is a functional directive (`'use client'`, a lint suppression with its reason). Never narrate a line, restate a type, duplicate the docs or props tables, or reference this repo's history. The same default applies to showcase and test code.
 - Motion and animations are implemented only when the maintainers or the user ask for them — never add animation work unprompted.
 - End-user install instructions use `npx shadcn@latest add ...` as the canonical form — the default tab on the installation page and the only form in README, docs prose, and the llms outputs. The installation page may additionally offer pnpm/bun tabs.
 - Prose uses em dashes, not `--` (CLI flags excepted). No emojis in code, docs, or output.

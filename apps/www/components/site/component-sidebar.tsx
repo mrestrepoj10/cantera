@@ -41,8 +41,6 @@ function CatalogLinks({ groups, pathname }: { groups: SidebarGroup[]; pathname: 
         <div key={group.id}>
           <p className="mb-2 font-medium text-muted-foreground text-xs">{group.title}</p>
           <ul>
-            {/* The gallery heads its own section instead of sitting under
-                Getting started, so "Blocks" means one thing in this nav. */}
             {group.id === 'blocks' && (
               <li>
                 <Link

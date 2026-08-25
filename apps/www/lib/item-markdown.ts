@@ -1,25 +1,9 @@
-/**
- * One registry item, serialized as markdown.
- *
- * The single serializer behind two surfaces that must not disagree: the agent
- * skill's per-item references (`skills/cantera/references/<name>.md`, generated
- * by `scripts/build-skill.mts`) and the `.md` twin of every docs page
- * (`/components/<name>.md`, served by the route handler). A reader who copies
- * the page and a reader who installs the skill get the same bytes.
- *
- * Everything is derived from `registry.json` and `components/site/props-tables.ts`
- * in file order, with no timestamps and no randomness — the skill output is
- * committed and `pnpm registry:verify` fails on any drift.
- *
- * Import specifiers carry their `.ts` extension because `build-skill.mts` runs
- * on node's native TypeScript support, where relative ESM specifiers are exact
- * file paths. The bundler resolves them the same way.
- */
+// The single serializer behind the skill's per-item references and the
+// `/components/<name>.md` route — both surfaces must emit identical bytes.
 
 import { type ApiTable, apiTables, libUsage } from '../components/site/props-tables.ts'
 import { docsUrl, installCommandFor, registryItemUrl, registryNamespace } from './site.ts'
 
-/** The shape both callers already have: `registry.json` items, loosely typed. */
 export interface MarkdownItem {
   name: string
   type: string
@@ -45,12 +29,10 @@ const TYPE_LABELS: LabelByRegistryType = {
   'registry:example': 'example',
 }
 
-/** Human label for a registry item type, as the docs and the skill both name it. */
 export function typeLabelFor(type: string): string {
   return TYPE_LABELS[type] ?? type
 }
 
-/** One API table as a flat list — friendlier than a markdown table for types full of pipes. */
 function serializeTable(table: ApiTable): string {
   const rows = table.rows.map((row) => {
     const qualifier =
@@ -62,17 +44,11 @@ function serializeTable(table: ApiTable): string {
   return `## ${table.caption}\n\n${rows.join('\n')}`
 }
 
-/** Last path segment, without pulling `node:path` into a module the bundler ships. */
+/** Avoids pulling `node:path` into a module the bundler ships. */
 function basename(filePath: string): string {
   return filePath.split('/').pop() ?? filePath
 }
 
-/**
- * The full markdown reference for one item: what it is, how to install it, what
- * the install writes, and its complete API surface.
- *
- * `example` is the item's generated `registry:example`, when it has one.
- */
 export function itemMarkdown(item: MarkdownItem, example?: MarkdownItem): string {
   const lines: string[] = [
     `# ${item.title} (\`${registryNamespace}/${item.name}\`)`,

@@ -1,16 +1,6 @@
-/**
- * Hand-authored API tables for the docs pages.
- *
- * Deliberately hand-written rather than generated: the props that matter most
- * here are the ones a type printer renders worst — `ProviderSignInLink` and
- * `ProviderSignInButton` split the link and click flows so each element's
- * props are typed for it, and the pending/disabled props carry contracts
- * (aria-disabled, label preserved, control never unmounted) that live in the
- * doc comment, not in the type. Generating these would cost a docgen pipeline
- * and lose exactly the information the tables exist to convey. Keep them in
- * sync by hand with
- * the interfaces in registry/ui and the exports in registry/lib.
- */
+// Hand-authored on purpose: the pending/disabled props carry contracts a type
+// printer cannot render. Keep in sync with registry/ui interfaces and
+// registry/lib exports.
 
 export interface ApiRow {
   name: string
@@ -20,13 +10,9 @@ export interface ApiRow {
 }
 
 export interface ApiTable {
-  /** Section heading, e.g. "Props" or "Exports". */
   caption: string
-  /** Header for the first column, e.g. "Prop", "Export", "Token". */
   nameHeader: string
-  /** Header for the second column. */
   typeHeader?: string
-  /** Whether to render a Default column. */
   showDefault?: boolean
   rows: ApiRow[]
 }
@@ -2042,7 +2028,6 @@ export interface LibUsage {
   example: string
 }
 
-/** Code-oriented explanations for lib items, shown in place of a live preview. */
 interface LibUsageByItem {
   [item: string]: LibUsage
 }

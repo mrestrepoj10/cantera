@@ -14,11 +14,6 @@ import {
 import { apsProvider } from '@/lib/aps-oauth-preset'
 import type { OAuthConnection } from '@/lib/oauth-types'
 
-/**
- * The connections-page block, in the four states it ships. The switcher is the
- * point: empty, loading, and error are designed surfaces here, not afterthoughts
- * a consumer has to invent.
- */
 type ConnectionsDemoState = 'partial' | 'empty' | 'loading' | 'error'
 
 const connectionsDemoStates: { id: ConnectionsDemoState; label: string }[] = [
@@ -42,11 +37,6 @@ const connectionsDemoProviders = [
   siteworksProvider,
 ]
 
-/**
- * One grant per provider, covering the whole status vocabulary in one list:
- * healthy, expiring soon (a connected grant near its expiry), a real failure,
- * and — via the provider the demo starts with disconnected — absence.
- */
 function useDemoConnections(): OAuthConnection[] {
   const soonExpiry = useDemoExpiry(4)
   const laterExpiry = useDemoExpiry(42)
@@ -86,8 +76,6 @@ function useDemoConnections(): OAuthConnection[] {
 export function ConnectionsPageDemo() {
   const [state, setState] = useState<ConnectionsDemoState>('partial')
   const held = useDemoConnections()
-  // Which grants are gone. Disconnecting adds one, connecting removes one, and
-  // "empty" is simply all of them — so every state is the same one data path.
   const [revoked, setRevoked] = useState<string[]>([siteworksProvider.id])
   const connections = held.filter((connection) => !revoked.includes(connection.provider.id))
 
@@ -112,12 +100,9 @@ export function ConnectionsPageDemo() {
         status={connectionsDemoStatus[state]}
         error={state === 'error' ? 'The token vault did not respond.' : undefined}
         account={sampleAccount}
-        // The docs page already owns h1 and h2, so the block heading slots in
-        // one level down rather than restarting the outline.
+        // The docs page owns h1 and h2; slot in one level down.
         titleAs="h3"
         showScopes={false}
-        // Every callback returns a promise, so the cards drive their own
-        // pending: the pressed button keeps its label, spins, and stays put.
         onConnect={async (providerId) => {
           await delay()
           setState('partial')

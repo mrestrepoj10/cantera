@@ -9,17 +9,10 @@ import {
 } from '@/lib/oauth-types'
 import { cn } from '@/lib/utils'
 
-/**
- * The four semantic status tones. One color, one meaning — never a generic
- * badge variant. Requires the `@cantera/status-tokens` CSS variables; the
- * utilities fall back to foreground / destructive / muted without them.
- */
+/** One color, one meaning — never a generic badge variant. Requires the
+ * `@cantera/status-tokens` CSS variables. */
 type StatusTone = 'success' | 'warning' | 'danger' | 'neutral'
 
-/**
- * Solid fills, not low-alpha tints: a tablet in direct sunlight loses a 10%
- * tint entirely. Every pair below is contrast-verified in both appearances.
- */
 const statusToneClasses = {
   success: 'bg-status-success text-status-success-foreground',
   warning: 'bg-status-warning text-status-warning-foreground',
@@ -37,7 +30,6 @@ const statusInkClasses = {
 
 const statusTone = {
   connected: 'success',
-  // Expiry is recoverable — a refresh away, not a failure. Warning, not danger.
   expired: 'warning',
   error: 'danger',
   disconnected: 'neutral',
@@ -50,8 +42,7 @@ const statusLabel = {
   disconnected: 'Not connected',
 } satisfies Record<OAuthConnectionStatus, string>
 
-/** One formatter per locale, not per render — construction is the expensive
- * part of Intl, and every status line sharing a locale shares it. */
+// One formatter per locale, not per render: construction is the expensive part of Intl.
 const expiryFormatters = new Map<string, Intl.RelativeTimeFormat>()
 
 function expiryFormatter(locale?: string | string[]): Intl.RelativeTimeFormat {
@@ -64,10 +55,7 @@ function expiryFormatter(locale?: string | string[]): Intl.RelativeTimeFormat {
   return formatter
 }
 
-/**
- * Relative expiry, clamped at zero: a token that is already gone reads
- * "expired", never "expires 5 min. ago".
- */
+// Clamped at zero: an expired token reads "expired", never "expires 5 min. ago".
 function formatExpiry(expiry: Date, locale?: string | string[]): string {
   const deltaMs = expiry.getTime() - Date.now()
   if (deltaMs <= 0) return 'expired'
@@ -84,16 +72,11 @@ interface TokenStatusProps extends React.ComponentProps<'div'> {
   connection: OAuthConnection
   showExpiry?: boolean
   showScopes?: boolean
-  /** BCP 47 locale(s) for the relative expiry. Defaults to the runtime locale. */
   locale?: string | string[]
   /** How far ahead counts as "expiring soon". Default five minutes. */
   expiringSoonMs?: number
 }
 
-/**
- * Status line for an OAuth grant: connection state, token expiry, and the
- * scopes it holds. Server-safe.
- */
 function TokenStatus({
   connection,
   showExpiry = true,

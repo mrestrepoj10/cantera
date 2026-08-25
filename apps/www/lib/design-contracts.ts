@@ -1,14 +1,6 @@
-/**
- * The canonical design-contract text. This is the single source: the llms.txt
- * artifacts (`scripts/build-llms.mts`) and the agent skill
- * (`scripts/build-skill.mts`) both render from it, and AGENTS.md carries a
- * one-line summary of each contract pointing here. Edit this file, then run
- * `pnpm registry:build` — the generated outputs are committed and
- * `registry:verify` fails on drift.
- *
- * Bodies are single-flow paragraphs (no manual wrapping) so every surface
- * renders the same text; formatting belongs to the generator.
- */
+// Canonical design-contract text — llms.txt and the skill render from it (see
+// AGENTS.md). Bodies are single-flow paragraphs; formatting belongs to the
+// generators.
 
 export interface DesignContract {
   title: string

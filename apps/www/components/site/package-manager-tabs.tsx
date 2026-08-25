@@ -17,11 +17,6 @@ interface PackageManagerState {
 
 const PackageManagerContext = createContext<PackageManagerState | null>(null)
 
-/**
- * Holds the chosen package manager for a whole page: picking pnpm at the first
- * command block switches every block below it, because a reader who uses pnpm
- * uses it for all of them.
- */
 function PackageManagerProvider({ children }: { children: React.ReactNode }) {
   const [manager, setManager] = useState<PackageManager>('npm')
   return (
@@ -32,21 +27,14 @@ function PackageManagerProvider({ children }: { children: React.ReactNode }) {
 }
 
 interface PackageManagerTabsProps {
-  /** Names the tablist for screen readers, e.g. "Package manager for shadcn init". */
   label: string
-  /** The same command in each package manager's idiom. */
   commands: Record<PackageManager, string>
   className?: string
 }
 
-/**
- * A tablist over one command, in each package manager's idiom.
- *
- * Full APG tab semantics: roving tabindex, arrow / Home / End keys, and
- * automatic activation — the panel is a single copyable line, so selecting on
- * focus costs nothing and saves a keypress. The panel is not given tabindex
- * because it always contains a focusable control (the copy button).
- */
+// Full APG tabs with automatic activation — the panel is one copyable line, so
+// selecting on focus saves a keypress. No tabindex on the panel: it always
+// contains a focusable copy button.
 function PackageManagerTabs({ label, commands, className }: PackageManagerTabsProps) {
   const context = useContext(PackageManagerContext)
   const [localManager, setLocalManager] = useState<PackageManager>('npm')
@@ -90,7 +78,6 @@ function PackageManagerTabs({ label, commands, className }: PackageManagerTabsPr
               id={tabId(value)}
               aria-selected={selected}
               aria-controls={`${baseId}-panel`}
-              // Roving tabindex: one stop for the whole group, arrows inside it.
               tabIndex={selected ? 0 : -1}
               ref={(node) => {
                 tabRefs.current.set(value, node)

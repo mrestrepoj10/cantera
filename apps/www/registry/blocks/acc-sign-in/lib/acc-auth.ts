@@ -10,25 +10,16 @@ import {
 import { cache } from 'react'
 
 /**
- * Server-side auth wiring for the acc-sign-in block, on aec-auth's vault:
- * OAuth endpoints, grant storage, and a signed session cookie.
+ * Environment: APS_CLIENT_ID / APS_CLIENT_SECRET, optional APS_AUTH_BASE_URL
+ * (absolute, or relative like "/emulate/aps" for the emulator; unset = real
+ * APS), SESSION_SECRET — required in production.
  *
- * Environment:
- * - APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.
- * - APS_AUTH_BASE_URL — optional auth origin override. Absolute
- *   ("http://localhost:4014") or relative ("/emulate/aps", resolved against
- *   the request origin) for the @emulators/aps emulator. Unset = real APS.
- * - SESSION_SECRET — HMAC key for the session cookie. Set it in production.
- *
- * The default vault store is in-memory: fine for demos and a single dev
- * server, wrong for production. Swap in a durable VaultStore (e.g.
- * `upstashVaultStore()` wrapped in `encryptedVaultStore`) — see the aec-auth
- * README.
+ * The default vault store is in-memory: fine for demos, wrong for production.
+ * Swap in a durable VaultStore — see the aec-auth README.
  */
 
 export const APS_PROVIDER_ID = 'aps'
 
-/** Scopes requested when the sign-in flow starts, unless overridden. */
 export const DEFAULT_SIGN_IN_SCOPES = ['user-profile:read', 'data:read', 'viewables:read']
 
 const globalStore = globalThis as { __accVaultStore?: VaultStore }
@@ -63,12 +54,8 @@ export function getTokenSource(origin: string): TokenSource {
   })
 }
 
-/**
- * One vault read per request for a session's token, however many server
- * components ask for it. React.cache dedupes by argument identity, so pass
- * the session object `openSession` returned — it is per-request stable for
- * the same reason. Outside a React request scope the call runs uncached.
- */
+// React.cache dedupes by argument identity: pass the session object
+// `openSession` returned, which is per-request stable for the same reason.
 export const getSessionToken = cache((origin: string, session: AccSession) =>
   getTokenSource(origin).getToken({
     provider: APS_PROVIDER_ID,
@@ -84,10 +71,6 @@ export function userInfoUrl(origin: string): string {
 
 export { deleteUserGrant, saveUserGrant }
 
-// ---------------------------------------------------------------------------
-// Session cookie — HMAC-SHA256-signed JSON. No secrets inside, only identity.
-// ---------------------------------------------------------------------------
-
 export interface AccSession {
   userId: string
   name?: string
@@ -102,10 +85,9 @@ const STATE_COOKIE = 'acc-oauth-state'
 function sessionSecret(): string {
   const secret = process.env.SESSION_SECRET
   if (secret) return secret
-  // A publicly known fallback is only tolerable where forged sessions do not
-  // matter: local development, or a deployment that explicitly opts into demo
-  // mode (ACC_AUTH_DEMO=1, e.g. an emulator-backed showcase). Everywhere else,
-  // fail closed — a shared default key lets anyone mint a session for any user.
+  // The known fallback is tolerable only where forged sessions do not matter:
+  // local development, or ACC_AUTH_DEMO=1 (an emulator-backed showcase).
+  // Everywhere else fail closed — a shared key lets anyone mint any session.
   if (process.env.NODE_ENV !== 'production' || process.env.ACC_AUTH_DEMO === '1') {
     return 'cantera-demo-insecure-secret'
   }
@@ -127,8 +109,6 @@ function fromBase64Url(value: string): Uint8Array {
   return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))
 }
 
-/** The imported key is cached for the process: WebCrypto key import is the
- * expensive half of an HMAC, and the secret never changes between requests. */
 let importedHmacKey: { secret: string; key: Promise<CryptoKey> } | undefined
 
 function hmacKey(): Promise<CryptoKey> {
@@ -158,11 +138,8 @@ export async function sealSession(session: AccSession): Promise<string> {
   return `${payload}.${await hmac(payload)}`
 }
 
-/**
- * Verify and open the session cookie. Wrapped in React.cache so composable
- * server components — a page plus the panels it mounts — verify one HMAC per
- * request instead of one each; route handlers run it uncached.
- */
+// React.cache: a page plus the panels it mounts verify one HMAC per request
+// instead of one each.
 export const openSession = cache(
   async (cookieValue: string | undefined): Promise<AccSession | null> => {
     if (!cookieValue) return null
@@ -177,7 +154,7 @@ export const openSession = cache(
   },
 )
 
-/** `Secure` for HTTPS requests; local plain-HTTP development stays usable. */
+/** `Secure` only for HTTPS requests, so local plain-HTTP development stays usable. */
 export function cookieSecurity(requestUrl: URL | string): string {
   const url = typeof requestUrl === 'string' ? new URL(requestUrl) : requestUrl
   return url.protocol === 'https:' ? '; Secure' : ''
@@ -194,10 +171,6 @@ export function sessionCookie(
 export function clearSessionCookie(secure: string): string {
   return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`
 }
-
-// ---------------------------------------------------------------------------
-// OAuth state cookie — CSRF token plus the post-sign-in return path.
-// ---------------------------------------------------------------------------
 
 export interface OAuthState {
   state: string
@@ -233,7 +206,6 @@ export function readStateCookie(cookieHeader: string | null): OAuthState | null 
   }
 }
 
-/** Only allow same-origin relative return paths. */
 export function safeNext(next: string | null | undefined, fallback: string): string {
   // Same-origin relative paths only. `//` is protocol-relative, and browsers
   // normalize backslashes in a Location header ("/\\evil.com" -> "//evil.com"),

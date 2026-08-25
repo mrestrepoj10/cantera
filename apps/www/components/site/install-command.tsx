@@ -10,7 +10,6 @@ interface InstallCommandProps {
   className?: string
 }
 
-/** A copyable one-line install command with clipboard feedback. */
 function InstallCommand({ command, className }: InstallCommandProps) {
   const [copied, setCopied] = useState(false)
 
@@ -40,8 +39,6 @@ function InstallCommand({ command, className }: InstallCommandProps) {
         aria-label={copied ? 'Copied' : 'Copy command'}
         className="focus-ring flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
-        {/* Both icons stay mounted in one grid cell and crossfade — the
-            confirmation reads as the same control changing, not as a swap. */}
         <span aria-hidden className="grid size-4 place-items-center">
           <CopyIcon
             className={cn(

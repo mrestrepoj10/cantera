@@ -13,15 +13,8 @@ import {
 } from '@/lib/aps-data-preset'
 import type { BrowsePathSegment, Item } from '@/lib/project-types'
 
-/**
- * The demo's deep-search endpoint: one recursive Data Management search per
- * scope root (`folders/{id}/search` covers a whole subtree in one call — the
- * honest unit APS offers; there is no cross-hub search). Results come back
- * with their full address so the finder can show where each file lives and
- * reveal it in the browser.
- *
- * Demo wiring, not distributed: the registry finder never fetches.
- */
+// One recursive `folders/{id}/search` per scope root — the unit APS offers;
+// there is no cross-hub search.
 
 interface JsonApiDocument<T> {
   data?: T
@@ -105,7 +98,6 @@ export async function GET(request: Request): Promise<Response> {
       { id: proj.id, name: proj.name, type: 'project' },
     ]
 
-    // Ancestor walk, cached per request so siblings share folder reads.
     const folderCache = new Map<string, Promise<FolderDoc | undefined>>()
     function readFolder(id: string): Promise<FolderDoc | undefined> {
       let cached = folderCache.get(id)

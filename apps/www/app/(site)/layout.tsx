@@ -64,9 +64,6 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <footer className="border-border border-t">
         <div className="mx-auto flex w-full max-w-[90rem] flex-wrap items-center gap-x-6 gap-y-2 px-6 py-8 text-muted-foreground text-xs">
           <span>cantera — MIT License</span>
-          {/* The positioning pages live here rather than in the header: that nav
-              already wraps to a second row on a phone, and these are read-once
-              context, not surfaces anyone navigates back to mid-task. */}
           <nav aria-label="About" className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <Link
               href="/philosophy"

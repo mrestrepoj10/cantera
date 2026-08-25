@@ -32,7 +32,6 @@ const toneSamples: ToneSample[] = [
   },
 ]
 
-/** The four tones in all three treatments, so the palette is legible at a glance. */
 export function StatusTokensDemo() {
   return (
     <div className="flex w-full flex-col gap-4">

@@ -20,10 +20,8 @@ const tokenErrorListeners = new Set<(error: Error) => void>()
 
 /**
  * Subscribes to token-supplier failures. The SDK's `getAccessToken` callback
- * has no rejection path — a backend that is down or a grant that expired would
- * otherwise leave the SDK waiting forever with nothing to report — so the
- * failure is broadcast here and `<APSViewer>` turns it into `onError`.
- * Returns an unsubscribe function.
+ * has no rejection path, so failures are broadcast here instead of leaving
+ * the SDK waiting forever. Returns an unsubscribe function.
  */
 export function onViewerTokenError(listener: (error: Error) => void): () => void {
   tokenErrorListeners.add(listener)
@@ -35,7 +33,6 @@ export function onViewerTokenError(listener: (error: Error) => void): () => void
 function reportTokenError(cause: unknown): void {
   const error = new Error('cantera aps-viewer: getAccessToken failed', { cause })
   if (tokenErrorListeners.size === 0) {
-    // Nobody is listening: still fail loudly rather than silently.
     console.error(error, cause)
     return
   }
@@ -53,9 +50,8 @@ function assertBrowser(): void {
 }
 
 /**
- * Injects the viewer <script> and <link> tags exactly once, no matter how
- * many components ask for them, and resolves when `window.Autodesk.Viewing`
- * exists. Safe to call repeatedly; concurrent callers share one promise.
+ * Injects the viewer script and stylesheet exactly once; concurrent callers
+ * share one promise. Resolves when `window.Autodesk.Viewing` exists.
  */
 export function loadViewerScript(version = '7.*'): Promise<AutodeskGlobal> {
   assertBrowser()
@@ -100,13 +96,9 @@ export function loadViewerScript(version = '7.*'): Promise<AutodeskGlobal> {
 }
 
 /**
- * Loads the script (if needed) and runs `Autodesk.Viewing.Initializer` exactly
- * once. The Initializer is global in the SDK, so the first caller's options
- * win; subsequent calls share the initialized runtime.
- *
- * Call `releaseViewerRuntime()` when a consumer unmounts. The runtime itself
- * stays warm by default (re-initializing is expensive); pass
- * `shutdown: true` to tear it down when the last consumer releases.
+ * Loads the script (if needed) and runs the SDK's global Initializer exactly
+ * once — the first caller's options win. Pair with `releaseViewerRuntime()`
+ * on unmount; the runtime stays warm unless released with `shutdown: true`.
  */
 export function acquireViewerRuntime(options: ViewerRuntimeOptions): Promise<AutodeskGlobal> {
   assertBrowser()
@@ -158,14 +150,6 @@ export function releaseViewerRuntime({ shutdown = false }: { shutdown?: boolean 
     window.Autodesk.Viewing.shutdown()
     runtimePromise = null
   }
-}
-
-/** Test-only: reset module state between test cases. */
-export function __resetLoaderStateForTests(): void {
-  scriptPromise = null
-  runtimePromise = null
-  activeConsumers = 0
-  tokenErrorListeners.clear()
 }
 
 /** Normalizes a Model Derivative URN into the `urn:` documentId form. */

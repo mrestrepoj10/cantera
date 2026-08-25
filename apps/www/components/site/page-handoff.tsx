@@ -7,32 +7,14 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 interface PageHandoffProps {
-  /** The item's title, so every control here gets a unique accessible name. */
   title: string
-  /** Same-origin path to the markdown, so the link works on any deployment.
-   * The copy button fetches these bytes on demand — embedding them in the
-   * page's props would ship the whole document twice. */
   markdownPath: string
-  /** Absolute markdown URL, for the prompts a model has to be able to fetch. */
   markdownUrl: string
 }
 
-/**
- * Hands this docs page to whatever the reader is actually working in: the
- * clipboard, a raw markdown URL, or a new chat that starts by reading it.
- *
- * A disclosure, not a menu. The panel holds three links, so `aria-expanded` on
- * a real button plus a region it controls is the whole contract — Tab walks the
- * links in DOM order, and nothing is focusable while the panel is display:none.
- * `role="menu"` would owe a roving tabindex, typeahead, and arrow-key handling
- * that buys a link list nothing. `<details>` was the other candidate and lost on
- * measurement: Chromium exposes `<summary>` with no role and no accessible
- * name, so the trigger would have announced as nothing.
- *
- * Escape closes and returns focus to the trigger; a pointer press outside
- * closes. Both are listeners rather than a focus trap, because a disclosure
- * that traps focus is a dialog wearing the wrong clothes.
- */
+// A disclosure, not a menu: `role="menu"` owes roving tabindex, typeahead, and
+// arrow keys that a three-link list does not need — and `<summary>` announces
+// with no role and no accessible name in Chromium, so `<details>` lost too.
 function PageHandoff({ title, markdownPath, markdownUrl }: PageHandoffProps) {
   const [copied, setCopied] = useState(false)
   const [open, setOpen] = useState(false)
@@ -42,8 +24,7 @@ function PageHandoff({ title, markdownPath, markdownUrl }: PageHandoffProps) {
 
   async function copy() {
     try {
-      // The same bytes are already served at the markdown route, so fetch them
-      // on demand rather than shipping them again inside the page's props.
+      // Fetched on demand: embedding the bytes would ship the document twice.
       const text = fetch(markdownPath).then((response) => {
         if (!response.ok) throw new Error(`markdown fetch failed: ${response.status}`)
         return response.text()
@@ -115,8 +96,6 @@ function PageHandoff({ title, markdownPath, markdownUrl }: PageHandoffProps) {
         aria-label={`Copy ${title} page as Markdown`}
         className="min-h-11 gap-2 rounded-r-none px-4"
       >
-        {/* Both icons stay mounted in one grid cell and crossfade — the
-            confirmation reads as the same control changing, not as a swap. */}
         <span aria-hidden className="grid size-4 place-items-center">
           <CopyIcon
             className={cn(
@@ -156,8 +135,8 @@ function PageHandoff({ title, markdownPath, markdownUrl }: PageHandoffProps) {
       <div
         id={panelId}
         className={cn(
-          // Anchored to whichever edge the group itself sits on: the header
-          // stacks on a phone, so a right-anchored panel would hang off-screen.
+          // Anchored to the group's own edge: the header stacks on a phone, where
+          // a right-anchored panel would hang off-screen.
           'absolute top-full left-0 z-30 mt-2 w-60 flex-col sm:right-0 sm:left-auto',
           'rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md',
           open ? 'flex' : 'hidden',

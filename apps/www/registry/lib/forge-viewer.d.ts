@@ -1,11 +1,6 @@
-/**
- * Ambient augmentations for `@types/forge-viewer` (Autodesk's official Viewer
- * SDK definitions, a dev dependency of the viewer-types item).
- *
- * Declarations live in this .d.ts so they can use `namespace` merging — the
- * only way to extend an ambient global namespace — without tripping
- * `@typescript-eslint/no-namespace` in projects that lint .ts sources.
- */
+// Augments `@types/forge-viewer` with the members it misses. A .d.ts because
+// `namespace` merging — the only way to extend an ambient global namespace —
+// would trip `@typescript-eslint/no-namespace` in a .ts file.
 
 declare global {
   /** The CDN script defines `window.Autodesk`; it is absent until the viewer

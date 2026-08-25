@@ -16,25 +16,9 @@ import {
 import type { BrowsePathSegment, Item, ItemVersion } from '@/lib/project-types'
 import { cn } from '@/lib/utils'
 
-/**
- * Finder — the fast path into project data: a query box over consumer-supplied
- * result groups (recents, pins, the current level, an async deep search — the
- * finder does not care which). Data-agnostic on purpose: the query goes out
- * through `onQueryChange`, groups come back in as props, and the consumer owns
- * every fetch, debounce, and persistence decision.
- *
- * Three surfaces, one contract: `Finder` renders inline (a panel, a sidebar),
- * `FinderDialog` is the ⌘K command palette over the same props, and
- * `FinderTrigger` is the input-shaped button that advertises and opens it.
- *
- * APS has no cross-hub search API, so honest scoping is the consumer's job and
- * the group labels are the contract: name each group after what was actually
- * searched ("In Summit Tower", never "Everywhere").
- *
- * Entries carry their address (`path`) so finding teaches location: the path
- * renders under the name, and `onReveal` hands it back so a tree or browser
- * can unfold to the entry (map it to `expandedIds` / a location change).
- */
+// APS has no cross-hub search API, so honest scoping is the consumer's job:
+// name each group after what was actually searched ("In Summit Tower", never
+// "Everywhere").
 
 export interface FinderEntry {
   item: Item
@@ -42,7 +26,7 @@ export interface FinderEntry {
   version?: ItemVersion
   /** Where it lives, root-first. Renders as the path line and powers onReveal. */
   path?: BrowsePathSegment[]
-  /** Optional secondary line replacing the path (e.g. "opened 5 minutes ago"). */
+  /** Secondary line replacing the path (e.g. "opened 5 minutes ago"). */
   caption?: string
 }
 
@@ -50,17 +34,14 @@ export type FinderGroupStatus = 'ready' | 'loading' | 'error'
 
 export interface FinderGroup {
   id: string
-  /** Group heading; for searched groups, name the actual scope. */
   label: string
   /** `loading` keeps existing entries visible under a spinner-labeled heading. */
   status?: FinderGroupStatus
-  /** Failure line for `status="error"` — recoverable (retype), so warning ink. */
   error?: string
   entries: FinderEntry[]
 }
 
 export interface FinderPending {
-  /** Entry key currently opening, when the consumer drives pending itself. */
   openingId?: string
 }
 
@@ -73,13 +54,10 @@ export interface FinderProps extends Omit<ComponentProps<'div'>, 'onSelect'> {
   onReveal?: (entry: FinderEntry) => void
   pending?: FinderPending
   placeholder?: string
-  /** Accessible name for the query box. */
   label?: string
-  /** Shown when a query has no matches anywhere. */
   emptyLabel?: string
 }
 
-/** Stable key for an entry: item id plus the version when one is meant. */
 export function finderEntryKey(entry: FinderEntry): string {
   return entry.version ? `${entry.item.id}@${entry.version.id}` : entry.item.id
 }
@@ -109,7 +87,6 @@ interface FinderSurfaceProps
   autoFocus?: boolean
 }
 
-/** The input + grouped results shared by the inline and dialog surfaces. */
 function FinderSurface({
   query,
   onQueryChange,
@@ -262,18 +239,11 @@ function Finder({
 export interface FinderDialogProps extends Omit<FinderProps, 'className'> {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Bind ⌘K / Ctrl+K to toggle the palette. Default true. */
   shortcut?: boolean
   title?: string
   description?: string
 }
 
-/**
- * The ⌘K palette: the same controlled surface inside a command dialog.
- * Selecting or revealing an entry closes it — the palette is a jump, not a
- * workspace. Opening is keyboard-initiated, so the only motion is the dialog
- * primitive's own.
- */
 function FinderDialog({
   open,
   onOpenChange,
@@ -324,15 +294,10 @@ function FinderDialog({
 
 export interface FinderTriggerProps extends ComponentProps<'button'> {
   placeholder?: string
-  /** Render the ⌘K hint (hidden on coarse pointers). Default true. */
+  /** Render the ⌘K hint (hidden on coarse pointers). */
   showShortcut?: boolean
 }
 
-/**
- * An input-shaped button that opens the palette — the visible, tappable entry
- * point, with the keyboard shortcut as decoration rather than the only door.
- * Inside a shadcn sidebar it compacts to an icon when the rail collapses.
- */
 function FinderTrigger({
   placeholder = 'Find a file',
   showShortcut = true,
@@ -343,22 +308,16 @@ function FinderTrigger({
     <button
       type="button"
       data-finder-trigger=""
-      // The placeholder is the visible label, but it is the first thing a
-      // collapsed rail hides — so the name is spelled out either way.
+      // The visible placeholder is the first thing a collapsed rail hides, so
+      // the name is spelled out either way.
       aria-label={placeholder}
       className={cn(
         'flex h-8 w-full min-w-0 items-center gap-2 rounded-lg border border-input bg-input/30 px-2.5 text-muted-foreground text-sm outline-none transition-[color,background-color,border-color,transform] duration-150 ease-out hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.98] dark:bg-input/30',
-        // In an icon rail it stops being a field and becomes one of the icon
-        // buttons around it: no border, no fill, the rail's own hover ink.
-        // Width stays fluid (w-full) so it narrows with the panel instead of
-        // snapping to a square on the first frame of the collapse.
         'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:hover:bg-sidebar-accent group-data-[collapsible=icon]:hover:text-sidebar-accent-foreground',
         className,
       )}
       {...props}
     >
-      {/* Dimmed beside its placeholder, full strength when it is the whole
-          control — a 50%-opacity glyph alone reads as disabled. */}
       <SearchIcon
         aria-hidden="true"
         className="size-4 shrink-0 opacity-50 group-data-[collapsible=icon]:opacity-100"

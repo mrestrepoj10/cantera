@@ -51,13 +51,11 @@ const noBrowserGrant: HubBrowserWorkflowData = {
   page: 0,
 }
 
-/** The ACC workflow chain — hubs, projects, version sets, manifests — behind
- * its own boundary, so the page shell never waits on the emulator. */
+/** Behind its own boundary, so the page shell never waits on the emulator. */
 async function WorkflowSection({ session, params }: { session: AccSession; params: SearchParams }) {
   let workflow: AccWorkflowData
   try {
     const origin = await requestOrigin()
-    // Cached per request: AccSignIn and the browser section share this read.
     const token = await getSessionToken(origin, session)
     workflow = await loadAccWorkflow(origin, token, {
       hubId: one(params, 'hub'),
@@ -66,8 +64,6 @@ async function WorkflowSection({ session, params }: { session: AccSession; param
       fallbackHubId: DEMO_LANDING_HUB_ID,
     })
   } catch {
-    // A lost or unrefreshable grant is the connection panel's story to tell;
-    // the workflow says so plainly instead of throwing.
     workflow = noGrant
   }
   return <AccWorkflowPanel data={workflow} />
@@ -93,7 +89,6 @@ async function BrowserSection({ session, params }: { session: AccSession; params
   return <HubBrowserPanel data={browser} />
 }
 
-/** Still skeleton at the connection panel's geometry, so nothing shifts on resolve. */
 function ConnectionFallback() {
   return (
     <div className="flex w-full max-w-sm flex-col gap-4">
@@ -127,8 +122,6 @@ function ConnectionFallback() {
   )
 }
 
-/** Still skeleton at the workflow panel's field geometry — no shimmer, one
- * spinner carrying the announcement. */
 function WorkflowFallback() {
   return (
     <div className="flex flex-col gap-6">
@@ -161,12 +154,8 @@ function WorkflowFallback() {
   )
 }
 
-/**
- * Everything below the static header. Awaits only the session cookie — one
- * HMAC, no network — so the sign-in card and section headings stream almost
- * immediately, while the emulator round trips resolve behind their own
- * Suspense boundaries.
- */
+// Awaits only the session cookie (one HMAC, no network) so the shell streams
+// immediately; emulator round trips resolve behind their own boundaries.
 async function DemoBody({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const [params, cookieStore] = await Promise.all([searchParams, cookies()])
   const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)
@@ -182,8 +171,8 @@ async function DemoBody({ searchParams }: { searchParams: Promise<SearchParams> 
   return (
     <>
       <div className="grid gap-10 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:items-start">
-        {/* Signed in, AccSignIn refreshes the token — a third-party round trip
-            that must not gate the section headings around it. */}
+        {/* The token refresh is a third-party round trip that must not gate the
+            section headings around it. */}
         <Suspense fallback={<ConnectionFallback />}>
           <AccSignIn nextPath="/demo" headingLevel="h2" />
         </Suspense>
@@ -244,8 +233,6 @@ export default function DemoPage({ searchParams }: { searchParams: Promise<Searc
         </p>
       </header>
 
-      {/* The body awaits only the session cookie before choosing its layout;
-          everything network-bound streams in behind boundaries inside it. */}
       <Suspense
         fallback={
           <section className="mx-auto w-full max-w-sm">

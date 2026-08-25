@@ -1,19 +1,6 @@
-/**
- * Verifier 3 of 3: the committed build output matches the sources it comes from.
- *
- * `public/r/`, the `llms*.txt` artifacts, and `skills/cantera/` are all generated
- * and all committed — that is what makes the registry servable as static files
- * and the skill installable straight from the repo. Committed generated output
- * rots silently, so this rebuilds every artifact into a scratch directory and
- * compares byte for byte.
- *
- * Two things it proves at once: the artifacts are current (someone edited a
- * registry source and rebuilt), and the generators are deterministic (no
- * timestamps, no map ordering, no machine-dependent paths — a second run
- * produces identical bytes). CI additionally runs `git diff --exit-code` after
- * `registry:build`, which is the same guarantee from the other direction: this
- * check works on an uncommitted tree, that one proves the tree was committed.
- */
+// Rebuilds every committed artifact into a scratch directory and compares byte
+// for byte — proving both currency and generator determinism (no timestamps, no
+// unordered iteration).
 
 import { execFile } from 'node:child_process'
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
@@ -32,7 +19,6 @@ async function script(name: string, args: string[] = []): Promise<void> {
   })
 }
 
-/** Every file under a directory, as posix paths relative to it. */
 async function filesUnder(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true, recursive: true }).catch(() => [])
   return entries
@@ -73,8 +59,7 @@ async function compare({ label, committed, rebuilt }: Comparison): Promise<strin
 const scratch = await mkdtemp(path.join(tmpdir(), 'cantera-drift-'))
 
 try {
-  // Generated registry sources first: example items feed the distributed
-  // artifacts, and the demo registry feeds the showcase's static docs pages.
+  // Generated registry sources first: they feed the artifacts compared below.
   await script('build-examples.mts', ['--check']).catch((error) => {
     console.error(`${error.stdout ?? ''}${error.stderr ?? ''}`.trim())
     throw new Error('generated example items are stale')

@@ -11,11 +11,8 @@ const versionSets: SheetVersionSet[] = [
   { id: 'vs-gmp', name: 'GMP Set', issuanceDate: '2025-08-22' },
 ]
 
-/**
- * Version sets in issuance order, newest first, each carrying its date — the
- * selection is explicit, never implicit-latest: on site, building from a
- * superseded set is an expensive mistake.
- */
+/** The selection is explicit, never implicit-latest — on site, building from
+ * a superseded set is an expensive mistake. */
 export function VersionSetSelectDemo() {
   const [versionSetId, setVersionSetId] = useState('vs-ifc-03')
 
