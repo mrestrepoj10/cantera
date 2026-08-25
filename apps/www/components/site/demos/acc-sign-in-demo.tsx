@@ -3,9 +3,9 @@
 import { useState } from 'react'
 
 import { AccConnectionPanel } from '@/components/acc-connection-panel'
+import { ScopedAutodeskSignIn } from '@/components/scoped-autodesk-sign-in'
 import { StateSwitcher, useDemoExpiry } from '@/components/site/demos/support'
 import { sampleAccount } from '@/components/site/sample-data'
-import { SignInCard } from '@/components/ui/sign-in-card'
 import { apsProvider } from '@/lib/aps-oauth-preset'
 import type { OAuthConnection } from '@/lib/oauth-types'
 
@@ -47,14 +47,14 @@ export function AccSignInDemo() {
         states={accSignInDemoStates}
       />
       {state === 'signed-out' ? (
-        <SignInCard
-          providers={[apsProvider]}
+        <ScopedAutodeskSignIn
+          nextPath="/components/acc-sign-in"
           // Leads to the emulator-backed demo instead of starting a real
           // consent redirect from a docs page.
-          hrefTemplate="/demo"
+          startPath="/demo"
           title="Sign in"
           titleAs="h3"
-          description="Connect your Autodesk account to continue."
+          description="Choose the access to grant, then continue with Autodesk."
         />
       ) : (
         <div className="flex w-full max-w-sm flex-col gap-4">

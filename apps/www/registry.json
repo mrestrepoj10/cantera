@@ -211,7 +211,9 @@
       "categories": ["authentication", "login", "autodesk"],
       "dependencies": ["aec-auth", "lucide-react"],
       "registryDependencies": [
-        "@cantera/sign-in-card",
+        "card",
+        "@cantera/provider-sign-in-button",
+        "@cantera/scope-picker",
         "@cantera/connection-card",
         "@cantera/aps-oauth-preset",
         "@cantera/oauth-types"
@@ -231,6 +233,11 @@
           "path": "registry/blocks/acc-sign-in/components/acc-connection-panel.tsx",
           "type": "registry:component",
           "target": "components/acc-connection-panel.tsx"
+        },
+        {
+          "path": "registry/blocks/acc-sign-in/components/scoped-autodesk-sign-in.tsx",
+          "type": "registry:component",
+          "target": "components/scoped-autodesk-sign-in.tsx"
         },
         {
           "path": "registry/blocks/acc-sign-in/lib/acc-auth.ts",
@@ -259,7 +266,7 @@
         "SESSION_SECRET": "",
         "APS_AUTH_BASE_URL": ""
       },
-      "docs": "Installed: app/sign-in/page.tsx with its loading skeleton, the /api/auth/* route handlers, and lib/acc-auth.ts (aec-auth vault wiring).\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — HMAC key for the session cookie. Generate one with `openssl rand -base64 32`. In production the block fails closed without it: a shared default key would let anyone mint a session for any user.\n- APS_AUTH_BASE_URL — optional auth-origin override, absolute or relative (\"/emulate/aps\") for an embedded emulator. Leave it unset to talk to real APS.\n\nACC_AUTH_DEMO=1 is the escape hatch that allows the insecure fallback session secret in production. It exists for emulator-backed showcases only — never set it anywhere real accounts exist.\n\nThe default vault store is in-memory: correct for a demo, wrong for production. Swap in a durable VaultStore (see the aec-auth README) before you ship."
+      "docs": "Installed: app/sign-in/page.tsx with its loading skeleton, the /api/auth/* route handlers, and lib/acc-auth.ts (aec-auth vault wiring). Signed out, the page renders ScopedAutodeskSignIn — an access-level picker over the APS scope catalog — and forwards the selection to the consent redirect; /sign-in?next=/your-page returns there after the callback.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — HMAC key for the session cookie. Generate one with `openssl rand -base64 32`. In production the block fails closed without it: a shared default key would let anyone mint a session for any user.\n- APS_AUTH_BASE_URL — optional auth-origin override, absolute or relative (\"/emulate/aps\") for an embedded emulator. Leave it unset to talk to real APS.\n\nACC_AUTH_DEMO=1 is the escape hatch that allows the insecure fallback session secret in production. It exists for emulator-backed showcases only — never set it anywhere real accounts exist.\n\nThe default vault store is in-memory: correct for a demo, wrong for production. Swap in a durable VaultStore (see the aec-auth README) before you ship."
     },
     {
       "name": "connections-page",
@@ -644,9 +651,6 @@
         "sidebar",
         "@cantera/hub-sidebar",
         "@cantera/hub-tree",
-        "@cantera/provider-sign-in-button",
-        "@cantera/scope-picker",
-        "@cantera/aps-oauth-preset",
         "@cantera/aps-viewer",
         "@cantera/viewer-extension-types",
         "@cantera/aps-data-preset",
@@ -673,11 +677,6 @@
           "target": "components/model-browser.tsx"
         },
         {
-          "path": "registry/blocks/model-viewer-page/components/scoped-autodesk-sign-in.tsx",
-          "type": "registry:component",
-          "target": "components/scoped-autodesk-sign-in.tsx"
-        },
-        {
           "path": "registry/blocks/model-viewer-page/api/tree-route.ts",
           "type": "registry:file",
           "target": "app/api/models/tree/route.ts"
@@ -694,7 +693,7 @@
         "SESSION_SECRET": "",
         "APS_AUTH_BASE_URL": ""
       },
-      "docs": "Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-sign-in dependency supplies the OAuth routes and lib/acc-auth.ts.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.\n- SESSION_SECRET — required in production. Generate one with `openssl rand -base64 32`.\n- APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS. A relative value such as \"/emulate/aps\" is useful only when your app mounts a compatible embedded emulator at that path.\n\nThe default aec-auth vault from acc-sign-in is in-memory: appropriate for a demo, not production. Replace it with a durable encrypted VaultStore before real users connect.\n\nThe cantera showcase emulator supplies the project tree but no SVF geometry. Its seeded demo links one tip version to an externally translated sample URN when credentials are configured; every other item intentionally renders the no-geometry state. Your application should store real derivative URNs on normalized item versions."
+      "docs": "Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-sign-in dependency supplies the OAuth routes, lib/acc-auth.ts, and the /sign-in page with its scope picker — signed out, /models prompts and routes there with next=/models, so one surface owns scope selection.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.\n- SESSION_SECRET — required in production. Generate one with `openssl rand -base64 32`.\n- APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS. A relative value such as \"/emulate/aps\" is useful only when your app mounts a compatible embedded emulator at that path.\n\nThe default aec-auth vault from acc-sign-in is in-memory: appropriate for a demo, not production. Replace it with a durable encrypted VaultStore before real users connect.\n\nThe cantera showcase emulator supplies the project tree but no SVF geometry. Its seeded demo links one tip version to an externally translated sample URN when credentials are configured; every other item intentionally renders the no-geometry state. Your application should store real derivative URNs on normalized item versions."
     },
     {
       "name": "upload-types",

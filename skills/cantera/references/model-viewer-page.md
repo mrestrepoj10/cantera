@@ -6,7 +6,7 @@ A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, l
 - Install: `npx shadcn@latest add @cantera/model-viewer-page`
 - Docs: https://canteraui.vercel.app/components/model-viewer-page
 - Registry item: https://canteraui.vercel.app/r/model-viewer-page.json
-- Registry dependencies: button, card, sidebar, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/provider-sign-in-button, @cantera/scope-picker, @cantera/aps-oauth-preset, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
+- Registry dependencies: button, card, sidebar, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
@@ -14,7 +14,6 @@ Files written into the consumer project:
 - `app/models/page.tsx`
 - `app/models/loading.tsx`
 - `components/model-browser.tsx`
-- `components/scoped-autodesk-sign-in.tsx`
 - `app/api/models/tree/route.ts`
 - `app/api/viewer-token/route.ts`
 
@@ -27,7 +26,7 @@ Environment variables added to `.env.local`:
 
 ## Install notes
 
-Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-sign-in dependency supplies the OAuth routes and lib/acc-auth.ts.
+Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-sign-in dependency supplies the OAuth routes, lib/acc-auth.ts, and the /sign-in page with its scope picker — signed out, /models prompts and routes there with next=/models, so one surface owns scope selection.
 
 Environment (added to .env.local as empty keys — fill them in):
 - APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.

@@ -5,7 +5,7 @@ import { waitForHydration } from './hydration'
 test('model viewer shell browses, finds, and adapts without clipping', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/view/model-viewer-page')
-  await page.getByRole('link', { name: /continue with autodesk/i }).click()
+  await page.getByRole('link', { name: /sign in with autodesk/i }).click()
   await page.getByRole('button', { name: /test user/i }).click()
   await expect(page).toHaveURL(/\/view\/model-viewer-page$/)
   await waitForHydration(page)
