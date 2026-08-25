@@ -3,11 +3,6 @@
 import { ModelStatusCard } from '@/components/ui/model-status-card'
 import type { ModelTranslation } from '@/lib/project-types'
 
-/**
- * The whole translation vocabulary at once: ready, translating, queued, timed
- * out, failed. Timeout is warning — a retry away, like an expired token —
- * while failed is danger, the one state the user must act on.
- */
 const translations: ModelTranslation[] = [
   {
     urn: 'dXJuOmFkc2sud2lwcHJvZDpkbS5saW5lYWdlOnN1bW1pdA',

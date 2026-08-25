@@ -55,7 +55,6 @@ export type HubTreeBranchNode =
   | HubTreeFolderNode
   | HubTreeItemNode
 
-/** The normalized, provider-agnostic tree shape consumed by HubTree. */
 export type HubTreeNode = HubTreeBranchNode | HubTreeVersionNode
 
 export interface HubTreeProps extends Omit<ComponentProps<'div'>, 'children'> {
@@ -103,11 +102,8 @@ function nodeIcon(type: HubTreeNode['type']): ReactNode {
   return <HistoryIcon aria-hidden className={className} />
 }
 
-/**
- * Controlled APS-style tree navigation. HubTree never fetches: expanding a
- * row calls the consumer, which supplies the resulting children through
- * `nodes`. Items open their tip; version rows open that immutable version.
- */
+// HubTree never fetches: expanding a row calls the consumer, which supplies
+// the resulting children through `nodes`.
 function HubTree({
   nodes,
   expandedIds,
@@ -126,11 +122,8 @@ function HubTree({
   const visibleIds = useMemo(() => visible.map(({ node }) => node.id), [visible])
   const rows = useRef(new Map<string, HTMLDivElement>())
   // Roving-tabindex focus derives during render, so it can never fall on a
-  // hidden row: an override written by keyboard or focus events wins while it
-  // is valid for the current selection and still visible; otherwise the
-  // selected row; otherwise the first visible row. Tagging the override with
-  // the selection it was made under means a selection change retires it
-  // without an effect.
+  // hidden row. The override is tagged with the selection it was made under,
+  // so a selection change retires it without an effect.
   const [focusOverride, setFocusOverride] = useState<{
     id: string
     selectionKey: string | undefined

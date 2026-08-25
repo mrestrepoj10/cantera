@@ -1,13 +1,6 @@
 import type { OAuthAccount, OAuthProvider, OAuthScope, OAuthScopePreset } from '@/lib/oauth-types'
 
-/**
- * Autodesk Platform Services (APS / ACC) preset for the cantera oauth
- * components: provider metadata, the APS scope catalog, common scope bundles,
- * and adapters from APS payloads into cantera's oauth types.
- *
- * This is data, not a client — token handling belongs to your auth layer
- * (e.g. aec-auth, https://github.com/mrestrepoj10/aec-auth).
- */
+// Data, not a client — token handling belongs to your auth layer (e.g. aec-auth).
 
 export const apsProvider: OAuthProvider = {
   id: 'aps',
@@ -22,7 +15,6 @@ export const apsProvider: OAuthProvider = {
   ),
 }
 
-/** The APS scope catalog, with human explanations. */
 export const apsScopeCatalog: OAuthScope[] = [
   {
     id: 'user-profile:read',
@@ -78,10 +70,8 @@ export const apsScopeCatalog: OAuthScope[] = [
   },
 ]
 
-/**
- * Common scope bundles, mirrored from aec-auth's `apsScopes` recipes so the
- * picker and the token layer speak the same presets.
- */
+// Mirrored from aec-auth's `apsScopes` recipes, so the picker and the token
+// layer speak the same presets.
 export const apsScopePresets: OAuthScopePreset[] = [
   {
     id: 'viewer',
@@ -109,7 +99,6 @@ export const apsScopePresets: OAuthScopePreset[] = [
   },
 ]
 
-/** Subset of the APS userinfo response the adapter reads. */
 export interface ApsUserInfo {
   sub?: string
   name?: string
@@ -117,7 +106,6 @@ export interface ApsUserInfo {
   picture?: string
 }
 
-/** Translate an APS userinfo payload into a cantera OAuthAccount. */
 export function fromApsUserInfo(userInfo: ApsUserInfo): OAuthAccount {
   return {
     name: userInfo.name,

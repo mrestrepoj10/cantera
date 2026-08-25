@@ -10,35 +10,22 @@ import { cn } from '@/lib/utils'
 
 interface ProviderSignInBaseProps {
   provider: OAuthProvider
-  /**
-   * Pending: the control stays mounted, keeps its label, and crossfades its
-   * icon to a spinner. Drive it from a server action, or let the button
-   * derive it from an `onSignIn` that returns a promise.
-   */
   loading?: boolean
-  /**
-   * Rendered as `aria-disabled`, never the native attribute, so the control
-   * keeps focus and stays discoverable to a screen reader.
-   */
+  /** Rendered as `aria-disabled`, never the native attribute, so the control
+   * keeps focus and stays discoverable to a screen reader. */
   disabled?: boolean
   variant?: 'default' | 'outline' | 'secondary' | 'ghost'
   size?: 'default' | 'sm' | 'lg'
 }
 
-/** Navigates to an auth route. Always an anchor — loading included — with
- * props forwarded to it and typed for it. */
 type ProviderSignInLinkProps = ProviderSignInBaseProps &
   Omit<React.ComponentProps<'a'>, 'href'> & {
-    /** The provider's auth route, e.g. `/api/auth/acc`. */
     href: string
   }
 
-/** Handles a click. Always a button, with props forwarded to it and typed
- * for it. */
 type ProviderSignInButtonProps = ProviderSignInBaseProps &
   Omit<React.ComponentProps<'button'>, 'disabled'> & {
-    /** Called with no arguments when the button is clicked. A returned
-     * promise drives the pending state until it settles. */
+    /** A returned promise drives the pending state until it settles. */
     onSignIn?: () => void | Promise<void>
   }
 
@@ -48,16 +35,11 @@ function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
   return value != null && typeof (value as Promise<void>).then === 'function'
 }
 
-/**
- * The icon slot is always reserved — same box whether the provider has a mark
- * or not — so starting a sign-in never shifts the label. Icon and spinner
- * stack in one grid cell and crossfade over 150ms.
- */
 function ProviderSignInIcon({ provider, loading }: { provider: OAuthProvider; loading: boolean }) {
   return (
     <span aria-hidden className="grid size-4 shrink-0 place-items-center">
-      {/* The spin lives on a wrapper: transform animations on the <svg>
-          itself skip the compositor in some engines. */}
+      {/* The spin lives on a wrapper: transform animations on the <svg> itself
+          skip the compositor in some engines. */}
       <span className="col-start-1 row-start-1 grid size-4 animate-spin place-items-center">
         <LoaderCircleIcon
           className={cn(
@@ -89,8 +71,7 @@ function providerSignInClasses(
 ): string {
   return cn(
     'w-full justify-center gap-2',
-    // 44px minimum touch target: this is a primary action, used with gloves on
-    // a tablet. `size="sm"` is the opt-in compact escape hatch.
+    // 44px minimum touch target; `size="sm"` is the opt-in compact escape hatch.
     size !== 'sm' && 'min-h-11',
     'aria-disabled:pointer-events-none',
     disabled && !pending && 'opacity-50',
@@ -98,11 +79,6 @@ function providerSignInClasses(
   )
 }
 
-/**
- * A sign-in link for a single OAuth provider: brand icon, label, and a
- * pending state, navigating to the provider's auth route. Works for any
- * provider — pass an OAuthProvider shape.
- */
 function ProviderSignInLink(props: ProviderSignInLinkProps) {
   const {
     provider,
@@ -119,13 +95,12 @@ function ProviderSignInLink(props: ProviderSignInLinkProps) {
 
   return (
     <Button
-      // The anchor stays an anchor while loading. `focusableWhenDisabled`
-      // renders aria-disabled instead of dropping the element, and blocks
-      // both the pointer and the Enter key without dumping focus.
+      // The anchor stays an anchor while loading; aria-disabled blocks the
+      // pointer and the Enter key without dumping focus.
       render={<a {...anchorProps} href={href} />}
       nativeButton={false}
-      // The primitive assumes button semantics for a non-native element;
-      // this is a navigation link, so keep the link role it earns from href.
+      // The primitive assumes button semantics for a non-native element; this
+      // is a navigation link, so keep the link role it earns from href.
       role="link"
       disabled={inert}
       focusableWhenDisabled
@@ -141,12 +116,8 @@ function ProviderSignInLink(props: ProviderSignInLinkProps) {
   )
 }
 
-/**
- * A sign-in button for a single OAuth provider: brand icon, label, and a
- * pending state. Works for any provider — pass an OAuthProvider shape. For
- * server-rendered flows that navigate to an auth route, use
- * `ProviderSignInLink` instead.
- */
+/** For server-rendered flows that navigate to an auth route, use
+ * `ProviderSignInLink` instead. */
 function ProviderSignInButton(props: ProviderSignInButtonProps) {
   const {
     provider,

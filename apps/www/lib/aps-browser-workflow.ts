@@ -70,10 +70,6 @@ async function loadVersions(
   }
 }
 
-/**
- * Server wiring for the live /demo browser. Every response is adapted before
- * crossing the RSC boundary; failures become component state, never throws.
- */
 export async function loadHubBrowserWorkflow(
   origin: string,
   token: AccessToken,

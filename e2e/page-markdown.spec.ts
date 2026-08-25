@@ -3,30 +3,21 @@ import { expect, test } from '@playwright/test'
 import { waitForHydration } from './hydration'
 import { markdownPages } from './pages'
 
-/**
- * The `.md` twin of every docs page, and the hand-off control that points at it.
- *
- * The promise a `.md` URL makes is narrow and easy to break: it must answer
- * with markdown itself, not redirect to the HTML page and not fall through to
- * the app shell. That is what these assert, per item, so an added component
- * cannot ship a page without its markdown.
- */
-
 test.describe('markdown pages', () => {
-  for (const route of markdownPages) {
-    test(`${route} serves markdown`, async ({ request }) => {
+  test('every catalog item serves its markdown twin', async ({ request }) => {
+    for (const route of markdownPages) {
       // No redirect allowed: the URL that claims .md is the one that answers.
       const response = await request.get(route, { maxRedirects: 0 })
 
-      expect(response.status()).toBe(200)
-      expect(response.headers()['content-type']).toContain('text/markdown')
+      expect.soft(response.status(), route).toBe(200)
+      expect.soft(response.headers()['content-type'], route).toContain('text/markdown')
 
       const body = await response.text()
-      expect(body.startsWith('# ')).toBe(true)
-      expect(body).toContain('npx shadcn@latest add @cantera/')
-      expect(body).not.toContain('<!DOCTYPE html>')
-    })
-  }
+      expect.soft(body.startsWith('# '), route).toBe(true)
+      expect.soft(body, route).toContain('npx shadcn@latest add @cantera/')
+      expect.soft(body, route).not.toContain('<!DOCTYPE html>')
+    }
+  })
 })
 
 test.describe('page hand-off', () => {
@@ -38,7 +29,6 @@ test.describe('page hand-off', () => {
 
     const markdown = await (await page.request.get('/components/sign-in-card.md')).text()
 
-    // Closed by default: nothing inside the disclosure is reachable.
     const viewAsMarkdown = page.getByRole('link', { name: /view sign-in card as markdown/i })
     await expect(viewAsMarkdown).toBeHidden()
 
@@ -62,7 +52,6 @@ test.describe('page hand-off', () => {
       /^https:\/\/claude\.ai\/new\?q=.*sign-in-card\.md/,
     )
 
-    // Escape closes the panel and hands focus back to the control that opened it.
     await page.keyboard.press('Escape')
     await expect(viewAsMarkdown).toBeHidden()
     await expect(toggle).toBeFocused()

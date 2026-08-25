@@ -7,7 +7,6 @@ export const metadata: Metadata = {
     'How cantera (UI registry), aec-auth (token layer), and the embedded APS emulator compose into a construction frontend you can run without credentials.',
 }
 
-/** Inline identifier, the site's code type role. */
 function C({ children }: { children: React.ReactNode }) {
   return <code className="font-mono text-code">{children}</code>
 }
@@ -29,7 +28,6 @@ function Section({
   )
 }
 
-/** One labelled box in the diagram. `kind`, not `role` — that name is taken. */
 function Box({ label, kind, detail }: { label: string; kind: string; detail: string }) {
   return (
     <div className="flex flex-col gap-1 rounded-lg border border-border p-4">
@@ -42,10 +40,6 @@ function Box({ label, kind, detail }: { label: string; kind: string; detail: str
   )
 }
 
-/**
- * The connector between two boxes: a rule and the edge's name. The rule is
- * decorative — the label beside it is what carries the relationship.
- */
 function Edge({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-2 py-2 pl-4">
@@ -55,12 +49,6 @@ function Edge({ label }: { label: string }) {
   )
 }
 
-/**
- * The stack, drawn in plain boxes rather than an image: every label is real
- * text, so it reflows at 375px, inherits the theme tokens in both appearances,
- * and is readable by a screen reader without an alt string standing in for it.
- * The caption carries the relationships the layout encodes visually.
- */
 function StackDiagram() {
   return (
     <figure className="flex flex-col gap-3">

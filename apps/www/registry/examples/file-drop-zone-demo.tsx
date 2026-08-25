@@ -5,13 +5,9 @@ import { useEffect, useRef, useState } from 'react'
 import { FileDropZone } from '@/components/ui/file-drop-zone'
 import { MODEL_FILE_ACCEPT, type UploadFile, type UploadRejection } from '@/lib/upload-types'
 
-/**
- * A simulated pipeline so every surface state is reachable without a
- * backend: dropped files upload on a timer, translate for a few seconds,
- * then complete. Files ending in .dwg drop the connection once at 65% to
- * show the retryable warning path. One seeded file translates forever so
- * the ambient processing state stays visible.
- */
+/** A simulated pipeline so every state is reachable without a backend —
+ * replace with your real upload wiring. Files ending in .dwg fail once to
+ * show the retry path; one seeded file translates forever. */
 const SEED_PROCESSING_ID = 'seed-processing'
 
 const initialFiles: UploadFile[] = [
@@ -30,13 +26,12 @@ const initialFiles: UploadFile[] = [
   },
 ]
 
-const rejectionCopy: Record<UploadRejection['reason'], string> = {
+const rejectionCopy = {
   'file-type': 'not an accepted format',
   'file-size': 'over the size limit',
   'file-count': 'too many files',
-}
+} satisfies Record<UploadRejection['reason'], string>
 
-/** Steady per-file upload speed, varied a little by id so bars diverge. */
 function stepFor(id: string): number {
   let hash = 0
   for (const char of id) hash += char.charCodeAt(0)
@@ -55,10 +50,8 @@ export function FileDropZoneDemo() {
   const idCounter = useRef(0)
   const translateTimers = useRef(new Map<string, number>())
 
-  // Advance uploading files; a .dwg loses its connection once, everything
-  // else hands off to the simulated translation at 100%. Failure triggers
-  // on crossing 65%, so the updater stays pure (StrictMode runs it twice)
-  // and a retry resumes cleanly — the stored progress is already past it.
+  // Failure triggers on crossing 65% so the updater stays pure (StrictMode
+  // runs it twice) and a retry resumes past it.
   useEffect(() => {
     if (!files.some((file) => file.phase === 'uploading')) return
     const timer = window.setInterval(() => {
@@ -94,8 +87,6 @@ export function FileDropZoneDemo() {
     return () => window.clearInterval(timer)
   }, [files])
 
-  // Each translation completes after a few seconds — except the seeded one,
-  // which keeps the ambient state on screen.
   useEffect(() => {
     for (const file of files) {
       if (file.phase !== 'processing') continue

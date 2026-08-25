@@ -1,24 +1,6 @@
-/**
- * Verifier 2 of 3: every npm import in an item's closure is declared.
- *
- * The shadcn CLI installs exactly the packages an item names in `dependencies`.
- * A bare import that nobody declared means the consumer's project compiles until
- * it doesn't — a module-not-found at the first render, in a project that never
- * asked for the package. So for every item, every bare module imported anywhere
- * in its transitive closure has to be declared by the item or by one of the
- * `@cantera/*` dependencies it pulls in.
- *
- * Two allowances, both deliberate:
- * - React and Next are ambient. Every consumer of this registry is a React 19 /
- *   Next App Router project by construction, and shadcn's own items do not
- *   declare them either.
- * - shadcn primitives (`button`, `card`, …) are resolved from the consumer's own
- *   base and style, so the packages *they* pull in — Base UI, cva, clsx — are the
- *   primitive's problem, not ours. Only what our own files import counts.
- *
- * `@types/*` aliases both ways: declaring `@types/foo` covers a `foo` import and
- * vice versa, so a types-only dependency does not have to be declared twice.
- */
+// Every bare import in an item's transitive closure must be declared within it.
+// Two deliberate allowances: react/next are ambient in every consumer, and the
+// packages shadcn primitives pull in are the primitive's problem, not ours.
 
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -35,7 +17,6 @@ import {
   wwwRoot,
 } from './lib/registry-source.mts'
 
-/** `@types/node` covers `node`, and a plain package covers its types package. */
 function aliases(pkg: string): string[] {
   if (pkg.startsWith('@types/')) {
     const bare = pkg.slice('@types/'.length)
@@ -47,7 +28,6 @@ function aliases(pkg: string): string[] {
 const registry = await readRegistry()
 const byName = new Map(registry.items.map((item) => [item.name, item]))
 
-/** Every bare package a file imports, cached: files are shared across closures. */
 const importsByFile = new Map<string, string[]>()
 async function packagesIn(filePath: string): Promise<string[]> {
   const cached = importsByFile.get(filePath)
@@ -93,8 +73,7 @@ for (const item of registry.items) {
     )
   }
 
-  // Cruft, not breakage: a declared package nothing in the closure imports still
-  // gets installed into the consumer's project.
+  // Cruft, not breakage: declared-but-unimported still installs into the consumer.
   for (const pkg of item.dependencies ?? []) {
     if (used.has(pkg) || aliases(pkg).some((alias) => used.has(alias))) continue
     warnings.push(`${namespace}/${item.name}: declares "${pkg}", which nothing in it imports`)

@@ -17,26 +17,11 @@ import {
 } from '@/lib/oauth-types'
 import { cn } from '@/lib/utils'
 
-/**
- * The presentational half of the connections-page block: every grant this app
- * holds, on one page, with connect / reconnect / disconnect per provider.
- *
- * Data-agnostic on purpose — connections in, callbacks out, no fetching. The
- * wiring lives in ConnectionsManager next door; swap it for your own backend
- * and this file does not change.
- *
- * Four states, all shipped and all exported so they survive being adapted:
- * - loading — the initial fetch. Static skeleton rows at the real row
- *   geometry, so nothing shifts when the data lands, plus one live spinner.
- * - error   — the whole fetch failed. Message plus a retry on the
- *   async-pending contract. A single provider that failed is not this state:
- *   it is a row with status "error", which keeps its healthy siblings visible.
- * - empty   — nothing connected yet. The provider chooser IS the empty state.
- * - ready   — the mixed dashboard: connected, expiring, expired, errored, and
- *   not-yet-connected providers in one list.
- */
+/** Presentational only — connections in, callbacks out. The wiring lives in
+ * ConnectionsManager next door; swap it for your own backend and this file
+ * does not change. */
 
-/** What the page is showing. "ready" with nothing connected renders the empty state. */
+/** "ready" with nothing connected renders the empty state. */
 type ConnectionsStatus = 'ready' | 'loading' | 'error'
 
 /** Thenable check, not `instanceof Promise`: a polyfilled or cross-realm
@@ -45,31 +30,17 @@ function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
   return value != null && typeof (value as Promise<void>).then === 'function'
 }
 
-/**
- * Consumer-driven pending, for wiring where no promise comes back (a server
- * action, or a navigation that never resolves). A callback that returns a
- * promise drives the same states on its own.
- *
- * One provider id, not a set: a second consent redirect would race the first,
- * the same reason SignInCard takes a single `loadingProvider`.
- */
+/** One provider id, not a set: a second consent redirect would race the first. */
 interface ConnectionsPending {
   /** Provider id whose connect / reconnect is in flight. */
   connecting?: string
   /** Provider id whose disconnect is in flight. */
   disconnecting?: string
-  /** The page-level retry, shown only in the error state. */
   retrying?: boolean
 }
 
-/**
- * One row per provider, in catalog order: the grant where one exists, a
- * "disconnected" placeholder where it does not, and any grant for a provider
- * outside the catalog appended rather than silently dropped.
- *
- * Exported because it is the whole data model — an adapter feeding this page
- * from another backend reimplements nothing.
- */
+/** One row per provider in catalog order; grants for providers outside the
+ * catalog are appended rather than silently dropped. */
 function resolveConnections(
   providers: OAuthProvider[],
   connections: OAuthConnection[] = [],
@@ -82,24 +53,14 @@ function resolveConnections(
   return [...rows, ...connections.filter((connection) => !known.has(connection.provider.id))]
 }
 
-// ---------------------------------------------------------------------------
-// Loading
-// ---------------------------------------------------------------------------
-
 interface ConnectionsLoadingProps extends React.ComponentProps<'div'> {
   /** How many skeleton rows to draw. Match the provider count when you know it. */
   rows?: number
 }
 
-/**
- * The initial fetch. Deliberately still: on a list of rows a looping shimmer
- * is an attention magnet with nothing to say, and it reads as activity where
- * there is none. The single spinner carries the announcement.
- *
- * The skeleton's job is geometry, not entertainment: these rows are built from
- * the same box model as ConnectionCard, so the real cards land exactly where
- * the placeholders stood. No stagger, no entrance — the data is dense.
- */
+/** Deliberately still — no shimmer; the single spinner carries the
+ * announcement. Rows share ConnectionCard's box model so the real cards land
+ * exactly where the placeholders stood. */
 function ConnectionsLoading({ rows = 3, className, ...props }: ConnectionsLoadingProps) {
   const placeholders = Array.from({ length: Math.max(rows, 1) }, (_, index) => `skeleton-${index}`)
 
@@ -127,14 +88,11 @@ function ConnectionsLoading({ rows = 3, className, ...props }: ConnectionsLoadin
           className="rounded-xl bg-card py-4 ring-1 ring-foreground/10"
         >
           <div className="flex flex-col gap-3 px-4">
-            {/* Provider row: mark, name, action — matches the card's header line. */}
             <div className="flex items-center gap-3">
               <div className="size-5 shrink-0 rounded bg-muted" />
               <div className="h-4 w-28 rounded bg-muted" />
               <div className="ml-auto h-7 w-24 shrink-0 rounded-lg bg-muted" />
             </div>
-            {/* Account badge row: avatar plus the name-over-email stack, whose
-                two 16px lines are what sets a full card's height. */}
             <div className="flex items-center gap-2">
               <div className="size-7 shrink-0 rounded-full bg-muted" />
               <div className="flex flex-col gap-1">
@@ -142,7 +100,6 @@ function ConnectionsLoading({ rows = 3, className, ...props }: ConnectionsLoadin
                 <div className="h-3.5 w-40 rounded bg-muted" />
               </div>
             </div>
-            {/* Status line: one badge plus the expiry text. */}
             <div className="flex items-center gap-2">
               <div className="h-6 w-24 shrink-0 rounded-md bg-muted" />
               <div className="h-3 w-20 rounded bg-muted" />
@@ -154,23 +111,12 @@ function ConnectionsLoading({ rows = 3, className, ...props }: ConnectionsLoadin
   )
 }
 
-// ---------------------------------------------------------------------------
-// Error
-// ---------------------------------------------------------------------------
-
 interface ConnectionsErrorProps extends React.ComponentProps<'div'> {
-  /** What failed, in the user's words. Falls back to a generic sentence. */
   message?: string
   onRetry?: () => void | Promise<void>
-  /** Consumer-driven pending for the retry. A returned promise drives it too. */
   retryPending?: boolean
 }
 
-/**
- * The retry, on the async-pending contract: stays mounted, keeps its label,
- * crossfades its icon to a spinner, and blocks activation through
- * aria-disabled so focus is never dropped mid-request.
- */
 function RetryButton({
   onRetry,
   pending = false,
@@ -228,10 +174,7 @@ function RetryButton({
   )
 }
 
-/**
- * The whole fetch failed, so there is no list to show. Page-level only — a
- * single provider that errored keeps its row and its siblings.
- */
+/** Page-level only: a single provider that errored keeps its row and its siblings. */
 function ConnectionsError({
   message,
   onRetry,
@@ -254,9 +197,8 @@ function ConnectionsError({
     >
       <div className="flex flex-col gap-1">
         <p className="font-medium text-sm">Could not load your connections</p>
-        {/* Danger ink from the status palette, not the theme's own destructive:
-            one color, one meaning, and it is contrast-verified in both
-            appearances against the page background. */}
+        {/* Status-palette danger ink, not the theme's destructive — one color,
+            one meaning, contrast-verified in both appearances. */}
         <p id={messageId} className={cn('text-sm', statusInkClasses.danger)}>
           {detail}
         </p>
@@ -266,10 +208,6 @@ function ConnectionsError({
   )
 }
 
-// ---------------------------------------------------------------------------
-// Empty
-// ---------------------------------------------------------------------------
-
 interface ConnectionsEmptyProps extends React.ComponentProps<'div'> {
   providers: OAuthProvider[]
   onConnect?: (providerId: string) => void | Promise<void>
@@ -277,13 +215,6 @@ interface ConnectionsEmptyProps extends React.ComponentProps<'div'> {
   connecting?: string
 }
 
-/**
- * Nothing connected yet. The provider chooser IS the empty state: the page
- * says what a connection buys and offers the one action worth taking, rather
- * than narrating the absence and making the user hunt for the button. No
- * illustration — the system is monochrome, and a drawing would be the loudest
- * thing on a page whose job is data.
- */
 function ConnectionsEmpty({
   providers,
   onConnect,
@@ -330,10 +261,6 @@ function ConnectionsEmpty({
   )
 }
 
-// ---------------------------------------------------------------------------
-// List
-// ---------------------------------------------------------------------------
-
 interface ConnectionsListProps extends React.ComponentProps<'ul'> {
   connections: OAuthConnection[]
   onConnect?: (providerId: string) => void | Promise<void>
@@ -342,11 +269,6 @@ interface ConnectionsListProps extends React.ComponentProps<'ul'> {
   showScopes?: boolean
 }
 
-/**
- * The mixed dashboard. One ConnectionCard per row, which is where the whole
- * status vocabulary shows up at once: connected, expiring soon, expired,
- * errored, and never-connected all sit in the same list.
- */
 function ConnectionsList({
   connections,
   onConnect,
@@ -379,20 +301,12 @@ function ConnectionsList({
   )
 }
 
-// ---------------------------------------------------------------------------
-// The page
-// ---------------------------------------------------------------------------
-
 interface ConnectionsViewProps extends Omit<React.ComponentProps<'section'>, 'title'> {
-  /** Every provider this app can connect to, in display order. */
   providers: OAuthProvider[]
   /** The grants that exist, matched to providers by `connection.provider.id`. */
   connections?: OAuthConnection[]
-  /** Fetch state. Loading and error take over the list; the heading stays put. */
   status?: ConnectionsStatus
-  /** Page-level failure detail, shown when status is "error". */
   error?: string
-  /** Who these grants belong to. Rendered beside the heading when set. */
   account?: OAuthAccount
   onConnect?: (providerId: string) => void | Promise<void>
   onDisconnect?: (providerId: string) => void | Promise<void>
@@ -405,10 +319,6 @@ interface ConnectionsViewProps extends Omit<React.ComponentProps<'section'>, 'ti
   showScopes?: boolean
 }
 
-/**
- * The connections page: a real heading, an at-a-glance summary, and one row
- * per provider — or the empty, loading, or error state that replaces the list.
- */
 function ConnectionsView({
   providers,
   connections,
@@ -427,9 +337,8 @@ function ConnectionsView({
   ...props
 }: ConnectionsViewProps) {
   const rows = resolveConnections(providers, connections)
-  // One pass for every summary number. The expiring predicate is the same one
-  // TokenStatus renders "Expiring soon" from, so the count can never disagree
-  // with a warning shown on a card below it.
+  // isExpiringSoon is the same predicate TokenStatus renders "Expiring soon"
+  // from, so the count can never disagree with a warning on a card below it.
   let connected = 0
   let expired = 0
   let failed = 0
@@ -480,8 +389,6 @@ function ConnectionsView({
       {...props}
     >
       <header className="flex flex-col gap-2">
-        {/* The identity sits on the heading line rather than under the prose:
-            whose grants these are is a fact about the page, not a caption. */}
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <Heading className="font-heading font-medium text-2xl tracking-tight">{title}</Heading>
           {account && <UserAccountBadge account={account} size="sm" className="shrink-0" />}
@@ -495,8 +402,8 @@ function ConnectionsView({
             {attention > 0 && (
               <>
                 {' · '}
-                {/* The worst row sets the tone: an outright failure is danger,
-                    an expiry is recoverable and stays warning. */}
+                {/* The worst row sets the tone: failure is danger, expiry is
+                    recoverable and stays warning. */}
                 <span className={failed > 0 ? statusInkClasses.danger : statusInkClasses.warning}>
                   <span className="tabular-nums">{attention}</span>{' '}
                   {attention === 1 ? 'needs' : 'need'} attention

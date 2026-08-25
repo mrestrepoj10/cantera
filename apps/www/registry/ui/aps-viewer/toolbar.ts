@@ -6,14 +6,9 @@ export type APSViewerToolbarPosition = 'bottom' | 'top' | 'left' | 'right'
 export type APSViewerToolbarScale = 'sm' | 'md' | 'lg' | number
 
 export interface APSViewerToolbarOptions {
-  /** Docking edge. Left and right positions derive a vertical orientation. */
   position?: APSViewerToolbarPosition
-  /**
-   * Size of the full rendered button box. `md` is a comfortable 44px;
-   * `sm` is a compact 36px — opt-in only, compact is never the default;
-   * `lg` is the gloved-tablet 52px. A number is an exact pixel box, clamped
-   * to 32–64.
-   */
+  /** Rendered button box: `md` is 44px, `sm` 36, `lg` 52. A number is an
+   * exact pixel box, clamped to 32–64. */
   scale?: APSViewerToolbarScale
 }
 
@@ -41,11 +36,8 @@ const SCALE_ICON_PROPERTY = '--cantera-toolbar-icon-size'
 const MIN_SCALE_PX = 32
 const MAX_SCALE_PX = 64
 
-/**
- * Best-effort LMV 7.* styling. Autodesk does not publish a stable DOM contract
- * for the native toolbar, so these selectors are intentionally isolated behind
- * our classes and include the known tooltip and flyout shapes used by v7.
- */
+// Autodesk publishes no stable DOM contract for the native toolbar, so these
+// selectors are isolated behind our classes and target the known v7 shapes.
 const APS_VIEWER_TOOLBAR_CSS = `
 .adsk-toolbar.cantera-toolbar--top,
 .adsk-toolbar.cantera-toolbar--bottom,
@@ -56,9 +48,6 @@ const APS_VIEWER_TOOLBAR_CSS = `
   overflow: visible;
 }
 
-/* The native groups touch to read as one rail. Autodesk still owns their
-   foreground and theme-aware surface colors; Cantera replaces only the heavy
-   island shadows and sharp geometry. */
 .adsk-toolbar.cantera-toolbar--top,
 .adsk-toolbar.cantera-toolbar--bottom,
 .adsk-toolbar.cantera-toolbar--left,
@@ -142,9 +131,6 @@ const APS_VIEWER_TOOLBAR_CSS = `
   overflow: visible;
 }
 
-/* Sizing rides one custom property: the full rendered button box. Autodesk's
-   stock box is 28px content + 6px padding + 1px border = 42px with a 24px
-   icon glyph. Cantera keeps the box exact but reduces the glyph's visual mass. */
 .adsk-toolbar.cantera-toolbar--sized .adsk-button {
   width: calc(var(--cantera-toolbar-size, 42px) - 14px);
   height: calc(var(--cantera-toolbar-size, 42px) - 14px);
@@ -206,8 +192,7 @@ function releaseStylesheet(): void {
   }
 }
 
-/** Numeric scales are clamped, never rounded — a number is an exact pixel box,
- * and CSS renders fractional pixels. A non-finite number falls back to stock. */
+// Clamped, never rounded: CSS renders fractional pixels.
 function normalizeScale(scale: APSViewerToolbarScale | undefined): APSViewerToolbarScale {
   if (typeof scale !== 'number') return scale ?? 'md'
   if (!Number.isFinite(scale)) return 'md'
@@ -231,7 +216,6 @@ function removeToolbarClasses(viewer: APSViewer3D): void {
   toolbar.style.removeProperty(SCALE_ICON_PROPERTY)
 }
 
-/** Register the extension once for the active Autodesk Viewer runtime. */
 export function registerAPSViewerToolbar(autodesk: AutodeskGlobal): void {
   const viewing = autodesk.Viewing
   const manager = viewing.theExtensionManager

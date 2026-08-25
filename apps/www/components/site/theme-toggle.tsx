@@ -5,15 +5,9 @@ import { useTheme } from 'next-themes'
 
 import { Button } from '@/components/ui/button'
 
-/**
- * Light/dark toggle for the site header.
- *
- * Which icon and which accessible name is correct depends on the appearance,
- * and the appearance is only known on the client — so both are selected in CSS
- * off the `.dark` class rather than from React state. That keeps the server and
- * client markup identical (no hydration mismatch, no mounted-flicker
- * placeholder) and the button is usable on the very first paint.
- */
+// Icon and accessible name are selected in CSS off the `.dark` class, not
+// React state: server and client markup stay identical (no hydration mismatch,
+// no mounted-flicker placeholder) and the button works on the first paint.
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
 

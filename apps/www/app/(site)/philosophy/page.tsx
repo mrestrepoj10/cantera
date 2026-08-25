@@ -51,7 +51,6 @@ function Section({
   )
 }
 
-/** Inline identifier, the site's code type role. */
 function C({ children }: { children: React.ReactNode }) {
   return <code className="font-mono text-code">{children}</code>
 }

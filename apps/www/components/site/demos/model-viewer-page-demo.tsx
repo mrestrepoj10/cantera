@@ -19,11 +19,8 @@ interface TreeResponse {
   error?: string
 }
 
-/**
- * Docs preview for the wired block. Its first read also distinguishes a real
- * acc-sign-in session from the signed-out state without exposing session data
- * to the client; after that, ModelBrowser owns the same lazy endpoint.
- */
+// The first read also distinguishes a real session from signed-out without
+// exposing session data to the client.
 export function ModelViewerPageDemo({
   nextPath = '/components/model-viewer-page',
   titleAs = 'h3',

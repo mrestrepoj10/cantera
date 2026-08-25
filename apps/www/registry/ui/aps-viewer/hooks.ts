@@ -11,17 +11,17 @@ import type {
   Vec3,
 } from '@/lib/viewer-types'
 
-/**
- * The live viewer instance (or null until ready). Re-renders when the viewer
- * mounts, attaches, or is torn down.
- */
-export function useAPSViewer(): { viewer: APSViewer3D | null; isReady: boolean } {
+export interface APSViewerHandle {
+  viewer: APSViewer3D | null
+  isReady: boolean
+}
+
+export function useAPSViewer(): APSViewerHandle {
   const store = useAPSViewerStore()
   const viewer = useSyncExternalStore(store.subscribe, store.getViewer, ViewerStore.getServerViewer)
   return { viewer, isReady: viewer !== null }
 }
 
-/** True once the current model's geometry has streamed in. */
 export function useAPSModelLoaded(): boolean {
   const store = useAPSViewerStore()
   return useSyncExternalStore(
@@ -40,7 +40,6 @@ export interface APSSelection {
   fitToView: (dbIds?: number[]) => void
 }
 
-/** Event-driven selection state plus the common selection verbs. */
 export function useAPSSelection(): APSSelection {
   const store = useAPSViewerStore()
   const dbIds = useSyncExternalStore(
@@ -71,14 +70,12 @@ export interface APSCamera {
   fitToView: () => void
 }
 
-/** Camera state, updated at most once per animation frame while orbiting. */
 export function useAPSCamera(): APSCamera {
   const store = useAPSViewerStore()
   const camera = useSyncExternalStore(store.subscribe, store.getCamera, ViewerStore.getServerCamera)
 
-  // The verbs memoize on the store alone, never on the per-frame camera
-  // snapshot: an orbit updates `camera` every animation frame, and verbs keyed
-  // on it would re-run any consumer effect that lists them 60 times a second.
+  // Memoized on the store alone: verbs keyed on the per-frame camera snapshot
+  // would re-run any consumer effect that lists them 60 times a second.
   const verbs = useMemo(
     () => ({
       setView: (position: Vec3, target: Vec3, up?: Vec3) => {
@@ -97,12 +94,8 @@ export function useAPSCamera(): APSCamera {
   return useMemo(() => ({ camera, ...verbs }), [camera, verbs])
 }
 
-/**
- * Subscribes a handler to any raw viewer event (e.g.
- * `Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT`) with automatic cleanup.
- * The handler is kept in a ref, so inline closures are fine. Type the payload
- * through the type parameter: `useAPSViewerEvent<{ dbIdArray: number[] }>(...)`.
- */
+/** The handler is kept in a ref, so inline closures are fine. Type the payload
+ * through the type parameter: `useAPSViewerEvent<{ dbIdArray: number[] }>(...)`. */
 export function useAPSViewerEvent<EventType = unknown>(
   eventType: string,
   handler: (event: EventType) => void,
@@ -135,14 +128,9 @@ const EMPTY_PROPERTIES: APSPropertiesResult = Object.freeze({
   error: null,
 })
 
-/**
- * Async property fetch for a set of dbIds. Pass `useAPSSelection().dbIds`
- * to get live properties-of-selection. Results are keyed by the request they
- * answer, so stale responses never overwrite fresh ones — and `key` is the
- * serialized identity of dbIds, so a consumer passing a freshly-computed
- * array every render does not refetch. While a fetch is in flight the
- * previous results stay visible with `isLoading: true`.
- */
+/** `key` is the serialized identity of dbIds, so a freshly-computed array does
+ * not refetch; while a fetch is in flight the previous results stay visible
+ * with `isLoading: true`. */
 export function useAPSProperties(dbIds: readonly number[]): APSPropertiesResult {
   const { viewer } = useAPSViewer()
   const key = dbIds.join(',')
@@ -197,9 +185,7 @@ export function useAPSProperties(dbIds: readonly number[]): APSPropertiesResult 
       return { data: settled.data, isLoading: false, error: settled.error }
     }
     // In flight: keep what last settled so lists do not blank out — but only
-    // from the same viewer instance. A recreated viewer may hold a different
-    // model, and its predecessor's properties must never pose as this
-    // request's data.
+    // from the same viewer instance, whose model is the same model.
     return {
       data: settled && settled.viewer === viewer ? settled.data : [],
       isLoading: true,
@@ -215,11 +201,6 @@ export type BuildContextMenu = (
   status: import('@/lib/viewer-types').APSContextMenuStatus,
 ) => import('@/lib/viewer-types').APSContextMenuItem[]
 
-/**
- * Customizes the viewer's right-click menu. The builder receives the SDK's
- * default items and the menu status (what's under the cursor) and returns
- * the items to show — add, remove, or replace freely. Unregisters on unmount.
- */
 export function useAPSContextMenu(build: BuildContextMenu): void {
   const { viewer } = useAPSViewer()
   const buildRef = useRef(build)
@@ -242,12 +223,8 @@ export function useAPSContextMenu(build: BuildContextMenu): void {
   }, [viewer])
 }
 
-/**
- * Load lifecycle of every extension requested through the `extensions` prop,
- * keyed by id. Extensions load over the network, so a UI that offers an
- * extension's feature should wait for `'ready'` — and an `'error'` entry
- * means that feature is unavailable, not that the viewer is broken.
- */
+/** An `'error'` entry means that feature is unavailable, not that the viewer
+ * is broken. */
 export function useAPSExtensions(): Readonly<Record<string, APSExtensionStatus>> {
   const store = useAPSViewerStore()
   return useSyncExternalStore(
@@ -270,10 +247,8 @@ const IDLE_EXTENSION: APSExtensionResult = Object.freeze({
   error: null,
 })
 
-/**
- * Shallow equality over option bags. Options may hold SDK objects, circular
- * structures, or functions — never serialize them; compare by key identity.
- */
+// Options may hold SDK objects, circular structures, or functions — never
+// serialize them; compare by key identity.
 function sameOptions(a?: Record<string, unknown>, b?: Record<string, unknown>): boolean {
   if (a === b) return true
   if (!a || !b) return false
@@ -282,18 +257,9 @@ function sameOptions(a?: Record<string, unknown>, b?: Record<string, unknown>): 
   return keys.every((key) => Object.is(a[key], b[key]))
 }
 
-/**
- * Loads a viewer extension for this component's lifetime and unloads it on
- * unmount. Returns the load status and the instance, so UI can gate on
- * readiness instead of assuming the network fetch succeeded.
- *
- * Changing `options` after load re-applies them through the extension's own
- * `setOptions` when it exposes one; extensions without `setOptions` keep
- * their load-time options (reload by changing `id` — i.e. remount). Changes
- * are detected by shallow comparison, so keep option values referentially
- * stable — an object or function literal recreated every render re-applies
- * every render.
- */
+/** Changing `options` after load re-applies them through the extension's own
+ * `setOptions` when it exposes one. Keep option values referentially stable —
+ * a literal recreated every render re-applies every render. */
 export function useAPSExtension(id: string, options?: Record<string, unknown>): APSExtensionResult {
   const { viewer } = useAPSViewer()
   // Written only from async callbacks; `idle` (no viewer) and `loading`
@@ -373,7 +339,6 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
   return result
 }
 
-/** Convenience: viewer resize bound to a ResizeObserver on its container. */
 export function useAPSAutoResize(): void {
   const { viewer } = useAPSViewer()
   useEffect(() => {

@@ -12,12 +12,7 @@ import {
   userInfoUrl,
 } from '@/lib/acc-auth'
 
-/**
- * Completes the sign-in: verifies state, exchanges the code, hands the
- * refresh token to the vault (the single owner of refresh from here on),
- * and seals the session cookie.
- * Install target: app/api/auth/callback/[provider]/route.ts
- */
+/** Install target: app/api/auth/callback/[provider]/route.ts */
 export async function GET(request: Request, ctx: { params: Promise<{ provider: string }> }) {
   const { provider } = await ctx.params
   if (provider !== APS_PROVIDER_ID) {
@@ -60,11 +55,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ provider: s
     return new Response('User profile has no subject id', { status: 502 })
   }
 
-  // Providers (and emulators) may omit the granted scope list from the token
-  // response; fall back to what the flow requested, kept in the state cookie.
   const scopes = result.accessToken.scopes ? [...result.accessToken.scopes] : stored.scopes
-  // Sealing the session and persisting the grant are independent; run them in
-  // parallel rather than serializing an HMAC behind a vault write.
   const [session] = await Promise.all([
     sealSession({
       userId,
@@ -82,9 +73,8 @@ export async function GET(request: Request, ctx: { params: Promise<{ provider: s
       : undefined,
   ])
 
-  // The start route sanitizes `next`, but this cookie is still client-side
-  // state: re-validate on the return leg so an injected cookie can never turn
-  // a successful sign-in into an open redirect.
+  // The state cookie is client-side state: re-validate `next` on the return leg
+  // so an injected cookie can never turn a sign-in into an open redirect.
   const headers = new Headers({ Location: safeNext(stored.next, '/sign-in') })
   headers.append('Set-Cookie', sessionCookie(session, secure))
   headers.append('Set-Cookie', clearStateCookie(secure))

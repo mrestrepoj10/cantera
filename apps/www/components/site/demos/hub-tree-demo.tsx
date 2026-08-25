@@ -57,7 +57,11 @@ const modelItem: HubTreeItemNode = {
   hasChildren: true,
 }
 
-const childNodes: Record<string, HubTreeNode[]> = {
+interface ChildrenByNodeId {
+  [nodeId: string]: HubTreeNode[]
+}
+
+const childNodes: ChildrenByNodeId = {
   'hub:ridgeline': [
     {
       id: 'project:ridgeline:project-summit',
@@ -157,7 +161,6 @@ function wait(ms = 450): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
 
-/** A self-contained controlled tree showing per-node lazy expansion. */
 export function HubTreeDemo() {
   const [nodes, setNodes] = useState(initialNodes)
   const [expandedIds, setExpandedIds] = useState<string[]>([])

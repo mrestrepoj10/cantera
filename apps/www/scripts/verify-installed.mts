@@ -1,24 +1,7 @@
-/**
- * Verifier 4 of 4: the registry lints and typechecks in consumer position.
- *
- * Everything under `apps/www/registry/` compiles in this repo through tsconfig
- * path fallbacks the consumer does not have, and is linted here by rules the
- * consumer does not run. This script lays the whole registry out in a scratch
- * project exactly where the shadcn CLI would write it, then runs the two
- * checks a fresh create-next-app runs over its own code:
- *
- *  - ESLint with `eslint-config-next` (core-web-vitals + typescript), zero
- *    warnings allowed — including the react-hooks React Compiler rules that
- *    Biome does not implement;
- *  - `tsc --noEmit` under strict mode, with only the installed file layout to
- *    resolve against — the check that catches an import that only works
- *    because of this repo's registry-first path fallbacks.
- *
- * The scratch project stands in for a consumer: this repo's harvested shadcn
- * primitives (`components/ui/`, `hooks/`, `lib/utils.ts`) play the part of
- * `shadcn init` + primitive installs, and `node_modules` is symlinked from
- * apps/www so npm dependencies resolve without a network install.
- */
+// Lays the registry out at the shadcn CLI's install paths in a scratch project
+// and runs a fresh create-next-app's own gates (eslint-config-next at zero
+// warnings, strict tsc) — catching what the registry-first tsconfig fallbacks
+// make invisible in this repo.
 
 import { execFile } from 'node:child_process'
 import { cp, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
@@ -30,7 +13,6 @@ import { installedPath, type RegistryItem, readRegistry, wwwRoot } from './lib/r
 
 const run = promisify(execFile)
 
-/** installed path -> registry source path, with conflicting sources rejected. */
 function installPlan(items: RegistryItem[]): Map<string, string> {
   const plan = new Map<string, string>()
   for (const item of items) {
@@ -81,8 +63,7 @@ try {
   const registry = await readRegistry()
   const plan = installPlan(registry.items)
 
-  // The consumer baseline a real project gets from shadcn init + primitive
-  // installs: harvested upstream primitives, their hooks, and lib/utils.
+  // Harvested primitives, hooks, and lib/utils stand in for shadcn init.
   await cp(path.join(wwwRoot, 'components/ui'), path.join(scratch, 'components/ui'), {
     recursive: true,
   })
@@ -90,7 +71,6 @@ try {
   await mkdir(path.join(scratch, 'lib'), { recursive: true })
   await cp(path.join(wwwRoot, 'lib/utils.ts'), path.join(scratch, 'lib/utils.ts'))
 
-  // Then every registry file at the exact path the CLI writes it to.
   for (const [target, source] of plan) {
     const destination = path.join(scratch, target)
     await mkdir(path.dirname(destination), { recursive: true })

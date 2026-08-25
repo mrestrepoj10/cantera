@@ -33,8 +33,6 @@ const demoTranslations: ModelTranslation[] = [
 ]
 
 export function ModelStatusCardDemo() {
-  // Retrying flips the card through the real sequence — translating, then
-  // ready — so the whole vocabulary is reachable from the demo.
   const [retried, setRetried] = useState<Record<string, ModelTranslation['status']>>({})
 
   return (

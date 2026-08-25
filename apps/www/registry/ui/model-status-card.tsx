@@ -11,36 +11,27 @@ import { type StatusTone, statusInkClasses, statusToneClasses } from '@/componen
 import type { ModelTranslation, ModelTranslationStatus } from '@/lib/project-types'
 import { cn } from '@/lib/utils'
 
-/**
- * One tone per translation state. In-flight states are neutral — no outcome
- * yet is absence, not a warning. Timeout is warning, not danger: a retry away,
- * like an expired token. Failed is the one state the user must act on.
- */
-const translationTone: Record<ModelTranslationStatus, StatusTone> = {
+const translationTone = {
   pending: 'neutral',
   inprogress: 'neutral',
   success: 'success',
   failed: 'danger',
   timeout: 'warning',
-}
+} satisfies Record<ModelTranslationStatus, StatusTone>
 
-const translationLabel: Record<ModelTranslationStatus, string> = {
+const translationLabel = {
   pending: 'Queued',
   inprogress: 'Translating',
   success: 'Ready',
   failed: 'Failed',
   timeout: 'Timed out',
-}
+} satisfies Record<ModelTranslationStatus, string>
 
 interface ModelStatusCardProps extends React.ComponentProps<typeof Card> {
   translation: ModelTranslation
-  /**
-   * Retry for a failed or timed-out translation. Promise-returning handlers
-   * drive the pending state; the button keeps its label, spins, and stays put.
-   */
+  /** Promise-returning handlers drive the retry button's pending state. */
   onRetry?: () => void | Promise<void>
   retryPending?: boolean
-  /** Render each produced output format as an outline badge. */
   showOutputs?: boolean
 }
 
@@ -50,10 +41,6 @@ function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
   return value != null && typeof (value as Promise<void>).then === 'function'
 }
 
-/**
- * An action on the async-pending contract: disabled with a spinner while it
- * keeps its label, focusable throughout, never unmounted mid-request.
- */
 function RetryAction({
   pending,
   onRetry,
@@ -109,11 +96,6 @@ function RetryAction({
   )
 }
 
-/**
- * The translation state of one design: whether the model is viewable yet, how
- * far along it is, and what failed. Drive it from a Model Derivative manifest
- * via `fromApsManifest`, or from any backend that fills a ModelTranslation.
- */
 function ModelStatusCard({
   translation,
   onRetry,
@@ -139,8 +121,6 @@ function ModelStatusCard({
           <span
             className={cn(
               'min-w-0 flex-1 truncate font-medium',
-              // A design with no readable name falls back to its URN — data,
-              // not prose, so it reads as code.
               !translation.name && 'font-mono text-code text-muted-foreground',
             )}
           >

@@ -19,8 +19,7 @@ export function SignInCardDemo() {
       onSignIn={signIn}
       loadingProvider={loadingProvider}
       title="Sign in to Ridgeline"
-      // The pages this demo appears on already own h1 and h2, so the card's
-      // heading slots in one level down rather than restarting the outline.
+      // The docs pages own h1 and h2; slot in one level down.
       titleAs="h3"
       description="Connect a data source for the Summit Tower project."
       footer="Demo only — no real OAuth flow starts."

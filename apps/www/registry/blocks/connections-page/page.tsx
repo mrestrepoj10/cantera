@@ -7,21 +7,10 @@ import { apsProvider } from '@/lib/aps-oauth-preset'
 import type { OAuthAccount, OAuthConnection, OAuthProvider } from '@/lib/oauth-types'
 
 /**
- * The connections-page block: every provider grant this app holds, on one
- * page, with connect, reconnect, and disconnect per provider.
- *
- * Server-rendered on the same aec-auth wiring the acc-sign-in block installs —
- * `lib/acc-auth.ts` and the `/api/auth/*` route handlers come from that item,
- * so this block adds a page and its client wiring, and nothing token-shaped.
- *
- * Reusable inner component: render <AccConnections /> from any server page;
- * the default export is a ready-made /connections page, and the sibling
- * loading.tsx is its skeleton.
- *
- * Autodesk is the wired provider. Extra entries in `providers` render as "not
- * connected" and their Connect button hits `/api/auth/<id>`, which 404s until
- * you teach `lib/acc-auth.ts` about that provider — deliberate, so an unwired
- * provider fails loudly at the route rather than quietly in the UI.
+ * Render <AccConnections /> from any server page; the default export is a
+ * ready-made /connections page. Extra entries in `providers` render as "not
+ * connected", and their Connect button 404s until `lib/acc-auth.ts` knows the
+ * provider — deliberate, so an unwired provider fails loudly at the route.
  */
 
 async function requestOrigin(): Promise<string> {
@@ -31,11 +20,8 @@ async function requestOrigin(): Promise<string> {
   return `${proto}://${host}`
 }
 
-/**
- * Row-level failures stay on the row. Only a backend that cannot answer at all
- * — no client id, no provider configured — throws to the page-level state,
- * because then there is nothing to render a row about.
- */
+/** Row-level failures stay on the row; only a backend that cannot answer at
+ * all rethrows to the page-level error state. */
 function connectionFromError(
   error: unknown,
   account: OAuthAccount,
@@ -63,9 +49,8 @@ export async function AccConnections({
   nextPath = '/connections',
   headingLevel = 'h1',
 }: {
-  /** Providers to list, in display order. Autodesk is the wired one. */
+  /** Providers to list. Autodesk is the wired one. */
   providers?: OAuthProvider[]
-  /** Where the consent flow returns to. */
   nextPath?: string
   /** Heading level for the block's title. Drop to h2 when embedding under one. */
   headingLevel?: 'h1' | 'h2' | 'h3'

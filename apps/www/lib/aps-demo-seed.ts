@@ -1,33 +1,14 @@
 import type { ApsManifestDerivative, ApsSeedConfig } from '@emulators/aps'
 
-/**
- * Seed data for the embedded APS emulator behind /demo.
- *
- * The demo is not a mock: the pickers read this through the emulator's real
- * Data Management, ACC Sheets, and Model Derivative endpoints, with the user's
- * own bearer token. So the seed has to look like a real account — two hubs in
- * two regions, five construction projects, several sheet issuances each, and
- * translations across the whole status vocabulary, including designs that have
- * never been translated at all.
- *
- * Names come from the site's sample-data vocabulary (Ridgeline Builders,
- * Summit Tower, Cedar Mill…) so the demo and the docs pages read as one place.
- */
-
-/** The seeded users the emulator's consent screen offers. */
 const DEMO_USER_EMAILS = ['maria@builders.example', 'sam@builders.example']
 
-/**
- * Projects the emulator seeds by itself (DEFAULT_DATA_SEED). Our users are not
- * members of them, and ACC Sheets refuses non-members — so grant membership,
- * or a hub the demo cannot avoid showing would answer 403 on every project.
- */
+// ACC Sheets refuses non-members, so grant membership in the emulator's own
+// default projects or that hub answers 403 on every project.
 const EMULATOR_DEFAULT_PROJECT_IDS = ['b.emulate-project', 'b.emulate-infrastructure']
 
 interface DemoSheet {
   number: string
   title: string
-  /** File the sheet was published from — the key into `designs` below. */
   design: string
 }
 
@@ -45,14 +26,14 @@ interface DemoProject {
   versionSets: DemoVersionSet[]
 }
 
-/**
- * Every design the sheets point at, by file name: base64url of
- * `urn:adsk.objects:os.object:cantera-demo/<file>`, the form APS returns as a
- * sheet's viewable and keys the Model Derivative manifest on. A design absent
- * from `demoManifests` below has never been translated, so the manifest
- * endpoint 404s and the workflow renders it as queued.
- */
-const designUrns: Record<string, string> = {
+// base64url of `urn:adsk.objects:os.object:cantera-demo/<file>` — the form APS
+// keys manifests on. A design absent from `demoManifests` renders as queued
+// (the manifest endpoint 404s).
+interface UrnByFileName {
+  [fileName: string]: string
+}
+
+const designUrns: UrnByFileName = {
   'summit-tower-arch.rvt':
     'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y2FudGVyYS1kZW1vL3N1bW1pdC10b3dlci1hcmNoLnJ2dA',
   'summit-tower-struct.rvt':
@@ -83,11 +64,8 @@ const designUrns: Record<string, string> = {
     'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y2FudGVyYS1kZW1vL2thbmFsaGF1cy13ZXN0LWNvbmNlcHQucGRm',
 }
 
-/**
- * Where the demo starts when nothing is selected. The emulator seeds its own
- * hub first, so hub order alone would land a first-time visitor on the two
- * sample projects instead of the seeded account this page is about.
- */
+// The emulator seeds its own hub first; without this a first-time visitor
+// lands on its sample projects instead of the seeded account.
 export const DEMO_LANDING_HUB_ID = 'b.ridgeline-us'
 
 const demoHubs: NonNullable<ApsSeedConfig['hubs']> = [
@@ -200,9 +178,7 @@ const demoProjects: DemoProject[] = [
     ],
   },
   {
-    // The project with nothing translated yet: its sheets carry viewables, but
-    // no manifest exists, so Model Derivative 404s and every design reads as
-    // queued. The absent case is a state the demo has to show.
+    // Deliberately untranslated: no manifests, so every design reads as queued.
     id: 'b.kanal-west',
     hubId: 'b.ridgeline-emea',
     name: 'Kanalhaus West',
@@ -243,11 +219,6 @@ function thumbnailDerivative(status: string): ApsManifestDerivative {
 
 const demoViewerUrn = process.env.APS_VIEWER_DEMO_URN
 
-/**
- * One manifest per translated design, covering the whole vocabulary the
- * ModelStatusCard renders: ready with outputs, translating with a progress
- * string, timed out, and failed with the derivative that failed.
- */
 const demoManifests: NonNullable<ApsSeedConfig['manifests']> = {
   [designUrns['summit-tower-arch.rvt']]: {
     status: 'success',
@@ -269,8 +240,7 @@ const demoManifests: NonNullable<ApsSeedConfig['manifests']> = {
     derivatives: [svfDerivative('summit-tower-permit.pdf', 'success')],
   },
   [designUrns['summit-tower-gmp.pdf']]: {
-    // A translation that never finished: APS gives up, and the derivative it
-    // was working on is left failed — the warning state, one retry away.
+    // Deliberate: timed out, with the in-flight derivative left failed.
     status: 'timeout',
     progress: 'complete',
     derivatives: [svfDerivative('summit-tower-gmp.pdf', 'failed')],
@@ -324,19 +294,20 @@ const demoManifests: NonNullable<ApsSeedConfig['manifests']> = {
     region: 'EMEA',
     derivatives: [svfDerivative('harbor-point-arch.rvt', 'success')],
   },
-  ...(demoViewerUrn
-    ? {
-        [demoViewerUrn]: {
-          status: 'success',
-          progress: 'complete',
-          hasThumbnail: 'true',
-          derivatives: [
-            svfDerivative('cantera-viewer-sample', 'success'),
-            thumbnailDerivative('success'),
-          ],
-        },
-      }
-    : {}),
+}
+
+// The live-viewer URN comes from the environment, so its manifest joins the
+// seed only when the demo is configured.
+if (demoViewerUrn) {
+  demoManifests[demoViewerUrn] = {
+    status: 'success',
+    progress: 'complete',
+    hasThumbnail: 'true',
+    derivatives: [
+      svfDerivative('cantera-viewer-sample', 'success'),
+      thumbnailDerivative('success'),
+    ],
+  }
 }
 
 const projectIds = [...demoProjects.map((project) => project.id), ...EMULATOR_DEFAULT_PROJECT_IDS]
@@ -367,7 +338,6 @@ const sheetVersionSets: NonNullable<ApsSeedConfig['sheet_version_sets']> = demoP
 const sheets: NonNullable<ApsSeedConfig['sheets']> = demoProjects.flatMap((project) =>
   project.versionSets.flatMap((versionSet) =>
     versionSet.sheets.map((sheet) => ({
-      // Deterministic and readable: the version set already scopes the number.
       id: `${versionSet.id}-${sheet.number.toLowerCase()}`,
       project_id: project.id,
       number: sheet.number,
@@ -408,10 +378,8 @@ function documentVersionId(projectId: string, displayName: string, version: numb
   return `urn:adsk.wipprod:fs.file:vf.cantera-${documentId(projectId)}-${documentId(displayName)}?version=${version}`
 }
 
-/** The one Data Management item whose tip can open real showcase geometry. */
 export const DEMO_VIEWER_ITEM_ID = documentItemId('b.summit-tower', 'summit-tower-arch.rvt')
 
-/** Stable tip id paired with DEMO_VIEWER_ITEM_ID. */
 export const DEMO_VIEWER_VERSION_ID = documentVersionId(
   'b.summit-tower',
   'summit-tower-arch.rvt',
@@ -487,10 +455,9 @@ const documentVersions: NonNullable<ApsSeedConfig['document_versions']> = demoPr
           version_number: versionNumber,
           display_name: displayName,
           storage_size: 24_000_000 + itemIndex * 8_500_000 + versionNumber * 1_200_000,
-          // The embedded emulator cannot serve SVF geometry. Link exactly one
-          // deterministic tip to the real translated sample used by the
-          // showcase viewer; every other file deliberately exercises the
-          // model browser's no-geometry state.
+          // The embedded emulator cannot serve SVF geometry: exactly one tip
+          // links to the real translated sample; every other file deliberately
+          // exercises the no-geometry state.
           bubble_urn: versionId === DEMO_VIEWER_VERSION_ID ? (demoViewerUrn ?? null) : null,
           created_by: versionNumber % 2 === 0 ? DEMO_USER_EMAILS[1] : DEMO_USER_EMAILS[0],
           created_by_name: versionNumber % 2 === 0 ? 'Sam Ito' : 'Maria Renteria',
@@ -501,11 +468,7 @@ const documentVersions: NonNullable<ApsSeedConfig['document_versions']> = demoPr
     }),
 )
 
-/**
- * The full seed handed to the emulator. The emulator seeds its own defaults
- * first (an "Emulate Construction Hub" with two sample projects), so this adds
- * to that catalog rather than replacing it.
- */
+// Adds to the emulator's own default seed rather than replacing it.
 export const apsDemoSeed = {
   users: [
     { name: 'Maria Renteria', email: 'maria@builders.example' },
@@ -514,9 +477,8 @@ export const apsDemoSeed = {
   clients: [
     {
       name: 'cantera demo',
-      // When the showcase has real APS credentials for the Viewer demo, seed
-      // those same values into the embedded OAuth emulator. The sign-in flow
-      // still stays local, while the token route talks to real APS.
+      // Real APS credentials, when present, are seeded into the embedded OAuth
+      // emulator: sign-in stays local while the token route talks to real APS.
       client_id: process.env.APS_CLIENT_ID ?? 'cantera-demo-client',
       client_secret: process.env.APS_CLIENT_SECRET ?? 'cantera-demo-secret',
       redirect_uris: ['/api/auth/callback/aps'],

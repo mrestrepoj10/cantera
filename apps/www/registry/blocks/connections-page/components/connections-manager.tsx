@@ -20,15 +20,9 @@ interface ConnectionsManagerProps
   disconnectHrefTemplate: string
 }
 
-/**
- * Client wiring for the connections-page block: connect navigates to the
- * consent route, disconnect posts to the revoke route, and both settle by
- * re-rendering the server page — the server view is the truth, never local
- * optimistic state about a token.
- *
- * The page component next door stays presentational; point this at your own
- * routes, or replace it entirely, and ConnectionsView does not change.
- */
+/** Point the templates at your own routes, or replace this file entirely —
+ * ConnectionsView does not change. Both actions settle by re-rendering the
+ * server page: the server view is the truth, never local optimistic state. */
 function ConnectionsManager({
   connectHrefTemplate,
   disconnectHrefTemplate,
@@ -37,13 +31,10 @@ function ConnectionsManager({
   const router = useRouter()
   const [connecting, setConnecting] = useState<string>()
   const [disconnecting, setDisconnecting] = useState<string>()
-  // A transition keeps the retry pending until the server page has actually
-  // re-rendered, rather than for the length of a fire-and-forget call.
   const [retrying, startRefresh] = useTransition()
 
   function connect(providerId: string) {
-    // A full navigation to the provider's consent screen: the spinner stays up
-    // because this page is on its way out, which is exactly right.
+    // Never cleared: this page is navigating away to the consent screen.
     setConnecting(providerId)
     window.location.href = connectHrefTemplate.replaceAll('{provider}', providerId)
   }
@@ -56,10 +47,8 @@ function ConnectionsManager({
         redirect: 'manual',
       })
     } finally {
-      // Clearing pending is part of the same transition as the refresh, so the
-      // Disconnect control keeps its spinner until the re-rendered server page
-      // commits — never actionable again beside a stale connected row. The
-      // refresh runs on failure too: the server view is the truth either way.
+      // Pending clears inside the transition so the button keeps its spinner
+      // until the re-rendered server page commits; refresh runs on failure too.
       startRefresh(() => {
         router.refresh()
         setDisconnecting(undefined)

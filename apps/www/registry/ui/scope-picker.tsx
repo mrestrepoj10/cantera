@@ -12,15 +12,9 @@ import { Label } from '@/components/ui/label'
 import type { OAuthScope, OAuthScopePreset } from '@/lib/oauth-types'
 import { cn } from '@/lib/utils'
 
-/**
- * Union of a picker value with the catalog's required scopes, in catalog order
- * with custom scopes appended.
- *
- * `ScopePicker` keeps `value` pure — it never calls `onChange` on mount to
- * backfill required scopes, because a parent that memoizes or filters would
- * loop. Call this where the value is actually used (submit, or building the
- * authorize URL) so required scopes are never silently dropped.
- */
+/** ScopePicker keeps `value` pure — it never backfills required scopes through
+ * `onChange` (a memoizing parent would loop). Call this where the value is
+ * used (submit, the authorize URL) so required scopes are never dropped. */
 function withRequiredScopes(scopes: OAuthScope[], value: string[]): string[] {
   const required = scopes.filter((scope) => scope.required).map((scope) => scope.id)
   const merged = new Set([...value, ...required])
@@ -33,32 +27,16 @@ function withRequiredScopes(scopes: OAuthScope[], value: string[]): string[] {
 
 interface ScopePickerProps extends Omit<React.ComponentProps<'div'>, 'onChange'> {
   scopes: OAuthScope[]
-  /**
-   * Selected scope ids. Controlled, and taken literally: required scopes are
-   * rendered checked whether or not they appear here. Union them in at submit
-   * time with `withRequiredScopes`.
-   */
+  /** Required scopes render checked whether or not they appear here — union
+   * them in at submit time with `withRequiredScopes`. */
   value: string[]
   onChange: (value: string[]) => void
-  /** Named bundles shown as one-click presets above the list. */
   presets?: OAuthScopePreset[]
-  /**
-   * Let the user enter a scope that is not in the catalog — granular scopes
-   * like `data:read:<urn>`, or anything the provider added after this catalog
-   * was written. Custom scopes round-trip through value / onChange like any
-   * other and render distinguishably.
-   */
   allowCustomScopes?: boolean
-  /** Label for the custom-scope field. */
   customScopeLabel?: string
   disabled?: boolean
 }
 
-/**
- * A controlled picker for OAuth scopes: checkbox list with descriptions,
- * optional one-click presets, and required scopes pinned on. Data-agnostic —
- * pass any scope catalog (see the aps-oauth-preset for Autodesk's).
- */
 function ScopePicker({
   scopes,
   value,
@@ -75,10 +53,8 @@ function ScopePicker({
   const catalogIds = new Set(scopes.map((scope) => scope.id))
   const required = scopes.filter((scope) => scope.required).map((scope) => scope.id)
   const selected = new Set([...value, ...required])
-  // Anything selected that the catalog does not describe, in the order it was added.
   const customScopes = value.filter((id) => !catalogIds.has(id))
 
-  /** Emit in catalog order, with custom scopes trailing in insertion order. */
   function emit(next: Set<string>) {
     onChange([
       ...scopes.filter((scope) => next.has(scope.id)).map((scope) => scope.id),
@@ -163,10 +139,8 @@ function ScopePicker({
         {scopes.map((scope) => {
           const id = `${baseId}-${scope.id}`
           const descriptionId = scope.description ? `${id}-description` : undefined
-          // The checkbox renders as a role="checkbox" element next to its own
-          // hidden input, so `htmlFor` alone leaves it nameless until the
-          // primitive wires the association up on the client. Naming it
-          // explicitly means it is named in the server markup too.
+          // aria-labelledby, not htmlFor alone: the checkbox primitive is
+          // nameless in server markup until its client association wires up.
           const labelId = `${id}-label`
           const isRequired = Boolean(scope.required)
           return (
@@ -189,11 +163,8 @@ function ScopePicker({
               <div className="flex min-h-9 flex-col justify-center gap-1">
                 <Label id={labelId} htmlFor={id} className="flex-wrap gap-2">
                   {scope.label}
-                  {/* Foreground at 60% rather than muted-foreground: on a stock
-                      shadcn theme muted ink on bg-muted measures 4.35:1, under
-                      AA. This renders within a shade of the same gray and
-                      clears 5:1 on any theme whose foreground contrasts its own
-                      muted surface. */}
+                  {/* status-neutral ink, not muted-foreground: muted ink on
+                      bg-muted misses AA on a stock theme. */}
                   <code className="rounded bg-muted px-1 py-px font-mono text-status-neutral text-xs">
                     {scope.id}
                   </code>

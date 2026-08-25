@@ -13,8 +13,7 @@ import {
 import { type SheetVersionSet, versionSetIssuance } from '@/lib/project-types'
 import { cn } from '@/lib/utils'
 
-/** One formatter per locale, not per option per render — construction is the
- * expensive part of Intl, and every option in the list shares it. */
+// One formatter per locale, not per render: construction is the expensive part of Intl.
 const issuanceFormatters = new Map<string, Intl.DateTimeFormat>()
 
 function issuanceFormatter(locale?: string | string[]): Intl.DateTimeFormat {
@@ -27,7 +26,6 @@ function issuanceFormatter(locale?: string | string[]): Intl.DateTimeFormat {
   return formatter
 }
 
-/** Locale-neutral issuance date: "Mar 12, 2026" in en, "12 mars 2026" in fr. */
 function formatIssuance(date: Date, locale?: string | string[]): string {
   return issuanceFormatter(locale).format(date)
 }
@@ -40,40 +38,21 @@ function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
 
 interface VersionSetSelectProps {
   versionSets: SheetVersionSet[]
-  /** Selected version set id (controlled). */
   value?: string
-  /** Initially selected version set id (uncontrolled). */
   defaultValue?: string
-  /**
-   * Called with the chosen version set id. Return a promise and the select
-   * drives its own pending state for the duration — or drive it with `pending`.
-   */
+  /** Promise-returning handlers drive the select's pending state. */
   onValueChange?: (versionSetId: string) => void | Promise<void>
-  /**
-   * Pending: the trigger keeps showing the current set, crossfades in a
-   * spinner, and goes read-only — still focusable, never unmounted.
-   */
   pending?: boolean
   disabled?: boolean
   placeholder?: string
-  /** BCP 47 locale(s) for the issuance dates. Defaults to the runtime locale. */
   locale?: string | string[]
-  /** Shown inside the open list when there are no version sets at all. */
   emptyMessage?: string
-  /**
-   * Accessible name for the trigger. A combobox never takes its name from its
-   * content — without this the control announces its value but not what it is.
-   */
+  /** A combobox never takes its name from its content — without this the
+   * control announces its value but not what it is. */
   'aria-label'?: string
   className?: string
 }
 
-/**
- * Which issuance of the sheets to read from — "Permit Set", "IFC 2026-03".
- * On site, building from a superseded set is an expensive mistake, so every
- * option carries its issuance date and the selection is explicit, never
- * implicit-latest.
- */
 function VersionSetSelect({
   versionSets,
   value,
@@ -112,9 +91,7 @@ function VersionSetSelect({
         data-slot="version-set-select"
         aria-label={ariaLabel}
         aria-busy={busy || undefined}
-        // gap-0 so the collapsed spinner slot leaves no phantom inset at rest
-        // (the chevron gets its margin back explicitly); the pseudo-element
-        // extends the hit area to the 44px field-density floor.
+        // The pseudo-element extends the hit area to the 44px floor.
         className={cn(
           'relative w-full gap-0 after:absolute after:-inset-y-2 after:inset-x-0 [&>svg]:ml-1.5',
           className,

@@ -1,26 +1,3 @@
-/**
- * Generates the `registry:example` items — the pages "Open in v0" hands over.
- *
- * A bare component is a poor thing to drop into v0: it arrives with no page, no
- * data, and no imports it can resolve. So every demo source in
- * `registry/examples/` becomes an installable example item made of two files:
- * the demo component itself, and a generated `registry:page` wrapper that mounts
- * it at `app/examples/<item>/page.tsx`. v0 then opens something that renders.
- *
- * What is generated, and what is hand-written:
- * - hand-written — `registry/examples/<item>-demo.tsx`, the composition itself.
- *   These are real registry files (self-contained, installed specifiers, their
- *   own sample data), not site imports.
- * - generated — the page wrapper under `registry/examples/pages/`, and the
- *   example items in `registry.json`, whose dependencies are read straight out
- *   of the demo's imports so they cannot drift from what the file actually uses.
- *
- * Deterministic and idempotent: `--check` regenerates into memory and fails if
- * anything on disk differs, which is how `registry:verify` covers it.
- *
- * Run via `pnpm registry:build`, before `shadcn build`.
- */
-
 import { readdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -47,8 +24,11 @@ import {
 const examplesDir = path.join(wwwRoot, 'registry/examples')
 const pagesDir = path.join(examplesDir, 'pages')
 
-/** How wide the generated page renders each demo. The only per-example knob. */
-const PAGE_WIDTH: Record<string, string> = {
+interface PageWidthByExample {
+  [example: string]: string
+}
+
+const PAGE_WIDTH: PageWidthByExample = {
   'file-drop-zone': 'max-w-lg',
   'provider-sign-in-button': 'max-w-sm',
   'sign-in-card': 'max-w-md',
@@ -96,21 +76,17 @@ export default function Page() {
 `
 }
 
-/**
- * Resolves one import into the dependency that satisfies it: a cantera item, a
- * shadcn primitive, an npm package, or nothing at all when the consumer project
- * already provides it.
- */
-function resolveDependency(
-  specifier: string,
-  providers: Map<string, string>,
-): { registry?: string; npm?: string } {
+interface ResolvedDependency {
+  registry?: string
+  npm?: string
+}
+
+function resolveDependency(specifier: string, providers: Map<string, string>): ResolvedDependency {
   if (isAliasSpecifier(specifier)) {
     const target = aliasTargetFor(specifier)
     if (PROJECT_PROVIDED_MODULES.has(target)) return {}
     const owner = providers.get(target)
     if (owner) return { registry: `${namespace}/${owner}` }
-    // Not ours: a shadcn primitive, referenced by its plain registry name.
     if (target.startsWith('components/ui/')) return { registry: path.posix.basename(target) }
     throw new Error(`Cannot resolve "${specifier}" to a registry dependency`)
   }
@@ -134,7 +110,6 @@ async function buildExamples(registry: Registry): Promise<{
   const catalog = catalogItems(registry.items)
   const byName = new Map(catalog.map((item) => [item.name, item]))
 
-  // Every installed module path in the catalog, mapped to the item that ships it.
   const providers = new Map<string, string>()
   for (const item of catalog) {
     for (const file of item.files ?? []) {
@@ -142,7 +117,6 @@ async function buildExamples(registry: Registry): Promise<{
     }
   }
 
-  // Catalog order, so registry.json reads as "every item, then its example".
   const catalogRank = new Map(catalog.map((item, index) => [item.name, index]))
   const sources = (await readdir(examplesDir, { withFileTypes: true }))
     .filter((entry) => entry.isFile() && entry.name.endsWith('-demo.tsx'))
@@ -189,7 +163,9 @@ async function buildExamples(registry: Registry): Promise<{
       author: base.author,
       description: `A full page rendering ${base.title}, with its own sample data — what "Open in v0" hands over, and what to copy when wiring the component into a real screen.`,
       categories: base.categories,
-      ...(dependencies.size > 0 ? { dependencies: [...dependencies].sort() } : {}),
+      // undefined-valued keys are dropped by JSON serialization, so the
+      // emitted item is byte-identical to a conditionally-present field.
+      dependencies: dependencies.size > 0 ? [...dependencies].sort() : undefined,
       registryDependencies: sortDependencies([...registryDependencies]),
       files: [
         {

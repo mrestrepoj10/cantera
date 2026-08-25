@@ -51,7 +51,6 @@ function treeRequest(searchParams: URLSearchParams): HubTreeRequest | string {
   }
 }
 
-/** Session-backed lazy Data Management tree for the showcase model browser. */
 export async function GET(request: NextRequest): Promise<Response> {
   const parsed = treeRequest(request.nextUrl.searchParams)
   if (typeof parsed === 'string') {

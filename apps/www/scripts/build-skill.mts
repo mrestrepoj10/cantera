@@ -1,25 +1,3 @@
-/**
- * Generates the cantera Agent Skill: `skills/cantera/SKILL.md` plus one
- * reference per registry item under `skills/cantera/references/`.
- *
- * Shaped after ai-elements': SKILL.md is a router, not a manual — what cantera
- * is, the pattern every item follows, the contracts that are not visible in a
- * type signature, and a pointer per item. The references carry the API surface,
- * so an agent loads one file for the component it is actually using.
- *
- * Everything is derived from `registry.json` and
- * `components/site/props-tables.ts` in file order, with no timestamps: the skill
- * is committed build output, and `registry:verify` fails if it drifts. The prose
- * that is not derivable — the locked pattern, the design contracts — lives in
- * this file, next to the artifacts it explains.
- *
- * The per-item references come from `lib/item-markdown.ts`, which the site's
- * `/components/<name>.md` route handler serves as well — one serializer, so the
- * markdown an agent installs and the markdown a reader copies cannot disagree.
- *
- * Run via `pnpm registry:build`.
- */
-
 import { mkdir, readdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -57,7 +35,6 @@ primitives. If a component needs data, the consumer fetches it and passes it in.
 Token handling — refresh, storage, rotation — belongs to
 [aec-auth](https://github.com/mrestrepoj10/aec-auth), never to a component.`
 
-// Canonical text: `apps/www/lib/design-contracts.ts`.
 const CONTRACTS = `## Binding contracts
 
 These are not style preferences. Code that breaks them is wrong here.

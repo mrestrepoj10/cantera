@@ -11,7 +11,7 @@
   "files": [
     {
       "path": "registry/examples/user-account-badge-demo.tsx",
-      "content": "import { UserAccountBadge } from '@/components/ui/user-account-badge'\nimport { apsProvider } from '@/lib/aps-oauth-preset'\n\n/** Server-safe: no state, no effects, nothing to hydrate. */\nexport function UserAccountBadgeDemo() {\n  return (\n    <div className=\"flex w-full flex-col gap-4\">\n      <UserAccountBadge\n        account={{ name: 'Dana Alvarez', email: 'dana@ridgelinebuilders.com' }}\n        provider={apsProvider}\n      />\n      <UserAccountBadge account={{ name: 'Luis Ibarra' }} size=\"sm\" />\n      {/* No name, no avatar: the badge falls back to the email. */}\n      <UserAccountBadge account={{ email: 'inspector@citypermits.gov' }} size=\"sm\" />\n    </div>\n  )\n}\n",
+      "content": "import { UserAccountBadge } from '@/components/ui/user-account-badge'\nimport { apsProvider } from '@/lib/aps-oauth-preset'\n\nexport function UserAccountBadgeDemo() {\n  return (\n    <div className=\"flex w-full flex-col gap-4\">\n      <UserAccountBadge\n        account={{ name: 'Dana Alvarez', email: 'dana@ridgelinebuilders.com' }}\n        provider={apsProvider}\n      />\n      <UserAccountBadge account={{ name: 'Luis Ibarra' }} size=\"sm\" />\n      {/* No name, no avatar: the badge falls back to the email. */}\n      <UserAccountBadge account={{ email: 'inspector@citypermits.gov' }} size=\"sm\" />\n    </div>\n  )\n}\n",
       "type": "registry:component",
       "target": "components/examples/user-account-badge-demo.tsx"
     },

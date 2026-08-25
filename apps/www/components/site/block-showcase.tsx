@@ -43,7 +43,6 @@ interface RegistrySourceFile {
   content?: string
 }
 
-/** Interactive chrome around an isolated block preview. The block itself stays in an iframe. */
 function BlockShowcase({
   name,
   title,

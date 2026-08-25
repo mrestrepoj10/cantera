@@ -18,7 +18,6 @@ function inFolder(...folders: string[]): BrowsePathSegment[] {
   ]
 }
 
-/** The project's files, as a deep search would surface them. */
 const projectIndex: FinderEntry[] = [
   {
     item: { id: 'item-summit', name: 'Summit Tower Coordination.rvt', type: 'item' },
@@ -46,11 +45,6 @@ const recents: FinderEntry[] = [
   },
 ]
 
-/**
- * A controlled finder over fixture groups: recents render at zero keystrokes,
- * and a simulated per-project deep search streams in behind the query the way
- * the real recursive `folders/{id}/search` call would.
- */
 export function FinderDemo() {
   const [query, setQuery] = useState('')
   const [deep, setDeep] = useState<FinderGroup>({
@@ -67,7 +61,6 @@ export function FinderDemo() {
       return
     }
     let cancelled = false
-    // Stale-while-typing: entries stay rendered under a loading heading.
     setDeep((group) => ({ ...group, status: 'loading' }))
     delay(600).then(() => {
       if (cancelled) return

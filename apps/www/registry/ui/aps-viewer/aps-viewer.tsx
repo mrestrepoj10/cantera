@@ -38,68 +38,45 @@ export type {
 } from '@/components/ui/aps-viewer/toolbar'
 
 export interface APSViewerProps {
-  /**
-   * Model Derivative URN (base64), with or without the `urn:` prefix.
-   * Omit to mount an empty viewer and load models imperatively via
-   * `onViewerReady` / `useAPSViewer`.
-   */
+  /** Model Derivative URN (base64), with or without the `urn:` prefix. Omit to
+   * mount an empty viewer and load models imperatively. */
   urn?: string
   /** Fetches an OAuth token from your backend. Must be referentially stable
    * or the value at first mount wins (the SDK initializer is global). */
   getAccessToken: GetAccessToken
-  /** SDK version (default '7.*') */
   version?: string
-  /** Initializer env (default 'AutodeskProduction2') */
   env?: string
-  /** Initializer api (default 'streamingV2') */
   api?: string
-  /**
-   * Extensions to load once the viewer starts: bare ids, or `{ id, options }`
-   * entries when the extension reads load options. Captured when the viewer
-   * mounts. Load progress is observable via `useAPSExtensions()`; failures
-   * report through `onExtensionError`. The `viewer-extension-types` item
-   * catalogs the public ids and types their options.
-   */
+  /** Extensions to load once the viewer starts. Captured when the viewer
+   * mounts; failures report through `onExtensionError`. */
   extensions?: readonly APSExtensionRequest[]
-  /** Extra config passed to the GuiViewer3D constructor */
   viewerConfig?: Record<string, unknown>
-  /**
-   * Named Autodesk settings profile applied at creation — `'aec'` is
-   * Autodesk's "Construction (AEC)" tuning (reversed zoom, edge rendering,
-   * AEC light preset). Omit for the SDK default.
-   */
   profile?: APSViewerProfile
-  /** Native GuiViewer3D toolbar, or the toolbar-less core Viewer3D. */
   toolbar?: 'native' | 'none'
-  /** Edge where the native toolbar docks. Changes apply live. */
+  /** Changes apply live, without recreating the viewer. */
   toolbarPosition?: APSViewerToolbarPosition
-  /** Native toolbar button-box size. `md` is the 44px default. Changes apply live. */
+  /** Changes apply live, without recreating the viewer. */
   toolbarScale?: APSViewerToolbarScale
-  /** Show Autodesk's ViewCube and its companion controls. Default true. */
   viewCube?: boolean
   /** Clip the viewer frame to this pixel radius, clamped to 0–32. */
   radius?: number
   /** Force one appearance. Omit to follow the app's light/dark appearance live. */
   theme?: 'light' | 'dark'
-  /** Observe the viewer container and resize the WebGL canvas. Default true. */
   autoResize?: boolean
-  /** Shut the whole SDK runtime down when the last viewer unmounts.
-   * Default false: keeps the runtime warm across route changes. */
+  /** Default false: keeps the SDK runtime warm across route changes. */
   shutdownOnUnmount?: boolean
   onViewerReady?: (viewer: APSViewer3D) => void
   onModelLoaded?: (model: APSModel, doc: APSDocument) => void
   onError?: (error: Error) => void
-  /** An extension from `extensions` failed to load. Non-fatal: the viewer and
-   * the other extensions keep going, so this is a report, not a teardown. */
+  /** Non-fatal: the viewer and the other extensions keep going. */
   onExtensionError?: (id: string, error: Error) => void
   className?: string
   style?: CSSProperties
-  /** Overlay UI. Rendered inside the provider, absolutely positioned children
-   * can sit on top of the canvas and use every hook. */
+  /** Overlay UI: absolutely positioned children sit on top of the canvas and
+   * can use every hook. */
   children?: ReactNode
 }
 
-/** A bare id and an `{ id, options }` entry are the same request. */
 function toExtensionEntry(request: APSExtensionRequest): {
   id: string
   options?: Record<string, unknown>
@@ -107,7 +84,6 @@ function toExtensionEntry(request: APSExtensionRequest): {
   return typeof request === 'string' ? { id: request } : request
 }
 
-/** Unloading is best-effort: the viewer may already be finished. */
 function unloadModel(viewer: APSViewer3D | null, model: APSModel | null): void {
   if (!viewer || !model) return
   try {
@@ -133,17 +109,9 @@ function withInitialViewCube(
   }
 }
 
-/**
- * APS Viewer container. Renders a plain positioned <div> on the
- * server (SSR-safe: no window access until effects run), then on the client:
- *
- *  1. loads the SDK script/CSS from the Autodesk CDN exactly once,
- *  2. runs the global Initializer exactly once,
- *  3. instantiates a viewer bound to this component's lifetime,
- *  4. tears everything down on unmount — including under React Strict Mode's
- *     mount → unmount → remount cycle, which is where naive wrappers leak
- *     WebGL contexts.
- */
+// SSR-safe: no window access until effects run. Tears down cleanly under
+// React Strict Mode's mount → unmount → remount cycle, which is where naive
+// viewer wrappers leak WebGL contexts.
 export function APSViewer({
   urn,
   getAccessToken,
@@ -181,12 +149,9 @@ export function APSViewer({
   const frameRadius =
     radius === undefined || !Number.isFinite(radius) ? undefined : Math.min(32, Math.max(0, radius))
 
-  // Latest-value refs so effect deps stay minimal and consumers can pass
-  // inline closures and literals without recreating the viewer.
-  // `shutdownOnUnmount` is only read at cleanup; `viewerConfig` and
-  // `extensions` are captured when the viewer is created — listing any of
-  // them as a dependency would tear down the WebGL context whenever a
-  // consumer passes a fresh object or array literal.
+  // Latest-value refs: listing any of these as an effect dependency would tear
+  // down the WebGL context whenever a consumer passes a fresh closure or
+  // literal. `viewerConfig` and `extensions` are captured at viewer creation.
   const callbacksRef = useRef({
     getAccessToken,
     onViewerReady,
@@ -247,10 +212,8 @@ export function APSViewer({
         }
         viewerRef.current = viewer
         store.attach(viewer)
-        // Constructor-time options such as `toolbar` replace the Viewer
-        // instance. Track that identity explicitly: the runtime can resolve so
-        // quickly that `loading-runtime` → `ready` batches into the same status
-        // value and would otherwise fail to restart model loading.
+        // The runtime can resolve so quickly that `loading-runtime` → `ready`
+        // batches into one status value; the epoch restarts model loading.
         setViewerEpoch((previous) => previous + 1)
         if (profile) {
           const settings = {
@@ -388,8 +351,6 @@ export function APSViewer({
     }
   }, [status, viewCube, viewerEpoch])
 
-  // The toolbar belongs to APSViewer: inspector controls update its docking
-  // and touch-target scale without a child component or a WebGL restart.
   useEffect(() => {
     if (viewerEpoch === 0 || status !== 'ready' || toolbar !== 'native') return
     const extension = viewerRef.current?.getExtension(APS_VIEWER_TOOLBAR_EXTENSION_ID) as
@@ -422,8 +383,7 @@ export function APSViewer({
     return () => observer.disconnect()
   }, [autoResize, status])
 
-  // Model loading is a separate concern from viewer lifetime: swapping `urn`
-  // reuses the live viewer instead of recreating the WebGL context.
+  // Swapping `urn` reuses the live viewer instead of recreating the WebGL context.
   useEffect(() => {
     const viewer = viewerRef.current
     const autodesk = typeof window !== 'undefined' ? window.Autodesk : undefined
@@ -485,9 +445,9 @@ export function APSViewer({
         className={className}
         style={{
           position: 'relative',
-          ...(frameRadius === undefined
-            ? {}
-            : { borderRadius: frameRadius, overflow: 'hidden' as const }),
+          // React drops undefined style values.
+          borderRadius: frameRadius,
+          overflow: frameRadius === undefined ? undefined : 'hidden',
           ...style,
         }}
         data-aps-viewer=""

@@ -12,22 +12,10 @@ import { VersionSetSelect } from '@/components/ui/version-set-select'
 import type { AccWorkflowData } from '@/lib/acc-workflow'
 import { cn } from '@/lib/utils'
 
-/**
- * Client wiring for the /demo workflow. The server page is the truth: every
- * selection is a search param, so changing one is a navigation, and the four
- * components re-render from freshly fetched ACC data rather than from local
- * state about what the user probably picked.
- *
- * The transition holds the pending state until the server render commits, so
- * a picker keeps its label and spins for exactly as long as the fetch takes.
- */
-
-/** The selection chain, in the order the screen reveals it. */
 const fieldOrder = ['hub', 'project', 'versionSet'] as const
 
 type WorkflowField = (typeof fieldOrder)[number]
 
-/** A retry on the async-pending contract, for the fields that have no error slot. */
 function RetryNotice({
   message,
   pending,
@@ -82,8 +70,8 @@ function RetryNotice({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-      {/* The control carries the same string as its accessible name, so this
-          is the visible half of one label, not a second announcement. */}
+      {/* The visible half of the control's own accessible name, not a second
+          announcement. */}
       <span aria-hidden className="font-medium text-muted-foreground text-xs">
         {label}
       </span>
@@ -98,13 +86,10 @@ function AccWorkflowPanel({ data }: { data: AccWorkflowData }) {
   const [touched, setTouched] = useState<WorkflowField | 'all'>()
   const [isPending, startTransition] = useTransition()
 
-  // The showcase has an end-to-end OAuth contract that lands on a fresh
-  // document. Mark this exact client island ready so the test never mistakes
-  // the already-hydrated app shell for an interactive project picker.
+  // Marks this client island ready so the OAuth e2e never mistakes the
+  // hydrated app shell for an interactive picker.
   useEffect(() => setHydrated(true), [])
 
-  // Changing one field invalidates everything after it, so the fields
-  // downstream of the touched one are pending too — they are being replaced.
   const pendingFrom =
     isPending && touched ? (touched === 'all' ? 0 : fieldOrder.indexOf(touched)) : undefined
   const busy = (field: WorkflowField) =>
@@ -119,7 +104,7 @@ function AccWorkflowPanel({ data }: { data: AccWorkflowData }) {
     const query = search.toString()
     startTransition(() => {
       router.replace(query ? `/demo?${query}` : '/demo', { scroll: false })
-      // Clearing pending inside the transition keeps the spinner up until the
+      // Cleared inside the transition: the spinner stays up until the
       // re-rendered server page commits, never a frame longer or shorter.
       setTouched(undefined)
     })
@@ -147,8 +132,7 @@ function AccWorkflowPanel({ data }: { data: AccWorkflowData }) {
             <HubSwitcher
               aria-label="Hub"
               hubs={data.hubs}
-              // Always a string, never undefined: the selection is the server's
-              // to own, and a control that flips to uncontrolled mid-session
+              // Never undefined: a control flipping to uncontrolled mid-session
               // would keep a stale hub after a failed read.
               value={data.selectedHubId ?? ''}
               pending={busy('hub')}
@@ -174,9 +158,8 @@ function AccWorkflowPanel({ data }: { data: AccWorkflowData }) {
             />
           </Field>
         </div>
-        {/* The picker keeps its own error state, but that one lives inside the
-            open popup — a read that failed has to be visible without opening
-            anything. */}
+        {/* The picker's own error lives inside the closed popup; a failed read
+            must be visible without opening anything. */}
         {listError && <RetryNotice message={listError} pending={isPending} onRetry={retry} />}
       </div>
 
@@ -211,8 +194,7 @@ function AccWorkflowPanel({ data }: { data: AccWorkflowData }) {
           <ModelStatusCard
             key={translation.urn}
             translation={translation}
-            // The emulator has no re-translate endpoint, so a retry here is the
-            // same honest move as everywhere else on this page: re-read the
+            // The emulator has no re-translate endpoint; retry re-reads the
             // manifest from the server.
             onRetry={retry}
             retryPending={isPending}

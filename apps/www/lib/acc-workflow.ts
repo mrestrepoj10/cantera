@@ -12,25 +12,11 @@ import {
 } from '@/lib/aps-data-preset'
 import type { Hub, ModelTranslation, Project, SheetVersionSet } from '@/lib/project-types'
 
-/**
- * Server-side reads for the /demo workflow: hubs, projects, sheet version
- * sets, and the translation manifests behind the selected issuance.
- *
- * This is the demo's own wiring, not distributed code. The registry stays
- * data-agnostic — components take plain props — so the fetching, the token,
- * and the failure vocabulary live here, on the server, next to the page that
- * renders them.
- *
- * Every step reports a failure as a message rather than throwing: an emulator
- * (or APS) that answers 500 has to land in a picker's error state with a
- * retry, never in an error boundary.
- */
+// Every step reports a failure as a message rather than throwing: a 500 must
+// land in a picker's error state with a retry, never in an error boundary.
 
-/**
- * Where the APS data APIs live. The emulator serves auth and data from one
- * origin, so `APS_AUTH_BASE_URL` — absolute, or relative like "/emulate/aps" —
- * points at both. Unset means real APS.
- */
+/** `APS_AUTH_BASE_URL` — absolute, or relative like "/emulate/aps" — serves
+ * auth and data from one origin. Unset means real APS. */
 export function apsApiBaseUrl(origin: string): string {
   const configured = process.env.APS_AUTH_BASE_URL
   if (!configured) return APS_BASE_URL
@@ -40,8 +26,6 @@ export function apsApiBaseUrl(origin: string): string {
 export async function apsGet<T>(url: string, token: AccessToken): Promise<T> {
   const response = await fetch(url, {
     headers: { ...authHeaders(token), Accept: 'application/json' },
-    // A demo whose selection changes per request has nothing to gain from a
-    // cached read, and a stale hub list would be a lie.
     cache: 'no-store',
   })
   if (!response.ok) {
@@ -50,12 +34,8 @@ export async function apsGet<T>(url: string, token: AccessToken): Promise<T> {
   return (await response.json()) as T
 }
 
-/**
- * Encode one path segment. `encodeURIComponent` over-encodes: RFC 3986 allows
- * ":" inside a segment, and a design URN is full of them ("urn:adsk.…"), so
- * restore it — percent-encoded colons make the URL legal but unrecognizable to
- * anything matching on the decoded path.
- */
+/** `encodeURIComponent` over-encodes: RFC 3986 allows ":" in a segment and a
+ * design URN is full of them. */
 export function segment(value: string): string {
   return encodeURIComponent(value).replaceAll('%3A', ':')
 }
@@ -65,23 +45,16 @@ export function failureMessage(error: unknown, subject: string): string {
   return `${subject} could not be loaded (${detail}).`
 }
 
-/** JSON:API list document — the Data Management response shape. */
 interface JsonApiList<T> {
   data?: T[]
 }
 
-/** ACC Sheets list envelope: results plus an offset pagination block. */
 interface SheetsEnvelope<T> {
   results?: T[]
   pagination?: { nextUrl?: string }
 }
 
-/**
- * Read every page of a Sheets listing by following `pagination.nextUrl` until
- * the API stops offering one. Bounded so a misbehaving server that always
- * returns a next page cannot loop forever — at that point the list is truncated
- * honestly rather than hung.
- */
+// Bounded: a server that always offers a next page truncates instead of hanging.
 const MAX_SHEETS_PAGES = 20
 
 async function apsGetAllSheets<T>(firstUrl: string, token: AccessToken): Promise<T[]> {
@@ -103,10 +76,8 @@ interface AccSheetDoc {
   viewable?: { urn?: string }
 }
 
-/** One design behind the selected issuance, with the sheets it produced. */
 interface DesignRef {
   urn: string
-  /** Readable name for a design whose manifest does not name it (or 404s). */
   fileName?: string
 }
 
@@ -135,25 +106,15 @@ export interface AccWorkflowSelection {
   hubId?: string
   projectId?: string
   versionSetId?: string
-  /** Hub to start from when nothing is selected yet, if the grant can see it. */
   fallbackHubId?: string
 }
 
-/** Newest issuance first — the set a crew is most likely building from. */
 function byIssuanceDescending(a: SheetVersionSet, b: SheetVersionSet): number {
   const left = a.issuanceDate ? new Date(a.issuanceDate).getTime() : 0
   const right = b.issuanceDate ? new Date(b.issuanceDate).getTime() : 0
   return right - left
 }
 
-/**
- * Read the whole workflow for one selection, in the order the UI reveals it:
- * hubs, then that hub's projects, then that project's issuances, then the
- * translation manifest of every design the chosen issuance was published from.
- *
- * A selection that no longer exists (a stale ?project= after switching hubs)
- * falls back to the first item rather than rendering an empty screen.
- */
 export async function loadAccWorkflow(
   origin: string,
   token: AccessToken,
@@ -231,8 +192,6 @@ export async function loadAccWorkflow(
       `${projectPath}/sheets?filter[versionSetId]=${encodeURIComponent(selectedVersionSet.id)}&limit=200`,
       token,
     )
-    // Several sheets come out of one upload, so the same design urn repeats;
-    // the model status is per design, not per sheet.
     const byUrn = new Map<string, DesignRef>()
     for (const sheet of sheets) {
       const urn = sheet.viewable?.urn
@@ -255,11 +214,7 @@ export async function loadAccWorkflow(
   }
 }
 
-/**
- * One design's translation state. A 404 manifest is not a failure: it is APS
- * saying the design was never submitted for translation, which is exactly the
- * "queued" state — so it renders as a card, not as an error.
- */
+// A 404 manifest is APS saying never-translated — the queued state, not an error.
 async function loadTranslation(
   base: string,
   token: AccessToken,

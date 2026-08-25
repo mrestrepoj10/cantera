@@ -35,7 +35,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: item.title, description: item.description }
 }
 
-/** One API table: props, exports, tokens, or data attributes. */
 function ApiSection({ table }: { table: ApiTable }) {
   return (
     <section className="flex flex-col gap-3">
@@ -96,12 +95,9 @@ function ComponentDocumentationFallback() {
   )
 }
 
-/**
- * The registry sources shown under Source. Reading them is the page's only I/O,
- * and under cacheComponents an uncached read is what pushes the whole body into
- * a dynamic hole: the prefetch stops there and every navigation waits on the
- * server. Cached, the read resolves at prefetch time and the click is instant.
- */
+// Under cacheComponents an uncached read pushes the whole body into a dynamic
+// hole: the prefetch stops there and every navigation waits on the server.
+// Cached, the read resolves at prefetch time and the click is instant.
 async function getSources(files: { path: string }[]) {
   'use cache'
   cacheLife('max')
@@ -123,8 +119,7 @@ async function ComponentPageContent({ params }: PageProps) {
   if (!item) notFound()
 
   const isViewerItem = name === 'aps-viewer'
-  // The viewer demo's first move is downloading the SDK from the Autodesk CDN
-  // — knowable at render time, so warm the connection before the script asks.
+  // Warm the Autodesk CDN connection before the viewer demo's SDK download asks.
   if (isViewerItem && process.env.APS_VIEWER_DEMO_URN) {
     preconnect('https://developer.api.autodesk.com')
   }
@@ -132,7 +127,6 @@ async function ComponentPageContent({ params }: PageProps) {
   const isLib = item.type === 'registry:lib'
   const usage = libUsage[item.name]
   const tables = apiTables[item.name] ?? []
-  // Token-only items (cssVars, no files) have nothing to show as source.
   const files = item.files ?? []
   const sources = await getSources(files)
 
@@ -147,8 +141,6 @@ async function ComponentPageContent({ params }: PageProps) {
           <h1 className="text-balance font-semibold text-3xl tracking-tight">{item.title}</h1>
           <p className="max-w-2xl text-muted-foreground">{item.description}</p>
         </div>
-        {/* Page-level hand-off: the clipboard (fetched from the .md route on
-            demand), the raw .md, or a chat that starts by reading it. */}
         <PageHandoff
           title={item.title}
           markdownPath={markdownPathFor(item.name)}
@@ -160,8 +152,6 @@ async function ComponentPageContent({ params }: PageProps) {
         <h2 className="font-medium text-sm">Install</h2>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <InstallCommand command={installCommandFor(item.name)} className="w-full max-w-xl" />
-          {/* v0 imports a registry item by URL, so an item with no files —
-              status-tokens is cssVars only — has nothing to hand it. */}
           {files.length > 0 && <OpenInV0 name={item.name} title={item.title} />}
         </div>
       </section>

@@ -9,12 +9,6 @@ import { SignInCard } from '@/components/ui/sign-in-card'
 import { apsProvider } from '@/lib/aps-oauth-preset'
 import type { OAuthConnection } from '@/lib/oauth-types'
 
-/**
- * The acc-sign-in block in the states its server page resolves to: no session,
- * a live grant, and a grant whose consent was lost. The real flow — consent
- * redirect, code exchange, vault refresh — runs against the emulator on /demo;
- * this preview renders the same two surfaces without a session.
- */
 type AccSignInDemoState = 'signed-out' | 'connected' | 'expired'
 
 const accSignInDemoStates: { id: AccSignInDemoState; label: string }[] = [
@@ -55,8 +49,8 @@ export function AccSignInDemo() {
       {state === 'signed-out' ? (
         <SignInCard
           providers={[apsProvider]}
-          // The docs page is not the app: the button leads to the emulator-backed
-          // demo rather than starting a real consent redirect from here.
+          // Leads to the emulator-backed demo instead of starting a real
+          // consent redirect from a docs page.
           hrefTemplate="/demo"
           title="Sign in"
           titleAs="h3"

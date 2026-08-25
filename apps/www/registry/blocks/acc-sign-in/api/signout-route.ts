@@ -11,10 +11,7 @@ import {
 
 const SESSION_COOKIE_PATTERN = new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`)
 
-/**
- * Signs out: deletes the stored grant and clears the session cookie.
- * Install target: app/api/auth/signout/route.ts
- */
+/** Install target: app/api/auth/signout/route.ts */
 export async function POST(request: Request) {
   const cookieHeader = request.headers.get('cookie')
   const match = cookieHeader?.match(SESSION_COOKIE_PATTERN)

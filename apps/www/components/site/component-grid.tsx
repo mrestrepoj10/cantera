@@ -3,17 +3,9 @@ import Link from 'next/link'
 import { componentRegistryGroups } from '@/components/site/registry'
 
 interface ComponentGridProps {
-  /**
-   * Heading level for the section titles — 2 directly under a page h1, 3 when
-   * the grid sits inside a section that already owns an h2.
-   */
   headingLevel?: 2 | 3
 }
 
-/**
- * The catalog, one titled section per kind of registry item and one card per
- * item. Purely presentational — the grouping comes from components/site/registry.
- */
 function ComponentGrid({ headingLevel = 2 }: ComponentGridProps) {
   const Heading = headingLevel === 3 ? 'h3' : 'h2'
   return (
@@ -29,9 +21,8 @@ function ComponentGrid({ headingLevel = 2 }: ComponentGridProps) {
               <li key={item.name}>
                 <Link
                   href={`/components/${item.name}`}
-                  // The destination depends on its dynamic segment. Resolve
-                  // that URL-specific content before the click, while the
-                  // shared route shell remains deduplicated across the grid.
+                  // Resolves the URL-specific content before the click; the
+                  // shared route shell stays deduplicated across the grid.
                   prefetch={true}
                   className="focus-ring flex h-full flex-col gap-1.5 rounded-lg border border-border p-5 transition-colors hover:border-foreground/25"
                 >

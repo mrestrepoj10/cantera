@@ -7,13 +7,8 @@ import { APS_PROVIDER_ID, getSessionToken, openSession, SESSION_COOKIE } from '@
 import { apsProvider } from '@/lib/aps-oauth-preset'
 import type { OAuthConnection } from '@/lib/oauth-types'
 
-/**
- * The acc-sign-in block: sign in with Autodesk, then see the live connection —
- * account, token expiry, held scopes — with disconnect and reconnect.
- *
- * Reusable inner component: render <AccSignIn nextPath="/your-page" /> from
- * any server page; the default export is a ready-made /sign-in page.
- */
+/** Render <AccSignIn nextPath="/your-page" /> from any server page; the
+ * default export is a ready-made /sign-in page. */
 async function requestOrigin(): Promise<string> {
   const headerList = await headers()
   const host = headerList.get('x-forwarded-host') ?? headerList.get('host') ?? 'localhost:3000'
@@ -50,8 +45,6 @@ export async function AccSignIn({
   let connection: OAuthConnection
   try {
     const origin = await requestOrigin()
-    // Cached per request: another server component reading the same session's
-    // token in this render shares this vault read.
     const token = await getSessionToken(origin, session)
     connection = {
       provider: apsProvider,

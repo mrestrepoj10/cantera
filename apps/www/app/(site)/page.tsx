@@ -113,8 +113,6 @@ export default function HomePage() {
               emulator.
             </p>
           </div>
-          {/* On the primitive, so it inherits the house press idiom
-              (active:translate-y-px), the bg/80 hover, and the focus pattern. */}
           <Button
             render={<Link href="/demo" />}
             nativeButton={false}

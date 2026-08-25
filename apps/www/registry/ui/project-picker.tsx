@@ -22,40 +22,24 @@ interface ProjectPickerProps {
   projects: Project[]
   /** Hubs to group by, in catalog order. Omit for a flat list. */
   hubs?: Hub[]
-  /** Selected project id (controlled). */
   value?: string
-  /** Initially selected project id (uncontrolled). */
   defaultValue?: string
-  /**
-   * Called with the chosen project id. Return a promise and the picker drives
-   * its own pending state for the duration — or drive it with `pending`.
-   */
+  /** Promise-returning handlers drive the picker's pending state. */
   onValueChange?: (projectId: string) => void | Promise<void>
-  /**
-   * Where the project list stands: `ready` renders it, `loading` a still
-   * skeleton, `error` the message wired to a retry. Loading and error live
-   * inside the open picker, so the trigger never unmounts under the cursor.
-   */
+  /** Loading and error render inside the open picker, so the trigger never
+   * unmounts under the cursor. */
   status?: ProjectPickerStatus
-  /** Human-readable fetch failure, shown when status is "error". */
   error?: string
-  /** Retry for the failed fetch. Promise-returning handlers drive the pending state. */
+  /** Promise-returning handlers drive the retry button's pending state. */
   onRetry?: () => void | Promise<void>
   retryPending?: boolean
-  /**
-   * Pending: the trigger keeps its label, crossfades in a spinner, and goes
-   * aria-disabled — still focusable, never unmounted.
-   */
   pending?: boolean
   disabled?: boolean
   placeholder?: string
   searchPlaceholder?: string
-  /** Shown when the list is ready but has no projects at all. */
   emptyMessage?: string
-  /**
-   * Accessible name for the trigger. A combobox never takes its name from its
-   * content — without this the control announces its value but not what it is.
-   */
+  /** A combobox never takes its name from its content — without this the
+   * control announces its value but not what it is. */
   'aria-label'?: string
   className?: string
 }
@@ -66,10 +50,6 @@ function isPromiseLike(value: void | Promise<void>): value is Promise<void> {
   return value != null && typeof (value as Promise<void>).then === 'function'
 }
 
-/**
- * An action on the async-pending contract: disabled with a spinner while it
- * keeps its label, focusable throughout, never unmounted mid-request.
- */
 function RetryAction({
   pending,
   onRetry,
@@ -124,12 +104,6 @@ function RetryAction({
   )
 }
 
-/**
- * The project choice every ACC screen starts from: a searchable combobox over
- * the projects a grant can reach, grouped by hub. Data-agnostic — projects and
- * hubs in, the chosen id out; the list's own fetch states render inside the
- * open picker.
- */
 function ProjectPicker({
   projects,
   hubs,
@@ -157,10 +131,9 @@ function ProjectPicker({
   const busy = pending || asyncPending
   const gated = busy || disabled
 
-  // A gate closing the popup resets the open state too. Without this a
-  // pending phase would snap the list back open the instant it cleared —
-  // motion the user never asked for. Adjusted during render rather than in an
-  // effect, so the gated-but-open frame is never painted and never committed.
+  // A gate closing the popup resets the open state too, or a pending phase
+  // would snap the list back open the instant it cleared. Adjusted during
+  // render, not in an effect, so the gated-but-open frame is never painted.
   if (gated && open) setOpen(false)
 
   const groups = hubs
@@ -202,8 +175,7 @@ function ProjectPicker({
             aria-busy={busy || undefined}
             data-slot="project-picker"
             className={cn(
-              // gap-0 so the collapsed spinner slot leaves no phantom inset at
-              // rest; the pseudo-element extends the hit area to the 44px floor.
+              // The pseudo-element extends the hit area to the 44px floor.
               'relative w-full justify-between gap-0 font-normal after:absolute after:-inset-y-2 after:inset-x-0',
               !selected && 'text-muted-foreground',
               className,
@@ -243,13 +215,9 @@ function ProjectPicker({
             return haystack.includes(search.toLowerCase()) ? 1 : 0
           }}
         >
-          {/* The search box exists only when there is a list to filter; over a
-              skeleton, an error, or an empty list it would filter nothing. */}
           {listReady && <CommandInput placeholder={searchPlaceholder} />}
           {status === 'loading' && (
             <div className="flex flex-col gap-1 p-2" data-slot="project-picker-loading">
-              {/* A still skeleton in the rows' own box model — no shimmer,
-                  no stagger — plus one live-region announcement. */}
               <output aria-live="polite" className="sr-only">
                 Loading projects…
               </output>
@@ -262,8 +230,7 @@ function ProjectPicker({
           )}
           {status === 'error' && (
             <div className="flex flex-col items-start gap-3 p-4" data-slot="project-picker-error">
-              {/* role="status" so the loading → error flip is announced, not
-                  just painted. */}
+              {/* role="status" so the loading → error flip is announced, not just painted. */}
               <p id={errorId} role="status" className="text-sm text-status-danger">
                 {error ?? 'Projects could not be loaded.'}
               </p>
@@ -285,9 +252,6 @@ function ProjectPicker({
                   {group.projects.map((project) => (
                     <CommandItem
                       key={project.id}
-                      // The id keeps cmdk values unique when two hubs hold
-                      // same-named projects; the filter above matches the
-                      // keywords — the visible name — never the id.
                       value={project.id}
                       keywords={[project.name]}
                       data-checked={project.id === selectedId || undefined}

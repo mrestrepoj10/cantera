@@ -58,9 +58,6 @@ function HubBrowserPanel({ data }: { data: HubBrowserWorkflowData }) {
   const currentFolder = data.path.filter((entry) => entry.type === 'folder').at(-1)
   const scopeName = currentFolder?.name ?? project?.name
 
-  // The deep group is the finder's async half: one recursive search per scope
-  // root against the emulator's folders/{id}/search, debounced, stale entries
-  // kept visible while the next query is in flight.
   useEffect(() => {
     const term = query.trim()
     if (!term || !hub?.id || !project?.id) {
@@ -131,7 +128,6 @@ function HubBrowserPanel({ data }: { data: HubBrowserWorkflowData }) {
     replace(search)
   }
 
-  /** Finding teaches location: unfold the browser to the entry's folder. */
   function reveal(entry: FinderEntry): void {
     const path = entry.path ?? []
     const search = currentSearch()

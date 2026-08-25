@@ -1,19 +1,6 @@
-/**
- * A typed catalog of the Autodesk Viewer's public extensions: the id strings
- * `loadExtension` accepts, the options each one actually reads at load time,
- * and the flags that decide whether loading it can work at all (2D vs 3D,
- * AEC model data, deprecated, removed).
- *
- * The SDK types none of this — extension ids are bare strings and options are
- * untyped bags — and the ids circulating in blog posts include extensions that
- * no longer exist. This catalog is verified against the shipped viewer source
- * (LMV 7.126); a wrong id here is a compile error in your editor instead of a
- * silent 404 on a jobsite tablet.
- *
- * Option interfaces carry an index signature on purpose: the SDK surface is
- * version-dependent, and a key the catalog does not know about must stay
- * expressible.
- */
+// Verified against the shipped viewer source (LMV 7.126): a wrong id is a
+// compile error instead of a silent 404. Option interfaces carry an index
+// signature on purpose — the SDK surface is version-dependent.
 
 export interface ViewerExtensionInfo {
   /** One line on what loading it adds. */
@@ -34,7 +21,6 @@ export interface ViewerExtensionInfo {
   minViewerVersion?: string
 }
 
-/** Snap behavior shared by Measure, markups, and Edit2D. */
 export interface ViewerSnapperOptions {
   forceSnapEdges?: boolean
   forceSnapVertices?: boolean
@@ -198,12 +184,8 @@ export interface MultipageExtensionOptions {
   [key: string]: unknown
 }
 
-/**
- * Extension id → the options `loadExtension(id, options)` actually reads.
- * Ids absent here take a plain record: either they read no options at all
- * (`Autodesk.Section` hardcodes its gizmo; `Autodesk.DataVisualization`
- * configures per method call, not at load) or they are consumer-registered.
- */
+/** Ids absent here take a plain record: they read no options at load time, or
+ * they are consumer-registered. */
 export interface ViewerExtensionOptionsMap {
   'Autodesk.Measure': MeasureExtensionOptions
   'Autodesk.BimWalk': BimWalkExtensionOptions
@@ -445,12 +427,8 @@ export interface ViewerExtensionEntry<Id extends string = string> {
   options?: ViewerExtensionOptionsFor<Id>
 }
 
-/**
- * Typed entry for `<APSViewer extensions={[...]}>`: the id is checked against
- * the catalog and the options against that extension's interface —
- * `viewerExtension('Autodesk.AEC.LevelsExtension', { ifcLevelsEnabled: true })`.
- * Pass a plain string or object instead for consumer-registered extensions.
- */
+/** Typed entry for `<APSViewer extensions={[...]}>` — the id is checked
+ * against the catalog and the options against that extension's interface. */
 export function viewerExtension<Id extends KnownViewerExtensionId>(
   id: Id,
   options?: ViewerExtensionOptionsFor<Id>,
@@ -458,12 +436,8 @@ export function viewerExtension<Id extends KnownViewerExtensionId>(
   return options === undefined ? { id } : { id, options }
 }
 
-/**
- * A field-tested starter set for AEC models: levels, measurement, markup,
- * section, and the sheet browser. Order matters only where options must reach
- * an auto-loaded dependency — which is why Levels precedes anything that would
- * auto-load it.
- */
+/** Order matters only where options must reach an auto-loaded dependency —
+ * which is why Levels precedes anything that would auto-load it. */
 export const AEC_STARTER_EXTENSIONS: readonly ViewerExtensionEntry[] = [
   { id: 'Autodesk.AEC.LevelsExtension' },
   { id: 'Autodesk.Measure' },

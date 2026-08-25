@@ -1,26 +1,13 @@
-/**
- * The canonical design-contract text. This is the single source: the llms.txt
- * artifacts (`scripts/build-llms.mts`) and the agent skill
- * (`scripts/build-skill.mts`) both render from it, and AGENTS.md carries a
- * one-line summary of each contract pointing here. Edit this file, then run
- * `pnpm registry:build` — the generated outputs are committed and
- * `registry:verify` fails on drift.
- *
- * Bodies are single-flow paragraphs (no manual wrapping) so every surface
- * renders the same text; formatting belongs to the generator.
- */
+// Canonical design-contract text — llms.txt and the skill render from it (see
+// AGENTS.md). Bodies are single-flow paragraphs; formatting belongs to the
+// generators.
 
 export interface DesignContract {
   title: string
   body: string
 }
 
-export function designContracts(
-  namespace: string,
-): Record<
-  'statusVocabulary' | 'asyncPending' | 'fieldDensity' | 'installedSpecifiers' | 'iconSizing',
-  DesignContract
-> {
+export function designContracts(namespace: string) {
   return {
     statusVocabulary: {
       title: 'Status vocabulary',
@@ -42,5 +29,8 @@ export function designContracts(
       title: 'Icon sizing',
       body: `Preset provider marks carry their own \`className="size-4"\`, so one renders correctly wherever it is dropped. A \`[&_svg]:size-*\` wrapper still wins on specificity where a surface wants another size — use the wrapper, not a rewritten mark, and keep \`aria-hidden\` on decorative marks.`,
     },
-  }
+  } satisfies Record<
+    'statusVocabulary' | 'asyncPending' | 'fieldDensity' | 'installedSpecifiers' | 'iconSizing',
+    DesignContract
+  >
 }

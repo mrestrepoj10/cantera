@@ -6,15 +6,10 @@ import { cn } from '@/lib/utils'
 
 interface UserAccountBadgeProps extends React.ComponentProps<'div'> {
   account: OAuthAccount
-  /** When set, the provider mark is shown next to the account. */
   provider?: OAuthProvider
   size?: 'sm' | 'default'
 }
 
-/**
- * An avatar-and-name chip for a connected account. Server-safe: no handlers,
- * plain data in.
- */
 function UserAccountBadge({
   account,
   provider,
@@ -28,14 +23,10 @@ function UserAccountBadge({
       className={cn('flex min-w-0 items-center gap-2', className)}
       {...props}
     >
-      {/* 12px is the text floor, so the compact avatar is 28px, not 24px — two
-          initials at text-xs need the room. */}
       <Avatar className={size === 'sm' ? 'size-7' : 'size-8'}>
         {account.avatarUrl && <AvatarImage src={account.avatarUrl} alt="" />}
-        {/* The primitive's fallback ink is muted-foreground on bg-muted, which
-            measures 4.35:1 on a stock shadcn theme. Foreground at 60% reads as
-            the same gray and clears 5:1 wherever the theme's foreground
-            contrasts its own muted surface. */}
+        {/* status-neutral ink, not the primitive's muted-foreground: muted ink
+            on bg-muted misses AA on a stock theme. */}
         <AvatarFallback className="font-medium text-status-neutral text-xs">
           {accountInitials(account)}
         </AvatarFallback>

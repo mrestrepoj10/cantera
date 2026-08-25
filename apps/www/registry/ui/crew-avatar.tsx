@@ -11,23 +11,15 @@ export interface CrewAvatarProps
   extends Omit<React.ComponentPropsWithoutRef<'svg'>, 'children' | 'height' | 'title' | 'width'> {
   /** The seed. The same name always draws the same worker. */
   name: string
-  /** Rendered edge length in px. Designed for 24-48; 32 is the crew-list size. */
   size?: number
-  /** Canvas palette override, the way boring-avatars takes `colors`. */
   colors?: readonly string[]
-  /**
-   * The accessible name. Pass it when the avatar is the only thing identifying
-   * the person; leave it off next to a visible name, where the avatar is
-   * decorative and a second announcement is noise.
-   */
+  /** Pass the accessible name when the avatar is the only thing identifying
+   * the person; leave it off next to a visible name. */
   title?: string
 }
 
-/**
- * A deterministic crew avatar. No hooks and no state — the clip id comes from
- * the seed hash rather than `useId`, which keeps this renderable from a server
- * component and identical on both sides of hydration.
- */
+// The clip id comes from the seed hash rather than `useId`, which keeps this
+// renderable from a server component and identical across hydration.
 export function CrewAvatar({
   name,
   size = 32,

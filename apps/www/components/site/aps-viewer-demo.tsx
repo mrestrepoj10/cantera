@@ -24,8 +24,6 @@ interface ViewerDemoSettings {
   toolbar: boolean
   viewCube: boolean
   theme: ViewerTheme
-  /** Extension ids currently loaded. None by default: the stock toolbar is the
-   * baseline every screenshot and first impression starts from. */
   extensions: string[]
 }
 
@@ -39,13 +37,6 @@ const DEFAULT_SETTINGS: ViewerDemoSettings = {
   extensions: [],
 }
 
-/**
- * The inspector renders the `viewer-extension-types` catalog, not a hand list:
- * every 3D-applicable entry that still ships appears, with its description and
- * flags coming straight from the registry item. 2D-only entries are excluded
- * (the demo model is 3D); deprecated and removed ids are excluded because
- * nothing should invite loading them.
- */
 const catalogEntries = Object.entries(VIEWER_EXTENSIONS) as [string, ViewerExtensionInfo][]
 const applicableEntries = catalogEntries.filter(
   ([, info]) => !info.deprecated && !info.removedIn && info.only !== '2d',
@@ -55,11 +46,6 @@ const loadableEntries = applicableEntries.filter(
 )
 const DEMO_EXTENSION_IDS = loadableEntries.map(([id]) => id)
 
-/**
- * Sections mirror the groups the catalog source is written in. They live here
- * rather than in the registry item because they are a browsing aid for this
- * page, not part of the type contract consumers install.
- */
 const EXTENSION_SECTIONS = [
   {
     title: 'Navigation and orientation',
@@ -132,8 +118,11 @@ const EXTENSION_SECTIONS = [
   },
 ] as const
 
-/** Friendly names where splitting the id reads badly. */
-const EXTENSION_LABELS: Record<string, string> = {
+interface ExtensionLabelById {
+  [extensionId: string]: string
+}
+
+const EXTENSION_LABELS: ExtensionLabelById = {
   'Autodesk.Viewing.MarkupsGui': 'Markups toolbar',
   'Autodesk.Viewing.MarkupsCore': 'Markups core',
   'Autodesk.BimWalk': 'BIM walk',
@@ -158,7 +147,6 @@ function extensionLabel(id: string): string {
   return segment.replace(/(?<=[a-z0-9])(?=[A-Z])/g, ' ')
 }
 
-/** Catalog order, grouped by section, with anything unlisted kept at the end. */
 function groupEntries(entries: [string, ViewerExtensionInfo][]) {
   const byId = new Map(entries)
   const grouped = EXTENSION_SECTIONS.map((section) => ({
@@ -176,12 +164,6 @@ const loadableSections = groupEntries(loadableEntries)
 
 type DemoExtensionStatus = APSExtensionResult['status']
 
-/**
- * Mounts one live extension load: adding the id mounts this component,
- * `useAPSExtension` fetches and loads the extension, and removing it unmounts,
- * which unloads the extension — the viewer keeps its WebGL context throughout.
- * Status is lifted to the demo, which renders outside the viewer's provider.
- */
 function DemoExtension({
   id,
   onStatus,
@@ -218,32 +200,24 @@ const themeOptions: { value: ViewerTheme; label: string }[] = [
   { value: 'dark', label: 'Dark' },
 ]
 
-const columnClasses: Record<1 | 2 | 3 | 4, string> = {
+const columnClasses = {
   1: 'grid-cols-1',
   2: 'grid-cols-2',
   3: 'grid-cols-3',
   4: 'grid-cols-4',
-}
+} satisfies Record<1 | 2 | 3 | 4, string>
 
 interface ControlGroupProps<T extends string> {
   label: string
   value: T
   options: { value: T; label: string }[]
   columns?: 1 | 2 | 3 | 4
-  /** Describes the group; wired with aria-describedby, never left as prose. */
   hint?: string
-  /** Inert, because something else in the panel turned it off. */
   disabled?: boolean
-  /** Id of the one node explaining why, shared by every group it disables. */
   describedBy?: string
   onChange: (value: T) => void
 }
 
-/**
- * A segmented control with one quiet track and real buttons underneath —
- * `aria-pressed` carries the state, so nothing depends on color alone and
- * there is no widget role to get wrong.
- */
 function ControlGroup<T extends string>({
   label,
   value,
@@ -255,9 +229,7 @@ function ControlGroup<T extends string>({
   onChange,
 }: ControlGroupProps<T>) {
   const hintId = useId()
-  // A disabled group's own hint describes behaviour it does not currently
-  // have, so the shared reason takes over — one sentence, referenced by each
-  // group it applies to.
+  // A disabled group's own hint describes behaviour it lacks; the shared reason takes over.
   const description = disabled ? undefined : hint
   return (
     <fieldset
@@ -375,7 +347,6 @@ function Spinner({ className }: { className?: string }) {
   )
 }
 
-/** One clipboard action with an icon crossfade on success. */
 function CopyButton({
   label,
   copiedLabel = 'Copied',
@@ -411,8 +382,6 @@ function CopyButton({
       className={cn('justify-start gap-1.5', className)}
       onClick={() => void copy()}
     >
-      {/* Both icons stay mounted and cross-fade — opacity only — so the swap
-          animates in both directions without a motion dependency. */}
       <span className="relative grid size-3.5 place-items-center">
         <CheckIcon
           aria-hidden="true"
@@ -440,7 +409,6 @@ interface ExtensionState {
   onToggle: (id: string, next: boolean) => void
 }
 
-/** A loaded extension, with its live state and a way to unload it. */
 function ExtensionChip({
   id,
   status,
@@ -477,7 +445,6 @@ function ExtensionChip({
   )
 }
 
-/** Quick add: filter the catalog, toggle an entry, stay in the dock. */
 function ExtensionPicker({ loaded, status, onToggle }: ExtensionState) {
   const [query, setQuery] = useState('')
   const fieldId = useId()
@@ -594,7 +561,6 @@ function ExtensionPicker({ loaded, status, onToggle }: ExtensionState) {
   )
 }
 
-/** The JSX a consumer pastes: the props form, not this demo's children form. */
 function buildSnippet(settings: ViewerDemoSettings): string {
   const lines = [
     '<APSViewer',
@@ -638,11 +604,10 @@ function buildShareParams(settings: ViewerDemoSettings): string {
   return params.toString()
 }
 
-/** Accepts the presets plus a bare pixel number (e.g. ?viewerScale=48). */
-function parseScaleParam(raw: string): { scale: APSViewerToolbarScale } | Record<string, never> {
-  if (['sm', 'md', 'lg'].includes(raw)) return { scale: raw as APSViewerToolbarScale }
+function parseScaleParam(raw: string): APSViewerToolbarScale | null {
+  if (raw === 'sm' || raw === 'md' || raw === 'lg') return raw
   const px = Number(raw)
-  return Number.isFinite(px) ? { scale: px } : {}
+  return Number.isFinite(px) ? px : null
 }
 
 function parseClampedPixels(raw: string | null, min: number, max: number): number | null {
@@ -652,12 +617,8 @@ function parseClampedPixels(raw: string | null, min: number, max: number): numbe
   return Math.min(max, Math.max(min, value))
 }
 
-/**
- * A shared link — and the e2e toolbar baselines, which drive the demo from the
- * URL so one page covers every position and scale — restores the setup on
- * mount. Applied after mount: the page is statically rendered, and the server
- * has no query string to render from.
- */
+// Applied after mount: the page is statically rendered, so the server has no
+// query string. The e2e toolbar specs drive the demo through these params.
 function readSharedSettings(): Partial<ViewerDemoSettings> | null {
   const query = new URLSearchParams(window.location.search)
   const position = query.get('viewerPosition')
@@ -672,17 +633,19 @@ function readSharedSettings(): Partial<ViewerDemoSettings> | null {
   }
   const extensionIds = (extensions ?? '').split(',').filter((id) => DEMO_EXTENSION_IDS.includes(id))
   const parsedRadius = parseClampedPixels(radius, 0, 32)
-  return {
-    ...(position && ['bottom', 'top', 'left', 'right'].includes(position)
-      ? { position: position as APSViewerToolbarPosition }
-      : {}),
-    ...(scale ? parseScaleParam(scale) : {}),
-    ...(parsedRadius === null ? {} : { radius: parsedRadius }),
-    ...(toolbar === 'none' ? { toolbar: false } : toolbar === 'native' ? { toolbar: true } : {}),
-    ...(viewCube === 'off' ? { viewCube: false } : viewCube === 'on' ? { viewCube: true } : {}),
-    ...(theme === 'light' || theme === 'dark' ? { theme } : {}),
-    ...(extensionIds.length > 0 ? { extensions: extensionIds } : {}),
+  // Empty string too: `?viewerScale=` must keep the default, not parse to 0.
+  const parsedScale = scale ? parseScaleParam(scale) : null
+  const settings: Partial<ViewerDemoSettings> = {}
+  if (position === 'bottom' || position === 'top' || position === 'left' || position === 'right') {
+    settings.position = position
   }
+  if (parsedScale !== null) settings.scale = parsedScale
+  if (parsedRadius !== null) settings.radius = parsedRadius
+  if (toolbar === 'none' || toolbar === 'native') settings.toolbar = toolbar === 'native'
+  if (viewCube === 'off' || viewCube === 'on') settings.viewCube = viewCube === 'on'
+  if (theme === 'light' || theme === 'dark') settings.theme = theme
+  if (extensionIds.length > 0) settings.extensions = extensionIds
+  return settings
 }
 
 const TABS = [
@@ -764,8 +727,6 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
     [settings],
   )
 
-  // One sentence for the one live region: model first, then anything the
-  // extensions are doing. Rebuilt on every change, announced politely.
   const liveMessage = useMemo(() => {
     const parts: string[] = []
     parts.push(error ? error : modelLoaded ? 'Model loaded' : 'Loading model')
@@ -819,7 +780,6 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
         data-viewer-workbench=""
         style={{ borderRadius: settings.radius }}
       >
-        {/* The canvas is the subject of the page, so it leads at every width. */}
         <div className="flex min-w-0 flex-col">
           <APSViewer
             urn={urn}
@@ -830,9 +790,8 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
             viewCube={settings.viewCube}
             radius={settings.radius}
             theme={settings.theme === 'system' ? undefined : settings.theme}
-            // min-height rather than height: the viewer is a flex item with
-            // a zero basis, so a fixed height would collapse it wherever the
-            // column is not stretched by the dock beside it.
+            // min-height, not height: a fixed height would collapse this
+            // zero-basis flex item wherever the dock does not stretch the column.
             className="min-h-[28rem] w-full flex-1 sm:min-h-[36rem] lg:min-h-0"
             onModelLoaded={() => setModelLoaded(true)}
             onError={(nextError) => setError(nextError.message)}
@@ -841,8 +800,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
               <DemoExtension key={id} id={id} onStatus={handleExtensionStatus} />
             ))}
           </APSViewer>
-          {/* The canvas keeps the full column. State remains available to
-              assistive technology and e2e without a permanent visual strip. */}
+          {/* sr-only: state stays available to AT and e2e without a visual strip. */}
           <output
             className="sr-only"
             data-viewer-demo=""
@@ -886,9 +844,6 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                   aria-controls={`${tabsId}-${entry.id}-panel`}
                   tabIndex={selected ? 0 : -1}
                   className={cn(
-                    // 44px: the dock's primary navigation is a field target,
-                    // and comfortable is the default the density contract asks
-                    // for.
                     'min-h-11 rounded-t-md px-2 pb-1 font-medium text-[13px] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-1',
                     selected
                       ? 'bg-background text-foreground shadow-[inset_0_-2px_0_0_var(--color-foreground)]'

@@ -1,13 +1,6 @@
-/**
- * Typed surface for the Autodesk Platform Services (APS) Viewer SDK.
- *
- * The SDK is a global-namespace library loaded from Autodesk's CDN. Its types
- * come from Autodesk's official definitions — `@types/forge-viewer`, installed
- * as a dev dependency of this item — which declare the full `Autodesk.Viewing`
- * namespace ambiently. This file re-exports that surface under stable `APS*`
- * names and adds cantera's own domain types; the sibling `forge-viewer.d.ts`
- * declares the few members the official definitions are missing.
- */
+// The SDK's types come from `@types/forge-viewer` (a dev dependency of this
+// item), re-exported here under stable APS* names; the sibling
+// `forge-viewer.d.ts` declares the few members the official definitions miss.
 
 export type Vec3 = { x: number; y: number; z: number }
 
@@ -50,8 +43,7 @@ export interface APSContextMenuStatus {
   [key: string]: unknown
 }
 
-/** The SDK surface under stable names. `Viewer3D` is the base class, so a
- * `GuiViewer3D` (the toolbar-bearing default) is an `APSViewer3D` too. */
+// `Viewer3D` is the base class, so a `GuiViewer3D` is an `APSViewer3D` too.
 export type APSViewer3D = Autodesk.Viewing.Viewer3D
 export type APSModel = Autodesk.Viewing.Model
 export type APSDocument = Autodesk.Viewing.Document
@@ -64,30 +56,20 @@ export type APSViewerExtensionConstructor = new (
 export type APSViewingNamespace = typeof Autodesk.Viewing
 export type AutodeskGlobal = typeof Autodesk
 
-/**
- * Token supplier. Called by the viewer runtime whenever it needs a fresh
- * 2-legged (or 3-legged) OAuth token. Fetch it from YOUR backend — never
- * embed APS credentials in the browser.
- */
+/** Fetch the token from YOUR backend — never embed APS credentials in the
+ * browser. The runtime re-calls the supplier before expiry. */
 export type GetAccessToken = () => Promise<{
   accessToken: string
-  /** seconds until expiry; the runtime re-calls the supplier before then */
+  /** seconds until expiry */
   expiresInSeconds: number
 }>
 
 export type APSViewerStatus = 'idle' | 'loading-runtime' | 'ready' | 'error'
 
-/**
- * One extension to load with the viewer: a bare id, or an id with the options
- * `loadExtension` passes to the extension's constructor. The
- * `viewer-extension-types` item catalogs the public ids and types their
- * options; this shape deliberately accepts any string so consumer-registered
- * extensions need nothing extra.
- */
+/** Deliberately accepts any string, so consumer-registered extensions need
+ * nothing extra; the `viewer-extension-types` item types the public ids. */
 export type APSExtensionRequest = string | { id: string; options?: Record<string, unknown> }
 
-/** Load lifecycle of one extension, keyed by id. */
 export type APSExtensionStatus = 'loading' | 'ready' | 'error'
 
-/** Named viewer settings profile, applied at viewer creation. */
 export type APSViewerProfile = 'aec' | 'default' | 'fluent' | 'navis'

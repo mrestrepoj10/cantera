@@ -4,11 +4,6 @@ import type { OAuthConnection } from '@/lib/oauth-types'
 
 const scopes = ['data:read', 'viewables:read']
 
-/**
- * The whole status vocabulary at once. "Expiring soon" is not a separate status
- * — it is a connected grant near its expiry, and the component derives the
- * warning tone itself. Expired is warning too: a refresh away, not a failure.
- */
 function demoConnections(): { label: string; connection: OAuthConnection }[] {
   const now = Date.now()
   return [
@@ -43,7 +38,6 @@ function demoConnections(): { label: string; connection: OAuthConnection }[] {
   ]
 }
 
-/** Server-safe: no state, no effects, nothing to hydrate. */
 export function TokenStatusDemo() {
   return (
     <div className="flex w-full flex-col gap-3">

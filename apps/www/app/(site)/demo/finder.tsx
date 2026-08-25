@@ -6,13 +6,6 @@ import type { FinderEntry } from '@/components/ui/finder'
 import { relativeTime } from '@/components/ui/hub-browser'
 import type { BrowsePathSegment, Item } from '@/lib/project-types'
 
-/**
- * localStorage-backed recents for the demo finder — the reference
- * implementation of the persistence the registry component leaves to its
- * consumer. Each entry stores the full path segments, so revealing a recent
- * needs no lookups.
- */
-
 export interface RecentOpen {
   item: Item
   path: BrowsePathSegment[]
@@ -36,10 +29,7 @@ function readRecents(): RecentOpen[] {
 }
 
 /** Loaded in an effect so the server and hydration renders agree. */
-export function useRecentOpens(): {
-  recents: RecentOpen[]
-  remember: (open: RecentOpen) => void
-} {
+export function useRecentOpens() {
   const [recents, setRecents] = useState<RecentOpen[]>([])
 
   useEffect(() => {
@@ -64,7 +54,6 @@ export function useRecentOpens(): {
   return { recents, remember }
 }
 
-/** Recents as finder entries: the caption carries the recency, the path stays for reveal. */
 export function recentFinderEntries(recents: RecentOpen[]): FinderEntry[] {
   return recents.map((recent) => ({
     item: recent.item,
