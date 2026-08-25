@@ -1,0 +1,29 @@
+# Weekly early warning: lint the registry with the CONSUMER'S lint stack at
+# its latest published versions, not our lockfile pins. eslint-config-next and
+# eslint-plugin-react-hooks add rules over time (the React Compiler family
+# arrived this way), and a registry that is clean under pinned versions can be
+# red in a fresh create-next-app the day a new rule ships. shadcn/ui's own CI
+# is green today only because of a stale react-hooks pin — this job exists so
+# that never happens here.
+name: lint-drift
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  consumer-lint-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Float the consumer lint stack to latest
+        run: pnpm --filter www up 'eslint@^9' eslint-config-next@latest
+      - name: Lint the registry under the floated stack
+        run: pnpm --filter www run lint:registry

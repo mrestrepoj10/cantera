@@ -187,8 +187,11 @@ export default function PhilosophyPage() {
           both appearances, and the docs pages render the exact registry sources the CLI installs —
           so a green scan here is a green scan on the distributed components, not on a marketing
           page around them. The registry has its own verifiers: every distributed file may only
-          import what its item installs, every npm import must be declared, and the committed build
-          output is rebuilt and compared byte for byte.
+          import what its item installs, every npm import must be declared, the committed build
+          output is rebuilt and compared byte for byte, and every file is laid out in a scratch
+          consumer project and held to a fresh create-next-app&apos;s own gates — ESLint with
+          eslint-config-next at zero warnings, and tsc under strict mode — so an install never
+          starts with lint errors in code you did not write.
         </p>
       </Section>
 

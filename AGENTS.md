@@ -24,6 +24,7 @@ cantera is a shadcn registry for construction (AEC) UI — OAuth sign-in and con
 
 - **Running `shadcn add` inside `apps/www`** rewrites `tsconfig.json` `paths` to `{"@/*": ["./*"]}`, silently breaking registry-first resolution. Restore the fallback mappings from git diff every time. `apps/www/components/ui/` itself holds harvested upstream base-nova primitives — never hand-edit them; refresh with `shadcn add <name> --overwrite`, then fix tsconfig.
 - **Writing a registry import as `@/registry/...`.** That path exists only in this repo; the installed copy breaks in the consumer's project. Use installed specifiers (`@/components/ui/button`, `@/lib/oauth-types`). `pnpm typecheck` cannot catch this — the fallbacks resolve it here — only `registry:verify` can.
+- **Shipping a suppression comment in registry sources.** `biome-ignore` is inert in a consumer's ESLint, an `eslint-disable` naming a plugin the consumer lacks is a hard error there, and the shadcn CLI strips leading file-level comments on install. Fix at source instead — the ESLint gate and the consumer sim in `registry:verify` both enforce zero suppressions.
 - **Editing `vendor/@emulators/`** — prebuilt dists from the mrestrepoj10/emulate fork. Update by building in that repo, re-copying the dists, and noting the commit in `vendor/@emulators/README.md`.
 - **Copying `ACC_AUTH_DEMO=1` anywhere that guards real accounts.** It disables the acc-sign-in block's fail-closed `SESSION_SECRET` check and exists only for the emulator-backed showcase (set in `next.config.ts`).
 - The embedded emulator stores state in memory; demo connections reset when the server recycles. Expected, not a bug.
@@ -33,10 +34,12 @@ cantera is a shadcn registry for construction (AEC) UI — OAuth sign-in and con
 Use `pnpm` for everything. Run the smallest check that proves your change — CI runs the full suite on every PR and is the merge gate.
 
 ```sh
-pnpm lint            # biome (single quotes, no semicolons, 100-col lines)
+pnpm lint            # biome (single quotes, no semicolons, 100-col lines) + the consumer-dialect
+                     # ESLint gate over apps/www/registry/** (eslint-config-next, zero warnings)
 pnpm typecheck
 pnpm registry:build  # REQUIRED after touching apps/www/registry/** or registry.json — commit its output
-pnpm registry:verify # when registry:build ran: install closure, npm-dep coverage, drift
+pnpm registry:verify # when registry:build ran: install closure, npm-dep coverage, drift, and the
+                     # consumer sim (registry laid out at installed paths, eslint + strict tsc)
 pnpm e2e             # light pass locally: viewer specs skipped
                      # (APS_E2E=1 opts in — they load the real Autodesk CDN and a model)
 ```

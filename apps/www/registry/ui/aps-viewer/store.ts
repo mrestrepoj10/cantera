@@ -1,4 +1,9 @@
-import type { APSCameraState, APSExtensionStatus, APSViewer3D } from '@/lib/viewer-types'
+import type {
+  APSCameraState,
+  APSExtensionStatus,
+  APSViewer3D,
+  APSViewerStatus,
+} from '@/lib/viewer-types'
 
 type Listener = () => void
 
@@ -17,19 +22,20 @@ const EMPTY_EXTENSIONS: Readonly<Record<string, APSExtensionStatus>> = Object.fr
 export class ViewerStore {
   private viewer: APSViewer3D | null = null
   private listeners = new Set<Listener>()
-  private handlers: Array<[string, (event: any) => void]> = []
+  private handlers: Array<[string, () => void]> = []
   private selection: readonly number[] = EMPTY_SELECTION
   private camera: APSCameraState | null = null
   private modelLoaded = false
   private rafId: number | null = null
   private extensions: Readonly<Record<string, APSExtensionStatus>> = EMPTY_EXTENSIONS
+  private status: APSViewerStatus = 'idle'
 
   attach(viewer: APSViewer3D): void {
     const viewing = window.Autodesk?.Viewing
     if (!viewing) throw new Error('cantera aps-viewer: viewer runtime not loaded')
     this.viewer = viewer
 
-    const on = (type: string, handler: (event: any) => void) => {
+    const on = (type: string, handler: () => void) => {
       viewer.addEventListener(type, handler)
       this.handlers.push([type, handler])
     }
@@ -63,6 +69,17 @@ export class ViewerStore {
   }
 
   /**
+   * Viewer lifecycle status. Owned by the store — the viewer is an external
+   * imperative resource, so its lifecycle is external state, written by
+   * `<APSViewer>` as it acquires and releases the runtime.
+   */
+  setStatus(status: APSViewerStatus): void {
+    if (this.status === status) return
+    this.status = status
+    this.emit()
+  }
+
+  /**
    * Load lifecycle of the extensions the viewer component was asked to load,
    * as a frozen snapshot keyed by extension id — replaced, never mutated, so
    * `useSyncExternalStore` sees each transition.
@@ -89,6 +106,7 @@ export class ViewerStore {
     this.camera = null
     this.modelLoaded = false
     this.extensions = EMPTY_EXTENSIONS
+    this.status = 'idle'
     this.emit()
   }
 
@@ -104,6 +122,7 @@ export class ViewerStore {
   getCamera = (): APSCameraState | null => this.camera
   isModelLoaded = (): boolean => this.modelLoaded
   getExtensionStatuses = (): Readonly<Record<string, APSExtensionStatus>> => this.extensions
+  getStatus = (): APSViewerStatus => this.status
 
   /** Server snapshots for useSyncExternalStore — stable, empty values. */
   static getServerViewer = (): APSViewer3D | null => null
@@ -112,6 +131,7 @@ export class ViewerStore {
   static getServerModelLoaded = (): boolean => false
   static getServerExtensionStatuses = (): Readonly<Record<string, APSExtensionStatus>> =>
     EMPTY_EXTENSIONS
+  static getServerStatus = (): APSViewerStatus => 'idle'
 
   private emit(): void {
     for (const listener of this.listeners) listener()

@@ -6,9 +6,10 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "lint:registry": "eslint . --max-warnings 0",
     "registry:build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-examples.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-demo-registry.mts && shadcn build && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-llms.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-skill.mts",
-    "registry:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-file-closure.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-npm-deps.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-drift.mts",
-    "registry:verify:static": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-file-closure.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-npm-deps.mts"
+    "registry:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-file-closure.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-npm-deps.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-drift.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-installed.mts",
+    "registry:verify:static": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-file-closure.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-npm-deps.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-installed.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
@@ -29,9 +30,12 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/forge-viewer": "^7.99.2",
     "@types/node": "^24",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.2",
     "shadcn": "^3",
     "tailwindcss": "^4",
     "typescript": "^5"

@@ -51,7 +51,7 @@ Item: https://canteraui.xyz/r/status-tokens.json
 
 Title: Provider Sign-In Button
 Type: component
-Description: A sign-in button for a single OAuth provider: brand icon, label, loading state. Works as a link or a click handler.
+Description: A sign-in button and link for a single OAuth provider: brand icon, label, loading state. ProviderSignInButton handles a click; ProviderSignInLink navigates to an auth route.
 Install: npx shadcn@latest add @cantera/provider-sign-in-button
 Docs: https://canteraui.xyz/components/provider-sign-in-button
 Item: https://canteraui.xyz/r/provider-sign-in-button.json
@@ -222,7 +222,7 @@ Item: https://canteraui.xyz/r/file-picker-dialog.json
 
 Title: Viewer Types
 Type: lib
-Description: Zero-dependency structural types for the Autodesk Viewer global runtime, documents, models, extensions, and promise-based token callbacks.
+Description: Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks.
 Install: npx shadcn@latest add @cantera/viewer-types
 Docs: https://canteraui.xyz/components/viewer-types
 Item: https://canteraui.xyz/r/viewer-types.json

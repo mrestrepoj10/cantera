@@ -1,9 +1,4 @@
-import type {
-  APSViewer3D,
-  APSViewerExtension,
-  APSViewingNamespace,
-  AutodeskGlobal,
-} from '@/lib/viewer-types'
+import type { APSViewer3D, APSViewerExtension, AutodeskGlobal } from '@/lib/viewer-types'
 
 export const APS_VIEWER_TOOLBAR_EXTENSION_ID = 'Cantera.APSViewerToolbar'
 
@@ -250,7 +245,7 @@ export function registerAPSViewerToolbar(autodesk: AutodeskGlobal): void {
     private current = normalizeOptions()
     private hasStylesheet = false
 
-    constructor(viewer: APSViewer3D, options?: Record<string, unknown>) {
+    constructor(viewer: Autodesk.Viewing.GuiViewer3D, options?: Record<string, unknown>) {
       super(viewer, options)
       this.current = normalizeOptions(options as APSViewerToolbarOptions | undefined)
     }
@@ -296,9 +291,6 @@ export function registerAPSViewerToolbar(autodesk: AutodeskGlobal): void {
     }
   }
 
-  manager.registerExtension(
-    APS_VIEWER_TOOLBAR_EXTENSION_ID,
-    CanteraAPSViewerToolbar as APSViewingNamespace['Extension'],
-  )
+  manager.registerExtension(APS_VIEWER_TOOLBAR_EXTENSION_ID, CanteraAPSViewerToolbar)
   registeredManagers.add(manager)
 }

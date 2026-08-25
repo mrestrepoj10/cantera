@@ -8,6 +8,9 @@ import type { OAuthConnection } from '@/lib/oauth-types'
 
 const account = { name: 'Dana Alvarez', email: 'dana@ridgelinebuilders.com' }
 const scopes = ['data:read', 'viewables:read']
+// Stamped once at module load: render must stay pure, and a demo expiry does
+// not need to tick.
+const expiresAt = Date.now() + 42 * 60_000
 
 /** Stands in for the round trip a real disconnect or reconnect makes. */
 function settle(): Promise<void> {
@@ -25,7 +28,7 @@ export function ConnectionCardDemo() {
         status: 'connected',
         account,
         scopes,
-        expiresAt: Date.now() + 42 * 60_000,
+        expiresAt,
       }
     : { provider: apsProvider, status: 'disconnected' }
 

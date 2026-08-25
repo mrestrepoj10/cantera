@@ -1,6 +1,6 @@
 # Viewer Types (`@cantera/viewer-types`)
 
-Zero-dependency structural types for the Autodesk Viewer global runtime, documents, models, extensions, and promise-based token callbacks.
+Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks.
 
 - Type: lib
 - Install: `npx shadcn@latest add @cantera/viewer-types`
@@ -10,10 +10,15 @@ Zero-dependency structural types for the Autodesk Viewer global runtime, documen
 Files written into the consumer project:
 
 - `lib/viewer-types.ts`
+- `lib/forge-viewer.d.ts`
+
+## Install notes
+
+Types come from Autodesk's official @types/forge-viewer package (installed as a dev dependency), which declares the global Autodesk namespace plus a bundled minimal THREE namespace. lib/forge-viewer.d.ts adds the few members the official definitions miss (Profile, ProfileSettings, setProfile). If your tsconfig sets an explicit "types" array, add "forge-viewer" to it.
 
 ## Usage
 
-The Autodesk Viewer ships as a browser global rather than an ESM package. These zero-dependency structural types describe only the public surface cantera touches, so your callback, extension, and hook code stays typed without coupling to a separate runtime package.
+The Autodesk Viewer ships as a browser global rather than an ESM package. These types re-export Autodesk's official @types/forge-viewer definitions (a dev dependency — the full Autodesk.Viewing namespace, typed) under stable APS* names, plus cantera's domain types for cameras, properties, and token callbacks.
 
 ```tsx
 import type { GetAccessToken } from '@/lib/viewer-types'

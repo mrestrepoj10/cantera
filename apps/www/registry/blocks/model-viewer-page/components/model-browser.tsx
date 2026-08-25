@@ -141,7 +141,8 @@ function ModelBrowser({
   useEffect(() => {
     if (initialNodes.length > 0) return
     const controller = new AbortController()
-    setRootPending(true)
+    // rootPending initializes true when there are no initialNodes, so the
+    // effect does not need to set it before this first fetch.
     fetch(`${treeEndpoint}?kind=hubs`, { cache: 'no-store', signal: controller.signal })
       .then(async (response) => {
         const body = (await response.json()) as TreeResponse

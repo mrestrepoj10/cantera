@@ -8,7 +8,7 @@
     "typecheck": "turbo run typecheck",
     "registry:build": "turbo run registry:build",
     "registry:verify": "turbo run registry:verify",
-    "lint": "biome check .",
+    "lint": "biome check . && pnpm --filter www run lint:registry",
     "format": "biome format --write .",
     "e2e": "playwright test"
   },

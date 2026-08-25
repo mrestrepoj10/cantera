@@ -16,7 +16,7 @@
 
 Data-agnostic UI: typed props in, callbacks out, no fetching.
 
-- [Provider Sign-In Button](https://canteraui.xyz/components/provider-sign-in-button): A sign-in button for a single OAuth provider: brand icon, label, loading state. Works as a link or a click handler.
+- [Provider Sign-In Button](https://canteraui.xyz/components/provider-sign-in-button): A sign-in button and link for a single OAuth provider: brand icon, label, loading state. ProviderSignInButton handles a click; ProviderSignInLink navigates to an auth route.
 - [Sign-In Card](https://canteraui.xyz/components/sign-in-card): A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
 - [Scope Picker](https://canteraui.xyz/components/scope-picker): A controlled OAuth scope picker: checkbox list with descriptions, one-click presets, required scopes pinned on, and an escape hatch for scopes outside the catalog.
 - [User Account Badge](https://canteraui.xyz/components/user-account-badge): An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.
@@ -51,7 +51,7 @@ The types the components speak, and the provider presets that translate into the
 - [APS OAuth Preset](https://canteraui.xyz/components/aps-oauth-preset): Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.
 - [Project Types](https://canteraui.xyz/components/project-types): Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into.
 - [APS Data Preset](https://canteraui.xyz/components/aps-data-preset): Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.
-- [Viewer Types](https://canteraui.xyz/components/viewer-types): Zero-dependency structural types for the Autodesk Viewer global runtime, documents, models, extensions, and promise-based token callbacks.
+- [Viewer Types](https://canteraui.xyz/components/viewer-types): Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks.
 - [Viewer Extension Types](https://canteraui.xyz/components/viewer-extension-types): A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.
 - [Upload Types](https://canteraui.xyz/components/upload-types): Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.
 

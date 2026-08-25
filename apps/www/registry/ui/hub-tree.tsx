@@ -10,7 +10,7 @@ import {
   LoaderCircleIcon,
 } from 'lucide-react'
 import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import type { Folder, Hub, Item, ItemVersion, Project } from '@/lib/project-types'
 import { cn } from '@/lib/utils'
@@ -125,20 +125,28 @@ function HubTree({
   const visible = useMemo(() => visibleNodes(nodes, expanded), [nodes, expanded])
   const visibleIds = useMemo(() => visible.map(({ node }) => node.id), [visible])
   const rows = useRef(new Map<string, HTMLDivElement>())
-  const [focusedId, setFocusedId] = useState<string | undefined>(selectedId ?? visibleIds[0])
-
-  useEffect(() => {
-    if (selectedId && visibleIds.includes(selectedId)) setFocusedId(selectedId)
-  }, [selectedId, visibleIds])
-
-  useEffect(() => {
-    if (focusedId && visibleIds.includes(focusedId)) return
-    setFocusedId(selectedId && visibleIds.includes(selectedId) ? selectedId : visibleIds[0])
-  }, [focusedId, selectedId, visibleIds])
+  // Roving-tabindex focus derives during render, so it can never fall on a
+  // hidden row: an override written by keyboard or focus events wins while it
+  // is valid for the current selection and still visible; otherwise the
+  // selected row; otherwise the first visible row. Tagging the override with
+  // the selection it was made under means a selection change retires it
+  // without an effect.
+  const [focusOverride, setFocusOverride] = useState<{
+    id: string
+    selectionKey: string | undefined
+  }>()
+  const focusedId =
+    focusOverride &&
+    focusOverride.selectionKey === selectedId &&
+    visibleIds.includes(focusOverride.id)
+      ? focusOverride.id
+      : selectedId && visibleIds.includes(selectedId)
+        ? selectedId
+        : visibleIds[0]
 
   function focus(nodeId: string | undefined): void {
     if (!nodeId) return
-    setFocusedId(nodeId)
+    setFocusOverride({ id: nodeId, selectionKey: selectedId })
     requestAnimationFrame(() => rows.current.get(nodeId)?.focus())
   }
 
@@ -226,7 +234,7 @@ function HubTree({
             )}
             style={{ paddingInlineStart: `${8 + (level - 1) * 16}px` }}
             onClick={onClick}
-            onFocus={() => setFocusedId(node.id)}
+            onFocus={() => setFocusOverride({ id: node.id, selectionKey: selectedId })}
             onKeyDown={(event) => onKeyDown(event, currentEntry)}
           >
             <span

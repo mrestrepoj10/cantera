@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { ProviderSignInButton } from '@/components/ui/provider-sign-in-button'
+import { ProviderSignInButton, ProviderSignInLink } from '@/components/ui/provider-sign-in-button'
 import type { OAuthProvider } from '@/lib/oauth-types'
 import { cn } from '@/lib/utils'
 
@@ -90,7 +90,7 @@ function SignInCard({
           const disabled = activeProvider !== undefined && !loading
 
           return href !== undefined ? (
-            <ProviderSignInButton
+            <ProviderSignInLink
               key={provider.id}
               provider={provider}
               href={href}

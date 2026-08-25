@@ -7,7 +7,7 @@ import type { OAuthProvider } from '@/lib/oauth-types'
 const procoreProvider: OAuthProvider = { id: 'procore', name: 'Procore' }
 
 /** Stand-in for the redirect. A returned promise drives the pressed button's pending state. */
-function signIn(_providerId: string): Promise<void> {
+function signIn(): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, 1200)
   })
