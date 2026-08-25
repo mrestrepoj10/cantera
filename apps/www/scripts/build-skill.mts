@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import { designContracts } from '../lib/design-contracts.ts'
 import { itemMarkdown, typeLabelFor } from '../lib/item-markdown.ts'
-import { installCommandFor, registryConfigSnippet } from '../lib/site.ts'
+import { installCommandFor, registryConfigSnippet, siteUrl } from '../lib/site.ts'
 import {
   catalogItems,
   namespace,
@@ -12,9 +12,11 @@ import {
   repoRoot,
 } from './lib/registry-source.mts'
 
+const siteHost = new URL(siteUrl).host
+
 const FRONTMATTER = `---
 name: cantera
-description: Use when building or reviewing construction (AEC) interfaces with the cantera shadcn registry — Autodesk (APS / ACC) sign-in, OAuth scope pickers, provider connection cards, status tokens, and the wired sign-in and connections blocks. Triggers on "cantera", "@cantera/<item>", canteraui.xyz, or any request for ACC / APS OAuth, scope, or connection UI in a shadcn project.
+description: Use when building or reviewing construction (AEC) interfaces with the cantera shadcn registry — Autodesk (APS / ACC) sign-in, OAuth scope pickers, provider connection cards, status tokens, and the wired sign-in and connections blocks. Triggers on "cantera", "@cantera/<item>", ${siteHost}, or any request for ACC / APS OAuth, scope, or connection UI in a shadcn project.
 ---`
 
 const PATTERN = `## The locked pattern
@@ -100,8 +102,8 @@ ${withExamples.map((item) => installCommandFor(`${item.name}-demo`)).join('\n')}
 
 ## More
 
-- Full API reference in one fetch: https://canteraui.xyz/llms-full.txt
-- Registry index for agents: https://canteraui.xyz/r/llms.txt
+- Full API reference in one fetch: ${siteUrl}/llms-full.txt
+- Registry index for agents: ${siteUrl}/r/llms.txt
 - Token layer (refresh, storage, rotation): https://github.com/mrestrepoj10/aec-auth
 - Credential-free OAuth emulator: https://github.com/mrestrepoj10/emulate
 `

@@ -4,8 +4,8 @@ A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, l
 
 - Type: block
 - Install: `npx shadcn@latest add @cantera/model-viewer-page`
-- Docs: https://canteraui.xyz/components/model-viewer-page
-- Registry item: https://canteraui.xyz/r/model-viewer-page.json
+- Docs: https://canteraui.vercel.app/components/model-viewer-page
+- Registry item: https://canteraui.vercel.app/r/model-viewer-page.json
 - Registry dependencies: button, card, sidebar, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/provider-sign-in-button, @cantera/scope-picker, @cantera/aps-oauth-preset, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
 - npm dependencies: aec-auth, lucide-react
 

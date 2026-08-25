@@ -4,8 +4,8 @@ Hub Browser inside a dialog, with tip-or-version selection and an explicit cance
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/file-picker-dialog`
-- Docs: https://canteraui.xyz/components/file-picker-dialog
-- Registry item: https://canteraui.xyz/r/file-picker-dialog.json
+- Docs: https://canteraui.vercel.app/components/file-picker-dialog
+- Registry item: https://canteraui.vercel.app/r/file-picker-dialog.json
 - Registry dependencies: button, dialog, @cantera/hub-browser, @cantera/project-types
 - Working example page: `npx shadcn@latest add @cantera/file-picker-dialog-demo` — installs app/examples/file-picker-dialog/page.tsx
 

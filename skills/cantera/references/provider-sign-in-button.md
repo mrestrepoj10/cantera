@@ -4,8 +4,8 @@ A sign-in button and link for a single OAuth provider: brand icon, label, loadin
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/provider-sign-in-button`
-- Docs: https://canteraui.xyz/components/provider-sign-in-button
-- Registry item: https://canteraui.xyz/r/provider-sign-in-button.json
+- Docs: https://canteraui.vercel.app/components/provider-sign-in-button
+- Registry item: https://canteraui.vercel.app/r/provider-sign-in-button.json
 - Registry dependencies: button, @cantera/oauth-types
 - npm dependencies: lucide-react
 - Working example page: `npx shadcn@latest add @cantera/provider-sign-in-button-demo` — installs app/examples/provider-sign-in-button/page.tsx

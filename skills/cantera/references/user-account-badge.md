@@ -4,8 +4,8 @@ An avatar-and-name chip for a connected account, with optional provider mark. Se
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/user-account-badge`
-- Docs: https://canteraui.xyz/components/user-account-badge
-- Registry item: https://canteraui.xyz/r/user-account-badge.json
+- Docs: https://canteraui.vercel.app/components/user-account-badge
+- Registry item: https://canteraui.vercel.app/r/user-account-badge.json
 - Registry dependencies: avatar, @cantera/oauth-types, @cantera/status-tokens
 - Working example page: `npx shadcn@latest add @cantera/user-account-badge-demo` — installs app/examples/user-account-badge/page.tsx
 

@@ -5,8 +5,12 @@
 // VERCEL_PROJECT_PRODUCTION_URL is not NEXT_PUBLIC_, so a client component
 // would silently fall through to the hardcoded origin.
 
+// The deployment URL, not canteraui.xyz: the domain is registered and delegated
+// to Vercel DNS but not attached to this project, so it has no certificate and
+// every published install command pointed at it failed the TLS handshake. Point
+// this back at the domain once it is attached.
 /** Mirrors `homepage` in registry.json. */
-const PRODUCTION_ORIGIN = 'https://canteraui.xyz'
+const PRODUCTION_ORIGIN = 'https://canteraui.vercel.app'
 
 function resolveSiteUrl(): string {
   const vercelProduction = process.env.VERCEL_PROJECT_PRODUCTION_URL

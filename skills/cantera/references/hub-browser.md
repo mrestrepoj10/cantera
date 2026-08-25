@@ -4,8 +4,8 @@ A controlled APS-style hub, project, folder, item, and version browser — bread
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/hub-browser`
-- Docs: https://canteraui.xyz/components/hub-browser
-- Registry item: https://canteraui.xyz/r/hub-browser.json
+- Docs: https://canteraui.vercel.app/components/hub-browser
+- Registry item: https://canteraui.vercel.app/r/hub-browser.json
 - Registry dependencies: badge, breadcrumb, button, popover, scroll-area, skeleton, @cantera/project-types, @cantera/status-tokens
 - npm dependencies: lucide-react
 - Working example page: `npx shadcn@latest add @cantera/hub-browser-demo` — installs app/examples/hub-browser/page.tsx

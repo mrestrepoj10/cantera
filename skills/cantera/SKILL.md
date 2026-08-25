@@ -1,6 +1,6 @@
 ---
 name: cantera
-description: Use when building or reviewing construction (AEC) interfaces with the cantera shadcn registry — Autodesk (APS / ACC) sign-in, OAuth scope pickers, provider connection cards, status tokens, and the wired sign-in and connections blocks. Triggers on "cantera", "@cantera/<item>", canteraui.xyz, or any request for ACC / APS OAuth, scope, or connection UI in a shadcn project.
+description: Use when building or reviewing construction (AEC) interfaces with the cantera shadcn registry — Autodesk (APS / ACC) sign-in, OAuth scope pickers, provider connection cards, status tokens, and the wired sign-in and connections blocks. Triggers on "cantera", "@cantera/<item>", canteraui.vercel.app, or any request for ACC / APS OAuth, scope, or connection UI in a shadcn project.
 ---
 
 # cantera
@@ -16,7 +16,7 @@ Register the namespace once in `components.json`:
 ```json
 {
   "registries": {
-    "@cantera": "https://canteraui.xyz/r/{name}.json"
+    "@cantera": "https://canteraui.vercel.app/r/{name}.json"
   }
 }
 ```
@@ -124,7 +124,7 @@ npx shadcn@latest add @cantera/file-drop-zone-demo
 
 ## More
 
-- Full API reference in one fetch: https://canteraui.xyz/llms-full.txt
-- Registry index for agents: https://canteraui.xyz/r/llms.txt
+- Full API reference in one fetch: https://canteraui.vercel.app/llms-full.txt
+- Registry index for agents: https://canteraui.vercel.app/r/llms.txt
 - Token layer (refresh, storage, rotation): https://github.com/mrestrepoj10/aec-auth
 - Credential-free OAuth emulator: https://github.com/mrestrepoj10/emulate

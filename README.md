@@ -4,7 +4,7 @@
 
 cantera is a [shadcn registry](https://ui.shadcn.com/docs/registry), not an npm package: `npx shadcn@latest add` copies the source into your project. Components are built on your project's shadcn primitives and inherit your theme, base, and style. They take plain typed props — data in, callbacks out — so they work with data from Autodesk Construction Cloud, Procore, or anywhere else. Provider-specific presets and adapters translate real APIs into those props.
 
-- Site and live demo: [canteraui.xyz](https://canteraui.xyz)
+- Site and live demo: [canteraui.vercel.app](https://canteraui.vercel.app)
 - Token layer companion: [aec-auth](https://github.com/mrestrepoj10/aec-auth)
 - Zero-credential OAuth demos: [emulate](https://github.com/mrestrepoj10/emulate) (`@emulators/aps`)
 
@@ -15,7 +15,7 @@ One-time, add the registry to your `components.json`:
 ```json
 {
   "registries": {
-    "@cantera": "https://canteraui.xyz/r/{name}.json"
+    "@cantera": "https://canteraui.vercel.app/r/{name}.json"
   }
 }
 ```
@@ -27,11 +27,11 @@ npx shadcn@latest add @cantera/sign-in-card
 npx shadcn@latest add @cantera/acc-sign-in
 ```
 
-The CLI resolves everything: shadcn primitives from your configured base and style, cantera dependencies from this registry. Full guide — package-manager tabs, the path-alias caveat, and theming: [canteraui.xyz/installation](https://canteraui.xyz/installation).
+The CLI resolves everything: shadcn primitives from your configured base and style, cantera dependencies from this registry. Full guide — package-manager tabs, the path-alias caveat, and theming: [canteraui.vercel.app/installation](https://canteraui.vercel.app/installation).
 
 Every component also ships an example item — a self-contained demo plus the page that mounts it — so `npx shadcn@latest add @cantera/connection-card-demo` (or the **Open in v0** button on any docs page) lands a screen that renders, not a bare component.
 
-Agents: install the skill with `npx skills add mrestrepoj10/cantera` for the registry's pattern, contracts, and a reference per item. On the web, [`/llms.txt`](https://canteraui.xyz/llms.txt) indexes the site, [`/llms-full.txt`](https://canteraui.xyz/llms-full.txt) carries every item's props and the design contracts, and [`/r/llms.txt`](https://canteraui.xyz/r/llms.txt) sits next to the registry JSON.
+Agents: install the skill with `npx skills add mrestrepoj10/cantera` for the registry's pattern, contracts, and a reference per item. On the web, [`/llms.txt`](https://canteraui.vercel.app/llms.txt) indexes the site, [`/llms-full.txt`](https://canteraui.vercel.app/llms-full.txt) carries every item's props and the design contracts, and [`/r/llms.txt`](https://canteraui.vercel.app/r/llms.txt) sits next to the registry JSON.
 
 ## Items
 

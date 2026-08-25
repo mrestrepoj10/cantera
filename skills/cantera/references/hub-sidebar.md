@@ -4,8 +4,8 @@ The finder composed above the hub tree in a shadcn sidebar: fast paths (query, r
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/hub-sidebar`
-- Docs: https://canteraui.xyz/components/hub-sidebar
-- Registry item: https://canteraui.xyz/r/hub-sidebar.json
+- Docs: https://canteraui.vercel.app/components/hub-sidebar
+- Registry item: https://canteraui.vercel.app/r/hub-sidebar.json
 - Registry dependencies: avatar, dropdown-menu, sidebar, @cantera/finder, @cantera/hub-tree
 
 Files written into the consumer project:

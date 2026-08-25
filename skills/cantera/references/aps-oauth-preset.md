@@ -4,8 +4,8 @@ Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope
 
 - Type: lib
 - Install: `npx shadcn@latest add @cantera/aps-oauth-preset`
-- Docs: https://canteraui.xyz/components/aps-oauth-preset
-- Registry item: https://canteraui.xyz/r/aps-oauth-preset.json
+- Docs: https://canteraui.vercel.app/components/aps-oauth-preset
+- Registry item: https://canteraui.vercel.app/r/aps-oauth-preset.json
 - Registry dependencies: @cantera/oauth-types
 
 Files written into the consumer project:

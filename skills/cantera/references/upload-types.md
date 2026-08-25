@@ -4,8 +4,8 @@ Generic upload lifecycle types for cantera components: files moving through queu
 
 - Type: lib
 - Install: `npx shadcn@latest add @cantera/upload-types`
-- Docs: https://canteraui.xyz/components/upload-types
-- Registry item: https://canteraui.xyz/r/upload-types.json
+- Docs: https://canteraui.vercel.app/components/upload-types
+- Registry item: https://canteraui.vercel.app/r/upload-types.json
 
 Files written into the consumer project:
 

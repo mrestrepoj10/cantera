@@ -2,8 +2,8 @@
 
 > cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, plus an end-to-end Autodesk (APS / ACC) sign-in block. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
 
-Site: https://canteraui.xyz
-Installation guide: https://canteraui.xyz/installation
+Site: https://canteraui.vercel.app
+Installation guide: https://canteraui.vercel.app/installation
 
 ## Setup
 
@@ -12,7 +12,7 @@ Add the namespace to components.json once:
 ```json
 {
   "registries": {
-    "@cantera": "https://canteraui.xyz/r/{name}.json"
+    "@cantera": "https://canteraui.vercel.app/r/{name}.json"
   }
 }
 ```
@@ -49,8 +49,8 @@ Preset provider marks carry their own `className="size-4"`, so one renders corre
 
 Type: lib
 Install: npx shadcn@latest add @cantera/oauth-types
-Docs: https://canteraui.xyz/components/oauth-types
-Item: https://canteraui.xyz/r/oauth-types.json
+Docs: https://canteraui.vercel.app/components/oauth-types
+Item: https://canteraui.vercel.app/r/oauth-types.json
 
 Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.
 
@@ -93,8 +93,8 @@ Files written into the consumer project:
 
 Type: lib
 Install: npx shadcn@latest add @cantera/aps-oauth-preset
-Docs: https://canteraui.xyz/components/aps-oauth-preset
-Item: https://canteraui.xyz/r/aps-oauth-preset.json
+Docs: https://canteraui.vercel.app/components/aps-oauth-preset
+Item: https://canteraui.vercel.app/r/aps-oauth-preset.json
 Registry dependencies: @cantera/oauth-types
 
 Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.
@@ -136,8 +136,8 @@ Files written into the consumer project:
 
 Type: tokens (CSS variables plus a typed accessor)
 Install: npx shadcn@latest add @cantera/status-tokens
-Docs: https://canteraui.xyz/components/status-tokens
-Item: https://canteraui.xyz/r/status-tokens.json
+Docs: https://canteraui.vercel.app/components/status-tokens
+Item: https://canteraui.vercel.app/r/status-tokens.json
 Working example page: npx shadcn@latest add @cantera/status-tokens-demo
 
 Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.
@@ -164,8 +164,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/provider-sign-in-button
-Docs: https://canteraui.xyz/components/provider-sign-in-button
-Item: https://canteraui.xyz/r/provider-sign-in-button.json
+Docs: https://canteraui.vercel.app/components/provider-sign-in-button
+Item: https://canteraui.vercel.app/r/provider-sign-in-button.json
 Working example page: npx shadcn@latest add @cantera/provider-sign-in-button-demo
 Registry dependencies: button, @cantera/oauth-types
 npm dependencies: lucide-react
@@ -202,8 +202,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/sign-in-card
-Docs: https://canteraui.xyz/components/sign-in-card
-Item: https://canteraui.xyz/r/sign-in-card.json
+Docs: https://canteraui.vercel.app/components/sign-in-card
+Item: https://canteraui.vercel.app/r/sign-in-card.json
 Working example page: npx shadcn@latest add @cantera/sign-in-card-demo
 Registry dependencies: card, @cantera/provider-sign-in-button, @cantera/oauth-types
 
@@ -229,8 +229,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/scope-picker
-Docs: https://canteraui.xyz/components/scope-picker
-Item: https://canteraui.xyz/r/scope-picker.json
+Docs: https://canteraui.vercel.app/components/scope-picker
+Item: https://canteraui.vercel.app/r/scope-picker.json
 Working example page: npx shadcn@latest add @cantera/scope-picker-demo
 Registry dependencies: badge, button, checkbox, input, label, @cantera/oauth-types, @cantera/status-tokens
 npm dependencies: lucide-react
@@ -263,8 +263,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/user-account-badge
-Docs: https://canteraui.xyz/components/user-account-badge
-Item: https://canteraui.xyz/r/user-account-badge.json
+Docs: https://canteraui.vercel.app/components/user-account-badge
+Item: https://canteraui.vercel.app/r/user-account-badge.json
 Working example page: npx shadcn@latest add @cantera/user-account-badge-demo
 Registry dependencies: avatar, @cantera/oauth-types, @cantera/status-tokens
 
@@ -285,8 +285,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/token-status
-Docs: https://canteraui.xyz/components/token-status
-Item: https://canteraui.xyz/r/token-status.json
+Docs: https://canteraui.vercel.app/components/token-status
+Item: https://canteraui.vercel.app/r/token-status.json
 Working example page: npx shadcn@latest add @cantera/token-status-demo
 Registry dependencies: badge, @cantera/status-tokens, @cantera/oauth-types
 
@@ -320,8 +320,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/connection-card
-Docs: https://canteraui.xyz/components/connection-card
-Item: https://canteraui.xyz/r/connection-card.json
+Docs: https://canteraui.vercel.app/components/connection-card
+Item: https://canteraui.vercel.app/r/connection-card.json
 Working example page: npx shadcn@latest add @cantera/connection-card-demo
 Registry dependencies: button, card, @cantera/user-account-badge, @cantera/token-status, @cantera/oauth-types
 npm dependencies: lucide-react
@@ -346,8 +346,8 @@ Files written into the consumer project:
 
 Type: block
 Install: npx shadcn@latest add @cantera/acc-sign-in
-Docs: https://canteraui.xyz/components/acc-sign-in
-Item: https://canteraui.xyz/r/acc-sign-in.json
+Docs: https://canteraui.vercel.app/components/acc-sign-in
+Item: https://canteraui.vercel.app/r/acc-sign-in.json
 Registry dependencies: @cantera/sign-in-card, @cantera/connection-card, @cantera/aps-oauth-preset, @cantera/oauth-types
 npm dependencies: aec-auth, lucide-react
 
@@ -367,8 +367,8 @@ Files written into the consumer project:
 
 Type: block
 Install: npx shadcn@latest add @cantera/connections-page
-Docs: https://canteraui.xyz/components/connections-page
-Item: https://canteraui.xyz/r/connections-page.json
+Docs: https://canteraui.vercel.app/components/connections-page
+Item: https://canteraui.vercel.app/r/connections-page.json
 Registry dependencies: button, @cantera/connection-card, @cantera/provider-sign-in-button, @cantera/token-status, @cantera/user-account-badge, @cantera/acc-sign-in, @cantera/aps-oauth-preset, @cantera/oauth-types, @cantera/status-tokens
 npm dependencies: aec-auth, lucide-react
 
@@ -424,8 +424,8 @@ Files written into the consumer project:
 
 Type: lib
 Install: npx shadcn@latest add @cantera/project-types
-Docs: https://canteraui.xyz/components/project-types
-Item: https://canteraui.xyz/r/project-types.json
+Docs: https://canteraui.vercel.app/components/project-types
+Item: https://canteraui.vercel.app/r/project-types.json
 
 Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into.
 
@@ -467,8 +467,8 @@ Files written into the consumer project:
 
 Type: lib
 Install: npx shadcn@latest add @cantera/aps-data-preset
-Docs: https://canteraui.xyz/components/aps-data-preset
-Item: https://canteraui.xyz/r/aps-data-preset.json
+Docs: https://canteraui.vercel.app/components/aps-data-preset
+Item: https://canteraui.vercel.app/r/aps-data-preset.json
 Registry dependencies: @cantera/project-types
 
 Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.
@@ -508,8 +508,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/hub-switcher
-Docs: https://canteraui.xyz/components/hub-switcher
-Item: https://canteraui.xyz/r/hub-switcher.json
+Docs: https://canteraui.vercel.app/components/hub-switcher
+Item: https://canteraui.vercel.app/r/hub-switcher.json
 Working example page: npx shadcn@latest add @cantera/hub-switcher-demo
 Registry dependencies: select, @cantera/project-types
 npm dependencies: lucide-react
@@ -536,8 +536,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/project-picker
-Docs: https://canteraui.xyz/components/project-picker
-Item: https://canteraui.xyz/r/project-picker.json
+Docs: https://canteraui.vercel.app/components/project-picker
+Item: https://canteraui.vercel.app/r/project-picker.json
 Working example page: npx shadcn@latest add @cantera/project-picker-demo
 Registry dependencies: button, command, popover, @cantera/project-types, @cantera/status-tokens
 npm dependencies: lucide-react
@@ -567,8 +567,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/version-set-select
-Docs: https://canteraui.xyz/components/version-set-select
-Item: https://canteraui.xyz/r/version-set-select.json
+Docs: https://canteraui.vercel.app/components/version-set-select
+Item: https://canteraui.vercel.app/r/version-set-select.json
 Working example page: npx shadcn@latest add @cantera/version-set-select-demo
 Registry dependencies: select, @cantera/project-types
 npm dependencies: lucide-react
@@ -595,8 +595,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/hub-browser
-Docs: https://canteraui.xyz/components/hub-browser
-Item: https://canteraui.xyz/r/hub-browser.json
+Docs: https://canteraui.vercel.app/components/hub-browser
+Item: https://canteraui.vercel.app/r/hub-browser.json
 Working example page: npx shadcn@latest add @cantera/hub-browser-demo
 Registry dependencies: badge, breadcrumb, button, popover, scroll-area, skeleton, @cantera/project-types, @cantera/status-tokens
 npm dependencies: lucide-react
@@ -626,8 +626,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/hub-tree
-Docs: https://canteraui.xyz/components/hub-tree
-Item: https://canteraui.xyz/r/hub-tree.json
+Docs: https://canteraui.vercel.app/components/hub-tree
+Item: https://canteraui.vercel.app/r/hub-tree.json
 Registry dependencies: @cantera/project-types, @cantera/status-tokens
 npm dependencies: lucide-react
 
@@ -655,8 +655,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/finder
-Docs: https://canteraui.xyz/components/finder
-Item: https://canteraui.xyz/r/finder.json
+Docs: https://canteraui.vercel.app/components/finder
+Item: https://canteraui.vercel.app/r/finder.json
 Registry dependencies: button, command, @cantera/project-types, @cantera/status-tokens
 npm dependencies: lucide-react
 
@@ -687,8 +687,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/hub-sidebar
-Docs: https://canteraui.xyz/components/hub-sidebar
-Item: https://canteraui.xyz/r/hub-sidebar.json
+Docs: https://canteraui.vercel.app/components/hub-sidebar
+Item: https://canteraui.vercel.app/r/hub-sidebar.json
 Registry dependencies: avatar, dropdown-menu, sidebar, @cantera/finder, @cantera/hub-tree
 
 The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.
@@ -710,8 +710,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/crew-avatar
-Docs: https://canteraui.xyz/components/crew-avatar
-Item: https://canteraui.xyz/r/crew-avatar.json
+Docs: https://canteraui.vercel.app/components/crew-avatar
+Item: https://canteraui.vercel.app/r/crew-avatar.json
 
 Deterministic construction-crew SVG avatars — monochrome disc, geometric figure, one accent for the trade on the hard hat — generated from a name with zero dependencies, boring-avatars style.
 
@@ -736,8 +736,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/file-picker-dialog
-Docs: https://canteraui.xyz/components/file-picker-dialog
-Item: https://canteraui.xyz/r/file-picker-dialog.json
+Docs: https://canteraui.vercel.app/components/file-picker-dialog
+Item: https://canteraui.vercel.app/r/file-picker-dialog.json
 Working example page: npx shadcn@latest add @cantera/file-picker-dialog-demo
 Registry dependencies: button, dialog, @cantera/hub-browser, @cantera/project-types
 
@@ -760,8 +760,8 @@ Files written into the consumer project:
 
 Type: lib
 Install: npx shadcn@latest add @cantera/viewer-types
-Docs: https://canteraui.xyz/components/viewer-types
-Item: https://canteraui.xyz/r/viewer-types.json
+Docs: https://canteraui.vercel.app/components/viewer-types
+Item: https://canteraui.vercel.app/r/viewer-types.json
 
 Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks.
 
@@ -793,8 +793,8 @@ Files written into the consumer project:
 
 Type: lib
 Install: npx shadcn@latest add @cantera/viewer-extension-types
-Docs: https://canteraui.xyz/components/viewer-extension-types
-Item: https://canteraui.xyz/r/viewer-extension-types.json
+Docs: https://canteraui.vercel.app/components/viewer-extension-types
+Item: https://canteraui.vercel.app/r/viewer-extension-types.json
 
 A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.
 
@@ -832,8 +832,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/aps-viewer
-Docs: https://canteraui.xyz/components/aps-viewer
-Item: https://canteraui.xyz/r/aps-viewer.json
+Docs: https://canteraui.vercel.app/components/aps-viewer
+Item: https://canteraui.vercel.app/r/aps-viewer.json
 Working example page: npx shadcn@latest add @cantera/aps-viewer-demo
 Registry dependencies: @cantera/viewer-types
 
@@ -879,8 +879,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/model-status-card
-Docs: https://canteraui.xyz/components/model-status-card
-Item: https://canteraui.xyz/r/model-status-card.json
+Docs: https://canteraui.vercel.app/components/model-status-card
+Item: https://canteraui.vercel.app/r/model-status-card.json
 Working example page: npx shadcn@latest add @cantera/model-status-card-demo
 Registry dependencies: badge, button, card, @cantera/token-status, @cantera/status-tokens, @cantera/project-types
 npm dependencies: lucide-react
@@ -903,8 +903,8 @@ Files written into the consumer project:
 
 Type: block
 Install: npx shadcn@latest add @cantera/model-viewer-page
-Docs: https://canteraui.xyz/components/model-viewer-page
-Item: https://canteraui.xyz/r/model-viewer-page.json
+Docs: https://canteraui.vercel.app/components/model-viewer-page
+Item: https://canteraui.vercel.app/r/model-viewer-page.json
 Registry dependencies: button, card, sidebar, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/provider-sign-in-button, @cantera/scope-picker, @cantera/aps-oauth-preset, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
 npm dependencies: aec-auth, lucide-react
 
@@ -940,8 +940,8 @@ Files written into the consumer project:
 
 Type: lib
 Install: npx shadcn@latest add @cantera/upload-types
-Docs: https://canteraui.xyz/components/upload-types
-Item: https://canteraui.xyz/r/upload-types.json
+Docs: https://canteraui.vercel.app/components/upload-types
+Item: https://canteraui.vercel.app/r/upload-types.json
 
 Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.
 
@@ -981,8 +981,8 @@ Files written into the consumer project:
 
 Type: component
 Install: npx shadcn@latest add @cantera/file-drop-zone
-Docs: https://canteraui.xyz/components/file-drop-zone
-Item: https://canteraui.xyz/r/file-drop-zone.json
+Docs: https://canteraui.vercel.app/components/file-drop-zone
+Item: https://canteraui.vercel.app/r/file-drop-zone.json
 Working example page: npx shadcn@latest add @cantera/file-drop-zone-demo
 Registry dependencies: button, @cantera/token-status, @cantera/status-tokens, @cantera/upload-types
 npm dependencies: lucide-react

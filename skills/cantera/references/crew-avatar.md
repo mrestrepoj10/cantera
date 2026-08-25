@@ -4,8 +4,8 @@ Deterministic construction-crew SVG avatars — monochrome disc, geometric figur
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/crew-avatar`
-- Docs: https://canteraui.xyz/components/crew-avatar
-- Registry item: https://canteraui.xyz/r/crew-avatar.json
+- Docs: https://canteraui.vercel.app/components/crew-avatar
+- Registry item: https://canteraui.vercel.app/r/crew-avatar.json
 
 Files written into the consumer project:
 

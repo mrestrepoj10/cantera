@@ -4,8 +4,8 @@ Generic project-context types for cantera components: hubs, projects, folders, i
 
 - Type: lib
 - Install: `npx shadcn@latest add @cantera/project-types`
-- Docs: https://canteraui.xyz/components/project-types
-- Registry item: https://canteraui.xyz/r/project-types.json
+- Docs: https://canteraui.vercel.app/components/project-types
+- Registry item: https://canteraui.vercel.app/r/project-types.json
 
 Files written into the consumer project:
 

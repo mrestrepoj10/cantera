@@ -4,8 +4,8 @@ A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a d
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/file-drop-zone`
-- Docs: https://canteraui.xyz/components/file-drop-zone
-- Registry item: https://canteraui.xyz/r/file-drop-zone.json
+- Docs: https://canteraui.vercel.app/components/file-drop-zone
+- Registry item: https://canteraui.vercel.app/r/file-drop-zone.json
 - Registry dependencies: button, @cantera/token-status, @cantera/status-tokens, @cantera/upload-types
 - npm dependencies: lucide-react
 - Working example page: `npx shadcn@latest add @cantera/file-drop-zone-demo` — installs app/examples/file-drop-zone/page.tsx

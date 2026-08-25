@@ -4,8 +4,8 @@ The hub context switch: which ACC hub — or any Hub — the rest of the screen 
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/hub-switcher`
-- Docs: https://canteraui.xyz/components/hub-switcher
-- Registry item: https://canteraui.xyz/r/hub-switcher.json
+- Docs: https://canteraui.vercel.app/components/hub-switcher
+- Registry item: https://canteraui.vercel.app/r/hub-switcher.json
 - Registry dependencies: select, @cantera/project-types
 - npm dependencies: lucide-react
 - Working example page: `npx shadcn@latest add @cantera/hub-switcher-demo` — installs app/examples/hub-switcher/page.tsx

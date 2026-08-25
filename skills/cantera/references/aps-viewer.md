@@ -4,8 +4,8 @@ A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime 
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/aps-viewer`
-- Docs: https://canteraui.xyz/components/aps-viewer
-- Registry item: https://canteraui.xyz/r/aps-viewer.json
+- Docs: https://canteraui.vercel.app/components/aps-viewer
+- Registry item: https://canteraui.vercel.app/r/aps-viewer.json
 - Registry dependencies: @cantera/viewer-types
 - Working example page: `npx shadcn@latest add @cantera/aps-viewer-demo` — installs app/examples/aps-viewer/page.tsx
 

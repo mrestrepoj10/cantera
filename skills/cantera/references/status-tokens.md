@@ -4,8 +4,8 @@ Semantic status colors — success, warning, danger, neutral — each with a for
 
 - Type: tokens
 - Install: `npx shadcn@latest add @cantera/status-tokens`
-- Docs: https://canteraui.xyz/components/status-tokens
-- Registry item: https://canteraui.xyz/r/status-tokens.json
+- Docs: https://canteraui.vercel.app/components/status-tokens
+- Registry item: https://canteraui.vercel.app/r/status-tokens.json
 - Working example page: `npx shadcn@latest add @cantera/status-tokens-demo` — installs app/examples/status-tokens/page.tsx
 
 Files written into the consumer project:
