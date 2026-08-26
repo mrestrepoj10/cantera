@@ -1,1 +1,1 @@
-export { GET } from '@/registry/blocks/acc-sign-in/api/auth-start-route'
+export { GET } from '@/registry/blocks/acc-auth-routes/api/auth-start-route'

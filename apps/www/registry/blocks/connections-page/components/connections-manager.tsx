@@ -14,7 +14,7 @@ interface ConnectionsManagerProps
   connectHrefTemplate: string
   /**
    * POST target that revokes a grant. "{provider}" is replaced with the
-   * provider id when the template carries it — the acc-sign-in signout route
+   * provider id when the template carries it — the acc-auth-routes signout route
    * takes no provider, so the default template is a plain path.
    */
   disconnectHrefTemplate: string

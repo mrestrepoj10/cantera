@@ -17,7 +17,7 @@
     "@cantera/viewer-extension-types",
     "@cantera/aps-data-preset",
     "@cantera/project-types",
-    "@cantera/acc-sign-in",
+    "@cantera/acc-auth-routes",
     "@cantera/model-status-card",
     "@cantera/status-tokens",
     "@cantera/user-account-badge"
@@ -60,7 +60,7 @@
     "SESSION_SECRET": "",
     "APS_AUTH_BASE_URL": ""
   },
-  "docs": "Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-sign-in dependency supplies the OAuth routes, lib/acc-auth.ts, and the /sign-in page. Signed out, /models renders the same ScopedAutodeskSignIn component the /sign-in page uses, returning to /models after the callback — identical scope selection on both surfaces, no extra hop.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.\n- SESSION_SECRET — required in production. Generate one with `openssl rand -base64 32`.\n- APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS. A relative value such as \"/emulate/aps\" is useful only when your app mounts a compatible embedded emulator at that path.\n\nThe default aec-auth vault from acc-sign-in is in-memory: appropriate for a demo, not production. Replace it with a durable encrypted VaultStore before real users connect.\n\nThe cantera showcase emulator supplies the project tree but no SVF geometry. Its seeded demo links one tip version to an externally translated sample URN when credentials are configured; every other item intentionally renders the no-geometry state. Your application should store real derivative URNs on normalized item versions.",
+  "docs": "Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-auth-routes dependency supplies the OAuth routes, lib/acc-auth.ts, and the scoped sign-in component — no /sign-in page is installed. Signed out, /models renders ScopedAutodeskSignIn inline, returning to /models after the callback. Add @cantera/acc-sign-in separately if you also want a standalone /sign-in page.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.\n- SESSION_SECRET — required in production. Generate one with `openssl rand -base64 32`.\n- APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS. A relative value such as \"/emulate/aps\" is useful only when your app mounts a compatible embedded emulator at that path.\n\nThe default aec-auth vault from acc-sign-in is in-memory: appropriate for a demo, not production. Replace it with a durable encrypted VaultStore before real users connect.\n\nThe cantera showcase emulator supplies the project tree but no SVF geometry. Its seeded demo links one tip version to an externally translated sample URN when credentials are configured; every other item intentionally renders the no-geometry state. Your application should store real derivative URNs on normalized item versions.",
   "categories": [
     "projects",
     "files",

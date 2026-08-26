@@ -1,1 +1,1 @@
-export { POST } from '@/registry/blocks/acc-sign-in/api/signout-route'
+export { POST } from '@/registry/blocks/acc-auth-routes/api/signout-route'

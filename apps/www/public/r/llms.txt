@@ -101,11 +101,20 @@ Install: npx shadcn@latest add @cantera/connection-card
 Docs: https://canteraui.vercel.app/components/connection-card
 Item: https://canteraui.vercel.app/r/connection-card.json
 
+### acc-auth-routes
+
+Title: ACC Auth Routes
+Type: block
+Description: The headless half of Autodesk sign-in on aec-auth: consent start, code exchange, and sign-out route handlers, the signed session library, and the scoped sign-in component — no pages.
+Install: npx shadcn@latest add @cantera/acc-auth-routes
+Docs: https://canteraui.vercel.app/components/acc-auth-routes
+Item: https://canteraui.vercel.app/r/acc-auth-routes.json
+
 ### acc-sign-in
 
 Title: ACC Sign-In
 Type: block
-Description: Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.
+Description: A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.
 Install: npx shadcn@latest add @cantera/acc-sign-in
 Docs: https://canteraui.vercel.app/components/acc-sign-in
 Item: https://canteraui.vercel.app/r/acc-sign-in.json

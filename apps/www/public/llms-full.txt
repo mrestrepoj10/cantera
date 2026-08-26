@@ -342,27 +342,41 @@ Files written into the consumer project:
 - `showScopes` (`boolean`, default `true`) — Forwarded to the embedded TokenStatus.
 - `...props` (`ComponentProps<typeof Card>`) — Remaining props are spread onto the underlying Card.
 
+### ACC Auth Routes (`@cantera/acc-auth-routes`)
+
+Type: block
+Install: npx shadcn@latest add @cantera/acc-auth-routes
+Docs: https://canteraui.vercel.app/components/acc-auth-routes
+Item: https://canteraui.vercel.app/r/acc-auth-routes.json
+Registry dependencies: card, @cantera/provider-sign-in-button, @cantera/scope-picker, @cantera/aps-oauth-preset, @cantera/oauth-types
+npm dependencies: aec-auth
+
+The headless half of Autodesk sign-in on aec-auth: consent start, code exchange, and sign-out route handlers, the signed session library, and the scoped sign-in component — no pages.
+
+Files written into the consumer project:
+
+- lib/acc-auth.ts
+- components/scoped-autodesk-sign-in.tsx
+- app/api/auth/[provider]/route.ts
+- app/api/auth/callback/[provider]/route.ts
+- app/api/auth/signout/route.ts
+
 ### ACC Sign-In (`@cantera/acc-sign-in`)
 
 Type: block
 Install: npx shadcn@latest add @cantera/acc-sign-in
 Docs: https://canteraui.vercel.app/components/acc-sign-in
 Item: https://canteraui.vercel.app/r/acc-sign-in.json
-Registry dependencies: card, @cantera/provider-sign-in-button, @cantera/scope-picker, @cantera/connection-card, @cantera/aps-oauth-preset, @cantera/oauth-types
+Registry dependencies: @cantera/acc-auth-routes, @cantera/connection-card, @cantera/aps-oauth-preset, @cantera/oauth-types
 npm dependencies: aec-auth, lucide-react
 
-Complete Autodesk (APS / ACC) sign-in flow on aec-auth: consent redirect, code exchange, vault-managed refresh, signed session, and a live connection panel.
+A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.
 
 Files written into the consumer project:
 
 - app/sign-in/page.tsx
 - app/sign-in/loading.tsx
 - components/acc-connection-panel.tsx
-- components/scoped-autodesk-sign-in.tsx
-- lib/acc-auth.ts
-- app/api/auth/[provider]/route.ts
-- app/api/auth/callback/[provider]/route.ts
-- app/api/auth/signout/route.ts
 
 ### Connections Page (`@cantera/connections-page`)
 
@@ -370,7 +384,7 @@ Type: block
 Install: npx shadcn@latest add @cantera/connections-page
 Docs: https://canteraui.vercel.app/components/connections-page
 Item: https://canteraui.vercel.app/r/connections-page.json
-Registry dependencies: button, @cantera/connection-card, @cantera/provider-sign-in-button, @cantera/token-status, @cantera/user-account-badge, @cantera/acc-sign-in, @cantera/aps-oauth-preset, @cantera/oauth-types, @cantera/status-tokens
+Registry dependencies: button, @cantera/connection-card, @cantera/provider-sign-in-button, @cantera/token-status, @cantera/user-account-badge, @cantera/acc-auth-routes, @cantera/aps-oauth-preset, @cantera/oauth-types, @cantera/status-tokens
 npm dependencies: aec-auth, lucide-react
 
 The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
@@ -906,7 +920,7 @@ Type: block
 Install: npx shadcn@latest add @cantera/model-viewer-page
 Docs: https://canteraui.vercel.app/components/model-viewer-page
 Item: https://canteraui.vercel.app/r/model-viewer-page.json
-Registry dependencies: button, sidebar, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-sign-in, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
+Registry dependencies: button, sidebar, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-auth-routes, @cantera/model-status-card, @cantera/status-tokens, @cantera/user-account-badge
 npm dependencies: aec-auth, lucide-react
 
 A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.

@@ -6,7 +6,7 @@ The page that manages every provider grant: one card per connection, with connec
 - Install: `npx shadcn@latest add @cantera/connections-page`
 - Docs: https://canteraui.vercel.app/components/connections-page
 - Registry item: https://canteraui.vercel.app/r/connections-page.json
-- Registry dependencies: button, @cantera/connection-card, @cantera/provider-sign-in-button, @cantera/token-status, @cantera/user-account-badge, @cantera/acc-sign-in, @cantera/aps-oauth-preset, @cantera/oauth-types, @cantera/status-tokens
+- Registry dependencies: button, @cantera/connection-card, @cantera/provider-sign-in-button, @cantera/token-status, @cantera/user-account-badge, @cantera/acc-auth-routes, @cantera/aps-oauth-preset, @cantera/oauth-types, @cantera/status-tokens
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
@@ -27,7 +27,7 @@ Environment variables added to `.env.local`:
 
 Installed: app/connections/page.tsx with its loading skeleton, plus ConnectionsView (presentational) and ConnectionsManager (wiring).
 
-This block takes acc-sign-in as a registry dependency for the /api/auth/* routes and the aec-auth glue, so one environment configures both:
+This block takes acc-auth-routes as a registry dependency for the /api/auth/* routes and the aec-auth glue — no /sign-in page is installed — so one environment configures both:
 - APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.
 - SESSION_SECRET — required in production; the block fails closed without it.
 - APS_AUTH_BASE_URL — optional auth-origin override for an emulator. Unset means real APS.
