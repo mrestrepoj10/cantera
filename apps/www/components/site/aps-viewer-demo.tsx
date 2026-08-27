@@ -675,7 +675,9 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
   const tabsId = useId()
 
   const [settings, setSettings] = useState<ViewerDemoSettings>(DEFAULT_SETTINGS)
-  const [inspectorOpen, setInspectorOpen] = useState(false)
+  // Open on the showcase so the inspector is discoverable; a consumer wiring
+  // this pattern into their own app would start it collapsed.
+  const [inspectorOpen, setInspectorOpen] = useState(true)
   const [tab, setTab] = useState<TabId>('setup')
   const [error, setError] = useState<string | null>(null)
   const [modelLoaded, setModelLoaded] = useState(false)
