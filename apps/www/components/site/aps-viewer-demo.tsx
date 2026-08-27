@@ -1,8 +1,16 @@
 'use client'
 
-import { CheckIcon, CopyIcon, LoaderCircle, PlusIcon, XIcon } from 'lucide-react'
+import {
+  CheckIcon,
+  CopyIcon,
+  LoaderCircle,
+  PlusIcon,
+  SlidersHorizontalIcon,
+  XIcon,
+} from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { ViewerSettingsTrigger } from '@/components/site/viewer-settings-trigger'
 import {
   APSViewer,
   type APSViewerToolbarPosition,
@@ -11,6 +19,7 @@ import {
 import { type APSExtensionResult, useAPSExtension } from '@/components/ui/aps-viewer/hooks'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { VIEWER_EXTENSIONS, type ViewerExtensionInfo } from '@/lib/viewer-extension-types'
 import type { GetAccessToken } from '@/lib/viewer-types'
@@ -666,6 +675,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
   const tabsId = useId()
 
   const [settings, setSettings] = useState<ViewerDemoSettings>(DEFAULT_SETTINGS)
+  const [inspectorOpen, setInspectorOpen] = useState(true)
   const [tab, setTab] = useState<TabId>('setup')
   const [error, setError] = useState<string | null>(null)
   const [modelLoaded, setModelLoaded] = useState(false)
@@ -776,11 +786,11 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
   return (
     <div className="flex w-full flex-col bg-background">
       <div
-        className="grid overflow-hidden border border-border lg:h-[36rem] lg:grid-cols-[minmax(0,1fr)_20rem]"
+        className="relative overflow-hidden border border-border"
         data-viewer-workbench=""
         style={{ borderRadius: settings.radius }}
       >
-        <div className="flex min-w-0 flex-col">
+        <div className="relative flex min-w-0 flex-col">
           <APSViewer
             urn={urn}
             getAccessToken={getAccessToken}
@@ -790,15 +800,36 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
             viewCube={settings.viewCube}
             radius={settings.radius}
             theme={settings.theme === 'system' ? undefined : settings.theme}
-            // min-height, not height: a fixed height would collapse this
-            // zero-basis flex item wherever the dock does not stretch the column.
-            className="min-h-[28rem] w-full flex-1 sm:min-h-[36rem] lg:min-h-0"
+            className="min-h-[28rem] w-full flex-1 sm:min-h-[36rem]"
             onModelLoaded={() => setModelLoaded(true)}
             onError={(nextError) => setError(nextError.message)}
           >
             {settings.extensions.map((id) => (
               <DemoExtension key={id} id={id} onStatus={handleExtensionStatus} />
             ))}
+            {settings.toolbar && (
+              <ViewerSettingsTrigger
+                open={inspectorOpen}
+                onToggle={() => setInspectorOpen((open) => !open)}
+              />
+            )}
+            {!inspectorOpen && !settings.toolbar && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      aria-label="Viewer settings"
+                      variant="ghost"
+                      onClick={() => setInspectorOpen(true)}
+                      className="absolute top-4 left-4 z-10 size-11 rounded-xl bg-popover/90 shadow-md ring-1 ring-foreground/10 backdrop-blur"
+                    />
+                  }
+                >
+                  <SlidersHorizontalIcon className="size-5" />
+                </TooltipTrigger>
+                <TooltipContent side="right">Viewer settings</TooltipContent>
+              </Tooltip>
+            )}
           </APSViewer>
           {/* sr-only: state stays available to AT and e2e without a visual strip. */}
           <output
@@ -817,243 +848,261 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
           </output>
         </div>
 
-        <aside
-          aria-labelledby={dockHeadingId}
-          className="relative flex min-h-0 flex-col border-border border-t bg-muted/30 lg:overflow-hidden lg:border-t-0 lg:border-l"
-        >
-          <h3 id={dockHeadingId} className="sr-only">
-            Viewer inspector
-          </h3>
-          <div
-            role="tablist"
+        {inspectorOpen && (
+          <aside
             aria-labelledby={dockHeadingId}
-            className="grid grid-cols-3 border-border border-b px-2 pt-2"
+            className="absolute top-4 left-4 z-10 flex max-h-[calc(100%-2rem)] w-80 max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-lg bg-popover/95 text-popover-foreground shadow-lg ring-1 ring-foreground/10 backdrop-blur"
           >
-            {TABS.map((entry, index) => {
-              const selected = entry.id === tab
-              return (
-                <button
-                  key={entry.id}
-                  ref={(node) => {
-                    tabRefs.current[entry.id] = node
-                  }}
-                  type="button"
-                  role="tab"
-                  id={`${tabsId}-${entry.id}-tab`}
-                  aria-selected={selected}
-                  aria-controls={`${tabsId}-${entry.id}-panel`}
-                  tabIndex={selected ? 0 : -1}
-                  className={cn(
-                    'min-h-11 rounded-t-md px-2 pb-1 font-medium text-[13px] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-1',
-                    selected
-                      ? 'bg-background text-foreground shadow-[inset_0_-2px_0_0_var(--color-foreground)]'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                  onClick={() => setTab(entry.id)}
-                  onKeyDown={(event) => onTabKeyDown(event, index)}
-                >
-                  {entry.label}
-                  {entry.id === 'extensions' && loadedCount > 0 && (
-                    <span className="ms-1 text-muted-foreground tabular-nums">{loadedCount}</span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="flex min-h-0 flex-1 flex-col p-3">
-            {tab === 'setup' && (
-              <div
-                role="tabpanel"
-                id={`${tabsId}-setup-panel`}
-                aria-labelledby={`${tabsId}-setup-tab`}
-                className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto"
+            <div className="flex items-center gap-1.5 border-border/60 border-b px-2.5 py-1.5">
+              <h3
+                id={dockHeadingId}
+                className="font-medium font-mono text-[11px] uppercase tracking-[0.12em]"
               >
-                <fieldset className="min-w-0">
-                  <legend className="mb-1.5 font-medium text-[13px] text-foreground">Chrome</legend>
-                  <label
-                    // The checkbox primitive hooks its focus styles off this group.
-                    className="group/field-label flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md px-1 text-sm"
-                    htmlFor={toolbarFieldId}
-                  >
-                    <span id={toolbarLabelId}>Native toolbar</span>
-                    <Checkbox
-                      id={toolbarFieldId}
-                      // The primitive renders a button, so the wrapping label alone
-                      // does not name it — point at the text explicitly.
-                      aria-labelledby={toolbarLabelId}
-                      checked={settings.toolbar}
-                      onCheckedChange={(checked) => {
-                        setModelLoaded(false)
-                        setError(null)
-                        setSettings((previous) => ({ ...previous, toolbar: checked }))
-                      }}
-                    />
-                  </label>
-                  <label
-                    className="group/field-label flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md px-1 text-sm"
-                    htmlFor={viewCubeFieldId}
-                  >
-                    <span id={viewCubeLabelId}>ViewCube</span>
-                    <Checkbox
-                      id={viewCubeFieldId}
-                      aria-labelledby={viewCubeLabelId}
-                      checked={settings.viewCube}
-                      onCheckedChange={(viewCube) =>
-                        setSettings((previous) => ({ ...previous, viewCube }))
-                      }
-                    />
-                  </label>
-                  {!settings.toolbar && (
-                    <p id={toolbarOffId} className="text-muted-foreground text-xs leading-snug">
-                      Position and density apply to the native toolbar.
-                    </p>
-                  )}
-                </fieldset>
-                <ControlGroup
-                  label="Position"
-                  value={settings.position}
-                  options={positionOptions}
-                  columns={4}
-                  disabled={!settings.toolbar}
-                  describedBy={toolbarOffId}
-                  onChange={(position) => setSettings((previous) => ({ ...previous, position }))}
-                />
-                <ControlGroup
-                  label="Density"
-                  value={
-                    typeof settings.scale === 'number' ? String(settings.scale) : settings.scale
-                  }
-                  options={scaleOptions}
-                  columns={3}
-                  hint="Compact is 36px, Comfortable is 44px, and Gloved is 52px."
-                  disabled={!settings.toolbar}
-                  describedBy={toolbarOffId}
-                  onChange={(scale) =>
-                    setSettings((previous) => ({
-                      ...previous,
-                      scale: scale as ViewerDemoScalePreset,
-                    }))
-                  }
-                />
-                <RangeControl
-                  label="Viewer radius"
-                  value={settings.radius}
-                  min={0}
-                  max={32}
-                  onChange={(radius) => setSettings((previous) => ({ ...previous, radius }))}
-                />
-                <ControlGroup
-                  label="Appearance"
-                  value={settings.theme}
-                  options={themeOptions}
-                  columns={3}
-                  hint="Forces the viewer's appearance. System follows the site theme live."
-                  onChange={(theme) => setSettings((previous) => ({ ...previous, theme }))}
-                />
-              </div>
-            )}
-
-            {tab === 'extensions' && (
-              <div
-                role="tabpanel"
-                id={`${tabsId}-extensions-panel`}
-                aria-labelledby={`${tabsId}-extensions-tab`}
-                className="flex min-h-0 flex-1 flex-col gap-3"
-              >
-                {loadedCount > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {settings.extensions.map((id) => (
-                      <ExtensionChip
-                        key={id}
-                        id={id}
-                        status={extensionStatus[id] ?? 'idle'}
-                        onRemove={handleExtensionRemove}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-pretty text-[13px] text-muted-foreground leading-relaxed">
-                    Add extensions live—no viewer restart.
-                  </p>
-                )}
-                <ExtensionPicker
-                  loaded={settings.extensions}
-                  status={extensionStatus}
-                  onToggle={handleExtensionToggle}
-                />
-              </div>
-            )}
-
-            {tab === 'code' && (
-              <div
-                role="tabpanel"
-                id={`${tabsId}-code-panel`}
-                aria-labelledby={`${tabsId}-code-tab`}
-                className="flex min-h-0 flex-1 flex-col gap-2"
-              >
-                <p className="text-muted-foreground text-xs leading-snug">
-                  This is the current setup as you would write it. Extensions are the{' '}
-                  <code className="text-foreground">extensions</code> prop here; the demo mounts
-                  them as children so it can unload one in place.
-                </p>
-                <pre className="min-h-0 flex-1 overflow-auto rounded-md border border-border bg-background p-2.5 font-mono text-code leading-relaxed">
-                  {snippet}
-                </pre>
-                <div className="grid gap-1.5">
-                  <CopyButton label="Copy code" value={() => snippet} />
-                  <CopyButton
-                    label="Copy link to this setup"
-                    value={() =>
-                      `${window.location.origin}${window.location.pathname}?${buildShareParams(settings)}`
-                    }
-                  />
-                  <CopyButton
-                    label="Copy install command"
-                    value={() => 'npx shadcn@latest add @cantera/aps-viewer'}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex min-h-11 items-center justify-between gap-2 border-border border-t px-3 py-2">
-            <span
-              className={cn(
-                'min-w-0 text-xs tabular-nums',
-                error || failedExtensionId ? 'text-status-warning' : 'text-muted-foreground',
-              )}
-            >
-              {error ??
-                (failedExtensionId
-                  ? `${extensionLabel(failedExtensionId)} failed to load`
-                  : loadedCount === 0
-                    ? 'No extensions loaded'
-                    : `${loadedCount} extension${loadedCount === 1 ? '' : 's'} loaded`)}
-            </span>
-            <div className="flex shrink-0 items-center gap-1">
-              {failedExtensionId && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="xs"
-                  onClick={() => handleExtensionRetry(failedExtensionId)}
-                >
-                  Retry
-                </Button>
-              )}
+                Viewer inspector
+              </h3>
               <Button
-                type="button"
                 variant="ghost"
-                size="xs"
-                disabled={isDefault}
-                onClick={() => setSettings(DEFAULT_SETTINGS)}
+                size="icon-xs"
+                aria-label="Collapse viewer settings"
+                className="ml-auto"
+                onClick={() => setInspectorOpen(false)}
               >
-                Reset
+                <XIcon />
               </Button>
             </div>
-          </div>
-        </aside>
+            <div
+              role="tablist"
+              aria-labelledby={dockHeadingId}
+              className="grid grid-cols-3 border-border border-b px-2 pt-2"
+            >
+              {TABS.map((entry, index) => {
+                const selected = entry.id === tab
+                return (
+                  <button
+                    key={entry.id}
+                    ref={(node) => {
+                      tabRefs.current[entry.id] = node
+                    }}
+                    type="button"
+                    role="tab"
+                    id={`${tabsId}-${entry.id}-tab`}
+                    aria-selected={selected}
+                    aria-controls={`${tabsId}-${entry.id}-panel`}
+                    tabIndex={selected ? 0 : -1}
+                    className={cn(
+                      'min-h-11 rounded-t-md px-2 pb-1 font-medium text-[13px] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-1',
+                      selected
+                        ? 'bg-background text-foreground shadow-[inset_0_-2px_0_0_var(--color-foreground)]'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                    onClick={() => setTab(entry.id)}
+                    onKeyDown={(event) => onTabKeyDown(event, index)}
+                  >
+                    {entry.label}
+                    {entry.id === 'extensions' && loadedCount > 0 && (
+                      <span className="ms-1 text-muted-foreground tabular-nums">{loadedCount}</span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col p-3">
+              {tab === 'setup' && (
+                <div
+                  role="tabpanel"
+                  id={`${tabsId}-setup-panel`}
+                  aria-labelledby={`${tabsId}-setup-tab`}
+                  className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto"
+                >
+                  <fieldset className="min-w-0">
+                    <legend className="mb-1.5 font-medium text-[13px] text-foreground">
+                      Chrome
+                    </legend>
+                    <label
+                      // The checkbox primitive hooks its focus styles off this group.
+                      className="group/field-label flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md px-1 text-sm"
+                      htmlFor={toolbarFieldId}
+                    >
+                      <span id={toolbarLabelId}>Native toolbar</span>
+                      <Checkbox
+                        id={toolbarFieldId}
+                        // The primitive renders a button, so the wrapping label alone
+                        // does not name it — point at the text explicitly.
+                        aria-labelledby={toolbarLabelId}
+                        checked={settings.toolbar}
+                        onCheckedChange={(checked) => {
+                          setModelLoaded(false)
+                          setError(null)
+                          setSettings((previous) => ({ ...previous, toolbar: checked }))
+                        }}
+                      />
+                    </label>
+                    <label
+                      className="group/field-label flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md px-1 text-sm"
+                      htmlFor={viewCubeFieldId}
+                    >
+                      <span id={viewCubeLabelId}>ViewCube</span>
+                      <Checkbox
+                        id={viewCubeFieldId}
+                        aria-labelledby={viewCubeLabelId}
+                        checked={settings.viewCube}
+                        onCheckedChange={(viewCube) =>
+                          setSettings((previous) => ({ ...previous, viewCube }))
+                        }
+                      />
+                    </label>
+                    {!settings.toolbar && (
+                      <p id={toolbarOffId} className="text-muted-foreground text-xs leading-snug">
+                        Position and density apply to the native toolbar.
+                      </p>
+                    )}
+                  </fieldset>
+                  <ControlGroup
+                    label="Position"
+                    value={settings.position}
+                    options={positionOptions}
+                    columns={4}
+                    disabled={!settings.toolbar}
+                    describedBy={toolbarOffId}
+                    onChange={(position) => setSettings((previous) => ({ ...previous, position }))}
+                  />
+                  <ControlGroup
+                    label="Density"
+                    value={
+                      typeof settings.scale === 'number' ? String(settings.scale) : settings.scale
+                    }
+                    options={scaleOptions}
+                    columns={3}
+                    hint="Compact is 36px, Comfortable is 44px, and Gloved is 52px."
+                    disabled={!settings.toolbar}
+                    describedBy={toolbarOffId}
+                    onChange={(scale) =>
+                      setSettings((previous) => ({
+                        ...previous,
+                        scale: scale as ViewerDemoScalePreset,
+                      }))
+                    }
+                  />
+                  <RangeControl
+                    label="Viewer radius"
+                    value={settings.radius}
+                    min={0}
+                    max={32}
+                    onChange={(radius) => setSettings((previous) => ({ ...previous, radius }))}
+                  />
+                  <ControlGroup
+                    label="Appearance"
+                    value={settings.theme}
+                    options={themeOptions}
+                    columns={3}
+                    hint="Forces the viewer's appearance. System follows the site theme live."
+                    onChange={(theme) => setSettings((previous) => ({ ...previous, theme }))}
+                  />
+                </div>
+              )}
+
+              {tab === 'extensions' && (
+                <div
+                  role="tabpanel"
+                  id={`${tabsId}-extensions-panel`}
+                  aria-labelledby={`${tabsId}-extensions-tab`}
+                  className="flex min-h-0 flex-1 flex-col gap-3"
+                >
+                  {loadedCount > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {settings.extensions.map((id) => (
+                        <ExtensionChip
+                          key={id}
+                          id={id}
+                          status={extensionStatus[id] ?? 'idle'}
+                          onRemove={handleExtensionRemove}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-pretty text-[13px] text-muted-foreground leading-relaxed">
+                      Add extensions live—no viewer restart.
+                    </p>
+                  )}
+                  <ExtensionPicker
+                    loaded={settings.extensions}
+                    status={extensionStatus}
+                    onToggle={handleExtensionToggle}
+                  />
+                </div>
+              )}
+
+              {tab === 'code' && (
+                <div
+                  role="tabpanel"
+                  id={`${tabsId}-code-panel`}
+                  aria-labelledby={`${tabsId}-code-tab`}
+                  className="flex min-h-0 flex-1 flex-col gap-2"
+                >
+                  <p className="text-muted-foreground text-xs leading-snug">
+                    This is the current setup as you would write it. Extensions are the{' '}
+                    <code className="text-foreground">extensions</code> prop here; the demo mounts
+                    them as children so it can unload one in place.
+                  </p>
+                  <pre className="min-h-0 flex-1 overflow-auto rounded-md border border-border bg-background p-2.5 font-mono text-code leading-relaxed">
+                    {snippet}
+                  </pre>
+                  <div className="grid gap-1.5">
+                    <CopyButton label="Copy code" value={() => snippet} />
+                    <CopyButton
+                      label="Copy link to this setup"
+                      value={() =>
+                        `${window.location.origin}${window.location.pathname}?${buildShareParams(settings)}`
+                      }
+                    />
+                    <CopyButton
+                      label="Copy install command"
+                      value={() => 'npx shadcn@latest add @cantera/aps-viewer'}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex min-h-11 items-center justify-between gap-2 border-border border-t px-3 py-2">
+              <span
+                className={cn(
+                  'min-w-0 text-xs tabular-nums',
+                  error || failedExtensionId ? 'text-status-warning' : 'text-muted-foreground',
+                )}
+              >
+                {error ??
+                  (failedExtensionId
+                    ? `${extensionLabel(failedExtensionId)} failed to load`
+                    : loadedCount === 0
+                      ? 'No extensions loaded'
+                      : `${loadedCount} extension${loadedCount === 1 ? '' : 's'} loaded`)}
+              </span>
+              <div className="flex shrink-0 items-center gap-1">
+                {failedExtensionId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    onClick={() => handleExtensionRetry(failedExtensionId)}
+                  >
+                    Retry
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  disabled={isDefault}
+                  onClick={() => setSettings(DEFAULT_SETTINGS)}
+                >
+                  Reset
+                </Button>
+              </div>
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   )
