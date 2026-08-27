@@ -57,7 +57,7 @@ The native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are 
 
 ## APSViewerSettings props
 
-- `value` (`APSViewerSettingsValue`) — Controlled settings: toolbar on/off, toolbarPosition, toolbarScale, viewCube, and theme. Spread apsViewerPropsFor(value) onto APSViewer to apply them.
+- `value` (`APSViewerSettingsValue`) — Controlled settings: toolbar on/off, toolbarPosition, toolbarScale (a preset or an exact pixel box the density slider drives across 32–64), viewCube, and theme. Spread apsViewerPropsFor(value) onto APSViewer to apply them.
 - `onValueChange` (`(value: APSViewerSettingsValue) => void`) — Called with the next settings object when the user changes a control.
 - `open / onOpenChange / defaultOpen` (`boolean / callback / boolean`, default `false`) — Panel visibility, controlled or uncontrolled. The panel starts collapsed; the trigger sits in the SDK toolbar, or a corner button when the native toolbar is off.
 - `label` (`string`, default `'Viewer settings'`) — Names the trigger, its tooltip, and the panel heading.

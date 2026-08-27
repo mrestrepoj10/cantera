@@ -1790,7 +1790,7 @@ export const apiTables: ApiTablesByItem = {
           name: 'value',
           type: 'APSViewerSettingsValue',
           description:
-            'Controlled settings: toolbar on/off, toolbarPosition, toolbarScale, viewCube, and theme. Spread apsViewerPropsFor(value) onto APSViewer to apply them.',
+            'Controlled settings: toolbar on/off, toolbarPosition, toolbarScale (a preset or an exact pixel box the density slider drives across 32–64), viewCube, and theme. Spread apsViewerPropsFor(value) onto APSViewer to apply them.',
         },
         {
           name: 'onValueChange',

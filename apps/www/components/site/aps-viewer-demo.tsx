@@ -195,13 +195,15 @@ const positionOptions: { value: APSViewerToolbarPosition; label: string }[] = [
   { value: 'right', label: 'Right' },
 ]
 
-type ViewerDemoScalePreset = 'sm' | 'md' | 'lg'
+const SCALE_PRESET_PX = { sm: 36, md: 44, lg: 52 } as const
 
-const scaleOptions: { value: ViewerDemoScalePreset; label: string }[] = [
-  { value: 'sm', label: 'Compact' },
-  { value: 'md', label: 'Comfortable' },
-  { value: 'lg', label: 'Gloved' },
-]
+function scaleToPx(scale: APSViewerToolbarScale): number {
+  if (typeof scale === 'number') {
+    if (!Number.isFinite(scale)) return SCALE_PRESET_PX.md
+    return Math.min(64, Math.max(32, scale))
+  }
+  return SCALE_PRESET_PX[scale]
+}
 
 const themeOptions: { value: ViewerTheme; label: string }[] = [
   { value: 'system', label: 'System' },
@@ -977,22 +979,14 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                     describedBy={toolbarOffId}
                     onChange={(position) => setSettings((previous) => ({ ...previous, position }))}
                   />
-                  <ControlGroup
-                    label="Density"
-                    value={
-                      typeof settings.scale === 'number' ? String(settings.scale) : settings.scale
-                    }
-                    options={scaleOptions}
-                    columns={3}
-                    hint="Compact is 36px, Comfortable is 44px, and Gloved is 52px."
+                  <RangeControl
+                    label="Toolbar density"
+                    value={scaleToPx(settings.scale)}
+                    min={32}
+                    max={64}
                     disabled={!settings.toolbar}
                     describedBy={toolbarOffId}
-                    onChange={(scale) =>
-                      setSettings((previous) => ({
-                        ...previous,
-                        scale: scale as ViewerDemoScalePreset,
-                      }))
-                    }
+                    onChange={(scale) => setSettings((previous) => ({ ...previous, scale }))}
                   />
                   <RangeControl
                     label="Viewer radius"

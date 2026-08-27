@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 
 export type APSViewerSettingsTheme = 'system' | 'light' | 'dark'
-export type APSViewerSettingsScale = Extract<APSViewerToolbarScale, string>
+export type APSViewerSettingsScale = APSViewerToolbarScale
 
 export interface APSViewerSettingsValue {
   toolbar: boolean
@@ -178,11 +178,17 @@ const POSITION_OPTIONS: { value: APSViewerToolbarPosition; label: string }[] = [
   { value: 'right', label: 'Right' },
 ]
 
-const SCALE_OPTIONS: { value: APSViewerSettingsScale; label: string }[] = [
-  { value: 'sm', label: 'Compact' },
-  { value: 'md', label: 'Comfortable' },
-  { value: 'lg', label: 'Gloved' },
-]
+const SCALE_PRESET_PX = { sm: 36, md: 44, lg: 52 } as const
+const MIN_SCALE_PX = 32
+const MAX_SCALE_PX = 64
+
+function scaleToPx(scale: APSViewerSettingsScale): number {
+  if (typeof scale === 'number') {
+    if (!Number.isFinite(scale)) return SCALE_PRESET_PX.md
+    return Math.min(MAX_SCALE_PX, Math.max(MIN_SCALE_PX, scale))
+  }
+  return SCALE_PRESET_PX[scale]
+}
 
 const THEME_OPTIONS: { value: APSViewerSettingsTheme; label: string }[] = [
   { value: 'system', label: 'System' },
@@ -265,6 +271,60 @@ function ToggleRow({
         onCheckedChange={onChange}
       />
     </label>
+  )
+}
+
+function SliderRow({
+  label,
+  value,
+  min,
+  max,
+  disabled = false,
+  describedBy,
+  onChange,
+}: {
+  label: string
+  value: number
+  min: number
+  max: number
+  disabled?: boolean
+  describedBy?: string
+  onChange: (value: number) => void
+}) {
+  const id = useId()
+  return (
+    <div className="min-w-0">
+      <div className="flex items-baseline justify-between gap-3">
+        <label htmlFor={id} className="font-medium text-[13px] text-foreground">
+          {label}
+        </label>
+        <output htmlFor={id} className="font-mono text-muted-foreground text-xs tabular-nums">
+          {value}px
+        </output>
+      </div>
+      <div className="min-w-0 px-1">
+        <input
+          id={id}
+          type="range"
+          min={min}
+          max={max}
+          step="1"
+          value={value}
+          aria-disabled={disabled}
+          aria-describedby={disabled ? describedBy : undefined}
+          onChange={(event) => {
+            if (!disabled) onChange(Number(event.currentTarget.value))
+          }}
+          onKeyDown={(event) => {
+            if (disabled) event.preventDefault()
+          }}
+          onPointerDown={(event) => {
+            if (disabled) event.preventDefault()
+          }}
+          className="h-11 w-full min-w-0 max-w-full cursor-pointer accent-foreground aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+        />
+      </div>
+    </div>
   )
 }
 
@@ -371,11 +431,11 @@ export function APSViewerSettings({
               describedBy={toolbarOffId}
               onChange={(toolbarPosition) => onValueChange({ ...value, toolbarPosition })}
             />
-            <SegmentedControl
+            <SliderRow
               label="Density"
-              value={value.toolbarScale}
-              options={SCALE_OPTIONS}
-              columns={3}
+              value={scaleToPx(value.toolbarScale)}
+              min={MIN_SCALE_PX}
+              max={MAX_SCALE_PX}
               disabled={!value.toolbar}
               describedBy={toolbarOffId}
               onChange={(toolbarScale) => onValueChange({ ...value, toolbarScale })}
