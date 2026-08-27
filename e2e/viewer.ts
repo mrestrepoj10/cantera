@@ -18,6 +18,17 @@ export async function gotoViewerDemo(page: Page, path: string): Promise<void> {
   )
 }
 
+/** Idempotent: the showcase opens the inspector by default, but if it is
+ * collapsed the settings trigger sits in the SDK toolbar (or a corner button
+ * when the native toolbar is off). */
+export async function openViewerInspector(page: Page): Promise<void> {
+  const inspector = page.getByRole('complementary', { name: 'Viewer inspector' })
+  if ((await inspector.count()) === 0) {
+    await page.getByRole('button', { name: 'Viewer settings' }).click()
+  }
+  await expect(inspector).toBeVisible()
+}
+
 /** Waits for the viewer to report a started runtime and a loaded model. */
 export async function waitForViewerModel(page: Page) {
   const viewer = page.locator('[data-aps-viewer-status]')

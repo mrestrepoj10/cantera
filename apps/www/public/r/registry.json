@@ -589,9 +589,10 @@
       "type": "registry:component",
       "title": "APS Viewer",
       "author": "MR <contact@bimframe.co>",
-      "description": "A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, and composable hooks.",
+      "description": "A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar.",
       "categories": ["viewer", "models", "autodesk"],
-      "registryDependencies": ["@cantera/viewer-types"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": ["button", "checkbox", "@cantera/viewer-types"],
       "files": [
         {
           "path": "registry/ui/aps-viewer/aps-viewer.tsx",
@@ -624,12 +625,17 @@
           "target": "components/ui/aps-viewer/toolbar.ts"
         },
         {
+          "path": "registry/ui/aps-viewer/settings.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/settings.tsx"
+        },
+        {
           "path": "registry/ui/aps-viewer/index.ts",
           "type": "registry:ui",
           "target": "components/ui/aps-viewer/index.ts"
         }
       ],
-      "docs": "APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance, viewCube, radius, toolbarPosition, and toolbarScale changes apply in place. toolbar=none uses the core Viewer3D without Autodesk's native toolbar; viewCube controls the cube independently.\n\nThe native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are not a published stable contract, so docking is best-effort and should be checked when changing the Viewer major version. Autodesk Viewer also renders third-party DOM that cantera cannot repair. The docs accessibility suite excludes only the subtree rooted inside the viewer canvas; controls you add around or over the viewer remain in scope. Audit the inherited Autodesk controls against your own product requirements."
+      "docs": "APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance, viewCube, radius, toolbarPosition, and toolbarScale changes apply in place. toolbar=none uses the core Viewer3D without Autodesk's native toolbar; viewCube controls the cube independently.\n\nAPSViewerSettings renders an end-user settings panel as a viewer child: a trigger button appended to the SDK toolbar (a corner button when the native toolbar is off) opens a floating panel over the canvas, collapsed by default. It is controlled — hold an APSViewerSettingsValue in state, spread apsViewerPropsFor(value) onto APSViewer, and pass value/onValueChange to the panel. Extra sections compose through children; APSViewerSettingsTrigger is exported alone for custom panels.\n\nThe native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are not a published stable contract, so docking is best-effort and should be checked when changing the Viewer major version. Autodesk Viewer also renders third-party DOM that cantera cannot repair. The docs accessibility suite excludes only the subtree rooted inside the viewer canvas; controls you add around or over the viewer remain in scope. Audit the inherited Autodesk controls against your own product requirements."
     },
     {
       "name": "model-status-card",

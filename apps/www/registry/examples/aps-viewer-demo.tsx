@@ -1,6 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { APSViewer as APSViewerCanvas } from '@/components/ui/aps-viewer/aps-viewer'
+import {
+  APSViewerSettings,
+  type APSViewerSettingsValue,
+  apsViewerPropsFor,
+  DEFAULT_APS_VIEWER_SETTINGS,
+} from '@/components/ui/aps-viewer/settings'
 import type { GetAccessToken } from '@/lib/viewer-types'
 
 const getAccessToken: GetAccessToken = async () => {
@@ -11,6 +18,7 @@ const getAccessToken: GetAccessToken = async () => {
 
 export function ApsViewerDemo() {
   const urn = process.env.NEXT_PUBLIC_APS_VIEWER_DEMO_URN
+  const [settings, setSettings] = useState<APSViewerSettingsValue>(DEFAULT_APS_VIEWER_SETTINGS)
 
   if (!urn) {
     return (
@@ -26,7 +34,14 @@ export function ApsViewerDemo() {
   return (
     <main>
       <h1 className="sr-only">APS Viewer example</h1>
-      <APSViewerCanvas urn={urn} getAccessToken={getAccessToken} className="min-h-[32rem] w-full" />
+      <APSViewerCanvas
+        urn={urn}
+        getAccessToken={getAccessToken}
+        {...apsViewerPropsFor(settings)}
+        className="min-h-[32rem] w-full"
+      >
+        <APSViewerSettings value={settings} onValueChange={setSettings} />
+      </APSViewerCanvas>
     </main>
   )
 }

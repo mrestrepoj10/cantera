@@ -122,8 +122,11 @@ const APS_VIEWER_TOOLBAR_CSS = `
   left: auto !important;
 }
 
-.adsk-toolbar.cantera-toolbar--left .adsk-control-group,
-.adsk-toolbar.cantera-toolbar--right .adsk-control-group {
+/* :not(.adsk-hidden): forcing display on every group would also un-hide
+ * LMV's dormant sub-toolbars (measure's Done/delete group), overflowing the
+ * vertical layout with phantom buttons. */
+.adsk-toolbar.cantera-toolbar--left .adsk-control-group:not(.adsk-hidden),
+.adsk-toolbar.cantera-toolbar--right .adsk-control-group:not(.adsk-hidden) {
   display: flex;
   flex-direction: column;
   width: auto;

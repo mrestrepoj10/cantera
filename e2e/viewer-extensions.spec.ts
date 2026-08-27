@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-import { gotoViewerDemo, waitForViewerModel } from './viewer'
+import { gotoViewerDemo, openViewerInspector, waitForViewerModel } from './viewer'
 
 test.describe('Viewer demo extensions', () => {
   test.use({ colorScheme: 'light', viewport: { width: 1440, height: 1000 } })
@@ -22,6 +22,7 @@ test.describe('Viewer demo extensions', () => {
     // The unload control lives in the Extensions tab; the inspector opens on
     // Setup. Unloading unmounts the loader, which unloads the extension in
     // place — the model stays loaded, so the viewer never left the ready state.
+    await openViewerInspector(page)
     await page.getByRole('tab', { name: /^Extensions/ }).click()
     await page.getByRole('button', { name: 'Unload Markups toolbar' }).click()
     await expect(markupButton).toBeHidden()
