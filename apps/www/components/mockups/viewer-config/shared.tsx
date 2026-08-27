@@ -120,13 +120,12 @@ const TOOLBAR_ANCHOR = {
 
 /** The stand-in for the SDK's own toolbar, so the mockups can be judged on how
  * they sit next to it rather than in isolation. */
-function NativeToolbar({ config }: { config: ViewerConfig }) {
+function NativeToolbar({ config, trailing }: { config: ViewerConfig; trailing?: ReactNode }) {
   const box = SCALE_PX[config.toolbarScale]
   const active = EXTENSIONS.filter((extension) => config.extensions.includes(extension.id))
   const vertical = config.toolbarPosition === 'left' || config.toolbarPosition === 'right'
   return (
     <div
-      aria-hidden
       className={cn('pointer-events-none absolute flex', TOOLBAR_ANCHOR[config.toolbarPosition])}
     >
       <div
@@ -135,24 +134,43 @@ function NativeToolbar({ config }: { config: ViewerConfig }) {
           vertical && 'flex-col',
         )}
       >
-        <div
-          className="grid place-items-center rounded-md bg-white/15 text-white"
-          style={{ width: box, height: box }}
-        >
-          <MousePointer2Icon className="size-4" />
-        </div>
-        {active.map((extension) => (
+        <div aria-hidden className={cn('flex items-center gap-0.5', vertical && 'flex-col')}>
           <div
-            key={extension.id}
-            className="grid place-items-center rounded-md text-white/70"
+            className="grid place-items-center rounded-md bg-white/15 text-white"
             style={{ width: box, height: box }}
           >
-            <extension.icon className="size-4" />
+            <MousePointer2Icon className="size-4" />
           </div>
-        ))}
+          {active.map((extension) => (
+            <div
+              key={extension.id}
+              className="grid place-items-center rounded-md text-white/70"
+              style={{ width: box, height: box }}
+            >
+              <extension.icon className="size-4" />
+            </div>
+          ))}
+        </div>
+        {trailing && (
+          <div
+            className={cn(
+              'pointer-events-auto flex items-center gap-0.5 border-white/20',
+              vertical ? 'mt-1 flex-col border-t pt-1' : 'ml-1 border-l pl-1',
+            )}
+            style={vertical ? { width: box } : { height: box }}
+          >
+            {trailing}
+          </div>
+        )}
       </div>
     </div>
   )
+}
+
+/** The pixel box the SDK toolbar renders its buttons at, so an injected
+ * control can match it exactly. */
+export function nativeToolbarBox(config: ViewerConfig): number {
+  return SCALE_PX[config.toolbarScale]
 }
 
 function ViewCube() {
@@ -223,10 +241,12 @@ export function MockCanvas({
   config,
   children,
   className,
+  toolbarTrailing,
 }: {
   config: ViewerConfig
   children?: ReactNode
   className?: string
+  toolbarTrailing?: ReactNode
 }) {
   const dark = config.theme !== 'light'
   return (
@@ -242,7 +262,7 @@ export function MockCanvas({
     >
       <Massing />
       {config.viewCube && <ViewCube />}
-      {config.toolbar && <NativeToolbar config={config} />}
+      {config.toolbar && <NativeToolbar config={config} trailing={toolbarTrailing} />}
       <span
         className={cn(
           'absolute bottom-3 left-4 font-mono text-[11px] uppercase tracking-[0.14em]',
