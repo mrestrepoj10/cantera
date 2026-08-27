@@ -864,7 +864,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                 variant="ghost"
                 size="icon-xs"
                 aria-label="Collapse viewer settings"
-                className="ml-auto"
+                className="relative ml-auto after:absolute after:-inset-2.5"
                 onClick={() => setInspectorOpen(false)}
               >
                 <XIcon />
