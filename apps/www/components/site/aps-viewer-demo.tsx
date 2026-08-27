@@ -10,13 +10,13 @@ import {
 } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import { ViewerSettingsTrigger } from '@/components/site/viewer-settings-trigger'
 import {
   APSViewer,
   type APSViewerToolbarPosition,
   type APSViewerToolbarScale,
 } from '@/components/ui/aps-viewer/aps-viewer'
 import { type APSExtensionResult, useAPSExtension } from '@/components/ui/aps-viewer/hooks'
+import { APSViewerSettingsTrigger } from '@/components/ui/aps-viewer/settings'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -810,7 +810,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
               <DemoExtension key={id} id={id} onStatus={handleExtensionStatus} />
             ))}
             {settings.toolbar && (
-              <ViewerSettingsTrigger
+              <APSViewerSettingsTrigger
                 open={inspectorOpen}
                 onToggle={() => setInspectorOpen((open) => !open)}
               />

@@ -1781,6 +1781,54 @@ export const apiTables: ApiTablesByItem = {
         },
       ],
     },
+    {
+      caption: 'APSViewerSettings props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'value',
+          type: 'APSViewerSettingsValue',
+          description:
+            'Controlled settings: toolbar on/off, toolbarPosition, toolbarScale, viewCube, and theme. Spread apsViewerPropsFor(value) onto APSViewer to apply them.',
+        },
+        {
+          name: 'onValueChange',
+          type: '(value: APSViewerSettingsValue) => void',
+          description: 'Called with the next settings object when the user changes a control.',
+        },
+        {
+          name: 'open / onOpenChange / defaultOpen',
+          type: 'boolean / callback / boolean',
+          defaultValue: 'false',
+          description:
+            'Panel visibility, controlled or uncontrolled. The panel starts collapsed; the trigger sits in the SDK toolbar, or a corner button when the native toolbar is off.',
+        },
+        {
+          name: 'label',
+          type: 'string',
+          defaultValue: "'Viewer settings'",
+          description: 'Names the trigger, its tooltip, and the panel heading.',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: 'Extra sections appended below the built-in controls.',
+        },
+        {
+          name: 'APSViewerSettingsTrigger',
+          type: 'component',
+          description:
+            'The toolbar-mounted trigger alone — our control group appended to the SDK toolbar after a divider, inheriting toolbar position and scale — for wiring a custom panel.',
+        },
+        {
+          name: 'DEFAULT_APS_VIEWER_SETTINGS / apsViewerPropsFor',
+          type: 'constant / function',
+          description:
+            'The starting settings object, and the mapping from a settings object to APSViewer props.',
+        },
+      ],
+    },
   ],
   'model-status-card': [
     {

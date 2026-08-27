@@ -314,16 +314,3 @@
 .dark .shiki span {
   color: var(--shiki-dark);
 }
-
-/* Showcase-only: the viewer-settings control group the demo appends to the
-   SDK toolbar, separated from the native groups by a divider. Mid-gray reads
-   on both LMV themes. */
-.adsk-control-group.cantera-site-settings-group {
-  border-inline-start: 1px solid rgb(128 128 128 / 40%);
-}
-
-.cantera-toolbar--left .cantera-site-settings-group,
-.cantera-toolbar--right .cantera-site-settings-group {
-  border-inline-start: 0;
-  border-top: 1px solid rgb(128 128 128 / 40%);
-}
