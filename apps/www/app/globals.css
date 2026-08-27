@@ -1,7 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* `.light` re-scopes the light palette inside a dark page (and vice versa via
+   `.dark`), so a floating surface can follow a forced viewer appearance. */
+@custom-variant dark (&:is(.dark *):not(:is(.light, .light *)));
 @custom-variant data-open {
   &:where([data-state="open"]),
   &:where([data-open]:not([data-open="false"])) {
@@ -164,7 +166,8 @@
   }
 }
 
-:root {
+:root,
+.light {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

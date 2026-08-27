@@ -1,6 +1,6 @@
 import { expect, type Locator, test } from '@playwright/test'
 
-import { gotoViewerDemo, waitForViewerModel } from './viewer'
+import { gotoViewerDemo, openViewerInspector, waitForViewerModel } from './viewer'
 
 // Each position exercises docking and orientation once; each scale exercises
 // button-box sizing once. The full position×scale product re-verifies the same
@@ -105,6 +105,7 @@ test.describe('APS Viewer toolbar', () => {
   test('viewer radius updates in place without overflowing the inspector', async ({ page }) => {
     await gotoViewerDemo(page, '/components/aps-viewer?viewerRadius=0')
     const viewer = await waitForViewerModel(page)
+    await openViewerInspector(page)
     const workbench = page.locator('[data-viewer-workbench]')
     const canvas = viewer.locator('canvas').first()
     const canvasHandle = await canvas.elementHandle()
@@ -144,6 +145,7 @@ test.describe('APS Viewer toolbar', () => {
     const viewer = await waitForViewerModel(page)
     const canvas = viewer.locator('canvas').first()
     const canvasHandle = await canvas.elementHandle()
+    await openViewerInspector(page)
     const viewCube = viewer.locator('.viewcubeWrapper')
     const toggle = page.getByRole('checkbox', { name: 'ViewCube' })
 
@@ -160,6 +162,7 @@ test.describe('APS Viewer toolbar', () => {
   test('toolbar can be removed and restored without losing the model', async ({ page }) => {
     await gotoViewerDemo(page, '/components/aps-viewer')
     const viewer = await waitForViewerModel(page)
+    await openViewerInspector(page)
     const toggle = page.getByRole('checkbox', { name: 'Native toolbar' })
 
     await toggle.click()

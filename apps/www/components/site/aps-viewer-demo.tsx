@@ -675,7 +675,7 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
   const tabsId = useId()
 
   const [settings, setSettings] = useState<ViewerDemoSettings>(DEFAULT_SETTINGS)
-  const [inspectorOpen, setInspectorOpen] = useState(true)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
   const [tab, setTab] = useState<TabId>('setup')
   const [error, setError] = useState<string | null>(null)
   const [modelLoaded, setModelLoaded] = useState(false)
@@ -821,7 +821,10 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
                       aria-label="Viewer settings"
                       variant="ghost"
                       onClick={() => setInspectorOpen(true)}
-                      className="absolute top-4 left-4 z-10 size-11 rounded-xl bg-popover/90 shadow-md ring-1 ring-foreground/10 backdrop-blur"
+                      className={cn(
+                        'absolute top-4 left-4 z-10 size-11 rounded-xl bg-popover/90 shadow-md ring-1 ring-foreground/10 backdrop-blur',
+                        settings.theme !== 'system' && settings.theme,
+                      )}
                     />
                   }
                 >
@@ -851,7 +854,12 @@ export function APSViewerDemo({ urn }: { urn?: string }) {
         {inspectorOpen && (
           <aside
             aria-labelledby={dockHeadingId}
-            className="absolute top-4 left-4 z-10 flex max-h-[calc(100%-2rem)] w-80 max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-lg bg-popover/95 text-popover-foreground shadow-lg ring-1 ring-foreground/10 backdrop-blur"
+            className={cn(
+              'absolute top-4 left-4 z-10 flex max-h-[calc(100%-2rem)] w-80 max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-lg bg-popover/95 text-popover-foreground shadow-lg ring-1 ring-foreground/10 backdrop-blur',
+              // A forced viewer appearance re-scopes the site palette, so the
+              // panel reads as part of the canvas it floats over.
+              settings.theme !== 'system' && settings.theme,
+            )}
           >
             <div className="flex items-center gap-1.5 border-border/60 border-b px-2.5 py-1.5">
               <h3
