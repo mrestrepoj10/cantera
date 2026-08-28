@@ -942,6 +942,7 @@ Files written into the consumer project:
 - app/models/page.tsx
 - app/models/loading.tsx
 - components/model-browser.tsx
+- components/model-finder.ts
 - app/api/models/tree/route.ts
 - app/api/viewer-token/route.ts
 

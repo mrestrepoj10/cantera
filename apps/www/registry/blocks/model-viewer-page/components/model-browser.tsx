@@ -10,9 +10,10 @@ import { ModelStatusCard } from '@/components/ui/model-status-card'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { UserAccountBadge } from '@/components/ui/user-account-badge'
 import type { OAuthAccount } from '@/lib/oauth-types'
-import type { BrowsePathSegment, Item, ItemVersion, ModelTranslation } from '@/lib/project-types'
+import type { Item, ItemVersion, ModelTranslation } from '@/lib/project-types'
 import { AEC_STARTER_EXTENSIONS } from '@/lib/viewer-extension-types'
 import type { GetAccessToken } from '@/lib/viewer-types'
+import { useModelFinder } from './model-finder'
 
 interface TreeResponse {
   nodes?: HubTreeNode[]
@@ -34,30 +35,6 @@ interface TreeRequest {
   projectId?: string
   folderId?: string
   itemId?: string
-}
-
-interface LoadedFinderEntry {
-  item: Item
-  version?: ItemVersion
-  path: BrowsePathSegment[]
-  caption?: string
-}
-
-interface FinderScopeFolder {
-  id: string
-  path: BrowsePathSegment[]
-}
-
-interface FinderScope {
-  id: string
-  label: string
-  projectId: string
-  folders: FinderScopeFolder[]
-}
-
-interface FinderSearchResponse {
-  entries?: Array<{ item: Item; version: ItemVersion }>
-  error?: string
 }
 
 function replaceChildren(
@@ -143,79 +120,6 @@ function paramsFor(request: TreeRequest): URLSearchParams {
   return params
 }
 
-function loadedFinderEntries(
-  nodes: HubTreeNode[],
-  path: BrowsePathSegment[] = [],
-  parentItem?: Item,
-): LoadedFinderEntry[] {
-  const entries: LoadedFinderEntry[] = []
-  for (const node of nodes) {
-    if (node.type === 'version') {
-      if (parentItem) entries.push({ item: parentItem, version: node.value, path })
-      continue
-    }
-    if (node.type === 'item') {
-      entries.push({ item: node.value, path })
-      if (node.children?.length) {
-        entries.push(...loadedFinderEntries(node.children, path, node.value))
-      }
-      continue
-    }
-    const nextPath = [...path, { id: node.value.id, name: node.name, type: node.type }]
-    if (node.children?.length) entries.push(...loadedFinderEntries(node.children, nextPath))
-  }
-  return entries
-}
-
-function browsePath(nodes: HubTreeNode[]): BrowsePathSegment[] {
-  return nodes.flatMap((node) => {
-    if (node.type === 'item' || node.type === 'version') return []
-    return [{ id: node.value.id, name: node.name, type: node.type }]
-  })
-}
-
-function finderScopeFor(
-  node: HubTreeBranchNode,
-  path: HubTreeNode[],
-  children: HubTreeNode[] | undefined,
-): FinderScope | undefined {
-  if (node.type === 'folder') {
-    const project = path.find((entry) => entry.type === 'project')
-    if (project?.type !== 'project') return undefined
-    return {
-      id: node.id,
-      label: node.name,
-      projectId: project.value.id,
-      folders: [{ id: node.value.id, path: browsePath(path) }],
-    }
-  }
-  if (node.type !== 'project') return undefined
-  const projectPath = browsePath(path)
-  const folders = (children ?? []).flatMap((child) =>
-    child.type === 'folder'
-      ? [
-          {
-            id: child.value.id,
-            path: [
-              ...projectPath,
-              { id: child.value.id, name: child.name, type: 'folder' as const },
-            ],
-          },
-        ]
-      : [],
-  )
-  return { id: node.id, label: node.name, projectId: node.value.id, folders }
-}
-
-function uniqueFinderEntries(entries: LoadedFinderEntry[]): LoadedFinderEntry[] {
-  const seen = new Set<string>()
-  return entries.filter((entry) => {
-    if (seen.has(entry.item.id)) return false
-    seen.add(entry.item.id)
-    return true
-  })
-}
-
 function ModelBrowser({
   account,
   initialNodes = [],
@@ -232,14 +136,7 @@ function ModelBrowser({
   const [treeError, setTreeError] = useState<string>()
   const [selection, setSelection] = useState<{ item: Item; version?: ItemVersion }>()
   const [viewerError, setViewerError] = useState<string>()
-  const [finderQuery, setFinderQuery] = useState('')
-  const [finderScope, setFinderScope] = useState<FinderScope>()
-  const [remoteFinderKey, setRemoteFinderKey] = useState<string>()
-  const [remoteFinderEntries, setRemoteFinderEntries] = useState<LoadedFinderEntry[]>([])
-  const [remoteFinderStatus, setRemoteFinderStatus] = useState<'ready' | 'loading' | 'error'>(
-    'ready',
-  )
-  const [remoteFinderError, setRemoteFinderError] = useState<string>()
+  const finder = useModelFinder({ nodes, treeEndpoint })
 
   useEffect(() => {
     if (initialNodes.length > 0) return
@@ -274,13 +171,11 @@ function ModelBrowser({
     const path = findPath(nodes, node.id)
     if (!path) return
     if (node.children !== undefined) {
-      const scope = finderScopeFor(node, path, node.children)
-      if (scope) setFinderScope(scope)
+      finder.updateScope(node, path, node.children)
       setExpandedIds((current) => (current.includes(node.id) ? current : [...current, node.id]))
       return
     }
-    const pendingScope = finderScopeFor(node, path, undefined)
-    if (pendingScope) setFinderScope(pendingScope)
+    finder.updateScope(node, path, undefined)
     setPendingId(node.id)
     setTreeError(undefined)
     try {
@@ -291,8 +186,7 @@ function ModelBrowser({
       if (!response.ok || !body.nodes) {
         throw new Error(body.error ?? `${node.name} could not be loaded.`)
       }
-      const scope = finderScopeFor(node, path, body.nodes)
-      if (scope) setFinderScope(scope)
+      finder.updateScope(node, path, body.nodes)
       setNodes((current) => replaceChildren(current, node.id, body.nodes ?? []))
       setExpandedIds((current) => (current.includes(node.id) ? current : [...current, node.id]))
     } catch (error) {
@@ -335,97 +229,6 @@ function ModelBrowser({
       undefined)
     : undefined
 
-  const finderEntries = useMemo(() => {
-    const query = finderQuery.trim().toLocaleLowerCase()
-    if (!query) return []
-    return loadedFinderEntries(nodes).filter((entry) => {
-      const location = entry.path.map((segment) => segment.name).join(' ')
-      return `${entry.item.name} ${entry.version?.displayName ?? ''} ${location}`
-        .toLocaleLowerCase()
-        .includes(query)
-    })
-  }, [finderQuery, nodes])
-
-  const finderSearchKey =
-    finderQuery.trim().length >= 2 && finderScope && finderScope.folders.length > 0
-      ? `${finderScope.id}:${finderQuery.trim().toLocaleLowerCase()}`
-      : undefined
-
-  useEffect(() => {
-    const query = finderQuery.trim()
-    if (!finderSearchKey || !finderScope) return
-
-    const controller = new AbortController()
-    const timer = window.setTimeout(() => {
-      setRemoteFinderKey(finderSearchKey)
-      setRemoteFinderEntries([])
-      setRemoteFinderStatus('loading')
-      setRemoteFinderError(undefined)
-      void Promise.all(
-        finderScope.folders.map(async (folder) => {
-          const params = new URLSearchParams({
-            kind: 'search',
-            projectId: finderScope.projectId,
-            folderId: folder.id,
-            q: query,
-          })
-          const response = await fetch(`${treeEndpoint}?${params}`, {
-            cache: 'no-store',
-            signal: controller.signal,
-          })
-          const body = (await response.json()) as FinderSearchResponse
-          if (!response.ok || !body.entries) {
-            throw new Error(body.error ?? `Search in ${finderScope.label} failed.`)
-          }
-          return body.entries.map((entry) => ({
-            ...entry,
-            path: folder.path,
-            caption: `Inside ${folder.path.at(-1)?.name ?? finderScope.label}`,
-          }))
-        }),
-      )
-        .then((groups) => {
-          if (controller.signal.aborted) return
-          setRemoteFinderEntries(uniqueFinderEntries(groups.flat()))
-          setRemoteFinderStatus('ready')
-        })
-        .catch((error: unknown) => {
-          if (controller.signal.aborted) return
-          setRemoteFinderEntries([])
-          setRemoteFinderStatus('error')
-          setRemoteFinderError(
-            error instanceof Error ? error.message : `Search in ${finderScope.label} failed.`,
-          )
-        })
-    }, 250)
-
-    return () => {
-      window.clearTimeout(timer)
-      controller.abort()
-    }
-  }, [finderQuery, finderScope, finderSearchKey, treeEndpoint])
-
-  const remoteFinderMatches = useMemo(() => {
-    if (!finderSearchKey || remoteFinderKey !== finderSearchKey) return []
-    const loadedIds = new Set(finderEntries.map((entry) => entry.item.id))
-    return remoteFinderEntries.filter((entry) => !loadedIds.has(entry.item.id))
-  }, [finderEntries, finderSearchKey, remoteFinderEntries, remoteFinderKey])
-
-  const activeRemoteFinderStatus = finderSearchKey
-    ? remoteFinderKey === finderSearchKey
-      ? remoteFinderStatus
-      : 'loading'
-    : 'ready'
-  const activeRemoteFinderError =
-    remoteFinderKey === finderSearchKey ? remoteFinderError : undefined
-
-  const finderPlaceholder = finderScope ? `Search in ${finderScope.label}` : 'Find a loaded file'
-  const finderEmptyLabel = finderScope
-    ? finderQuery.trim().length < 2
-      ? 'Type at least 2 characters to search unopened folders.'
-      : `No files match in ${finderScope.label}.`
-    : 'Expand a project or folder to search unopened folders.'
-
   return (
     <SidebarProvider
       className={
@@ -436,21 +239,12 @@ function ModelBrowser({
     >
       <HubSidebar
         finder={{
-          query: finderQuery,
-          onQueryChange: setFinderQuery,
-          groups: [
-            { id: 'loaded', label: 'Loaded files', entries: finderEntries },
-            {
-              id: 'remote',
-              label: finderScope ? `In ${finderScope.label}` : 'Project search',
-              status: activeRemoteFinderStatus,
-              error: activeRemoteFinderError,
-              entries: remoteFinderMatches,
-            },
-          ],
+          query: finder.query,
+          onQueryChange: finder.setQuery,
+          groups: finder.groups,
           onItemOpen: ({ item, version }) => openItem(item, version),
-          placeholder: finderPlaceholder,
-          emptyLabel: finderEmptyLabel,
+          placeholder: finder.placeholder,
+          emptyLabel: finder.emptyLabel,
         }}
         tree={{
           nodes,

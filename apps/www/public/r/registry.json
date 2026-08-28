@@ -699,6 +699,11 @@
           "target": "components/model-browser.tsx"
         },
         {
+          "path": "registry/blocks/model-viewer-page/components/model-finder.ts",
+          "type": "registry:component",
+          "target": "components/model-finder.ts"
+        },
+        {
           "path": "registry/blocks/model-viewer-page/api/tree-route.ts",
           "type": "registry:file",
           "target": "app/api/models/tree/route.ts"
