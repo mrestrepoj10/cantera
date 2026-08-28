@@ -690,6 +690,7 @@ Files written into the consumer project:
 - `onReveal` (`(entry: FinderEntry) => void`) — Show the entry where it lives. Map entry.path to a hub-tree (expandedIds + selectedId) or a hub-browser location in one state update. The affordance renders only when the entry has a path.
 - `pending` (`{ openingId?: string }`) — Consumer-driven pending for server actions, keyed by finderEntryKey(entry). Promise-returning callbacks drive it automatically.
 - `placeholder / label / emptyLabel` (`string`, default `'Find a file' / 'Find a file' / 'No matches.'`) — Input placeholder, the accessible name of the query box, and the no-matches line shown once a query has no entries anywhere.
+- `scope` (`string`) — Name of what a search reaches (the scoped project). Renders as a persistent "Searching in" notice under the input, wired to it with aria-describedby, so the reach stays visible while typing.
 
 #### Exports
 
@@ -942,6 +943,7 @@ Files written into the consumer project:
 - app/models/page.tsx
 - app/models/loading.tsx
 - components/model-browser.tsx
+- components/model-finder.ts
 - app/api/models/tree/route.ts
 - app/api/viewer-token/route.ts
 
@@ -962,6 +964,7 @@ Files written into the consumer project:
 - `kind=folder-contents` (`projectId, folderId`) — Loads folders and items under one folder.
 - `kind=versions` (`projectId, itemId`) — Loads immutable versions under one item.
 - `kind=search` (`projectId, folderId, q`) — Recursively searches unopened descendants of one folder and returns matching tip versions for the scoped finder.
+- `kind=path` (`projectId, itemId, topFolderId`) — Walks a found item’s parent folders up to the searched top folder and returns the intermediate segments, so picking a search result can expand and select it in the tree.
 
 ### Upload Types (`@cantera/upload-types`)
 

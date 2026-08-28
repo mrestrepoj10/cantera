@@ -86,6 +86,7 @@ export function FinderDemo() {
         query={query}
         onQueryChange={setQuery}
         groups={groups}
+        scope="Summit Tower"
         onItemOpen={async (entry) => {
           await delay(700)
           setMessage(`Opened ${entry.item.name}.`)

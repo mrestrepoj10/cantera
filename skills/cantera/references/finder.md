@@ -15,7 +15,7 @@ Files written into the consumer project:
 
 ## Install notes
 
-Fully controlled and data-agnostic: query out through onQueryChange, groups in as props; the consumer owns fetching, debouncing, and persistence. APS has no cross-hub search API, so label each group after the scope actually searched (folders/{id}/search is recursive within one project). Entries carry path: BrowsePathSegment[] — onReveal hands it back so a hub-tree (expandedIds + selectedId) or hub-browser (a location change) unfolds to the entry. Three surfaces share the contract: Finder renders inline, FinderDialog is the ⌘K palette (shortcut built in, closes on select or reveal), and FinderTrigger is the input-shaped button that opens it.
+Fully controlled and data-agnostic: query out through onQueryChange, groups in as props; the consumer owns fetching, debouncing, and persistence. APS has no cross-hub search API, so label each group after the scope actually searched (folders/{id}/search is recursive within one project) and pass the scoped project's name as scope — it renders as a persistent "Searching in" notice under the input, wired to it with aria-describedby. Entries carry path: BrowsePathSegment[] — onReveal hands it back so a hub-tree (expandedIds + selectedId) or hub-browser (a location change) unfolds to the entry. Three surfaces share the contract: Finder renders inline, FinderDialog is the ⌘K palette (shortcut built in, closes on select or reveal), and FinderTrigger is the input-shaped button that opens it.
 
 ## Props
 
@@ -26,6 +26,7 @@ Fully controlled and data-agnostic: query out through onQueryChange, groups in a
 - `onReveal` (`(entry: FinderEntry) => void`) — Show the entry where it lives. Map entry.path to a hub-tree (expandedIds + selectedId) or a hub-browser location in one state update. The affordance renders only when the entry has a path.
 - `pending` (`{ openingId?: string }`) — Consumer-driven pending for server actions, keyed by finderEntryKey(entry). Promise-returning callbacks drive it automatically.
 - `placeholder / label / emptyLabel` (`string`, default `'Find a file' / 'Find a file' / 'No matches.'`) — Input placeholder, the accessible name of the query box, and the no-matches line shown once a query has no entries anywhere.
+- `scope` (`string`) — Name of what a search reaches (the scoped project). Renders as a persistent "Searching in" notice under the input, wired to it with aria-describedby, so the reach stays visible while typing.
 
 ## Exports
 

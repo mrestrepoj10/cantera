@@ -1320,6 +1320,12 @@ export const apiTables: ApiTablesByItem = {
           description:
             'Input placeholder, the accessible name of the query box, and the no-matches line shown once a query has no entries anywhere.',
         },
+        {
+          name: 'scope',
+          type: 'string',
+          description:
+            'Name of what a search reaches (the scoped project). Renders as a persistent "Searching in" notice under the input, wired to it with aria-describedby, so the reach stays visible while typing.',
+        },
       ],
     },
     {
@@ -1529,6 +1535,12 @@ export const apiTables: ApiTablesByItem = {
           type: 'projectId, folderId, q',
           description:
             'Recursively searches unopened descendants of one folder and returns matching tip versions for the scoped finder.',
+        },
+        {
+          name: 'kind=path',
+          type: 'projectId, itemId, topFolderId',
+          description:
+            'Walks a found item’s parent folders up to the searched top folder and returns the intermediate segments, so picking a search result can expand and select it in the tree.',
         },
       ],
     },

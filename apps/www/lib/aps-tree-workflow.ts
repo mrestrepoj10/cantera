@@ -14,6 +14,7 @@ import {
   fromApsProject,
   fromApsVersion,
 } from '@/lib/aps-data-preset'
+import type { BrowsePathSegment, Item, ItemVersion } from '@/lib/project-types'
 
 interface JsonApiDocument<T> {
   data?: T
@@ -27,6 +28,29 @@ interface TypedFolderDoc extends ApsFolderDoc {
 
 interface TypedItemDoc extends ApsItemDoc {
   type: 'items'
+}
+
+interface SearchVersionDoc extends ApsVersionDoc {
+  relationships?: ApsVersionDoc['relationships'] & {
+    item?: { data?: { id?: string } | null }
+  }
+}
+
+interface ItemParentDoc extends ApsItemDoc {
+  relationships?: ApsItemDoc['relationships'] & {
+    parent?: { data?: { id?: string } | null }
+  }
+}
+
+interface FolderParentDoc extends ApsFolderDoc {
+  relationships?: {
+    parent?: { data?: { id?: string } | null }
+  }
+}
+
+export interface HubTreeSearchEntry {
+  item: Item
+  version: ItemVersion
 }
 
 export type HubTreeRequest =
@@ -50,18 +74,18 @@ function absolutePageUrl(href: string, base: string): string {
 }
 
 const MAX_FOLDER_PAGES = 20
+const MAX_PATH_DEPTH = 20
+const SEARCH_MIN_QUERY_LENGTH = 2
 
-async function loadFolderPages(
+async function loadPages<Doc>(
   firstUrl: string,
   base: string,
   token: AccessToken,
-): Promise<JsonApiDocument<(TypedFolderDoc | TypedItemDoc)[]>[]> {
-  const pages: JsonApiDocument<(TypedFolderDoc | TypedItemDoc)[]>[] = []
+): Promise<JsonApiDocument<Doc[]>[]> {
+  const pages: JsonApiDocument<Doc[]>[] = []
   let url: string | undefined = firstUrl
   for (let page = 0; url && page < MAX_FOLDER_PAGES; page += 1) {
-    const document: JsonApiDocument<(TypedFolderDoc | TypedItemDoc)[]> = await apsGet<
-      JsonApiDocument<(TypedFolderDoc | TypedItemDoc)[]>
-    >(url, token)
+    const document: JsonApiDocument<Doc[]> = await apsGet<JsonApiDocument<Doc[]>>(url, token)
     pages.push(document)
     const href = nextHref(document)
     url = href ? absolutePageUrl(href, base) : undefined
@@ -153,7 +177,7 @@ export async function loadHubTreeNodes(
   }
 
   if (request.kind === 'folder-contents') {
-    const pages = await loadFolderPages(
+    const pages = await loadPages<TypedFolderDoc | TypedItemDoc>(
       `${base}/data/v1/projects/${segment(request.projectId)}/folders/${segment(request.folderId)}/contents?page[limit]=200`,
       base,
       token,
@@ -175,4 +199,70 @@ export async function loadHubTreeNodes(
     token,
   )
   return (document.data ?? []).map((doc) => versionNode(doc, request.itemId))
+}
+
+export async function searchHubTreeItems(
+  origin: string,
+  token: AccessToken,
+  projectId: string,
+  folderId: string,
+  query: string,
+): Promise<HubTreeSearchEntry[]> {
+  if (query.trim().length < SEARCH_MIN_QUERY_LENGTH) return []
+  const base = apsApiBaseUrl(origin)
+  const params = new URLSearchParams({
+    'filter[attributes.displayName]-contains': query.trim(),
+    'page[limit]': '200',
+  })
+  const pages = await loadPages<SearchVersionDoc>(
+    `${base}/data/v1/projects/${segment(projectId)}/folders/${segment(folderId)}/search?${params}`,
+    base,
+    token,
+  )
+  return pages.flatMap((page) =>
+    (page.data ?? []).flatMap((doc) => {
+      const itemId = doc.relationships?.item?.data?.id
+      if (!itemId) return []
+      const version = fromApsVersion(doc)
+      return [
+        {
+          item: {
+            id: itemId,
+            name: version.displayName,
+            type: 'item' as const,
+            tip: version,
+            translationStatus: version.derivativeUrn ? ('success' as const) : ('pending' as const),
+          },
+          version,
+        },
+      ]
+    }),
+  )
+}
+
+export async function loadItemFolderPath(
+  origin: string,
+  token: AccessToken,
+  projectId: string,
+  itemId: string,
+  topFolderId: string,
+): Promise<BrowsePathSegment[] | undefined> {
+  const base = apsApiBaseUrl(origin)
+  const itemDocument = await apsGet<JsonApiDocument<ItemParentDoc>>(
+    `${base}/data/v1/projects/${segment(projectId)}/items/${segment(itemId)}`,
+    token,
+  )
+  let folderId = itemDocument.data?.relationships?.parent?.data?.id
+  const segments: BrowsePathSegment[] = []
+  for (let depth = 0; folderId && folderId !== topFolderId && depth < MAX_PATH_DEPTH; depth += 1) {
+    const folderDocument = await apsGet<JsonApiDocument<FolderParentDoc>>(
+      `${base}/data/v1/projects/${segment(projectId)}/folders/${segment(folderId)}`,
+      token,
+    )
+    if (!folderDocument.data) return undefined
+    const folder = fromApsFolder(folderDocument.data)
+    segments.unshift({ id: folder.id, name: folder.name, type: 'folder' })
+    folderId = folderDocument.data.relationships?.parent?.data?.id
+  }
+  return folderId === topFolderId ? segments : undefined
 }

@@ -23,26 +23,37 @@ test('model viewer shell browses, finds, and adapts without clipping', async ({ 
   await sidebarToggle.click()
   await expect(tree).toBeVisible()
 
-  for (const name of [
-    'Emulate Construction Hub',
-    'Sample Building',
-    'Project Files',
-    'Plans',
-    'Coordination',
-  ]) {
+  for (const name of ['Emulate Construction Hub', 'Sample Building']) {
     await tree.getByRole('treeitem', { name, exact: true }).click()
   }
 
-  // Clicking through to Coordination scoped the finder, which renames its trigger.
-  await page.getByRole('button', { name: 'Search in Coordination' }).click()
+  // Expanding into the project scopes the finder to it, which renames its trigger.
+  await page.getByRole('button', { name: 'Search in Sample Building' }).click()
   const finder = page.getByRole('dialog', { name: 'Find a file' })
+  await expect(finder.getByText('Searching in Sample Building')).toBeVisible()
   await finder.getByRole('combobox', { name: 'Find a file' }).fill('structural')
+  // structural.rvt sits two unopened folders deep: picking the remote result
+  // loads, expands, and selects its path in the tree.
   await finder.getByRole('option', { name: /structural\.rvt/ }).click()
+  for (const name of ['Project Files', 'Plans', 'Coordination']) {
+    await expect(tree.getByRole('treeitem', { name, exact: true })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+  }
   await expect(tree.getByRole('treeitem', { name: 'structural.rvt' })).toHaveAttribute(
     'aria-selected',
     'true',
   )
   await expect(main.getByText('structural.rvt', { exact: true })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Search in Sample Building' }).click()
+  await finder.getByRole('combobox', { name: 'Find a file' }).fill('sample')
+  await finder.getByRole('option', { name: /sample\.rvt/ }).click()
+  await expect(tree.getByRole('treeitem', { name: 'sample.rvt' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
 
   await page.setViewportSize({ width: 390, height: 844 })
   await expect

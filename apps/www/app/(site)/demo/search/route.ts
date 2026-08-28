@@ -7,6 +7,7 @@ import {
   type ApsHubDoc,
   type ApsItemDoc,
   type ApsProjectDoc,
+  type ApsVersionDoc,
   fromApsHub,
   fromApsItem,
   fromApsProject,
@@ -23,6 +24,14 @@ interface JsonApiDocument<T> {
 type WithParent = { relationships?: { parent?: { data?: { id?: string } } } }
 type FolderDoc = ApsFolderDoc & WithParent & { attributes?: { displayName?: string } }
 type ItemDoc = ApsItemDoc & WithParent
+type SearchVersionDoc = ApsVersionDoc & {
+  relationships?: ApsVersionDoc['relationships'] & { item?: { data?: { id?: string } } }
+}
+
+interface SearchDocument {
+  data?: SearchVersionDoc[]
+  included?: ItemDoc[]
+}
 
 export interface DemoSearchEntry {
   item: Item
@@ -67,17 +76,19 @@ export async function GET(request: Request): Promise<Response> {
         ).data?.map((doc) => doc.id) ?? [])
 
     const seen = new Set<string>()
-    const docs: ItemDoc[] = []
+    const matches: { item: ItemDoc; tip: SearchVersionDoc }[] = []
     for (const root of roots) {
-      if (docs.length >= PAGE_LIMIT) break
-      const found = await apsGet<JsonApiDocument<ItemDoc[]>>(
-        `${base}/data/v1/projects/${project}/folders/${segment(root)}/search?filter[attributes.displayName]=${encodeURIComponent(query)}&page[limit]=${PAGE_LIMIT}`,
+      if (matches.length >= PAGE_LIMIT) break
+      const found = await apsGet<SearchDocument>(
+        `${base}/data/v1/projects/${project}/folders/${segment(root)}/search?filter[attributes.displayName]-contains=${encodeURIComponent(query)}&page[limit]=${PAGE_LIMIT}`,
         token,
       )
+      const includedItems = new Map((found.included ?? []).map((doc) => [doc.id, doc]))
       for (const doc of found.data ?? []) {
-        if (!seen.has(doc.id)) {
-          seen.add(doc.id)
-          docs.push(doc)
+        const itemDoc = includedItems.get(doc.relationships?.item?.data?.id ?? '')
+        if (itemDoc && !seen.has(itemDoc.id)) {
+          seen.add(itemDoc.id)
+          matches.push({ item: itemDoc, tip: doc })
         }
       }
     }
@@ -128,9 +139,9 @@ export async function GET(request: Request): Promise<Response> {
     }
 
     const entries: DemoSearchEntry[] = await Promise.all(
-      docs.slice(0, PAGE_LIMIT).map(async (doc) => ({
-        item: fromApsItem(doc),
-        path: [...rootSegments, ...(await folderChain(doc.relationships?.parent?.data?.id))],
+      matches.slice(0, PAGE_LIMIT).map(async ({ item, tip }) => ({
+        item: fromApsItem(item, tip),
+        path: [...rootSegments, ...(await folderChain(item.relationships?.parent?.data?.id))],
       })),
     )
     return Response.json({ entries })

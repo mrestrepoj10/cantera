@@ -14,6 +14,7 @@ Files written into the consumer project:
 - `app/models/page.tsx`
 - `app/models/loading.tsx`
 - `components/model-browser.tsx`
+- `components/model-finder.ts`
 - `app/api/models/tree/route.ts`
 - `app/api/viewer-token/route.ts`
 
@@ -54,3 +55,4 @@ The cantera showcase emulator supplies the project tree but no SVF geometry. Its
 - `kind=folder-contents` (`projectId, folderId`) — Loads folders and items under one folder.
 - `kind=versions` (`projectId, itemId`) — Loads immutable versions under one item.
 - `kind=search` (`projectId, folderId, q`) — Recursively searches unopened descendants of one folder and returns matching tip versions for the scoped finder.
+- `kind=path` (`projectId, itemId, topFolderId`) — Walks a found item’s parent folders up to the searched top folder and returns the intermediate segments, so picking a search result can expand and select it in the tree.
