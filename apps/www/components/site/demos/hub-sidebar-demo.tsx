@@ -183,6 +183,7 @@ export function HubSidebarDemo() {
           query,
           onQueryChange: setQuery,
           groups: [search],
+          scope: 'Summit Tower',
           onItemOpen: async (entry) => {
             await delay(600)
             reveal(entry)

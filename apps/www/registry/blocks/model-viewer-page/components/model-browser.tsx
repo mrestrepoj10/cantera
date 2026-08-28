@@ -4,13 +4,14 @@ import { Building2Icon, LoaderCircleIcon, LogOutIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { APSViewer } from '@/components/ui/aps-viewer/aps-viewer'
 import { Button } from '@/components/ui/button'
+import type { FinderEntry } from '@/components/ui/finder'
 import { HubSidebar } from '@/components/ui/hub-sidebar'
 import type { HubTreeBranchNode, HubTreeNode, HubTreeVersionNode } from '@/components/ui/hub-tree'
 import { ModelStatusCard } from '@/components/ui/model-status-card'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { UserAccountBadge } from '@/components/ui/user-account-badge'
 import type { OAuthAccount } from '@/lib/oauth-types'
-import type { Item, ItemVersion, ModelTranslation } from '@/lib/project-types'
+import type { BrowsePathSegment, Item, ItemVersion, ModelTranslation } from '@/lib/project-types'
 import { AEC_STARTER_EXTENSIONS } from '@/lib/viewer-extension-types'
 import type { GetAccessToken } from '@/lib/viewer-types'
 import { useModelFinder } from './model-finder'
@@ -35,6 +36,11 @@ interface TreeRequest {
   projectId?: string
   folderId?: string
   itemId?: string
+}
+
+interface PathResponse {
+  segments?: BrowsePathSegment[]
+  error?: string
 }
 
 function replaceChildren(
@@ -167,6 +173,21 @@ function ModelBrowser({
     return (await response.json()) as Awaited<ReturnType<GetAccessToken>>
   }, [viewerTokenEndpoint])
 
+  async function loadChildren(
+    node: HubTreeBranchNode,
+    path: HubTreeNode[],
+  ): Promise<HubTreeNode[]> {
+    const response = await fetch(`${treeEndpoint}?${paramsFor(requestFor(node, path))}`, {
+      cache: 'no-store',
+    })
+    const body = (await response.json()) as TreeResponse
+    if (!response.ok || !body.nodes) {
+      throw new Error(body.error ?? `${node.name} could not be loaded.`)
+    }
+    setNodes((current) => replaceChildren(current, node.id, body.nodes ?? []))
+    return body.nodes
+  }
+
   async function expand(node: HubTreeBranchNode): Promise<void> {
     const path = findPath(nodes, node.id)
     if (!path) return
@@ -179,15 +200,8 @@ function ModelBrowser({
     setPendingId(node.id)
     setTreeError(undefined)
     try {
-      const response = await fetch(`${treeEndpoint}?${paramsFor(requestFor(node, path))}`, {
-        cache: 'no-store',
-      })
-      const body = (await response.json()) as TreeResponse
-      if (!response.ok || !body.nodes) {
-        throw new Error(body.error ?? `${node.name} could not be loaded.`)
-      }
-      finder.updateScope(node, path, body.nodes)
-      setNodes((current) => replaceChildren(current, node.id, body.nodes ?? []))
+      const children = await loadChildren(node, path)
+      finder.updateScope(node, path, children)
       setExpandedIds((current) => (current.includes(node.id) ? current : [...current, node.id]))
     } catch (error) {
       setTreeError(error instanceof Error ? error.message : `${node.name} could not be loaded.`)
@@ -196,10 +210,66 @@ function ModelBrowser({
     }
   }
 
+  async function revealEntry(entry: FinderEntry): Promise<void> {
+    if (!entry.path?.length) return
+    let working = nodes
+    const expandIds: string[] = []
+    let ancestors: HubTreeNode[] = []
+    let level: HubTreeNode[] = working
+    let segments = [...entry.path]
+
+    try {
+      for (let index = 0; index < segments.length; index += 1) {
+        const seg = segments[index]
+        const node = level.find(
+          (candidate) => candidate.type === seg?.type && candidate.value.id === seg.id,
+        )
+        if (!seg || !node || node.type === 'item' || node.type === 'version') break
+        expandIds.push(node.id)
+        const children = node.children ?? (await loadChildren(node, [...ancestors, node]))
+        working = replaceChildren(working, node.id, children)
+        ancestors = [...ancestors, node]
+        level = children
+
+        const last = index === segments.length - 1
+        const found = children.some(
+          (child) => child.type === 'item' && child.value.id === entry.item.id,
+        )
+        if (last && !found && seg.type === 'folder') {
+          const project = segments.find((candidate) => candidate.type === 'project')
+          if (!project || segments.length > entry.path.length) break
+          const params = new URLSearchParams({
+            kind: 'path',
+            projectId: project.id,
+            itemId: entry.item.id,
+            topFolderId: seg.id,
+          })
+          const response = await fetch(`${treeEndpoint}?${params}`, { cache: 'no-store' })
+          const body = (await response.json()) as PathResponse
+          if (!response.ok || !body.segments) break
+          segments = [...segments, ...body.segments]
+        }
+      }
+    } catch {
+      // Best-effort: the entry already opened; reveal as far as the tree loaded.
+    }
+
+    setExpandedIds((current) => [...current, ...expandIds.filter((id) => !current.includes(id))])
+    setSelectedId(
+      selectedTreeId(working, entry.item, entry.version) ?? selectedTreeId(working, entry.item),
+    )
+  }
+
   function openItem(item: Item, version?: ItemVersion): void {
     setSelection({ item, version })
     setSelectedId(selectedTreeId(nodes, item, version))
     setViewerError(undefined)
+  }
+
+  async function openFinderEntry(entry: FinderEntry): Promise<void> {
+    setSelection({ item: entry.item, version: entry.version })
+    setViewerError(undefined)
+    await revealEntry(entry)
   }
 
   const translation = useMemo<ModelTranslation | undefined>(() => {
@@ -242,9 +312,13 @@ function ModelBrowser({
           query: finder.query,
           onQueryChange: finder.setQuery,
           groups: finder.groups,
-          onItemOpen: ({ item, version }) => openItem(item, version),
+          onItemOpen: openFinderEntry,
+          onReveal: (entry) => {
+            void revealEntry(entry)
+          },
           placeholder: finder.placeholder,
           emptyLabel: finder.emptyLabel,
+          scope: finder.scope?.label,
         }}
         tree={{
           nodes,

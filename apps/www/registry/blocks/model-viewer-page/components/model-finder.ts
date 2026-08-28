@@ -42,19 +42,13 @@ function finderScopeFor(
   path: HubTreeNode[],
   children: HubTreeNode[] | undefined,
 ): FinderScope | undefined {
-  if (node.type === 'folder') {
-    const project = path.find((entry) => entry.type === 'project')
-    if (project?.type !== 'project') return undefined
-    return {
-      id: node.id,
-      label: node.name,
-      projectId: project.value.id,
-      folders: [{ id: node.value.id, path: browsePath(path) }],
-    }
-  }
-  if (node.type !== 'project') return undefined
-  const projectPath = browsePath(path)
-  const folders = (children ?? []).flatMap((child) =>
+  const projectIndex = path.findIndex((entry) => entry.type === 'project')
+  if (projectIndex < 0) return undefined
+  const project = path[projectIndex]
+  if (project?.type !== 'project') return undefined
+  const projectPath = browsePath(path.slice(0, projectIndex + 1))
+  const topNodes = (project.id === node.id ? children : project.children) ?? []
+  const folders = topNodes.flatMap((child) =>
     child.type === 'folder'
       ? [
           {
@@ -67,7 +61,7 @@ function finderScopeFor(
         ]
       : [],
   )
-  return { id: node.id, label: node.name, projectId: node.value.id, folders }
+  return { id: project.id, label: project.name, projectId: project.value.id, folders }
 }
 
 function loadedFinderEntries(
@@ -237,6 +231,6 @@ export function useModelFinder({
       ? query.trim().length < 2
         ? 'Type at least 2 characters to search unopened folders.'
         : `No files match in ${scope.label}.`
-      : 'Expand a project or folder to search unopened folders.',
+      : 'Expand a project to search its folders.',
   }
 }

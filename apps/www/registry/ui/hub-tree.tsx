@@ -10,7 +10,7 @@ import {
   LoaderCircleIcon,
 } from 'lucide-react'
 import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from 'react'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Folder, Hub, Item, ItemVersion, Project } from '@/lib/project-types'
 import { cn } from '@/lib/utils'
@@ -136,6 +136,17 @@ function HubTree({
       : selectedId && visibleIds.includes(selectedId)
         ? selectedId
         : visibleIds[0]
+
+  // Ancestor rows expanded in the same update animate open for 200ms, so the
+  // selected row's final offset exists only after that transition settles.
+  useEffect(() => {
+    if (!selectedId) return
+    const timer = window.setTimeout(
+      () => rows.current.get(selectedId)?.scrollIntoView({ block: 'nearest' }),
+      220,
+    )
+    return () => window.clearTimeout(timer)
+  }, [selectedId])
 
   function focus(nodeId: string | undefined): void {
     if (!nodeId) return

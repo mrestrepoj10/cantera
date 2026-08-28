@@ -1,7 +1,13 @@
 'use client'
 
-import { FileBoxIcon, LoaderCircleIcon, LocateIcon, SearchIcon } from 'lucide-react'
-import { type ComponentProps, useEffect, useState } from 'react'
+import {
+  FileBoxIcon,
+  FolderSearchIcon,
+  LoaderCircleIcon,
+  LocateIcon,
+  SearchIcon,
+} from 'lucide-react'
+import { type ComponentProps, useEffect, useId, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -56,6 +62,9 @@ export interface FinderProps extends Omit<ComponentProps<'div'>, 'onSelect'> {
   placeholder?: string
   label?: string
   emptyLabel?: string
+  /** Name of what a search reaches (e.g. the scoped project). Renders as a
+   * persistent notice under the input so the reach stays visible while typing. */
+  scope?: string
 }
 
 export function finderEntryKey(entry: FinderEntry): string {
@@ -83,6 +92,7 @@ interface FinderSurfaceProps
     | 'placeholder'
     | 'label'
     | 'emptyLabel'
+    | 'scope'
   > {
   autoFocus?: boolean
 }
@@ -97,9 +107,11 @@ function FinderSurface({
   placeholder = 'Find a file',
   label = 'Find a file',
   emptyLabel = 'No matches.',
+  scope,
   autoFocus,
 }: FinderSurfaceProps) {
   const [openingId, setOpeningId] = useState<string>()
+  const scopeId = useId()
 
   const anyLoading = groups.some((group) => group.status === 'loading')
   const anyEntries = groups.some((group) => group.entries.length > 0)
@@ -121,8 +133,21 @@ function FinderSurface({
         onValueChange={onQueryChange}
         placeholder={placeholder}
         aria-label={label}
+        aria-describedby={scope ? scopeId : undefined}
         autoFocus={autoFocus}
       />
+      {scope && (
+        <p
+          id={scopeId}
+          data-finder-scope=""
+          className="flex items-center gap-1.5 border-b px-3 py-2 text-muted-foreground text-xs"
+        >
+          <FolderSearchIcon aria-hidden="true" className="size-3.5 shrink-0" />
+          <span className="truncate">
+            Searching in <span className="font-medium text-foreground">{scope}</span>
+          </span>
+        </p>
+      )}
       <CommandList>
         {showEmpty && <CommandEmpty>{emptyLabel}</CommandEmpty>}
         {groups.map((group) => {
@@ -216,6 +241,7 @@ function Finder({
   placeholder,
   label,
   emptyLabel,
+  scope,
   className,
   ...props
 }: FinderProps) {
@@ -231,6 +257,7 @@ function Finder({
         placeholder={placeholder}
         label={label}
         emptyLabel={emptyLabel}
+        scope={scope}
       />
     </div>
   )
