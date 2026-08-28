@@ -254,10 +254,13 @@ function ModelBrowser({
       // Best-effort: the entry already opened; reveal as far as the tree loaded.
     }
 
+    const versionRowId = entry.version
+      ? selectedTreeId(working, entry.item, entry.version)
+      : undefined
+    const itemRowId = selectedTreeId(working, entry.item)
+    if (versionRowId && itemRowId) expandIds.push(itemRowId)
     setExpandedIds((current) => [...current, ...expandIds.filter((id) => !current.includes(id))])
-    setSelectedId(
-      selectedTreeId(working, entry.item, entry.version) ?? selectedTreeId(working, entry.item),
-    )
+    setSelectedId(versionRowId ?? itemRowId)
   }
 
   function openItem(item: Item, version?: ItemVersion): void {

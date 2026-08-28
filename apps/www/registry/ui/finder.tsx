@@ -62,8 +62,7 @@ export interface FinderProps extends Omit<ComponentProps<'div'>, 'onSelect'> {
   placeholder?: string
   label?: string
   emptyLabel?: string
-  /** Name of what a search reaches (e.g. the scoped project). Renders as a
-   * persistent notice under the input so the reach stays visible while typing. */
+  /** Names what a search reaches; renders as a persistent notice under the input. */
   scope?: string
 }
 
