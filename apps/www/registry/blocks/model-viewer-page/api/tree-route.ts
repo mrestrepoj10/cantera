@@ -201,25 +201,17 @@ async function searchFolder(
 ): Promise<SearchEntry[]> {
   const needle = searchNormalize(query)
   const entries: SearchEntry[] = []
-  let hasNext = true
-  for (
-    let page = 0;
-    hasNext && page < MAX_FOLDER_PAGES && entries.length < MAX_SEARCH_MATCHES;
-    page += 1
-  ) {
-    const searchUrl = new URL(
-      `${base}/data/v1/projects/${segment(projectId)}/folders/${segment(folderId)}/search`,
-    )
-    searchUrl.searchParams.set('page[number]', String(page))
-    searchUrl.searchParams.set('page[limit]', String(FOLDER_PAGE_LIMIT))
-    const document = await apsGet<JsonApiDocument<SearchVersionDoc[]>>(searchUrl.href, token)
-    hasNext = Boolean(document.links?.next)
-    for (const doc of document.data ?? []) {
-      if (entries.length >= MAX_SEARCH_MATCHES) break
+  const seenVersionIds = new Set<string>()
+
+  function collect(docs: SearchVersionDoc[]): void {
+    for (const doc of docs) {
+      if (entries.length >= MAX_SEARCH_MATCHES) return
       const itemId = doc.relationships?.item?.data?.id
       if (!itemId) continue
       const version = fromApsVersion(doc)
+      if (seenVersionIds.has(version.id)) continue
       if (!searchNormalize(version.displayName).includes(needle)) continue
+      seenVersionIds.add(version.id)
       entries.push({
         item: {
           id: itemId,
@@ -232,6 +224,31 @@ async function searchFolder(
       })
     }
   }
+
+  async function collectPages(filtered: boolean): Promise<void> {
+    let hasNext = true
+    for (
+      let page = 0;
+      hasNext && page < MAX_FOLDER_PAGES && entries.length < MAX_SEARCH_MATCHES;
+      page += 1
+    ) {
+      const searchUrl = new URL(
+        `${base}/data/v1/projects/${segment(projectId)}/folders/${segment(folderId)}/search`,
+      )
+      if (filtered) searchUrl.searchParams.set('filter[attributes.displayName]-contains', query)
+      searchUrl.searchParams.set('page[number]', String(page))
+      searchUrl.searchParams.set('page[limit]', String(FOLDER_PAGE_LIMIT))
+      const document = await apsGet<JsonApiDocument<SearchVersionDoc[]>>(searchUrl.href, token)
+      hasNext = Boolean(document.links?.next)
+      collect(document.data ?? [])
+    }
+  }
+
+  // Two passes: the APS-filtered query applies its (case-sensitive) filter
+  // before pagination, so the page cap covers matches anywhere in the folder;
+  // the unfiltered sweep adds normalized matches within its page window.
+  await collectPages(true)
+  await collectPages(false)
   return entries
 }
 

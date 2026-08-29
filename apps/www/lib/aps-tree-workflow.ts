@@ -224,22 +224,17 @@ export async function searchHubTreeItems(
   const base = apsApiBaseUrl(origin)
   const needle = searchNormalize(query.trim())
   const entries: HubTreeSearchEntry[] = []
-  let url: string | undefined =
-    `${base}/data/v1/projects/${segment(projectId)}/folders/${segment(folderId)}/search?page[limit]=200`
-  for (
-    let page = 0;
-    url && page < MAX_FOLDER_PAGES && entries.length < MAX_SEARCH_MATCHES;
-    page += 1
-  ) {
-    const document: JsonApiDocument<SearchVersionDoc[]> = await apsGet(url, token)
-    const href = nextHref(document)
-    url = href ? absolutePageUrl(href, base) : undefined
-    for (const doc of document.data ?? []) {
-      if (entries.length >= MAX_SEARCH_MATCHES) break
+  const seenVersionIds = new Set<string>()
+
+  function collect(docs: SearchVersionDoc[]): void {
+    for (const doc of docs) {
+      if (entries.length >= MAX_SEARCH_MATCHES) return
       const itemId = doc.relationships?.item?.data?.id
       if (!itemId) continue
       const version = fromApsVersion(doc)
+      if (seenVersionIds.has(version.id)) continue
       if (!searchNormalize(version.displayName).includes(needle)) continue
+      seenVersionIds.add(version.id)
       entries.push({
         item: {
           id: itemId,
@@ -252,6 +247,29 @@ export async function searchHubTreeItems(
       })
     }
   }
+
+  async function collectPages(filtered: boolean): Promise<void> {
+    const params = new URLSearchParams({ 'page[limit]': '200' })
+    if (filtered) params.set('filter[attributes.displayName]-contains', query.trim())
+    let url: string | undefined =
+      `${base}/data/v1/projects/${segment(projectId)}/folders/${segment(folderId)}/search?${params}`
+    for (
+      let page = 0;
+      url && page < MAX_FOLDER_PAGES && entries.length < MAX_SEARCH_MATCHES;
+      page += 1
+    ) {
+      const document: JsonApiDocument<SearchVersionDoc[]> = await apsGet(url, token)
+      const href = nextHref(document)
+      url = href ? absolutePageUrl(href, base) : undefined
+      collect(document.data ?? [])
+    }
+  }
+
+  // Two passes: the APS-filtered query applies its (case-sensitive) filter
+  // before pagination, so the page cap covers matches anywhere in the folder;
+  // the unfiltered sweep adds normalized matches within its page window.
+  await collectPages(true)
+  await collectPages(false)
   return entries
 }
 

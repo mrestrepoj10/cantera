@@ -73,10 +73,13 @@ function treeIssueFor(error: unknown, fallback: string): TreeIssue {
 }
 
 function viewerIssueFor(error: Error): ViewerIssue {
-  // Document.load code 5 is "file not found": the version has no viewable
-  // derivative, which is an expected state for untranslated formats.
+  // Document.load code 5 is "file not found" and a loaded manifest can still
+  // carry no default geometry: both mean the version has nothing viewable,
+  // which is an expected state for untranslated formats.
   const unviewable =
-    /Document\.load failed \(5\)/.test(error.message) || /\b404\b/.test(error.message)
+    /Document\.load failed \(5\)/.test(error.message) ||
+    /\b404\b/.test(error.message) ||
+    error.message.includes('document has no viewable geometry')
   return { kind: unviewable ? 'unviewable' : 'error', detail: error.message }
 }
 
