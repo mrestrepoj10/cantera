@@ -13,20 +13,21 @@ export interface FinderSearchEntry {
   caption?: string
 }
 
-export interface FinderScopeFolder {
+export interface FinderScopeProject {
   id: string
+  name: string
   path: BrowsePathSegment[]
 }
 
 export interface FinderScope {
   id: string
   label: string
-  projectId: string
-  folders: FinderScopeFolder[]
+  hubId: string
+  projects: FinderScopeProject[]
 }
 
 interface FinderSearchResponse {
-  entries?: Array<{ item: Item; version: ItemVersion }>
+  entries?: Array<{ item: Item; version: ItemVersion; folder?: BrowsePathSegment }>
   error?: string
 }
 
@@ -42,26 +43,22 @@ function finderScopeFor(
   path: HubTreeNode[],
   children: HubTreeNode[] | undefined,
 ): FinderScope | undefined {
-  const projectIndex = path.findIndex((entry) => entry.type === 'project')
-  if (projectIndex < 0) return undefined
-  const project = path[projectIndex]
-  if (project?.type !== 'project') return undefined
-  const projectPath = browsePath(path.slice(0, projectIndex + 1))
-  const topNodes = (project.id === node.id ? children : project.children) ?? []
-  const folders = topNodes.flatMap((child) =>
-    child.type === 'folder'
+  const hub = path.find((entry) => entry.type === 'hub')
+  if (hub?.type !== 'hub') return undefined
+  const hubPath = browsePath([hub])
+  const projectNodes = (hub.id === node.id ? children : hub.children) ?? []
+  const projects = projectNodes.flatMap((child) =>
+    child.type === 'project'
       ? [
           {
             id: child.value.id,
-            path: [
-              ...projectPath,
-              { id: child.value.id, name: child.name, type: 'folder' as const },
-            ],
+            name: child.name,
+            path: [...hubPath, { id: child.value.id, name: child.name, type: 'project' as const }],
           },
         ]
       : [],
   )
-  return { id: project.id, label: project.name, projectId: project.value.id, folders }
+  return { id: hub.id, label: hub.name, hubId: hub.value.id, projects }
 }
 
 function loadedFinderEntries(
@@ -86,6 +83,15 @@ function loadedFinderEntries(
     if (node.children?.length) entries.push(...loadedFinderEntries(node.children, nextPath))
   }
   return entries
+}
+
+// Matches the server-side search: case-folded and diacritic-stripped, so
+// "cana" finds "CAÑA VIVA" in both groups.
+function searchNormalize(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{M}+/gu, '')
+    .toLocaleLowerCase()
 }
 
 function uniqueFinderEntries(entries: FinderSearchEntry[]): FinderSearchEntry[] {
@@ -126,18 +132,18 @@ export function useModelFinder({
   const [remoteError, setRemoteError] = useState<string>()
 
   const loadedMatches = useMemo(() => {
-    const term = query.trim().toLocaleLowerCase()
+    const term = searchNormalize(query.trim())
     if (!term) return []
     return loadedFinderEntries(nodes).filter((entry) => {
       const location = entry.path.map((segment) => segment.name).join(' ')
-      return `${entry.item.name} ${entry.version?.displayName ?? ''} ${location}`
-        .toLocaleLowerCase()
-        .includes(term)
+      return searchNormalize(
+        `${entry.item.name} ${entry.version?.displayName ?? ''} ${location}`,
+      ).includes(term)
     })
   }, [query, nodes])
 
   const searchKey =
-    query.trim().length >= 2 && scope && scope.folders.length > 0
+    query.trim().length >= 2 && scope && scope.projects.length > 0
       ? `${scope.id}:${query.trim().toLocaleLowerCase()}`
       : undefined
 
@@ -151,12 +157,12 @@ export function useModelFinder({
       setRemoteEntries([])
       setRemoteStatus('loading')
       setRemoteError(undefined)
-      void Promise.all(
-        scope.folders.map(async (folder) => {
+      void Promise.allSettled(
+        scope.projects.map(async (project) => {
           const params = new URLSearchParams({
             kind: 'search',
-            projectId: scope.projectId,
-            folderId: folder.id,
+            hubId: scope.hubId,
+            projectId: project.id,
             q: term,
           })
           const response = await fetch(`${treeEndpoint}?${params}`, {
@@ -165,28 +171,32 @@ export function useModelFinder({
           })
           const body = (await response.json()) as FinderSearchResponse
           if (!response.ok || !body.entries) {
-            throw new Error(body.error ?? `Search in ${scope.label} failed.`)
+            throw new Error(body.error ?? `Search in ${project.name} failed.`)
           }
           return body.entries.map((entry) => ({
-            ...entry,
-            path: folder.path,
-            caption: `Inside ${folder.path.at(-1)?.name ?? scope.label}`,
+            item: entry.item,
+            version: entry.version,
+            path: entry.folder ? [...project.path, entry.folder] : project.path,
           }))
         }),
-      )
-        .then((results) => {
-          if (controller.signal.aborted) return
-          setRemoteEntries(uniqueFinderEntries(results.flat()))
+      ).then((results) => {
+        if (controller.signal.aborted) return
+        const found = results.flatMap((result) =>
+          result.status === 'fulfilled' ? result.value : [],
+        )
+        const failures = results.filter((result) => result.status === 'rejected').length
+        setRemoteEntries(uniqueFinderEntries(found))
+        if (failures === 0) {
           setRemoteStatus('ready')
-        })
-        .catch((error: unknown) => {
-          if (controller.signal.aborted) return
-          setRemoteEntries([])
-          setRemoteStatus('error')
-          setRemoteError(
-            error instanceof Error ? error.message : `Search in ${scope.label} failed.`,
-          )
-        })
+          return
+        }
+        setRemoteStatus('error')
+        setRemoteError(
+          failures === results.length
+            ? `Search in ${scope.label} failed. Keep typing to retry.`
+            : 'Some projects could not be searched. Results may be incomplete.',
+        )
+      })
     }, 250)
 
     return () => {
@@ -214,13 +224,14 @@ export function useModelFinder({
     scope,
     updateScope: (node, path, children) => {
       const next = finderScopeFor(node, path, children)
-      if (next) setScope(next)
+      // A hub whose projects have not loaded never takes (or clobbers) the scope.
+      if (next && next.projects.length > 0) setScope(next)
     },
     groups: [
       { id: 'loaded', label: 'Loaded files', entries: loadedMatches },
       {
         id: 'remote',
-        label: scope ? `In ${scope.label}` : 'Project search',
+        label: scope ? `In ${scope.label}` : 'Hub search',
         status: activeRemoteStatus,
         error: activeRemoteError,
         entries: remoteMatches,
@@ -229,8 +240,8 @@ export function useModelFinder({
     placeholder: scope ? `Search in ${scope.label}` : 'Find a loaded file',
     emptyLabel: scope
       ? query.trim().length < 2
-        ? 'Type at least 2 characters to search unopened folders.'
-        : `No files match in ${scope.label}.`
-      : 'Expand a project to search its folders.',
+        ? 'Type at least 2 characters to search across projects.'
+        : `No results for "${query.trim()}" in ${scope.label}. Try a different term.`
+      : 'Expand a hub to search its projects.',
   }
 }

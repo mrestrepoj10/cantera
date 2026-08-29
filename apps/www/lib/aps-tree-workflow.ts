@@ -51,6 +51,8 @@ interface FolderParentDoc extends ApsFolderDoc {
 export interface HubTreeSearchEntry {
   item: Item
   version: ItemVersion
+  /** Top folder the match was found under, for path display and reveal. */
+  folder?: BrowsePathSegment
 }
 
 export type HubTreeRequest =
@@ -76,6 +78,16 @@ function absolutePageUrl(href: string, base: string): string {
 const MAX_FOLDER_PAGES = 20
 const MAX_PATH_DEPTH = 20
 const SEARCH_MIN_QUERY_LENGTH = 2
+const MAX_SEARCH_MATCHES = 50
+
+// APS's displayName filters match case- and diacritic-sensitively ("cana"
+// misses "CAÑA"), so the recursive listing is filtered here instead.
+function searchNormalize(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{M}+/gu, '')
+    .toLocaleLowerCase()
+}
 
 async function loadPages<Doc>(
   firstUrl: string,
@@ -210,34 +222,63 @@ export async function searchHubTreeItems(
 ): Promise<HubTreeSearchEntry[]> {
   if (query.trim().length < SEARCH_MIN_QUERY_LENGTH) return []
   const base = apsApiBaseUrl(origin)
-  const params = new URLSearchParams({
-    'filter[attributes.displayName]-contains': query.trim(),
-    'page[limit]': '200',
-  })
-  const pages = await loadPages<SearchVersionDoc>(
-    `${base}/data/v1/projects/${segment(projectId)}/folders/${segment(folderId)}/search?${params}`,
-    base,
+  const needle = searchNormalize(query.trim())
+  const entries: HubTreeSearchEntry[] = []
+  let url: string | undefined =
+    `${base}/data/v1/projects/${segment(projectId)}/folders/${segment(folderId)}/search?page[limit]=200`
+  for (
+    let page = 0;
+    url && page < MAX_FOLDER_PAGES && entries.length < MAX_SEARCH_MATCHES;
+    page += 1
+  ) {
+    const document: JsonApiDocument<SearchVersionDoc[]> = await apsGet(url, token)
+    const href = nextHref(document)
+    url = href ? absolutePageUrl(href, base) : undefined
+    for (const doc of document.data ?? []) {
+      if (entries.length >= MAX_SEARCH_MATCHES) break
+      const itemId = doc.relationships?.item?.data?.id
+      if (!itemId) continue
+      const version = fromApsVersion(doc)
+      if (!searchNormalize(version.displayName).includes(needle)) continue
+      entries.push({
+        item: {
+          id: itemId,
+          name: version.displayName,
+          type: 'item' as const,
+          tip: version,
+          translationStatus: version.derivativeUrn ? ('success' as const) : ('pending' as const),
+        },
+        version,
+      })
+    }
+  }
+  return entries
+}
+
+export async function searchHubTreeProject(
+  origin: string,
+  token: AccessToken,
+  hubId: string,
+  projectId: string,
+  query: string,
+): Promise<HubTreeSearchEntry[]> {
+  if (query.trim().length < SEARCH_MIN_QUERY_LENGTH) return []
+  const base = apsApiBaseUrl(origin)
+  const document = await apsGet<JsonApiDocument<ApsFolderDoc[]>>(
+    `${base}/project/v1/hubs/${segment(hubId)}/projects/${segment(projectId)}/topFolders`,
     token,
   )
-  return pages.flatMap((page) =>
-    (page.data ?? []).flatMap((doc) => {
-      const itemId = doc.relationships?.item?.data?.id
-      if (!itemId) return []
-      const version = fromApsVersion(doc)
-      return [
-        {
-          item: {
-            id: itemId,
-            name: version.displayName,
-            type: 'item' as const,
-            tip: version,
-            translationStatus: version.derivativeUrn ? ('success' as const) : ('pending' as const),
-          },
-          version,
-        },
-      ]
+  const folders = (document.data ?? []).map(fromApsFolder)
+  const results = await Promise.all(
+    folders.map(async (folder) => {
+      const entries = await searchHubTreeItems(origin, token, projectId, folder.id, query)
+      return entries.map((entry) => ({
+        ...entry,
+        folder: { id: folder.id, name: folder.name, type: 'folder' as const },
+      }))
     }),
   )
+  return results.flat()
 }
 
 export async function loadItemFolderPath(

@@ -8,6 +8,7 @@ import {
   loadHubTreeNodes,
   loadItemFolderPath,
   searchHubTreeItems,
+  searchHubTreeProject,
 } from '@/lib/aps-tree-workflow'
 
 const requiredParameters = {
@@ -16,7 +17,7 @@ const requiredParameters = {
   'top-folders': ['hubId', 'projectId'],
   'folder-contents': ['projectId', 'folderId'],
   versions: ['projectId', 'itemId'],
-  search: ['projectId', 'folderId', 'q'],
+  search: ['projectId', 'q'],
   path: ['projectId', 'itemId', 'topFolderId'],
 } as const
 
@@ -24,7 +25,7 @@ type TreeKind = keyof typeof requiredParameters
 
 type TreeRouteRequest =
   | HubTreeRequest
-  | { kind: 'search'; projectId: string; folderId: string; q: string }
+  | { kind: 'search'; projectId: string; q: string; folderId?: string; hubId?: string }
   | { kind: 'path'; projectId: string; itemId: string; topFolderId: string }
 
 function treeRequest(searchParams: URLSearchParams): TreeRouteRequest | string {
@@ -57,11 +58,15 @@ function treeRequest(searchParams: URLSearchParams): TreeRouteRequest | string {
     }
   }
   if (typedKind === 'search') {
+    const folderId = searchParams.get('folderId')
+    const hubId = searchParams.get('hubId')
+    if (!folderId && !hubId) return 'folderId or hubId is required for search.'
     return {
       kind: typedKind,
       projectId: searchParams.get('projectId') as string,
-      folderId: searchParams.get('folderId') as string,
       q: searchParams.get('q') as string,
+      folderId: folderId ?? undefined,
+      hubId: hubId ?? undefined,
     }
   }
   if (typedKind === 'path') {
@@ -97,13 +102,21 @@ export async function GET(request: NextRequest): Promise<Response> {
   try {
     const token = await getSessionToken(request.nextUrl.origin, session)
     if (parsed.kind === 'search') {
-      const entries = await searchHubTreeItems(
-        request.nextUrl.origin,
-        token,
-        parsed.projectId,
-        parsed.folderId,
-        parsed.q,
-      )
+      const entries = parsed.folderId
+        ? await searchHubTreeItems(
+            request.nextUrl.origin,
+            token,
+            parsed.projectId,
+            parsed.folderId,
+            parsed.q,
+          )
+        : await searchHubTreeProject(
+            request.nextUrl.origin,
+            token,
+            parsed.hubId as string,
+            parsed.projectId,
+            parsed.q,
+          )
       return Response.json({ entries }, { headers: { 'Cache-Control': 'no-store' } })
     }
     if (parsed.kind === 'path') {

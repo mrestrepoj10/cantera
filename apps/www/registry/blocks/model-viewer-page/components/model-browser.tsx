@@ -1,7 +1,7 @@
 'use client'
 
-import { Building2Icon, LoaderCircleIcon, LogOutIcon } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Building2Icon, LoaderCircleIcon, LogOutIcon, TriangleAlertIcon } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { APSViewer } from '@/components/ui/aps-viewer/aps-viewer'
 import { Button } from '@/components/ui/button'
 import type { FinderEntry } from '@/components/ui/finder'
@@ -9,9 +9,11 @@ import { HubSidebar } from '@/components/ui/hub-sidebar'
 import type { HubTreeBranchNode, HubTreeNode, HubTreeVersionNode } from '@/components/ui/hub-tree'
 import { ModelStatusCard } from '@/components/ui/model-status-card'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { statusInkClasses, statusToneClasses } from '@/components/ui/token-status'
 import { UserAccountBadge } from '@/components/ui/user-account-badge'
 import type { OAuthAccount } from '@/lib/oauth-types'
-import type { BrowsePathSegment, Item, ItemVersion, ModelTranslation } from '@/lib/project-types'
+import type { BrowsePathSegment, Item, ItemVersion } from '@/lib/project-types'
+import { cn } from '@/lib/utils'
 import { AEC_STARTER_EXTENSIONS } from '@/lib/viewer-extension-types'
 import type { GetAccessToken } from '@/lib/viewer-types'
 import { useModelFinder } from './model-finder'
@@ -41,6 +43,41 @@ interface TreeRequest {
 interface PathResponse {
   segments?: BrowsePathSegment[]
   error?: string
+}
+
+interface TreeIssue {
+  message: string
+  /** The session can no longer reach Autodesk — offer the reconnect action. */
+  reconnect: boolean
+}
+
+interface ViewerIssue {
+  kind: 'unviewable' | 'error'
+  detail: string
+}
+
+class TreeRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message)
+  }
+}
+
+function treeIssueFor(error: unknown, fallback: string): TreeIssue {
+  if (error instanceof TreeRequestError) {
+    return { message: error.message, reconnect: error.status === 401 }
+  }
+  return { message: error instanceof Error ? error.message : fallback, reconnect: false }
+}
+
+function viewerIssueFor(error: Error): ViewerIssue {
+  // Document.load code 5 is "file not found": the version has no viewable
+  // derivative, which is an expected state for untranslated formats.
+  const unviewable =
+    /Document\.load failed \(5\)/.test(error.message) || /\b404\b/.test(error.message)
+  return { kind: unviewable ? 'unviewable' : 'error', detail: error.message }
 }
 
 function replaceChildren(
@@ -139,33 +176,39 @@ function ModelBrowser({
   const [selectedId, setSelectedId] = useState<string>()
   const [pendingId, setPendingId] = useState<string>()
   const [rootPending, setRootPending] = useState(initialNodes.length === 0)
-  const [treeError, setTreeError] = useState<string>()
+  const [treeIssue, setTreeIssue] = useState<TreeIssue>()
   const [selection, setSelection] = useState<{ item: Item; version?: ItemVersion }>()
-  const [viewerError, setViewerError] = useState<string>()
+  const [viewerIssue, setViewerIssue] = useState<ViewerIssue>()
   const finder = useModelFinder({ nodes, treeEndpoint })
+
+  // Callers set rootPending before invoking; the first load relies on its
+  // initializer so the effect never writes state synchronously.
+  const loadRoots = useCallback(
+    (signal?: AbortSignal) =>
+      fetch(`${treeEndpoint}?kind=hubs`, { cache: 'no-store', signal })
+        .then(async (response) => {
+          const body = (await response.json()) as TreeResponse
+          if (!response.ok || !body.nodes) {
+            throw new TreeRequestError(body.error ?? 'Hubs could not be loaded.', response.status)
+          }
+          setNodes(body.nodes)
+          setTreeIssue(undefined)
+        })
+        .catch((error) => {
+          if (!signal?.aborted) setTreeIssue(treeIssueFor(error, 'Hubs could not be loaded.'))
+        })
+        .finally(() => {
+          if (!signal?.aborted) setRootPending(false)
+        }),
+    [treeEndpoint],
+  )
 
   useEffect(() => {
     if (initialNodes.length > 0) return
     const controller = new AbortController()
-    // rootPending initializes true when there are no initialNodes, so the
-    // effect does not need to set it before this first fetch.
-    fetch(`${treeEndpoint}?kind=hubs`, { cache: 'no-store', signal: controller.signal })
-      .then(async (response) => {
-        const body = (await response.json()) as TreeResponse
-        if (!response.ok || !body.nodes) throw new Error(body.error ?? 'Hubs could not be loaded.')
-        setNodes(body.nodes)
-        setTreeError(undefined)
-      })
-      .catch((error) => {
-        if (!controller.signal.aborted) {
-          setTreeError(error instanceof Error ? error.message : 'Hubs could not be loaded.')
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setRootPending(false)
-      })
+    void loadRoots(controller.signal)
     return () => controller.abort()
-  }, [initialNodes.length, treeEndpoint])
+  }, [initialNodes.length, loadRoots])
 
   const getAccessToken = useCallback<GetAccessToken>(async () => {
     const response = await fetch(viewerTokenEndpoint, { cache: 'no-store' })
@@ -182,7 +225,7 @@ function ModelBrowser({
     })
     const body = (await response.json()) as TreeResponse
     if (!response.ok || !body.nodes) {
-      throw new Error(body.error ?? `${node.name} could not be loaded.`)
+      throw new TreeRequestError(body.error ?? `${node.name} could not be loaded.`, response.status)
     }
     setNodes((current) => replaceChildren(current, node.id, body.nodes ?? []))
     return body.nodes
@@ -198,13 +241,13 @@ function ModelBrowser({
     }
     finder.updateScope(node, path, undefined)
     setPendingId(node.id)
-    setTreeError(undefined)
+    setTreeIssue(undefined)
     try {
       const children = await loadChildren(node, path)
       finder.updateScope(node, path, children)
       setExpandedIds((current) => (current.includes(node.id) ? current : [...current, node.id]))
     } catch (error) {
-      setTreeError(error instanceof Error ? error.message : `${node.name} could not be loaded.`)
+      setTreeIssue(treeIssueFor(error, `${node.name} could not be loaded.`))
     } finally {
       setPendingId(undefined)
     }
@@ -266,41 +309,89 @@ function ModelBrowser({
   function openItem(item: Item, version?: ItemVersion): void {
     setSelection({ item, version })
     setSelectedId(selectedTreeId(nodes, item, version))
-    setViewerError(undefined)
+    setViewerIssue(undefined)
   }
 
   async function openFinderEntry(entry: FinderEntry): Promise<void> {
     setSelection({ item: entry.item, version: entry.version })
-    setViewerError(undefined)
+    setViewerIssue(undefined)
     await revealEntry(entry)
   }
-
-  const translation = useMemo<ModelTranslation | undefined>(() => {
-    if (!selection) return undefined
-    const version = selection.version ?? selection.item.tip
-    const urn = version?.derivativeUrn
-    if (urn && !viewerError) {
-      return {
-        urn,
-        name: selection.item.name,
-        status: 'success',
-        outputs: ['svf2'],
-      }
-    }
-    return {
-      urn: urn ?? selection.item.id,
-      name: selection.item.name,
-      status: viewerError ? 'failed' : 'pending',
-      error:
-        viewerError ??
-        'This item version has no translated geometry. Choose another item or version.',
-    }
-  }, [selection, viewerError])
 
   const urn = selection
     ? ((selection.version ? selection.version.derivativeUrn : selection.item.tip?.derivativeUrn) ??
       undefined)
     : undefined
+
+  const selectionLabel = selection
+    ? selection.version
+      ? `${selection.item.name} · v${selection.version.versionNumber}`
+      : selection.item.name
+    : undefined
+
+  const reconnectAction = (
+    <form action={signOutHref} method="post">
+      <Button
+        type="submit"
+        variant="outline"
+        size="sm"
+        className="relative after:absolute after:-inset-y-2 after:inset-x-0"
+      >
+        Reconnect Autodesk
+      </Button>
+    </form>
+  )
+
+  const treeEmpty = rootPending ? (
+    <output className="flex min-h-11 items-center justify-center gap-2 px-2 py-6 text-muted-foreground text-xs">
+      <LoaderCircleIcon aria-hidden className="size-3.5 animate-spin" />
+      Loading hubs
+    </output>
+  ) : treeIssue ? (
+    <div role="alert" className="flex flex-col items-center gap-3 px-3 py-8 text-center">
+      <span
+        className={cn(
+          'grid size-8 shrink-0 place-items-center rounded-full',
+          statusToneClasses.warning,
+        )}
+      >
+        <TriangleAlertIcon aria-hidden className="size-4" />
+      </span>
+      <p className="text-sm">{treeIssue.message}</p>
+      {treeIssue.reconnect ? (
+        reconnectAction
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          className="relative after:absolute after:-inset-y-2 after:inset-x-0"
+          onClick={() => {
+            setRootPending(true)
+            void loadRoots()
+          }}
+        >
+          Retry
+        </Button>
+      )}
+    </div>
+  ) : undefined
+
+  const treeAlert =
+    nodes.length > 0 && treeIssue ? (
+      <div
+        role="alert"
+        className="flex flex-col gap-2 rounded-lg border border-border p-2.5 text-xs group-data-[collapsible=icon]:hidden"
+      >
+        <span className="flex items-start gap-1.5">
+          <TriangleAlertIcon
+            aria-hidden
+            className={cn('mt-0.5 size-3.5 shrink-0', statusInkClasses.warning)}
+          />
+          <span>{treeIssue.message}</span>
+        </span>
+        {treeIssue.reconnect && reconnectAction}
+      </div>
+    ) : undefined
 
   return (
     <SidebarProvider
@@ -328,22 +419,12 @@ function ModelBrowser({
           expandedIds,
           selectedId,
           pendingId,
+          empty: treeEmpty,
           onExpand: expand,
           onCollapse: (node) => setExpandedIds((current) => current.filter((id) => id !== node.id)),
           onItemOpen: openItem,
         }}
-        footer={
-          rootPending ? (
-            <output className="flex min-h-11 items-center gap-2 px-2 text-muted-foreground text-xs">
-              <LoaderCircleIcon aria-hidden className="size-3.5 animate-spin" />
-              <span className="group-data-[collapsible=icon]:hidden">Loading hubs</span>
-            </output>
-          ) : treeError ? (
-            <p role="alert" className="px-2 py-2 text-status-danger text-xs">
-              {treeError}
-            </p>
-          ) : null
-        }
+        header={treeAlert}
         collapsible="icon"
         className={
           embedded ? 'border-border border-r md:absolute md:h-full' : 'border-border border-r'
@@ -383,7 +464,7 @@ function ModelBrowser({
         </header>
 
         <section className="relative min-h-0 min-w-0 flex-1 bg-muted" aria-label="Model viewer">
-          {urn && !viewerError ? (
+          {urn && !viewerIssue ? (
             <APSViewer
               urn={urn}
               getAccessToken={getAccessToken}
@@ -393,12 +474,40 @@ function ModelBrowser({
               radius={0}
               className="size-full"
               onViewerReady={(viewer) => viewer.prefs.set('openPropertiesOnSelect', true)}
-              onError={(error) => setViewerError(error.message)}
+              onError={(error) => setViewerIssue(viewerIssueFor(error))}
             />
           ) : (
-            <div className="absolute inset-0 grid place-items-center p-6">
-              {translation ? (
-                <ModelStatusCard translation={translation} className="max-w-lg" />
+            <div className="absolute inset-0 grid place-items-center overflow-y-auto p-6">
+              {selection ? (
+                viewerIssue?.kind === 'error' ? (
+                  <ModelStatusCard
+                    translation={{
+                      urn: urn ?? selection.item.id,
+                      name: selectionLabel,
+                      status: 'failed',
+                      error: viewerIssue.detail,
+                    }}
+                    className="max-w-lg"
+                  />
+                ) : (
+                  <div role="status" className="max-w-sm text-center">
+                    <h2 className="font-heading font-medium text-xl">No preview for this file</h2>
+                    <p className="mt-2 break-words text-muted-foreground text-sm">
+                      Autodesk has not produced a viewable version of “{selectionLabel}”. Choose
+                      another file or version.
+                    </p>
+                    {viewerIssue && (
+                      <details className="mt-4 text-left">
+                        <summary className="w-fit text-muted-foreground text-xs">
+                          Technical details
+                        </summary>
+                        <p className="mt-1 break-all font-mono text-muted-foreground text-xs">
+                          {viewerIssue.detail}
+                        </p>
+                      </details>
+                    )}
+                  </div>
+                )
               ) : (
                 <div className="max-w-sm text-center">
                   <h2 className="font-heading font-medium text-xl">Choose a model</h2>

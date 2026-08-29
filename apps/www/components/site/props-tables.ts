@@ -1245,6 +1245,12 @@ export const apiTables: ApiTablesByItem = {
             'Row density. Comfortable keeps the 44px field target; compact is the explicit desktop escape hatch.',
         },
         {
+          name: 'empty',
+          type: 'ReactNode',
+          description:
+            'Rendered instead of the default "No projects found." when nodes is empty — the place for loading, error, and reconnect states.',
+        },
+        {
           name: 'onExpand / onCollapse',
           type: '(node: HubTreeBranchNode) => void | Promise<void>',
           description:
