@@ -221,6 +221,11 @@ interface ApsStorageObject extends Entity {
     content_base64: string | null;
     uploaded_at: string | null;
 }
+interface ApsBucket extends Entity {
+    bucket_key: string;
+    policy_key: string;
+    created_at: string;
+}
 interface ApsUploadSession extends Entity {
     upload_key: string;
     object_key: string;
@@ -1012,6 +1017,7 @@ interface ApsStore {
     documentFolders: Collection<ApsDocumentFolder>;
     documentItems: Collection<ApsDocumentItem>;
     documentVersions: Collection<ApsDocumentVersion>;
+    buckets: Collection<ApsBucket>;
     storageObjects: Collection<ApsStorageObject>;
     uploadSessions: Collection<ApsUploadSession>;
     translationJobs: Collection<ApsTranslationJob>;
@@ -1066,4 +1072,4 @@ declare function simulateWebhookEvent(aps: ApsStore, store: Store, input: ApsWeb
 declare function seedFromConfig(store: Store, _baseUrl: string, config: ApsSeedConfig): void;
 declare const apsPlugin: ServicePlugin;
 
-export { type ApsAccProjectUser, type ApsClashGroup, type ApsClashTest, type ApsClashTestStatus, type ApsClient, type ApsClientType, type ApsDocumentFolder, type ApsDocumentFolderSeed, type ApsDocumentItem, type ApsDocumentItemSeed, type ApsDocumentVersion, type ApsDocumentVersionSeed, type ApsHub, type ApsIssue, type ApsIssuePermission, type ApsIssueType, type ApsManifest, type ApsManifestDerivative, type ApsModelCoordinationTimingConfig, type ApsModelSet, type ApsModelSetDocumentVersion, type ApsModelSetVersion, type ApsModelSetVersionStatus, type ApsModelSetView, type ApsProject, type ApsRfi, type ApsRfiAttribute, type ApsRfiType, type ApsSeedConfig, type ApsSheet, type ApsSheetCollection, type ApsSheetVersionSet, type ApsSignedBlob, type ApsStorageObject, type ApsStore, type ApsTranslationConfig, type ApsTranslationJob, type ApsTranslationJobStatus, type ApsTranslationOutputFormat, type ApsUploadConfig, type ApsUploadSession, type ApsUser, type ApsWebhookCreatorType, type ApsWebhookDelivery, type ApsWebhookFilter, type ApsWebhookHook, type ApsWebhookSecret, type ApsWebhookStatus, type ApsWebhookTimingConfig, DEFAULT_DATA_SEED, DEFAULT_MODEL_COORDINATION_TIMING, DEFAULT_TRANSLATION_CONFIG, DEFAULT_UPLOAD_CONFIG, DEFAULT_WEBHOOK_TIMING, apsPlugin, apsPlugin as default, getApsStore, getModelCoordinationTiming, getTranslationConfig, getUploadConfig, getWebhookTiming, seedFromConfig, setModelCoordinationTiming, setTranslationConfig, setUploadConfig, setWebhookTiming, simulateWebhookEvent, webhookDetails };
+export { type ApsAccProjectUser, type ApsBucket, type ApsClashGroup, type ApsClashTest, type ApsClashTestStatus, type ApsClient, type ApsClientType, type ApsDocumentFolder, type ApsDocumentFolderSeed, type ApsDocumentItem, type ApsDocumentItemSeed, type ApsDocumentVersion, type ApsDocumentVersionSeed, type ApsHub, type ApsIssue, type ApsIssuePermission, type ApsIssueType, type ApsManifest, type ApsManifestDerivative, type ApsModelCoordinationTimingConfig, type ApsModelSet, type ApsModelSetDocumentVersion, type ApsModelSetVersion, type ApsModelSetVersionStatus, type ApsModelSetView, type ApsProject, type ApsRfi, type ApsRfiAttribute, type ApsRfiType, type ApsSeedConfig, type ApsSheet, type ApsSheetCollection, type ApsSheetVersionSet, type ApsSignedBlob, type ApsStorageObject, type ApsStore, type ApsTranslationConfig, type ApsTranslationJob, type ApsTranslationJobStatus, type ApsTranslationOutputFormat, type ApsUploadConfig, type ApsUploadSession, type ApsUser, type ApsWebhookCreatorType, type ApsWebhookDelivery, type ApsWebhookFilter, type ApsWebhookHook, type ApsWebhookSecret, type ApsWebhookStatus, type ApsWebhookTimingConfig, DEFAULT_DATA_SEED, DEFAULT_MODEL_COORDINATION_TIMING, DEFAULT_TRANSLATION_CONFIG, DEFAULT_UPLOAD_CONFIG, DEFAULT_WEBHOOK_TIMING, apsPlugin, apsPlugin as default, getApsStore, getModelCoordinationTiming, getTranslationConfig, getUploadConfig, getWebhookTiming, seedFromConfig, setModelCoordinationTiming, setTranslationConfig, setUploadConfig, setWebhookTiming, simulateWebhookEvent, webhookDetails };

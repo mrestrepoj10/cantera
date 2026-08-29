@@ -1466,30 +1466,25 @@ export const apiTables: ApiTablesByItem = {
       showDefault: true,
       rows: [
         {
-          name: 'account',
-          type: 'OAuthAccount',
-          description: 'Signed-in account shown in the header account control.',
-        },
-        {
           name: 'uploadEndpoint',
           type: 'string',
           defaultValue: "'/api/models/upload'",
           description:
-            'Session-backed route implementing the browse, start, finish, and status contract.',
+            'Two-legged route implementing the models, start, finish, and status contract over the app bucket.',
         },
         {
-          name: 'signOutHref',
+          name: 'viewerTokenEndpoint',
           type: 'string',
-          defaultValue: "'/api/auth/signout?next=/sign-in'",
+          defaultValue: "'/api/viewer-token'",
           description:
-            'POST route used by the account control to revoke the grant and clear the session.',
+            'Separate two-legged viewer token route, scoped to viewables:read. Upload-scoped tokens never cross into the viewer.',
         },
         {
           name: 'embedded',
           type: 'boolean',
           defaultValue: 'false',
           description:
-            'Constrains the shell height for preview containers. Leave false for the full-page route.',
+            'Constrains the desktop sidebar and shell height to the nearest positioned preview container, and skips writing ?urn= to the URL. Leave false for the full-page route.',
         },
       ],
     },
@@ -1498,28 +1493,28 @@ export const apiTables: ApiTablesByItem = {
       nameHeader: 'Request',
       rows: [
         {
-          name: 'kind=hubs / projects / folders',
-          type: 'GET · hubId, projectId, folderId',
+          name: 'kind=models',
+          type: 'GET',
           description:
-            'Destination browsing: hubs, projects in a hub, top folders, or the subfolders of one folder.',
+            'Ensures the app bucket exists and lists its objects as { name, urn, size } models.',
         },
         {
           name: 'kind=start',
-          type: 'POST · projectId, folderId, name, size',
+          type: 'POST · name, size',
           description:
-            'Creates the storage object and returns signed S3 part URLs the browser uploads to directly.',
+            'Returns signed S3 part URLs for the object the browser uploads to directly.',
         },
         {
           name: 'kind=finish',
-          type: 'POST · objectId, uploadKey, views, masterViews',
+          type: 'POST · objectId, uploadKey, views, masterViews, zipEntrypoint',
           description:
-            'Completes the signed upload, creates the item or a new version on a name match, and submits the svf2 translation job.',
+            'Completes the signed upload and submits the svf2 job — compressed with the archive root when zipEntrypoint is set.',
         },
         {
           name: 'kind=status',
           type: 'GET · urn',
           description:
-            'Reads the Model Derivative manifest and normalizes it into the translation status vocabulary.',
+            'Reads the Model Derivative manifest into the translation status vocabulary, with the derivative diagnostic messages.',
         },
       ],
     },

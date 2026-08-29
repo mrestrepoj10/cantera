@@ -1,41 +1,64 @@
 'use client'
 
-import { LogOutIcon, UploadIcon } from 'lucide-react'
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { Building2Icon, LoaderCircleIcon, UploadIcon } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { APSViewer } from '@/components/ui/aps-viewer/aps-viewer'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { FileDropZone } from '@/components/ui/file-drop-zone'
-import { Label } from '@/components/ui/label'
-import { ProjectPicker } from '@/components/ui/project-picker'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { UserAccountBadge } from '@/components/ui/user-account-badge'
-import type { OAuthAccount } from '@/lib/oauth-types'
-import type { Folder, Hub, ModelTranslationStatus, Project } from '@/lib/project-types'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { FileDropZone } from '@/components/ui/file-drop-zone'
+import type { FinderEntry } from '@/components/ui/finder'
+import { HubSidebar } from '@/components/ui/hub-sidebar'
+import type { HubTreeItemNode } from '@/components/ui/hub-tree'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ModelStatusCard } from '@/components/ui/model-status-card'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import type { Item, ModelTranslationStatus } from '@/lib/project-types'
 import { MODEL_FILE_ACCEPT, type UploadFile, type UploadRejection } from '@/lib/upload-types'
+import { cn } from '@/lib/utils'
+import { AEC_STARTER_EXTENSIONS } from '@/lib/viewer-extension-types'
+import type { GetAccessToken } from '@/lib/viewer-types'
 
 export interface ModelUploadProps {
-  account: OAuthAccount
   uploadEndpoint?: string
-  signOutHref?: string
+  viewerTokenEndpoint?: string
   embedded?: boolean
 }
 
-type Catalog =
+interface BucketModel {
+  name: string
+  urn: string
+  size?: number
+}
+
+type ModelsState =
   | { status: 'loading' }
-  | { status: 'ready'; hubs: Hub[]; projects: Project[] }
+  | { status: 'ready'; models: BucketModel[] }
   | { status: 'error'; message: string }
 
-interface FolderLevel {
-  folders: Folder[]
-  selectedId: string
+interface TranslationSnapshot {
+  status: ModelTranslationStatus
+  progress?: string
+  messages: string[]
+}
+
+type SelectionState =
+  | { kind: 'checking' }
+  | { kind: 'translating'; snapshot: TranslationSnapshot }
+  | { kind: 'ready' }
+  | { kind: 'failed'; snapshot: TranslationSnapshot }
+
+interface ViewerIssue {
+  kind: 'unviewable' | 'no-credentials' | 'error'
+  detail: string
 }
 
 interface StartResponse {
@@ -54,20 +77,20 @@ interface FinishResponse {
 interface StatusResponse {
   status?: ModelTranslationStatus
   progress?: string
+  messages?: string[]
   error?: string
 }
 
 interface ActiveUpload {
   file: File
-  projectId: string
-  folderId: string
+  zipEntrypoint?: string
   xhr?: XMLHttpRequest
   cancelled?: boolean
   /** Set once finish succeeds — retries resume polling, never re-upload. */
   urn?: string
-  region?: string
 }
 
+const UPLOAD_ACCEPT = `${MODEL_FILE_ACCEPT},.zip`
 const STATUS_POLL_MS = 2500
 const STATUS_POLL_LIMIT = 240
 
@@ -81,138 +104,183 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
 
-async function fetchCatalog(uploadEndpoint: string): Promise<{ hubs: Hub[]; projects: Project[] }> {
-  const hubsResponse = await fetch(`${uploadEndpoint}?kind=hubs`, { cache: 'no-store' })
-  const hubsBody = (await hubsResponse.json()) as { hubs?: Hub[]; error?: string }
-  if (!hubsResponse.ok || !hubsBody.hubs) {
-    throw new Error(hubsBody.error ?? 'Hubs could not be loaded.')
+function searchNormalize(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{M}+/gu, '')
+    .toLocaleLowerCase()
+}
+
+function isZip(name: string): boolean {
+  return name.toLowerCase().endsWith('.zip')
+}
+
+function viewerIssueFor(error: Error): ViewerIssue {
+  if (
+    error.message.includes('viewer token is unavailable') ||
+    error.message.includes('getAccessToken failed')
+  ) {
+    return { kind: 'no-credentials', detail: error.message }
   }
-  const projectLists = await Promise.all(
-    hubsBody.hubs.map(async (hub) => {
-      const response = await fetch(
-        `${uploadEndpoint}?kind=projects&hubId=${encodeURIComponent(hub.id)}`,
-        { cache: 'no-store' },
-      )
-      const body = (await response.json()) as { projects?: Project[]; error?: string }
-      if (!response.ok || !body.projects) {
-        throw new Error(body.error ?? `Projects in ${hub.name} could not be loaded.`)
-      }
-      return body.projects
-    }),
-  )
-  return { hubs: hubsBody.hubs, projects: projectLists.flat() }
+  const unviewable =
+    /Document\.load failed \(5\)/.test(error.message) ||
+    /\b404\b/.test(error.message) ||
+    error.message.includes('document has no viewable geometry')
+  return { kind: unviewable ? 'unviewable' : 'error', detail: error.message }
+}
+
+function modelNode(model: BucketModel): HubTreeItemNode {
+  const item: Item = {
+    id: model.urn,
+    name: model.name,
+    type: 'item',
+    tip: {
+      id: model.urn,
+      versionNumber: 1,
+      displayName: model.name,
+      createTime: '',
+      createdBy: '',
+      storageSize: model.size ?? 0,
+      derivativeUrn: model.urn,
+    },
+  }
+  return {
+    id: `model:${model.urn}`,
+    name: model.name,
+    type: 'item',
+    value: item,
+    hasChildren: false,
+  }
 }
 
 function ModelUpload({
-  account,
   uploadEndpoint = '/api/models/upload',
-  signOutHref = '/api/auth/signout?next=/sign-in',
+  viewerTokenEndpoint = '/api/viewer-token',
   embedded = false,
 }: ModelUploadProps) {
-  const [catalog, setCatalog] = useState<Catalog>({ status: 'loading' })
-  const [projectId, setProjectId] = useState<string>()
-  const [folderLevels, setFolderLevels] = useState<FolderLevel[]>([])
-  const [folderPending, setFolderPending] = useState(false)
-  const [sheets, setSheets] = useState(true)
-  const [models, setModels] = useState(true)
-  const [masterViews, setMasterViews] = useState(false)
+  const [modelsState, setModelsState] = useState<ModelsState>({ status: 'loading' })
+  const [selected, setSelected] = useState<{ urn: string; name: string }>()
+  const [selectionState, setSelectionState] = useState<SelectionState>({ kind: 'checking' })
+  const [viewerIssue, setViewerIssue] = useState<ViewerIssue>()
+  const [query, setQuery] = useState('')
+  const [uploadOpen, setUploadOpen] = useState(false)
   const [files, setFiles] = useState<UploadFile[]>([])
+  const [pendingZips, setPendingZips] = useState<{ id: string; name: string; entry: string }[]>([])
   const [rejection, setRejection] = useState<string>()
+  const [sheets, setSheets] = useState(true)
+  const [models3d, setModels3d] = useState(true)
+  const [masterViews, setMasterViews] = useState(false)
   const uploads = useRef(new Map<string, ActiveUpload>())
-  const folderRequest = useRef(0)
-  const rejectionId = useId()
-
-  const project =
-    catalog.status === 'ready'
-      ? catalog.projects.find((entry) => entry.id === projectId)
-      : undefined
-  const targetFolderId = [...folderLevels].reverse().find((level) => level.selectedId)?.selectedId
 
   // Callers set the loading state first; the initial load relies on the
   // state initializer so the effect never writes state synchronously.
-  const loadCatalog = useCallback(
+  const loadModels = useCallback(
     () =>
-      fetchCatalog(uploadEndpoint)
-        .then((catalog) => setCatalog({ status: 'ready', ...catalog }))
+      fetch(`${uploadEndpoint}?kind=models`, { cache: 'no-store' })
+        .then(async (response) => {
+          const body = (await response.json()) as { models?: BucketModel[]; error?: string }
+          if (!response.ok || !body.models) {
+            throw new Error(body.error ?? 'Models could not be listed.')
+          }
+          setModelsState({ status: 'ready', models: body.models })
+          return body.models
+        })
         .catch((error: unknown) => {
-          setCatalog({
+          setModelsState({
             status: 'error',
-            message: error instanceof Error ? error.message : 'Projects could not be loaded.',
+            message: error instanceof Error ? error.message : 'Models could not be listed.',
           })
+          return [] as BucketModel[]
         }),
     [uploadEndpoint],
   )
 
   useEffect(() => {
-    void loadCatalog()
-  }, [loadCatalog])
-
-  async function loadFolders(project: Project, folderId?: string): Promise<Folder[]> {
-    const params = new URLSearchParams({ kind: 'folders', projectId: project.id })
-    if (folderId) params.set('folderId', folderId)
-    else params.set('hubId', project.hubId ?? '')
-    const response = await fetch(`${uploadEndpoint}?${params}`, { cache: 'no-store' })
-    const body = (await response.json()) as { folders?: Folder[]; error?: string }
-    if (!response.ok || !body.folders) {
-      throw new Error(body.error ?? 'Folders could not be loaded.')
-    }
-    return body.folders
-  }
-
-  async function chooseProject(nextProjectId: string): Promise<void> {
-    if (catalog.status !== 'ready') return
-    const next = catalog.projects.find((entry) => entry.id === nextProjectId)
-    if (!next) return
-    // A slower response for a superseded selection must not land: the ticket
-    // retires every earlier in-flight folder request.
-    const ticket = ++folderRequest.current
-    setProjectId(nextProjectId)
-    setFolderLevels([])
-    setFolderPending(true)
-    try {
-      const folders = await loadFolders(next)
-      if (folderRequest.current !== ticket) return
-      // A single top folder (Project Files, typically) is not a choice.
-      if (folders.length === 1 && folders[0]) {
-        const only = folders[0]
-        const children = await loadFolders(next, only.id)
-        if (folderRequest.current !== ticket) return
-        setFolderLevels([
-          { folders, selectedId: only.id },
-          ...(children.length > 0 ? [{ folders: children, selectedId: '' }] : []),
-        ])
-      } else {
-        setFolderLevels([{ folders, selectedId: '' }])
+    void loadModels().then((models) => {
+      // A shared link restores its model: ?urn=... names the selection.
+      const shared = new URLSearchParams(window.location.search).get('urn')
+      if (!shared) return
+      const model = models.find((entry) => entry.urn === shared)
+      if (model) {
+        setSelected(model)
+        setSelectionState({ kind: 'checking' })
+        setViewerIssue(undefined)
       }
-    } catch {
-      if (folderRequest.current === ticket) setFolderLevels([])
-    } finally {
-      if (folderRequest.current === ticket) setFolderPending(false)
+    })
+  }, [loadModels])
+
+  function selectModel(
+    model: { urn: string; name: string },
+    options?: { fromUrl?: boolean },
+  ): void {
+    setSelected(model)
+    setSelectionState({ kind: 'checking' })
+    setViewerIssue(undefined)
+    if (!embedded && !options?.fromUrl) {
+      const url = new URL(window.location.href)
+      url.searchParams.set('urn', model.urn)
+      window.history.replaceState(null, '', url)
     }
   }
 
-  async function chooseFolder(level: number, folderId: string): Promise<void> {
-    if (!project) return
-    const current = folderLevels[level]
-    if (!current) return
-    const ticket = ++folderRequest.current
-    setFolderLevels([...folderLevels.slice(0, level), { ...current, selectedId: folderId }])
-    setFolderPending(true)
-    try {
-      const children = await loadFolders(project, folderId)
-      if (folderRequest.current !== ticket) return
-      if (children.length > 0) {
-        setFolderLevels((levels) => [
-          ...levels.slice(0, level + 1),
-          { folders: children, selectedId: '' },
-        ])
+  // The selected model renders only once its manifest settles: poll while the
+  // translation is still running.
+  useEffect(() => {
+    if (!selected) return
+    let cancelled = false
+    async function track(urn: string): Promise<void> {
+      for (let attempt = 0; attempt < STATUS_POLL_LIMIT && !cancelled; attempt += 1) {
+        try {
+          const response = await fetch(
+            `${uploadEndpoint}?kind=status&urn=${encodeURIComponent(urn)}`,
+            {
+              cache: 'no-store',
+            },
+          )
+          const body = (await response.json()) as StatusResponse
+          if (cancelled) return
+          if (!response.ok) throw new Error(body.error ?? 'The translation status is unavailable.')
+          const snapshot: TranslationSnapshot = {
+            status: body.status ?? 'pending',
+            progress: body.progress,
+            messages: body.messages ?? [],
+          }
+          if (snapshot.status === 'success') {
+            setSelectionState({ kind: 'ready' })
+            return
+          }
+          if (snapshot.status === 'failed' || snapshot.status === 'timeout') {
+            setSelectionState({ kind: 'failed', snapshot })
+            return
+          }
+          setSelectionState({ kind: 'translating', snapshot })
+        } catch (error) {
+          if (cancelled) return
+          setSelectionState({
+            kind: 'failed',
+            snapshot: {
+              status: 'failed',
+              messages: [
+                error instanceof Error ? error.message : 'The translation status is unavailable.',
+              ],
+            },
+          })
+          return
+        }
+        await delay(STATUS_POLL_MS)
       }
-    } catch {
-      // The chosen folder still works as the target; drill-down just stops here.
-    } finally {
-      if (folderRequest.current === ticket) setFolderPending(false)
     }
-  }
+    void track(selected.urn)
+    return () => {
+      cancelled = true
+    }
+  }, [selected, uploadEndpoint])
+
+  const getAccessToken = useCallback<GetAccessToken>(async () => {
+    const response = await fetch(viewerTokenEndpoint, { cache: 'no-store' })
+    if (!response.ok) throw new Error('The viewer token is unavailable.')
+    return (await response.json()) as Awaited<ReturnType<GetAccessToken>>
+  }, [viewerTokenEndpoint])
 
   function patchFile(id: string, patch: Partial<UploadFile>): void {
     setFiles((current) =>
@@ -261,62 +329,7 @@ function ModelUpload({
     })
   }
 
-  async function runUpload(id: string): Promise<void> {
-    const active = uploads.current.get(id)
-    if (!active) return
-    const { file } = active
-    try {
-      if (active.urn) {
-        patchFile(id, { phase: 'processing', processingLabel: 'Translating', error: undefined })
-        await trackTranslation(id, active.urn)
-        return
-      }
-      patchFile(id, { phase: 'queued', progress: undefined, error: undefined })
-      const start = await postUpload<StartResponse>({
-        kind: 'start',
-        projectId: active.projectId,
-        folderId: active.folderId,
-        name: file.name,
-        size: file.size,
-      })
-      if (!start.objectId || !start.uploadKey || !start.urls?.length || !start.partSize) {
-        throw new Error('The upload could not be started.')
-      }
-      patchFile(id, { phase: 'uploading', progress: 0 })
-      for (let index = 0; index < start.urls.length; index += 1) {
-        const url = start.urls[index]
-        if (!url) throw new Error('The upload could not be started.')
-        const from = index * start.partSize
-        const part = file.slice(from, Math.min(file.size, from + start.partSize))
-        await putPart(id, url, part, (loaded) => {
-          patchFile(id, { progress: file.size > 0 ? (from + loaded) / file.size : 1 })
-        })
-      }
-      patchFile(id, { phase: 'processing', progress: undefined, processingLabel: 'Saving version' })
-      const finish = await postUpload<FinishResponse>({
-        kind: 'finish',
-        projectId: active.projectId,
-        folderId: active.folderId,
-        name: file.name,
-        objectId: start.objectId,
-        uploadKey: start.uploadKey,
-        views: [...(sheets ? ['2d' as const] : []), ...(models ? ['3d' as const] : [])],
-        masterViews,
-        region: active.region,
-      })
-      if (!finish.urn) throw new Error('The version could not be created.')
-      active.urn = finish.urn
-      patchFile(id, { processingLabel: 'Translating' })
-      await trackTranslation(id, finish.urn)
-    } catch (error) {
-      if (uploads.current.get(id)?.cancelled) return
-      const message = error instanceof Error ? error.message : 'The upload failed.'
-      if (message === 'cancelled') return
-      patchFile(id, { phase: 'error', progress: undefined, error: message, retryable: true })
-    }
-  }
-
-  async function trackTranslation(id: string, urn: string): Promise<void> {
+  async function trackUploadTranslation(id: string, urn: string): Promise<void> {
     for (let attempt = 0; attempt < STATUS_POLL_LIMIT; attempt += 1) {
       if (uploads.current.get(id)?.cancelled) return
       const response = await fetch(`${uploadEndpoint}?kind=status&urn=${encodeURIComponent(urn)}`, {
@@ -328,16 +341,13 @@ function ModelUpload({
         patchFile(id, { phase: 'complete', processingLabel: undefined })
         return
       }
-      if (body.status === 'failed') {
+      if (body.status === 'failed' || body.status === 'timeout') {
         patchFile(id, {
           phase: 'error',
-          error: 'The upload finished but translation failed.',
+          error: body.messages?.[0] ?? 'The upload finished but translation failed.',
           retryable: false,
         })
         return
-      }
-      if (body.status === 'timeout') {
-        throw new Error('Translation timed out.')
       }
       patchFile(id, {
         processingLabel: body.progress ? `Translating · ${body.progress}` : 'Translating',
@@ -347,24 +357,92 @@ function ModelUpload({
     throw new Error('Translation is taking longer than expected.')
   }
 
-  function handleDropFiles(dropped: File[]): void {
-    if (!project || !targetFolderId) return
-    setRejection(undefined)
-    const hub =
-      catalog.status === 'ready'
-        ? catalog.hubs.find((entry) => entry.id === project.hubId)
-        : undefined
-    for (const file of dropped) {
-      const id = crypto.randomUUID()
-      uploads.current.set(id, {
-        file,
-        projectId: project.id,
-        folderId: targetFolderId,
-        region: hub?.region,
-      })
-      setFiles((current) => [...current, { id, name: file.name, size: file.size, phase: 'queued' }])
-      void runUpload(id)
+  async function runUpload(id: string): Promise<void> {
+    const active = uploads.current.get(id)
+    if (!active) return
+    const { file } = active
+    try {
+      if (active.urn) {
+        patchFile(id, { phase: 'processing', processingLabel: 'Translating', error: undefined })
+        await trackUploadTranslation(id, active.urn)
+      } else {
+        patchFile(id, { phase: 'queued', progress: undefined, error: undefined })
+        const start = await postUpload<StartResponse>({
+          kind: 'start',
+          name: file.name,
+          size: file.size,
+        })
+        if (!start.objectId || !start.uploadKey || !start.urls?.length || !start.partSize) {
+          throw new Error('The upload could not be started.')
+        }
+        patchFile(id, { phase: 'uploading', progress: 0 })
+        for (let index = 0; index < start.urls.length; index += 1) {
+          const url = start.urls[index]
+          if (!url) throw new Error('The upload could not be started.')
+          const from = index * start.partSize
+          const part = file.slice(from, Math.min(file.size, from + start.partSize))
+          await putPart(id, url, part, (loaded) => {
+            patchFile(id, { progress: file.size > 0 ? (from + loaded) / file.size : 1 })
+          })
+        }
+        patchFile(id, { phase: 'processing', progress: undefined, processingLabel: 'Translating' })
+        const finish = await postUpload<FinishResponse>({
+          kind: 'finish',
+          name: file.name,
+          objectId: start.objectId,
+          uploadKey: start.uploadKey,
+          views: [...(sheets ? ['2d' as const] : []), ...(models3d ? ['3d' as const] : [])],
+          masterViews,
+          zipEntrypoint: active.zipEntrypoint,
+        })
+        if (!finish.urn) throw new Error('The version could not be created.')
+        active.urn = finish.urn
+        await trackUploadTranslation(id, finish.urn)
+      }
+      if (uploads.current.get(id)?.cancelled) return
+      const models = await loadModels()
+      const uploaded = models.find((entry) => entry.urn === active.urn)
+      if (uploaded) selectModel(uploaded)
+    } catch (error) {
+      if (uploads.current.get(id)?.cancelled) return
+      const message = error instanceof Error ? error.message : 'The upload failed.'
+      if (message === 'cancelled') return
+      patchFile(id, { phase: 'error', progress: undefined, error: message, retryable: true })
     }
+  }
+
+  function startFile(file: File, zipEntrypoint?: string): void {
+    const id = crypto.randomUUID()
+    uploads.current.set(id, { file, zipEntrypoint })
+    setFiles((current) => [...current, { id, name: file.name, size: file.size, phase: 'queued' }])
+    void runUpload(id)
+  }
+
+  function handleDropFiles(dropped: File[]): void {
+    setRejection(undefined)
+    for (const file of dropped) {
+      if (isZip(file.name)) {
+        // An archive translates its root design file — ask which one first.
+        const id = crypto.randomUUID()
+        uploads.current.set(id, { file })
+        setPendingZips((current) => [...current, { id, name: file.name, entry: '' }])
+        continue
+      }
+      startFile(file)
+    }
+  }
+
+  function startZip(id: string): void {
+    const pending = pendingZips.find((entry) => entry.id === id)
+    const active = uploads.current.get(id)
+    if (!pending || !active || !pending.entry.trim()) return
+    active.zipEntrypoint = pending.entry.trim()
+    setPendingZips((current) => current.filter((entry) => entry.id !== id))
+    setFiles((current) => [
+      ...current,
+      { id, name: active.file.name, size: active.file.size, phase: 'queued' },
+    ])
+    void runUpload(id)
   }
 
   function handleReject(rejections: UploadRejection[]): void {
@@ -396,192 +474,306 @@ function ModelUpload({
     await runUpload(file.id)
   }
 
-  const destinationReady = Boolean(project && targetFolderId)
+  const models = modelsState.status === 'ready' ? modelsState.models : []
+  const nodes = models.map(modelNode)
+  const term = searchNormalize(query.trim())
+  const finderEntries: FinderEntry[] = term
+    ? models
+        .filter((model) => searchNormalize(model.name).includes(term))
+        .map((model) => ({ item: modelNode(model).value }))
+    : []
+
+  const treeEmpty =
+    modelsState.status === 'loading' ? (
+      <output className="flex min-h-11 items-center justify-center gap-2 px-2 py-6 text-muted-foreground text-xs">
+        <LoaderCircleIcon aria-hidden className="size-3.5 animate-spin" />
+        Loading models
+      </output>
+    ) : modelsState.status === 'error' ? (
+      <div role="alert" className="flex flex-col items-center gap-3 px-3 py-8 text-center">
+        <p className="text-sm">{modelsState.message}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="relative after:absolute after:-inset-y-2 after:inset-x-0"
+          onClick={() => {
+            setModelsState({ status: 'loading' })
+            void loadModels()
+          }}
+        >
+          Retry
+        </Button>
+      </div>
+    ) : (
+      <p className="px-3 py-8 text-center text-muted-foreground text-xs">No models uploaded yet.</p>
+    )
+
+  const failedTranslation =
+    selected && selectionState.kind === 'failed'
+      ? {
+          urn: selected.urn,
+          name: selected.name,
+          status: selectionState.snapshot.status,
+          progress: selectionState.snapshot.progress,
+          error: selectionState.snapshot.messages[0] ?? 'Translation failed.',
+        }
+      : undefined
 
   return (
-    <main
+    <SidebarProvider
       className={
         embedded
-          ? 'flex min-h-[36rem] flex-col bg-background'
-          : 'flex min-h-svh flex-col bg-background'
+          ? 'relative h-[36rem] min-h-[36rem] overflow-hidden bg-background'
+          : 'h-svh min-h-[32rem] overflow-hidden bg-background'
       }
     >
-      <header className="flex min-h-16 shrink-0 items-center gap-3 border-b bg-background px-4">
-        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
-          <UploadIcon aria-hidden className="size-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate font-heading font-medium text-sm sm:text-base">Upload models</h1>
-          <p className="truncate text-muted-foreground text-xs">
-            Add files to an Autodesk project folder
-          </p>
-        </div>
-        <UserAccountBadge account={account} size="sm" className="hidden max-w-52 sm:flex" />
-        <form action={signOutHref} method="post" className="shrink-0">
+      <HubSidebar
+        finder={{
+          query,
+          onQueryChange: setQuery,
+          groups: [{ id: 'models', label: 'Models', entries: finderEntries }],
+          onItemOpen: (entry) => selectModel({ urn: entry.item.id, name: entry.item.name }),
+          placeholder: 'Find a model',
+          emptyLabel: `No models match "${query.trim()}".`,
+        }}
+        tree={{
+          nodes,
+          expandedIds: [],
+          selectedId: selected ? `model:${selected.urn}` : undefined,
+          empty: treeEmpty,
+          'aria-label': 'Uploaded models',
+          onExpand: () => {},
+          onCollapse: () => {},
+          onItemOpen: (item) => selectModel({ urn: item.id, name: item.name }),
+        }}
+        header={
           <Button
-            type="submit"
-            variant="ghost"
-            className="size-11 gap-1.5 px-0 sm:w-auto sm:px-3"
-            aria-label="Sign out of Autodesk"
+            className="min-h-11 w-full group-data-[collapsible=icon]:hidden"
+            onClick={() => setUploadOpen(true)}
           >
-            <LogOutIcon aria-hidden />
-            <span className="hidden sm:inline">Sign out</span>
+            <UploadIcon aria-hidden />
+            Upload models
           </Button>
-        </form>
-      </header>
+        }
+        collapsible="icon"
+        className={
+          embedded ? 'border-border border-r md:absolute md:h-full' : 'border-border border-r'
+        }
+      />
 
-      <section className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-4 sm:p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Destination</CardTitle>
-            <CardDescription>The project folder that receives the files.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="model-upload-project">Project</Label>
-              <ProjectPicker
-                projects={catalog.status === 'ready' ? catalog.projects : []}
-                hubs={catalog.status === 'ready' ? catalog.hubs : []}
-                value={projectId}
-                onValueChange={chooseProject}
-                status={
-                  catalog.status === 'ready'
-                    ? 'ready'
-                    : catalog.status === 'loading'
-                      ? 'loading'
-                      : 'error'
-                }
-                error={catalog.status === 'error' ? catalog.message : undefined}
-                onRetry={() => {
-                  setCatalog({ status: 'loading' })
-                  return loadCatalog()
-                }}
-                aria-label="Project"
-                className="min-h-11 w-full"
-              />
-            </div>
-            {folderLevels.map((level, index) => {
-              const parent = index > 0 ? folderLevels[index - 1] : undefined
-              const parentName = parent?.folders.find(
-                (folder) => folder.id === parent.selectedId,
-              )?.name
-              return (
-                <div key={parent?.selectedId ?? 'top'} className="flex flex-col gap-2">
-                  <Label>{index === 0 ? 'Folder' : `Folder in ${parentName ?? 'folder'}`}</Label>
-                  <Select
-                    value={level.selectedId === '' ? null : level.selectedId}
-                    onValueChange={(next: string | null) => {
-                      if (next) void chooseFolder(index, next)
-                    }}
-                  >
-                    <SelectTrigger
-                      aria-label={index === 0 ? 'Folder' : `Folder in ${parentName ?? 'folder'}`}
-                      className="min-h-11 w-full"
-                    >
-                      <SelectValue placeholder={index === 0 ? 'Choose a folder' : 'Upload here'}>
-                        {(selected: string | null) =>
-                          level.folders.find((folder) => folder.id === selected)?.name ??
-                          (index === 0 ? 'Choose a folder' : 'Upload here')
-                        }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {level.folders.map((folder) => (
-                        <SelectItem key={folder.id} value={folder.id} className="min-h-11">
-                          {folder.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+      <SidebarInset
+        className={
+          embedded
+            ? 'h-full min-h-0 min-w-0 overflow-hidden'
+            : 'h-svh min-h-0 min-w-0 overflow-hidden'
+        }
+      >
+        <header className="flex min-h-16 shrink-0 items-center gap-3 border-b bg-background px-2 sm:px-4">
+          <SidebarTrigger className="size-11 shrink-0" />
+          <span className="hidden size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground sm:grid">
+            <Building2Icon aria-hidden className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate font-heading font-medium text-sm sm:text-base">Model viewer</h1>
+            <p className="truncate text-muted-foreground text-xs">
+              {selected?.name ?? 'Models in this app’s storage'}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            className="min-h-11 shrink-0 gap-1.5"
+            onClick={() => setUploadOpen(true)}
+          >
+            <UploadIcon aria-hidden />
+            <span className="hidden sm:inline">Upload</span>
+          </Button>
+        </header>
+
+        <section className="relative min-h-0 min-w-0 flex-1 bg-muted" aria-label="Model viewer">
+          {selected && selectionState.kind === 'ready' && !viewerIssue ? (
+            <APSViewer
+              urn={selected.urn}
+              getAccessToken={getAccessToken}
+              extensions={AEC_STARTER_EXTENSIONS}
+              profile="aec"
+              toolbar="native"
+              radius={0}
+              className="size-full"
+              onViewerReady={(viewer) => viewer.prefs.set('openPropertiesOnSelect', true)}
+              onError={(error) => setViewerIssue(viewerIssueFor(error))}
+            />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center overflow-y-auto p-6">
+              {!selected ? (
+                <div className="max-w-sm text-center">
+                  <h2 className="font-heading font-medium text-xl">Choose a model</h2>
+                  <p className="mt-2 text-muted-foreground text-sm">
+                    {models.length > 0
+                      ? 'Pick a model from the sidebar, or upload a new one.'
+                      : 'Upload a design file to translate and view it here.'}
+                  </p>
+                  <Button className="mt-4 min-h-11" onClick={() => setUploadOpen(true)}>
+                    <UploadIcon aria-hidden />
+                    Upload models
+                  </Button>
                 </div>
-              )
-            })}
-            {folderPending && (
-              <output className="text-muted-foreground text-xs">Loading folders…</output>
-            )}
-          </CardContent>
-        </Card>
+              ) : viewerIssue?.kind === 'no-credentials' ? (
+                <div role="status" className="max-w-sm text-center">
+                  <h2 className="font-heading font-medium text-xl">Viewer unavailable</h2>
+                  <p className="mt-2 text-muted-foreground text-sm">
+                    The viewer token endpoint needs real APS credentials. The upload and translation
+                    flow still works without them.
+                  </p>
+                </div>
+              ) : viewerIssue?.kind === 'unviewable' ? (
+                <div role="status" className="max-w-sm text-center">
+                  <h2 className="font-heading font-medium text-xl">No preview for this file</h2>
+                  <p className="mt-2 break-words text-muted-foreground text-sm">
+                    Autodesk has not produced a viewable version of “{selected.name}”.
+                  </p>
+                  <details className="mt-4 text-left">
+                    <summary className="w-fit text-muted-foreground text-xs">
+                      Technical details
+                    </summary>
+                    <p className="mt-1 break-all font-mono text-muted-foreground text-xs">
+                      {viewerIssue.detail}
+                    </p>
+                  </details>
+                </div>
+              ) : viewerIssue ? (
+                <ModelStatusCard
+                  translation={{
+                    urn: selected.urn,
+                    name: selected.name,
+                    status: 'failed',
+                    error: viewerIssue.detail,
+                  }}
+                  className="max-w-lg"
+                />
+              ) : failedTranslation ? (
+                <div className="flex w-full max-w-lg flex-col gap-3">
+                  <ModelStatusCard translation={failedTranslation} />
+                  {selectionState.kind === 'failed' &&
+                    selectionState.snapshot.messages.length > 1 && (
+                      <ul className="flex flex-col gap-1 rounded-lg border border-border bg-card p-3">
+                        {selectionState.snapshot.messages.slice(1).map((message) => (
+                          <li key={message} className="text-muted-foreground text-xs">
+                            {message}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                </div>
+              ) : (
+                <ModelStatusCard
+                  translation={{
+                    urn: selected.urn,
+                    name: selected.name,
+                    status:
+                      selectionState.kind === 'translating'
+                        ? selectionState.snapshot.status
+                        : 'pending',
+                    progress:
+                      selectionState.kind === 'translating'
+                        ? selectionState.snapshot.progress
+                        : undefined,
+                  }}
+                  className="max-w-lg"
+                />
+              )}
+            </div>
+          )}
+        </section>
+      </SidebarInset>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Translation</CardTitle>
-            <CardDescription>What the viewer produces from each upload.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <div className="flex min-h-11 items-center gap-3">
+      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+        <DialogContent className="w-[min(40rem,calc(100%-2rem))] gap-4 sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Upload models</DialogTitle>
+            <DialogDescription>
+              Files land in this app’s storage and translate for the viewer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <span className="flex min-h-11 items-center gap-2">
               <Checkbox
                 id="model-upload-sheets"
                 checked={sheets}
                 // The job needs at least one view: the last one on stays on.
-                aria-disabled={(sheets && !models) || undefined}
+                aria-disabled={(sheets && !models3d) || undefined}
                 onCheckedChange={(checked) => {
-                  if (sheets && !models) return
+                  if (sheets && !models3d) return
                   setSheets(checked === true)
                 }}
               />
-              <Label htmlFor="model-upload-sheets" className="flex-1 flex-col items-start gap-0.5">
-                2D sheets
-                <span className="font-normal text-muted-foreground text-xs">
-                  Plans and sheet views
-                </span>
-              </Label>
-            </div>
-            <div className="flex min-h-11 items-center gap-3">
+              <Label htmlFor="model-upload-sheets">2D sheets</Label>
+            </span>
+            <span className="flex min-h-11 items-center gap-2">
               <Checkbox
                 id="model-upload-models"
-                checked={models}
-                aria-disabled={(models && !sheets) || undefined}
+                checked={models3d}
+                aria-disabled={(models3d && !sheets) || undefined}
                 onCheckedChange={(checked) => {
-                  if (models && !sheets) return
-                  setModels(checked === true)
+                  if (models3d && !sheets) return
+                  setModels3d(checked === true)
                 }}
               />
-              <Label htmlFor="model-upload-models" className="flex-1 flex-col items-start gap-0.5">
-                3D views
-                <span className="font-normal text-muted-foreground text-xs">
-                  The model geometry the viewer opens
-                </span>
-              </Label>
-            </div>
-            <div className="flex min-h-11 items-center gap-3">
+              <Label htmlFor="model-upload-models">3D views</Label>
+            </span>
+            <span className="flex min-h-11 items-center gap-2">
               <Checkbox
                 id="model-upload-master-views"
                 checked={masterViews}
                 onCheckedChange={(checked) => setMasterViews(checked === true)}
               />
-              <Label
-                htmlFor="model-upload-master-views"
-                className="flex-1 flex-col items-start gap-0.5"
+              <Label htmlFor="model-upload-master-views">Revit master views</Label>
+            </span>
+          </div>
+          <FileDropZone
+            files={files}
+            accept={UPLOAD_ACCEPT}
+            onDropFiles={handleDropFiles}
+            onReject={handleReject}
+            onRetry={handleRetry}
+            onRemove={handleRemove}
+          />
+          {pendingZips.map((zip) => (
+            <div key={zip.id} className="flex flex-wrap items-end gap-2">
+              <div className="flex min-w-48 flex-1 flex-col gap-1.5">
+                <Label htmlFor={`zip-entry-${zip.id}`} className="text-xs">
+                  Main design inside {zip.name}
+                </Label>
+                <Input
+                  id={`zip-entry-${zip.id}`}
+                  value={zip.entry}
+                  placeholder="model.rvt"
+                  className="min-h-11"
+                  onChange={(event) =>
+                    setPendingZips((current) =>
+                      current.map((entry) =>
+                        entry.id === zip.id ? { ...entry, entry: event.target.value } : entry,
+                      ),
+                    )
+                  }
+                />
+              </div>
+              <Button
+                className="min-h-11"
+                aria-disabled={!zip.entry.trim() || undefined}
+                onClick={() => startZip(zip.id)}
               >
-                Revit master views
-                <span className="font-normal text-muted-foreground text-xs">
-                  Also export phase-based master views from Revit files
-                </span>
-              </Label>
+                Upload archive
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-
-        <FileDropZone
-          files={files}
-          accept={MODEL_FILE_ACCEPT}
-          disabled={!destinationReady}
-          label={
-            destinationReady ? 'Drag files here or browse' : 'Choose a destination folder first'
-          }
-          onDropFiles={handleDropFiles}
-          onReject={handleReject}
-          onRetry={handleRetry}
-          onRemove={handleRemove}
-          aria-describedby={rejection ? rejectionId : undefined}
-        />
-        {rejection && (
-          <p id={rejectionId} role="status" className="text-status-warning text-xs">
-            {rejection}
-          </p>
-        )}
-      </section>
-    </main>
+          ))}
+          {rejection && (
+            <p role="status" className={cn('text-status-warning text-xs')}>
+              {rejection}
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
+    </SidebarProvider>
   )
 }
 

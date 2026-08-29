@@ -1,12 +1,12 @@
 # Model Upload Page (`@cantera/model-upload-page`)
 
-A complete APS upload page: scoped Autodesk sign-in with write access, a project and folder destination picker, translation options, direct-to-storage signed S3 uploads with progress, and per-file translation tracking.
+A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.
 
 - Type: block
 - Install: `npx shadcn@latest add @cantera/model-upload-page`
 - Docs: https://canteraui.vercel.app/components/model-upload-page
 - Registry item: https://canteraui.vercel.app/r/model-upload-page.json
-- Registry dependencies: button, card, checkbox, label, select, @cantera/file-drop-zone, @cantera/project-picker, @cantera/user-account-badge, @cantera/upload-types, @cantera/aps-data-preset, @cantera/project-types, @cantera/acc-auth-routes, @cantera/status-tokens
+- Registry dependencies: button, checkbox, dialog, input, label, @cantera/hub-sidebar, @cantera/file-drop-zone, @cantera/aps-viewer, @cantera/viewer-extension-types, @cantera/model-status-card, @cantera/upload-types, @cantera/project-types, @cantera/status-tokens
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
@@ -15,37 +15,37 @@ Files written into the consumer project:
 - `app/upload/loading.tsx`
 - `components/model-upload.tsx`
 - `app/api/models/upload/route.ts`
+- `app/api/viewer-token/route.ts`
 
 Environment variables added to `.env.local`:
 
 - `APS_CLIENT_ID`
 - `APS_CLIENT_SECRET`
-- `SESSION_SECRET`
+- `APS_BUCKET`
 - `APS_AUTH_BASE_URL`
 
 ## Install notes
 
-Installed: app/upload/page.tsx, its loading UI, and the /api/models/upload route covering destination browsing, the signed-S3 storage dance, item or version creation, and translation status. The acc-auth-routes dependency supplies the OAuth routes and the scoped sign-in component; the page requests the Manage files access level and re-consents a read-only session.
+Installed: app/upload/page.tsx, its loading UI, the two-legged /api/models/upload route (bucket bootstrap, signed-S3 uploads, translation jobs, manifest status with diagnostics), and the 2-legged /api/viewer-token route. No sign-in is installed: every route runs on the app's credentials against the app's own OSS bucket, so anyone who can reach the deployment can read and write it - add your own access control before shipping beyond a trusted team.
 
-Uploads go browser-to-storage through signed S3 part URLs, so file bytes never pass through your server. A file whose name already exists in the destination folder becomes a new version of that item; otherwise a new item is created. Every finished upload submits an svf2 translation job with the chosen views (2D sheets, 3D views, optional Revit master views) and the page polls the manifest until it settles.
+Uploads go browser-to-storage through signed S3 part URLs. A .zip upload asks for the root design filename and translates through compressedUrn. Every finished upload submits an svf2 job with the chosen views (2D sheets, 3D views, optional Revit master views), appears in the sidebar list, and becomes the selection - the URL carries ?urn=... so a view is shareable. Failed translations surface the manifest's diagnostic messages.
 
 Environment (added to .env.local as empty keys, fill them in):
-- APS_CLIENT_ID / APS_CLIENT_SECRET - your APS app credentials; uploads use the signed-in user's 3-legged grant.
-- SESSION_SECRET - required in production. Generate one with `openssl rand -base64 32`.
+- APS_CLIENT_ID / APS_CLIENT_SECRET - your APS app credentials.
+- APS_BUCKET - optional OSS bucket key; defaults to one derived from the client id. Buckets are global per client, and the route creates it (persistent policy) on first use.
 - APS_AUTH_BASE_URL - optional APS origin override. Leave unset for real APS; a relative value such as "/emulate/aps" targets a compatible embedded emulator.
 
-Files over 250 MB are rejected by the start request - raise PART_SIZE or MAX_PARTS in the route to lift the bound.
+Files over 250 MB are rejected at start - raise PART_SIZE or MAX_PARTS in the route to lift the bound.
 
 ## ModelUpload props
 
-- `account` (`OAuthAccount`) — Signed-in account shown in the header account control.
-- `uploadEndpoint` (`string`, default `'/api/models/upload'`) — Session-backed route implementing the browse, start, finish, and status contract.
-- `signOutHref` (`string`, default `'/api/auth/signout?next=/sign-in'`) — POST route used by the account control to revoke the grant and clear the session.
-- `embedded` (`boolean`, default `false`) — Constrains the shell height for preview containers. Leave false for the full-page route.
+- `uploadEndpoint` (`string`, default `'/api/models/upload'`) — Two-legged route implementing the models, start, finish, and status contract over the app bucket.
+- `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Separate two-legged viewer token route, scoped to viewables:read. Upload-scoped tokens never cross into the viewer.
+- `embedded` (`boolean`, default `false`) — Constrains the desktop sidebar and shell height to the nearest positioned preview container, and skips writing ?urn= to the URL. Leave false for the full-page route.
 
 ## Upload route
 
-- `kind=hubs / projects / folders` (`GET · hubId, projectId, folderId`) — Destination browsing: hubs, projects in a hub, top folders, or the subfolders of one folder.
-- `kind=start` (`POST · projectId, folderId, name, size`) — Creates the storage object and returns signed S3 part URLs the browser uploads to directly.
-- `kind=finish` (`POST · objectId, uploadKey, views, masterViews`) — Completes the signed upload, creates the item or a new version on a name match, and submits the svf2 translation job.
-- `kind=status` (`GET · urn`) — Reads the Model Derivative manifest and normalizes it into the translation status vocabulary.
+- `kind=models` (`GET`) — Ensures the app bucket exists and lists its objects as { name, urn, size } models.
+- `kind=start` (`POST · name, size`) — Returns signed S3 part URLs for the object the browser uploads to directly.
+- `kind=finish` (`POST · objectId, uploadKey, views, masterViews, zipEntrypoint`) — Completes the signed upload and submits the svf2 job — compressed with the archive root when zipEntrypoint is set.
+- `kind=status` (`GET · urn`) — Reads the Model Derivative manifest into the translation status vocabulary, with the derivative diagnostic messages.

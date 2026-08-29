@@ -2,7 +2,7 @@
 
 Prebuilt dists of `@emulators/core`, `@emulators/aps`, and `@emulators/adapter-next`,
 vendored from the [mrestrepoj10/emulate](https://github.com/mrestrepoj10/emulate) fork
-(branch `aps-dm-search`, commit `11500cd`). Apache-2.0 (see LICENSE). The fork
+(branch `aps-oss-buckets`, commit `6e04d3b`). Apache-2.0 (see LICENSE). The fork
 gitignores `dist/`, so dists are rebuilt at vendor time (`pnpm build` in the fork)
 and committed here — the commit hash above is the source they were built from.
 
@@ -13,7 +13,9 @@ ingestion chain: storage objects, signed S3 multipart upload, item and version
 creation, recursive folder search (exact `filter[attributes.displayName]`,
 substring `filter[attributes.displayName]-contains`, `filter[fileType]`; results
 are version docs with included items, matching the live endpoint), Model
-Derivative job submission, and time-simulated translation
+Derivative job submission (including `compressedUrn` + `rootFilename` for
+archives), app-owned OSS buckets (create, details, object listing, and
+implicit object creation on signed upload), and time-simulated translation
 (pending → inprogress → success/failed, with `extraction.finished` webhooks).
 Data is seeded via `DEFAULT_DATA_SEED` / `ApsSeedConfig`; upload and
 translation behavior via the `upload` / `translation` config keys.

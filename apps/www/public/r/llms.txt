@@ -276,7 +276,7 @@ Item: https://canteraui.vercel.app/r/model-viewer-page.json
 
 Title: Model Upload Page
 Type: block
-Description: A complete APS upload page: scoped Autodesk sign-in with write access, a project and folder destination picker, translation options, direct-to-storage signed S3 uploads with progress, and per-file translation tracking.
+Description: A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.
 Install: npx shadcn@latest add @cantera/model-upload-page
 Docs: https://canteraui.vercel.app/components/model-upload-page
 Item: https://canteraui.vercel.app/r/model-upload-page.json

@@ -32,7 +32,7 @@ async function BlockPreview({ params }: PreviewPageProps) {
     return <ModelViewerPageDemo nextPath="/view/model-viewer-page" titleAs="h1" />
   }
   if (name === 'model-upload-page') {
-    return <ModelUploadPageDemo nextPath="/view/model-upload-page" titleAs="h1" />
+    return <ModelUploadPageDemo />
   }
 
   notFound()
