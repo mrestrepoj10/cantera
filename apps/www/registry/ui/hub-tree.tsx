@@ -235,10 +235,11 @@ function HubTree({
             data-type={node.type}
             data-density={density}
             className={cn(
-              'group/treeitem flex cursor-default items-center gap-1.5 rounded-md pr-2 text-xs outline-none select-none',
+              'group/treeitem flex cursor-default items-center rounded-md pr-2 outline-none select-none',
               'hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
               'aria-selected:bg-accent aria-selected:text-accent-foreground aria-disabled:opacity-65',
-              density === 'comfortable' ? 'min-h-11' : 'min-h-9',
+              // 44px rows carry menu-row type; the compact escape hatch drops both.
+              density === 'comfortable' ? 'min-h-11 gap-2 text-sm' : 'min-h-9 gap-1.5 text-xs',
             )}
             style={{ paddingInlineStart: `${8 + (level - 1) * 16}px` }}
             onClick={onClick}

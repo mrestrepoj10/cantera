@@ -1445,6 +1445,18 @@ export const apiTables: ApiTablesByItem = {
             'Account menu items. With any, the identity row becomes the menu trigger (chevron affordance, menu anchored beside the rail — below it on mobile) and repeats the identity as the menu header; with none the row stays a plain label. separatorBefore opens a group; destructive carries the sign-out ink.',
         },
         {
+          name: 'treeLabel',
+          type: 'ReactNode',
+          description:
+            'Names the tree group ("Models · 4"); renders as the sidebar group label above the tree.',
+        },
+        {
+          name: 'treeAction',
+          type: 'ReactElement',
+          description:
+            'One quiet control beside the group label — an icon button element with an aria-label, positioned as the sidebar group action.',
+        },
+        {
           name: 'header / footer',
           type: 'ReactNode',
           description:

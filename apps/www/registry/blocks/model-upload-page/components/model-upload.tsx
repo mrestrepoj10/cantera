@@ -1,6 +1,6 @@
 'use client'
 
-import { Building2Icon, LoaderCircleIcon, UploadIcon } from 'lucide-react'
+import { BoxesIcon, Building2Icon, LoaderCircleIcon, PlusIcon, UploadIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { APSViewer } from '@/components/ui/aps-viewer/aps-viewer'
@@ -485,12 +485,12 @@ function ModelUpload({
 
   const treeEmpty =
     modelsState.status === 'loading' ? (
-      <output className="flex min-h-11 items-center justify-center gap-2 px-2 py-6 text-muted-foreground text-xs">
+      <output className="flex min-h-11 items-center gap-2 px-2 py-4 text-muted-foreground text-xs">
         <LoaderCircleIcon aria-hidden className="size-3.5 animate-spin" />
         Loading models
       </output>
     ) : modelsState.status === 'error' ? (
-      <div role="alert" className="flex flex-col items-center gap-3 px-3 py-8 text-center">
+      <div role="alert" className="flex flex-col items-start gap-3 px-2 py-4">
         <p className="text-sm">{modelsState.message}</p>
         <Button
           variant="outline"
@@ -505,7 +505,20 @@ function ModelUpload({
         </Button>
       </div>
     ) : (
-      <p className="px-3 py-8 text-center text-muted-foreground text-xs">No models uploaded yet.</p>
+      <div className="flex flex-col items-start px-2 py-4">
+        <p className="font-medium text-sm">No models yet</p>
+        <p className="mt-1 text-muted-foreground text-xs">
+          Upload a Revit, IFC, DWG, or Navisworks file to view it here.
+        </p>
+        <Button
+          variant="outline"
+          className="mt-4 min-h-11 w-full"
+          onClick={() => setUploadOpen(true)}
+        >
+          <UploadIcon aria-hidden />
+          Upload a model
+        </Button>
+      </div>
     )
 
   const failedTranslation =
@@ -528,6 +541,15 @@ function ModelUpload({
       }
     >
       <HubSidebar
+        user={{
+          name: 'Model library',
+          detail: 'App storage',
+          avatar: (
+            <span className="grid size-8 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+              <BoxesIcon aria-hidden className="size-4" />
+            </span>
+          ),
+        }}
         finder={{
           query,
           onQueryChange: setQuery,
@@ -546,14 +568,18 @@ function ModelUpload({
           onCollapse: () => {},
           onItemOpen: (item) => selectModel({ urn: item.id, name: item.name }),
         }}
-        header={
-          <Button
-            className="min-h-11 w-full group-data-[collapsible=icon]:hidden"
+        treeLabel={models.length > 0 ? `Models · ${models.length}` : 'Models'}
+        treeAction={
+          <button
+            type="button"
+            aria-label="Upload models"
+            // The primitive drops its extended hit area on md+: keep the 44px
+            // target on every pointer.
+            className="after:-inset-3.5 md:after:block"
             onClick={() => setUploadOpen(true)}
           >
-            <UploadIcon aria-hidden />
-            Upload models
-          </Button>
+            <PlusIcon aria-hidden />
+          </button>
         }
         collapsible="icon"
         className={
@@ -579,13 +605,9 @@ function ModelUpload({
               {selected?.name ?? 'Models in this app’s storage'}
             </p>
           </div>
-          <Button
-            variant="outline"
-            className="min-h-11 shrink-0 gap-1.5"
-            onClick={() => setUploadOpen(true)}
-          >
+          <Button className="min-h-11 shrink-0 gap-1.5" onClick={() => setUploadOpen(true)}>
             <UploadIcon aria-hidden />
-            <span className="hidden sm:inline">Upload</span>
+            <span className="hidden sm:inline">Upload models</span>
           </Button>
         </header>
 
@@ -612,10 +634,6 @@ function ModelUpload({
                       ? 'Pick a model from the sidebar, or upload a new one.'
                       : 'Upload a design file to translate and view it here.'}
                   </p>
-                  <Button className="mt-4 min-h-11" onClick={() => setUploadOpen(true)}>
-                    <UploadIcon aria-hidden />
-                    Upload models
-                  </Button>
                 </div>
               ) : viewerIssue?.kind === 'no-credentials' ? (
                 <div role="status" className="max-w-sm text-center">

@@ -11,7 +11,7 @@ test('model upload page uploads to the app bucket and tracks translation', async
   const main = page.getByRole('main')
   await expect(main.getByRole('heading', { name: 'Model viewer' })).toBeVisible()
 
-  await main.getByRole('button', { name: 'Upload', exact: true }).click()
+  await main.getByRole('button', { name: 'Upload models' }).click()
   const dialog = page.getByRole('dialog', { name: 'Upload models' })
   await expect(dialog).toBeVisible()
   await dialog.locator('input[type=file]').setInputFiles({
