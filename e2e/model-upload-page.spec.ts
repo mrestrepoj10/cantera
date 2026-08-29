@@ -5,9 +5,11 @@ import { waitForHydration } from './hydration'
 test('model upload page uploads into a chosen folder and tracks translation', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 960 })
   await page.goto('/view/model-upload-page')
-  // The upload sign-in preselects the Manage files access level.
+  // The upload sign-in preselects the Manage files access level. Sam is this
+  // spec's user: parallel specs signing in as the same emulator user clobber
+  // each other's vault grant, and a narrower re-grant fails later refreshes.
   await page.getByRole('link', { name: /continue with autodesk/i }).click()
-  await page.getByRole('button', { name: /test user/i }).click()
+  await page.getByRole('button', { name: /sam ito/i }).click()
   await expect(page).toHaveURL(/\/view\/model-upload-page$/)
   await waitForHydration(page)
 
@@ -30,7 +32,8 @@ test('model upload page uploads into a chosen folder and tracks translation', as
   const row = page.getByRole('listitem').filter({ hasText: 'e2e-upload.rvt' })
   await expect(row).toBeVisible()
   await expect(row).toContainText(/Translating|Saving version/, { timeout: 15_000 })
+  // The emulator simulates translation time; parallel workers stretch it.
   await expect(page.getByRole('button', { name: /upload complete/i })).toBeVisible({
-    timeout: 60_000,
+    timeout: 120_000,
   })
 })

@@ -54,12 +54,19 @@ export interface UploadFinishRequest {
   views: ('2d' | '3d')[]
   /** Revit only: also export the phase-based master views. */
   masterViews?: boolean
+  /** Hub region ("US", "EMEA", ...) — derivatives land beside the source. */
+  region?: string
 }
 
 interface TranslateFormat {
   type: 'svf2'
   views: ('2d' | '3d')[]
   advanced?: { generateMasterViews: boolean }
+}
+
+interface TranslateOutput {
+  formats: TranslateFormat[]
+  destination?: { region: string }
 }
 
 class MissingParameterError extends Error {}
@@ -277,10 +284,12 @@ async function finishUpload(
   const views = request.views.length > 0 ? request.views : ['2d' as const, '3d' as const]
   const format: TranslateFormat = { type: 'svf2', views }
   if (request.masterViews) format.advanced = { generateMasterViews: true }
+  const output: TranslateOutput = { formats: [format] }
+  if (request.region) output.destination = { region: request.region.toLowerCase() }
   await apsFetch(`${base}/modelderivative/v2/designdata/job`, token, {
     method: 'POST',
     headers: { 'x-ads-force': 'true' },
-    body: { input: { urn }, output: { formats: [format] } },
+    body: { input: { urn }, output },
   })
 
   return Response.json({ itemId, versionId, urn }, { headers: { 'Cache-Control': 'no-store' } })
@@ -339,13 +348,17 @@ async function browse(
   const projectId = required(params, 'projectId')
   const folderId = params.get('folderId')
   if (folderId) {
-    const document = await apsFetch<JsonApiDocument<(ApsFolderDoc & { type?: string })[]>>(
-      `${base}/data/v1/projects/${segment(projectId)}/folders/${segment(folderId)}/contents?page[limit]=200`,
-      token,
-    )
-    const folders: Folder[] = (document.data ?? [])
-      .filter((doc) => doc.type === 'folders')
-      .map(fromApsFolder)
+    const folders: Folder[] = []
+    for (let page = 0; page < MAX_FOLDER_PAGES; page += 1) {
+      const document = await apsFetch<JsonApiDocument<(ApsFolderDoc & { type?: string })[]>>(
+        `${base}/data/v1/projects/${segment(projectId)}/folders/${segment(folderId)}/contents?page[number]=${page}&page[limit]=200`,
+        token,
+      )
+      folders.push(
+        ...(document.data ?? []).filter((doc) => doc.type === 'folders').map(fromApsFolder),
+      )
+      if (!document.links?.next) break
+    }
     return Response.json({ folders }, { headers: { 'Cache-Control': 'no-store' } })
   }
   const hubId = required(params, 'hubId')

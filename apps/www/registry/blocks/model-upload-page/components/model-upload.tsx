@@ -63,6 +63,9 @@ interface ActiveUpload {
   folderId: string
   xhr?: XMLHttpRequest
   cancelled?: boolean
+  /** Set once finish succeeds — retries resume polling, never re-upload. */
+  urn?: string
+  region?: string
 }
 
 const STATUS_POLL_MS = 2500
@@ -116,6 +119,7 @@ function ModelUpload({
   const [files, setFiles] = useState<UploadFile[]>([])
   const [rejection, setRejection] = useState<string>()
   const uploads = useRef(new Map<string, ActiveUpload>())
+  const folderRequest = useRef(0)
   const rejectionId = useId()
 
   const project =
@@ -159,15 +163,20 @@ function ModelUpload({
     if (catalog.status !== 'ready') return
     const next = catalog.projects.find((entry) => entry.id === nextProjectId)
     if (!next) return
+    // A slower response for a superseded selection must not land: the ticket
+    // retires every earlier in-flight folder request.
+    const ticket = ++folderRequest.current
     setProjectId(nextProjectId)
     setFolderLevels([])
     setFolderPending(true)
     try {
       const folders = await loadFolders(next)
+      if (folderRequest.current !== ticket) return
       // A single top folder (Project Files, typically) is not a choice.
       if (folders.length === 1 && folders[0]) {
         const only = folders[0]
         const children = await loadFolders(next, only.id)
+        if (folderRequest.current !== ticket) return
         setFolderLevels([
           { folders, selectedId: only.id },
           ...(children.length > 0 ? [{ folders: children, selectedId: '' }] : []),
@@ -176,9 +185,9 @@ function ModelUpload({
         setFolderLevels([{ folders, selectedId: '' }])
       }
     } catch {
-      setFolderLevels([])
+      if (folderRequest.current === ticket) setFolderLevels([])
     } finally {
-      setFolderPending(false)
+      if (folderRequest.current === ticket) setFolderPending(false)
     }
   }
 
@@ -186,10 +195,12 @@ function ModelUpload({
     if (!project) return
     const current = folderLevels[level]
     if (!current) return
+    const ticket = ++folderRequest.current
     setFolderLevels([...folderLevels.slice(0, level), { ...current, selectedId: folderId }])
     setFolderPending(true)
     try {
       const children = await loadFolders(project, folderId)
+      if (folderRequest.current !== ticket) return
       if (children.length > 0) {
         setFolderLevels((levels) => [
           ...levels.slice(0, level + 1),
@@ -199,7 +210,7 @@ function ModelUpload({
     } catch {
       // The chosen folder still works as the target; drill-down just stops here.
     } finally {
-      setFolderPending(false)
+      if (folderRequest.current === ticket) setFolderPending(false)
     }
   }
 
@@ -255,6 +266,11 @@ function ModelUpload({
     if (!active) return
     const { file } = active
     try {
+      if (active.urn) {
+        patchFile(id, { phase: 'processing', processingLabel: 'Translating', error: undefined })
+        await trackTranslation(id, active.urn)
+        return
+      }
       patchFile(id, { phase: 'queued', progress: undefined, error: undefined })
       const start = await postUpload<StartResponse>({
         kind: 'start',
@@ -286,8 +302,10 @@ function ModelUpload({
         uploadKey: start.uploadKey,
         views: [...(sheets ? ['2d' as const] : []), ...(models ? ['3d' as const] : [])],
         masterViews,
+        region: active.region,
       })
       if (!finish.urn) throw new Error('The version could not be created.')
+      active.urn = finish.urn
       patchFile(id, { processingLabel: 'Translating' })
       await trackTranslation(id, finish.urn)
     } catch (error) {
@@ -332,9 +350,18 @@ function ModelUpload({
   function handleDropFiles(dropped: File[]): void {
     if (!project || !targetFolderId) return
     setRejection(undefined)
+    const hub =
+      catalog.status === 'ready'
+        ? catalog.hubs.find((entry) => entry.id === project.hubId)
+        : undefined
     for (const file of dropped) {
       const id = crypto.randomUUID()
-      uploads.current.set(id, { file, projectId: project.id, folderId: targetFolderId })
+      uploads.current.set(id, {
+        file,
+        projectId: project.id,
+        folderId: targetFolderId,
+        region: hub?.region,
+      })
       setFiles((current) => [...current, { id, name: file.name, size: file.size, phase: 'queued' }])
       void runUpload(id)
     }
