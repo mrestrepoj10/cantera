@@ -723,6 +723,59 @@
       "docs": "Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-auth-routes dependency supplies the OAuth routes, lib/acc-auth.ts, and the scoped sign-in component — no /sign-in page is installed. Signed out, /models renders ScopedAutodeskSignIn inline, returning to /models after the callback. Add @cantera/acc-sign-in separately if you also want a standalone /sign-in page.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.\n- SESSION_SECRET — required in production. Generate one with `openssl rand -base64 32`.\n- APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS. A relative value such as \"/emulate/aps\" is useful only when your app mounts a compatible embedded emulator at that path.\n\nThe default aec-auth vault from acc-sign-in is in-memory: appropriate for a demo, not production. Replace it with a durable encrypted VaultStore before real users connect.\n\nThe cantera showcase emulator supplies the project tree but no SVF geometry. Its seeded demo links one tip version to an externally translated sample URN when credentials are configured; every other item intentionally renders the no-geometry state. Your application should store real derivative URNs on normalized item versions."
     },
     {
+      "name": "model-upload-page",
+      "type": "registry:block",
+      "title": "Model Upload Page",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A complete APS upload page: scoped Autodesk sign-in with write access, a project and folder destination picker, translation options, direct-to-storage signed S3 uploads with progress, and per-file translation tracking.",
+      "categories": ["projects", "files", "upload", "autodesk"],
+      "dependencies": ["aec-auth", "lucide-react"],
+      "registryDependencies": [
+        "button",
+        "card",
+        "checkbox",
+        "label",
+        "select",
+        "@cantera/file-drop-zone",
+        "@cantera/project-picker",
+        "@cantera/user-account-badge",
+        "@cantera/upload-types",
+        "@cantera/aps-data-preset",
+        "@cantera/project-types",
+        "@cantera/acc-auth-routes",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/model-upload-page/page.tsx",
+          "type": "registry:page",
+          "target": "app/upload/page.tsx"
+        },
+        {
+          "path": "registry/blocks/model-upload-page/loading.tsx",
+          "type": "registry:file",
+          "target": "app/upload/loading.tsx"
+        },
+        {
+          "path": "registry/blocks/model-upload-page/components/model-upload.tsx",
+          "type": "registry:component",
+          "target": "components/model-upload.tsx"
+        },
+        {
+          "path": "registry/blocks/model-upload-page/api/upload-route.ts",
+          "type": "registry:file",
+          "target": "app/api/models/upload/route.ts"
+        }
+      ],
+      "envVars": {
+        "APS_CLIENT_ID": "",
+        "APS_CLIENT_SECRET": "",
+        "SESSION_SECRET": "",
+        "APS_AUTH_BASE_URL": ""
+      },
+      "docs": "Installed: app/upload/page.tsx, its loading UI, and the /api/models/upload route covering destination browsing, the signed-S3 storage dance, item or version creation, and translation status. The acc-auth-routes dependency supplies the OAuth routes and the scoped sign-in component; the page requests the Manage files access level and re-consents a read-only session.\n\nUploads go browser-to-storage through signed S3 part URLs, so file bytes never pass through your server. A file whose name already exists in the destination folder becomes a new version of that item; otherwise a new item is created. Every finished upload submits an svf2 translation job with the chosen views (2D sheets, 3D views, optional Revit master views) and the page polls the manifest until it settles.\n\nEnvironment (added to .env.local as empty keys, fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET - your APS app credentials; uploads use the signed-in user's 3-legged grant.\n- SESSION_SECRET - required in production. Generate one with `openssl rand -base64 32`.\n- APS_AUTH_BASE_URL - optional APS origin override. Leave unset for real APS; a relative value such as \"/emulate/aps\" targets a compatible embedded emulator.\n\nFiles over 250 MB are rejected by the start request - raise PART_SIZE or MAX_PARTS in the route to lift the bound."
+    },
+    {
       "name": "upload-types",
       "type": "registry:lib",
       "title": "Upload Types",

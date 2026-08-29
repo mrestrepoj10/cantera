@@ -50,6 +50,8 @@ const previewFrameClasses: PreviewFrameClassByItem = {
   'hub-sidebar': 'flex min-h-[28rem] items-stretch overflow-hidden rounded-lg border border-border',
   'model-viewer-page':
     'flex min-h-[36rem] items-stretch overflow-hidden rounded-lg border border-border',
+  'model-upload-page':
+    'flex min-h-[36rem] items-stretch overflow-hidden rounded-lg border border-border',
   'aps-viewer': 'flex min-h-[36rem] items-stretch',
   'file-drop-zone': 'flex min-h-[26rem] items-start rounded-lg border border-border p-4 sm:p-6',
 }

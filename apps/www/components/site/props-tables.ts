@@ -1459,6 +1459,71 @@ export const apiTables: ApiTablesByItem = {
       ],
     },
   ],
+  'model-upload-page': [
+    {
+      caption: 'ModelUpload props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'account',
+          type: 'OAuthAccount',
+          description: 'Signed-in account shown in the header account control.',
+        },
+        {
+          name: 'uploadEndpoint',
+          type: 'string',
+          defaultValue: "'/api/models/upload'",
+          description:
+            'Session-backed route implementing the browse, start, finish, and status contract.',
+        },
+        {
+          name: 'signOutHref',
+          type: 'string',
+          defaultValue: "'/api/auth/signout?next=/sign-in'",
+          description:
+            'POST route used by the account control to revoke the grant and clear the session.',
+        },
+        {
+          name: 'embedded',
+          type: 'boolean',
+          defaultValue: 'false',
+          description:
+            'Constrains the shell height for preview containers. Leave false for the full-page route.',
+        },
+      ],
+    },
+    {
+      caption: 'Upload route',
+      nameHeader: 'Request',
+      rows: [
+        {
+          name: 'kind=hubs / projects / folders',
+          type: 'GET · hubId, projectId, folderId',
+          description:
+            'Destination browsing: hubs, projects in a hub, top folders, or the subfolders of one folder.',
+        },
+        {
+          name: 'kind=start',
+          type: 'POST · projectId, folderId, name, size',
+          description:
+            'Creates the storage object and returns signed S3 part URLs the browser uploads to directly.',
+        },
+        {
+          name: 'kind=finish',
+          type: 'POST · objectId, uploadKey, views, masterViews',
+          description:
+            'Completes the signed upload, creates the item or a new version on a name match, and submits the svf2 translation job.',
+        },
+        {
+          name: 'kind=status',
+          type: 'GET · urn',
+          description:
+            'Reads the Model Derivative manifest and normalizes it into the translation status vocabulary.',
+        },
+      ],
+    },
+  ],
   'model-viewer-page': [
     {
       caption: 'ModelBrowser props',

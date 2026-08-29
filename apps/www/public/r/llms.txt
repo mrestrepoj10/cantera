@@ -272,6 +272,15 @@ Install: npx shadcn@latest add @cantera/model-viewer-page
 Docs: https://canteraui.vercel.app/components/model-viewer-page
 Item: https://canteraui.vercel.app/r/model-viewer-page.json
 
+### model-upload-page
+
+Title: Model Upload Page
+Type: block
+Description: A complete APS upload page: scoped Autodesk sign-in with write access, a project and folder destination picker, translation options, direct-to-storage signed S3 uploads with progress, and per-file translation tracking.
+Install: npx shadcn@latest add @cantera/model-upload-page
+Docs: https://canteraui.vercel.app/components/model-upload-page
+Item: https://canteraui.vercel.app/r/model-upload-page.json
+
 ### upload-types
 
 Title: Upload Types

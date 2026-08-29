@@ -40,6 +40,14 @@ const nextConfig: NextConfig = {
       // redirect: the URL that claims `.md` is the one that answers with
       // markdown.
       { source: '/components/:name.md', destination: '/components/:name/md' },
+      // The vendored emulator signs upload and blob URLs against the origin,
+      // dropping its /emulate/aps mount (new URL('/path', base) discards the
+      // base path). Route those origin-rooted paths back onto the mount.
+      {
+        source: '/oss/v2/signed-upload/:path*',
+        destination: '/emulate/aps/oss/v2/signed-upload/:path*',
+      },
+      { source: '/_aps/:path*', destination: '/emulate/aps/_aps/:path*' },
     ]
   },
 }

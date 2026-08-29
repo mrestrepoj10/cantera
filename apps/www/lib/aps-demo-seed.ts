@@ -497,4 +497,6 @@ export const apsDemoSeed = {
   document_folders: documentFolders,
   document_items: documentItems,
   document_versions: documentVersions,
+  // The default 25 MB object cap rejects realistic model uploads in the demo.
+  upload: { maxObjectBytes: 200 * 1024 * 1024 },
 } satisfies ApsSeedConfig

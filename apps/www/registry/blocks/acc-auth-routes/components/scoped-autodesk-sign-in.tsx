@@ -47,6 +47,8 @@ interface ScopedAutodeskSignInProps {
   description?: ReactNode
   /** Where the sign-in starts. Demos point it at an emulator flow. */
   startPath?: string
+  /** Preset selected on first render — 'viewer', 'data-write', or 'account-admin'. */
+  defaultPresetId?: string
 }
 
 function ScopedAutodeskSignIn({
@@ -55,8 +57,16 @@ function ScopedAutodeskSignIn({
   titleAs: Title = 'h1',
   description = 'Choose the access this workspace should request.',
   startPath = `/api/auth/${apsProvider.id}`,
+  defaultPresetId,
 }: ScopedAutodeskSignInProps) {
-  const [value, setValue] = useState<string[]>(modelViewerPresets[0]?.scopes ?? [])
+  const [value, setValue] = useState<string[]>(
+    () =>
+      (defaultPresetId
+        ? modelViewerPresets.find((preset) => preset.id === defaultPresetId)?.scopes
+        : undefined) ??
+      modelViewerPresets[0]?.scopes ??
+      [],
+  )
   const selectedScopes = withRequiredScopes(modelViewerScopes, value)
   const params = new URLSearchParams({ next: nextPath, scopes: selectedScopes.join(' ') })
   const signInHref = `${startPath}?${params}`
