@@ -643,7 +643,7 @@ Type: component
 Install: npx shadcn@latest add @cantera/hub-tree
 Docs: https://canteraui.vercel.app/components/hub-tree
 Item: https://canteraui.vercel.app/r/hub-tree.json
-Registry dependencies: @cantera/project-types, @cantera/status-tokens
+Registry dependencies: @cantera/project-types, @cantera/status-tokens, @cantera/upload-types
 npm dependencies: lucide-react
 
 A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation.

@@ -1,6 +1,16 @@
 'use client'
 
-import { BoxesIcon, Building2Icon, LoaderCircleIcon, PlusIcon, UploadIcon } from 'lucide-react'
+import {
+  BoxesIcon,
+  BoxIcon,
+  Building2Icon,
+  EyeOffIcon,
+  KeyRoundIcon,
+  LoaderCircleIcon,
+  PlusIcon,
+  UploadIcon,
+} from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { APSViewer } from '@/components/ui/aps-viewer/aps-viewer'
@@ -37,6 +47,7 @@ interface BucketModel {
   name: string
   urn: string
   size?: number
+  status?: ModelTranslationStatus
 }
 
 type ModelsState =
@@ -129,11 +140,37 @@ function viewerIssueFor(error: Error): ViewerIssue {
   return { kind: unviewable ? 'unviewable' : 'error', detail: error.message }
 }
 
+function PaneState({
+  icon,
+  title,
+  description,
+  children,
+  role,
+}: {
+  icon: ReactNode
+  title: string
+  description: ReactNode
+  children?: ReactNode
+  role?: 'status'
+}) {
+  return (
+    <div role={role} className="flex max-w-sm flex-col items-center text-center">
+      <span className="grid size-12 place-items-center rounded-lg bg-background text-muted-foreground shadow-sm">
+        {icon}
+      </span>
+      <h2 className="mt-4 text-balance font-heading font-medium text-lg">{title}</h2>
+      <p className="mt-1.5 text-pretty text-muted-foreground text-sm">{description}</p>
+      {children}
+    </div>
+  )
+}
+
 function modelNode(model: BucketModel): HubTreeItemNode {
   const item: Item = {
     id: model.urn,
     name: model.name,
     type: 'item',
+    translationStatus: model.status,
     tip: {
       id: model.urn,
       versionNumber: 1,
@@ -627,29 +664,32 @@ function ModelUpload({
           ) : (
             <div className="absolute inset-0 grid place-items-center overflow-y-auto p-6">
               {!selected ? (
-                <div className="max-w-sm text-center">
-                  <h2 className="font-heading font-medium text-xl">Choose a model</h2>
-                  <p className="mt-2 text-muted-foreground text-sm">
-                    {models.length > 0
+                <PaneState
+                  icon={<BoxIcon aria-hidden className="size-6" />}
+                  title="Choose a model"
+                  description={
+                    models.length > 0
                       ? 'Pick a model from the sidebar, or upload a new one.'
-                      : 'Upload a design file to translate and view it here.'}
-                  </p>
-                </div>
+                      : 'Upload a design file to translate and view it here.'
+                  }
+                />
               ) : viewerIssue?.kind === 'no-credentials' ? (
-                <div role="status" className="max-w-sm text-center">
-                  <h2 className="font-heading font-medium text-xl">Viewer unavailable</h2>
-                  <p className="mt-2 text-muted-foreground text-sm">
-                    The viewer token endpoint needs real APS credentials. The upload and translation
-                    flow still works without them.
-                  </p>
-                </div>
+                <PaneState
+                  role="status"
+                  icon={<KeyRoundIcon aria-hidden className="size-6" />}
+                  title="Viewer unavailable"
+                  description="The viewer token endpoint needs real APS credentials. The upload and translation flow still works without them."
+                />
               ) : viewerIssue?.kind === 'unviewable' ? (
-                <div role="status" className="max-w-sm text-center">
-                  <h2 className="font-heading font-medium text-xl">No preview for this file</h2>
-                  <p className="mt-2 break-words text-muted-foreground text-sm">
-                    Autodesk has not produced a viewable version of “{selected.name}”.
-                  </p>
-                  <details className="mt-4 text-left">
+                <PaneState
+                  role="status"
+                  icon={<EyeOffIcon aria-hidden className="size-6" />}
+                  title="No preview for this file"
+                  description={
+                    <>Autodesk has not produced a viewable version of “{selected.name}”.</>
+                  }
+                >
+                  <details className="mt-4 w-full text-left">
                     <summary className="w-fit text-muted-foreground text-xs">
                       Technical details
                     </summary>
@@ -657,7 +697,7 @@ function ModelUpload({
                       {viewerIssue.detail}
                     </p>
                   </details>
-                </div>
+                </PaneState>
               ) : viewerIssue ? (
                 <ModelStatusCard
                   translation={{
@@ -712,8 +752,19 @@ function ModelUpload({
               Files land in this app’s storage and translate for the viewer.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <span className="flex min-h-11 items-center gap-2">
+          <FileDropZone
+            files={files}
+            accept={UPLOAD_ACCEPT}
+            onDropFiles={handleDropFiles}
+            onReject={handleReject}
+            onRetry={handleRetry}
+            onRemove={handleRemove}
+          />
+          <fieldset className="flex flex-col">
+            <legend className="mb-1 font-medium text-muted-foreground text-xs">
+              Translation outputs
+            </legend>
+            <div className="flex min-h-11 items-center gap-3">
               <Checkbox
                 id="model-upload-sheets"
                 checked={sheets}
@@ -724,9 +775,14 @@ function ModelUpload({
                   setSheets(checked === true)
                 }}
               />
-              <Label htmlFor="model-upload-sheets">2D sheets</Label>
-            </span>
-            <span className="flex min-h-11 items-center gap-2">
+              <Label htmlFor="model-upload-sheets" className="flex-1 flex-col items-start gap-0.5">
+                2D sheets
+                <span className="font-normal text-muted-foreground text-xs">
+                  Plans and sheet views
+                </span>
+              </Label>
+            </div>
+            <div className="flex min-h-11 items-center gap-3">
               <Checkbox
                 id="model-upload-models"
                 checked={models3d}
@@ -736,25 +792,30 @@ function ModelUpload({
                   setModels3d(checked === true)
                 }}
               />
-              <Label htmlFor="model-upload-models">3D views</Label>
-            </span>
-            <span className="flex min-h-11 items-center gap-2">
+              <Label htmlFor="model-upload-models" className="flex-1 flex-col items-start gap-0.5">
+                3D views
+                <span className="font-normal text-muted-foreground text-xs">
+                  The model geometry the viewer opens
+                </span>
+              </Label>
+            </div>
+            <div className="flex min-h-11 items-center gap-3">
               <Checkbox
                 id="model-upload-master-views"
                 checked={masterViews}
                 onCheckedChange={(checked) => setMasterViews(checked === true)}
               />
-              <Label htmlFor="model-upload-master-views">Revit master views</Label>
-            </span>
-          </div>
-          <FileDropZone
-            files={files}
-            accept={UPLOAD_ACCEPT}
-            onDropFiles={handleDropFiles}
-            onReject={handleReject}
-            onRetry={handleRetry}
-            onRemove={handleRemove}
-          />
+              <Label
+                htmlFor="model-upload-master-views"
+                className="flex-1 flex-col items-start gap-0.5"
+              >
+                Revit master views
+                <span className="font-normal text-muted-foreground text-xs">
+                  Also export phase-based master views from Revit files
+                </span>
+              </Label>
+            </div>
+          </fieldset>
           {pendingZips.map((zip) => (
             <div key={zip.id} className="flex flex-wrap items-end gap-2">
               <div className="flex min-w-48 flex-1 flex-col gap-1.5">

@@ -162,16 +162,36 @@ function base64Url(value: string): string {
   return Buffer.from(value, 'utf8').toString('base64url')
 }
 
+async function manifestStatus(base: string, urn: string): Promise<ModelTranslationStatus> {
+  const response = await apsRequest(base, `/modelderivative/v2/designdata/${segment(urn)}/manifest`)
+  if (!response.ok) return 'pending'
+  const manifest = (await response.json()) as ManifestResponse
+  const known: ModelTranslationStatus[] = ['pending', 'inprogress', 'success', 'failed', 'timeout']
+  return known.find((value) => value === manifest.status) ?? 'pending'
+}
+
 async function listModels(base: string): Promise<Response> {
   const bucket = await ensureBucket(base)
   const listing = await apsFetch<{ items?: OssObject[] }>(
     base,
     `/oss/v2/buckets/${segment(bucket)}/objects?limit=100`,
   )
-  const models = (listing.items ?? []).flatMap((object) =>
-    object.objectKey && object.objectId
-      ? [{ name: object.objectKey, urn: base64Url(object.objectId), size: object.size }]
-      : [],
+  const models = await Promise.all(
+    (listing.items ?? []).flatMap((object) =>
+      object.objectKey && object.objectId
+        ? [
+            (async () => {
+              const urn = base64Url(object.objectId as string)
+              return {
+                name: object.objectKey,
+                urn,
+                size: object.size,
+                status: await manifestStatus(base, urn),
+              }
+            })(),
+          ]
+        : [],
+    ),
   )
   return Response.json({ models }, { headers: { 'Cache-Control': 'no-store' } })
 }

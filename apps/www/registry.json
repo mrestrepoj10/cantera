@@ -453,7 +453,11 @@
       "description": "A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation.",
       "categories": ["projects", "files", "navigation", "autodesk"],
       "dependencies": ["lucide-react"],
-      "registryDependencies": ["@cantera/project-types", "@cantera/status-tokens"],
+      "registryDependencies": [
+        "@cantera/project-types",
+        "@cantera/status-tokens",
+        "@cantera/upload-types"
+      ],
       "files": [
         {
           "path": "registry/ui/hub-tree.tsx",

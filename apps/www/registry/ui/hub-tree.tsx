@@ -13,6 +13,8 @@ import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from 'react
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Folder, Hub, Item, ItemVersion, Project } from '@/lib/project-types'
+import { statusCssVars } from '@/lib/status-tokens'
+import { formatBytes } from '@/lib/upload-types'
 import { cn } from '@/lib/utils'
 
 interface HubTreeNodeBase<Type extends string, Value> {
@@ -94,6 +96,46 @@ function visibleNodes(nodes: HubTreeNode[], expanded: ReadonlySet<string>): Visi
 
   visit(nodes)
   return visible
+}
+
+function fileExtension(name: string): string | null {
+  const dot = name.lastIndexOf('.')
+  if (dot <= 0 || dot === name.length - 1) return null
+  return name.slice(dot + 1).toUpperCase()
+}
+
+/** "RVT · 4.2 MB · Failed" — the status word rides along for terminal states
+ * so color is never the only carrier. */
+function itemMetaLine(item: Item, locale?: string): string | null {
+  const status = item.translationStatus
+  const parts = [
+    fileExtension(item.name),
+    item.tip?.storageSize ? formatBytes(item.tip.storageSize, locale) : null,
+    status === 'failed' ? 'Failed' : status === 'timeout' ? 'Timed out' : null,
+  ].filter(Boolean)
+  return parts.length > 0 ? parts.join(' · ') : null
+}
+
+function itemStatusDot(item: Item): ReactNode {
+  const status = item.translationStatus
+  if (!status || status === 'success') return null
+  const tone =
+    status === 'failed' || status === 'timeout' ? statusCssVars.danger : statusCssVars.warning
+  const label =
+    status === 'failed'
+      ? 'Translation failed'
+      : status === 'timeout'
+        ? 'Translation timed out'
+        : 'Translation in progress'
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      className="size-1.5 shrink-0 rounded-full"
+      style={{ backgroundColor: tone }}
+    />
+  )
 }
 
 function nodeIcon(type: HubTreeNode['type']): ReactNode {
@@ -265,7 +307,21 @@ function HubTree({
               ) : null}
             </span>
             {nodeIcon(node.type)}
-            <span className="min-w-0 flex-1 truncate">{node.name}</span>
+            {node.type === 'item' && density === 'comfortable' ? (
+              <span className="flex min-w-0 flex-1 flex-col py-1.5 leading-tight">
+                <span className="min-w-0 truncate" title={node.name}>
+                  {node.name}
+                </span>
+                {itemMetaLine(node.value) && (
+                  <span className="truncate text-muted-foreground text-xs">
+                    {itemMetaLine(node.value)}
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className="min-w-0 flex-1 truncate">{node.name}</span>
+            )}
+            {node.type === 'item' && itemStatusDot(node.value)}
             {node.type === 'version' && (
               <span className="shrink-0 text-muted-foreground tabular-nums">
                 v{node.value.versionNumber}
