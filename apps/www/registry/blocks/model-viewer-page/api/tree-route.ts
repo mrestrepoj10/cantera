@@ -47,6 +47,7 @@ interface SearchVersionDoc extends ApsVersionDoc {
 interface SearchEntry {
   item: Item
   version: ItemVersion
+  folder?: BrowsePathSegment
 }
 
 interface ItemParentDoc extends ApsItemDoc {
@@ -76,7 +77,17 @@ class MissingQueryParameterError extends Error {}
 const FOLDER_PAGE_LIMIT = 200
 const MAX_FOLDER_PAGES = 20
 const SEARCH_MIN_QUERY_LENGTH = 2
+const MAX_SEARCH_MATCHES = 50
 const MAX_PATH_DEPTH = 20
+
+// APS's displayName filters match case- and diacritic-sensitively ("cana"
+// misses "CAÑA"), so the recursive listing is filtered here instead.
+function searchNormalize(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{M}+/gu, '')
+    .toLocaleLowerCase()
+}
 
 function apiBase(origin: string): string {
   const configured = process.env.APS_AUTH_BASE_URL
@@ -188,38 +199,81 @@ async function searchFolder(
   folderId: string,
   query: string,
 ): Promise<SearchEntry[]> {
-  const documents: JsonApiDocument<SearchVersionDoc[]>[] = []
-  for (let page = 0; page < MAX_FOLDER_PAGES; page += 1) {
-    const searchUrl = new URL(
-      `${base}/data/v1/projects/${segment(projectId)}/folders/${segment(folderId)}/search`,
-    )
-    searchUrl.searchParams.set('filter[attributes.displayName]-contains', query)
-    searchUrl.searchParams.set('page[number]', String(page))
-    searchUrl.searchParams.set('page[limit]', String(FOLDER_PAGE_LIMIT))
-    const document = await apsGet<JsonApiDocument<SearchVersionDoc[]>>(searchUrl.href, token)
-    documents.push(document)
-    if (!document.links?.next) break
+  const needle = searchNormalize(query)
+  const entries: SearchEntry[] = []
+  const seenVersionIds = new Set<string>()
+
+  function collect(docs: SearchVersionDoc[]): void {
+    for (const doc of docs) {
+      if (entries.length >= MAX_SEARCH_MATCHES) return
+      const itemId = doc.relationships?.item?.data?.id
+      if (!itemId) continue
+      const version = fromApsVersion(doc)
+      if (seenVersionIds.has(version.id)) continue
+      if (!searchNormalize(version.displayName).includes(needle)) continue
+      seenVersionIds.add(version.id)
+      entries.push({
+        item: {
+          id: itemId,
+          name: version.displayName,
+          type: 'item' as const,
+          tip: version,
+          translationStatus: version.derivativeUrn ? ('success' as const) : ('pending' as const),
+        },
+        version,
+      })
+    }
   }
 
-  return documents.flatMap((document) =>
-    (document.data ?? []).flatMap((doc) => {
-      const itemId = doc.relationships?.item?.data?.id
-      if (!itemId) return []
-      const version = fromApsVersion(doc)
-      return [
-        {
-          item: {
-            id: itemId,
-            name: version.displayName,
-            type: 'item' as const,
-            tip: version,
-            translationStatus: version.derivativeUrn ? ('success' as const) : ('pending' as const),
-          },
-          version,
-        },
-      ]
+  async function collectPages(filtered: boolean): Promise<void> {
+    let hasNext = true
+    for (
+      let page = 0;
+      hasNext && page < MAX_FOLDER_PAGES && entries.length < MAX_SEARCH_MATCHES;
+      page += 1
+    ) {
+      const searchUrl = new URL(
+        `${base}/data/v1/projects/${segment(projectId)}/folders/${segment(folderId)}/search`,
+      )
+      if (filtered) searchUrl.searchParams.set('filter[attributes.displayName]-contains', query)
+      searchUrl.searchParams.set('page[number]', String(page))
+      searchUrl.searchParams.set('page[limit]', String(FOLDER_PAGE_LIMIT))
+      const document = await apsGet<JsonApiDocument<SearchVersionDoc[]>>(searchUrl.href, token)
+      hasNext = Boolean(document.links?.next)
+      collect(document.data ?? [])
+    }
+  }
+
+  // Two passes: the APS-filtered query applies its (case-sensitive) filter
+  // before pagination, so the page cap covers matches anywhere in the folder;
+  // the unfiltered sweep adds normalized matches within its page window.
+  await collectPages(true)
+  await collectPages(false)
+  return entries
+}
+
+async function searchProject(
+  base: string,
+  token: Awaited<ReturnType<typeof getSessionToken>>,
+  hubId: string,
+  projectId: string,
+  query: string,
+): Promise<SearchEntry[]> {
+  const document = await apsGet<JsonApiDocument<ApsFolderDoc[]>>(
+    `${base}/project/v1/hubs/${segment(hubId)}/projects/${segment(projectId)}/topFolders`,
+    token,
+  )
+  const folders = (document.data ?? []).map(fromApsFolder)
+  const results = await Promise.all(
+    folders.map(async (folder) => {
+      const entries = await searchFolder(base, token, projectId, folder.id, query)
+      return entries.map((entry) => ({
+        ...entry,
+        folder: { id: folder.id, name: folder.name, type: 'folder' as const },
+      }))
     }),
   )
+  return results.flat()
 }
 
 async function itemFolderPath(
@@ -299,6 +353,7 @@ async function loadNodes(
  * GET /api/models/tree?kind=folder-contents&projectId=...&folderId=...
  * GET /api/models/tree?kind=versions&projectId=...&itemId=...
  * GET /api/models/tree?kind=search&projectId=...&folderId=...&q=...
+ * GET /api/models/tree?kind=search&hubId=...&projectId=...&q=... (all top folders)
  * GET /api/models/tree?kind=path&projectId=...&itemId=...&topFolderId=...
  */
 export async function GET(request: Request): Promise<Response> {
@@ -325,13 +380,22 @@ export async function GET(request: Request): Promise<Response> {
       if (query.length < SEARCH_MIN_QUERY_LENGTH) {
         return Response.json({ entries: [] }, { headers: { 'Cache-Control': 'no-store' } })
       }
-      const entries = await searchFolder(
-        apiBase(url.origin),
-        token,
-        required(url.searchParams, 'projectId'),
-        required(url.searchParams, 'folderId'),
-        query,
-      )
+      const folderId = url.searchParams.get('folderId')
+      const entries = folderId
+        ? await searchFolder(
+            apiBase(url.origin),
+            token,
+            required(url.searchParams, 'projectId'),
+            folderId,
+            query,
+          )
+        : await searchProject(
+            apiBase(url.origin),
+            token,
+            required(url.searchParams, 'hubId'),
+            required(url.searchParams, 'projectId'),
+            query,
+          )
       return Response.json({ entries }, { headers: { 'Cache-Control': 'no-store' } })
     }
     if (kind === 'path') {

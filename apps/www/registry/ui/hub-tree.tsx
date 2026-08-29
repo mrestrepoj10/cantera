@@ -63,6 +63,9 @@ export interface HubTreeProps extends Omit<ComponentProps<'div'>, 'children'> {
   selectedId?: string
   pendingId?: string
   density?: 'comfortable' | 'compact'
+  /** Rendered instead of the default "No projects found." when `nodes` is empty
+   * — the place for loading, error, and reconnect states. */
+  empty?: ReactNode
   onExpand: (node: HubTreeBranchNode) => void | Promise<void>
   onCollapse: (node: HubTreeBranchNode) => void | Promise<void>
   onItemOpen: (item: Item, version?: ItemVersion) => void | Promise<void>
@@ -110,6 +113,7 @@ function HubTree({
   selectedId,
   pendingId,
   density = 'comfortable',
+  empty,
   onExpand,
   onCollapse,
   onItemOpen,
@@ -296,11 +300,13 @@ function HubTree({
       data-density={density}
       className={cn('flex min-w-0 flex-col gap-0.5', className)}
     >
-      {nodes.length > 0 ? (
-        renderNodes(nodes, 1)
-      ) : (
-        <p className="px-3 py-8 text-center text-muted-foreground text-xs">No projects found.</p>
-      )}
+      {nodes.length > 0
+        ? renderNodes(nodes, 1)
+        : (empty ?? (
+            <p className="px-3 py-8 text-center text-muted-foreground text-xs">
+              No projects found.
+            </p>
+          ))}
     </div>
   )
 }

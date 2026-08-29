@@ -16,7 +16,8 @@
     "**/.next/**",
     "**/public/r/**",
     "test-results/**",
-    "playwright-report/**"
+    "playwright-report/**",
+    "test-apps/**"
   ],
   "jsPlugins": [{ "name": "anti-slop", "specifier": "./tools/oxlint/anti-slop/index.ts" }],
   "rules": {

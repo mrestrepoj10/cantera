@@ -27,10 +27,11 @@ test('model viewer shell browses, finds, and adapts without clipping', async ({ 
     await tree.getByRole('treeitem', { name, exact: true }).click()
   }
 
-  // Expanding into the project scopes the finder to it, which renames its trigger.
-  await page.getByRole('button', { name: 'Search in Sample Building' }).click()
+  // Expanding into the hub scopes the finder to every project in it, which
+  // renames its trigger.
+  await page.getByRole('button', { name: 'Search in Emulate Construction Hub' }).click()
   const finder = page.getByRole('dialog', { name: 'Find a file' })
-  await expect(finder.getByText('Searching in Sample Building')).toBeVisible()
+  await expect(finder.getByText('Searching in Emulate Construction Hub')).toBeVisible()
   await finder.getByRole('combobox', { name: 'Find a file' }).fill('structural')
   // structural.rvt sits two unopened folders deep: picking the remote result
   // loads, expands, and selects its path in the tree.
@@ -47,7 +48,7 @@ test('model viewer shell browses, finds, and adapts without clipping', async ({ 
   )
   await expect(main.getByText('structural.rvt', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Search in Sample Building' }).click()
+  await page.getByRole('button', { name: 'Search in Emulate Construction Hub' }).click()
   await finder.getByRole('combobox', { name: 'Find a file' }).fill('sample')
   await finder.getByRole('option', { name: /sample\.rvt/ }).click()
   await expect(tree.getByRole('treeitem', { name: 'sample.rvt' })).toHaveAttribute(
