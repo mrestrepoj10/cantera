@@ -831,6 +831,11 @@ export const apiTables: ApiTablesByItem = {
           description: 'Narrows a browser row to its file-like Item shape.',
         },
         {
+          name: 'normalizeSearchText',
+          type: '(value: string) => string',
+          description: 'Case-folds and strips diacritics for consistent client and server search.',
+        },
+        {
           name: 'ModelTranslationStatus',
           type: 'type',
           description: "'pending' | 'inprogress' | 'success' | 'failed' | 'timeout'.",
@@ -1236,6 +1241,12 @@ export const apiTables: ApiTablesByItem = {
           type: 'string',
           description:
             'Branch currently loading children. Its label stays mounted while the disclosure icon crossfades to a spinner.',
+        },
+        {
+          name: 'pendingIds',
+          type: 'string[]',
+          description:
+            'Branches concurrently loading children. Each keeps its own mounted label and spinner.',
         },
         {
           name: 'density',

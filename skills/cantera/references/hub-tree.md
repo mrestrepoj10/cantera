@@ -23,6 +23,7 @@ HubTree is fully controlled and never fetches. Give every node a stable, globall
 - `expandedIds` (`string[]`) — Controlled ids of branches whose children are visible.
 - `selectedId` (`string`) — Tree id of the selected item or version.
 - `pendingId` (`string`) — Branch currently loading children. Its label stays mounted while the disclosure icon crossfades to a spinner.
+- `pendingIds` (`string[]`) — Branches concurrently loading children. Each keeps its own mounted label and spinner.
 - `density` (`'comfortable' | 'compact'`, default `'comfortable'`) — Row density. Comfortable keeps the 44px field target; compact is the explicit desktop escape hatch.
 - `empty` (`ReactNode`) — Rendered instead of the default "No projects found." when nodes is empty — the place for loading, error, and reconnect states.
 - `onExpand / onCollapse` (`(node: HubTreeBranchNode) => void | Promise<void>`) — Controlled disclosure callbacks. Fetch children in onExpand, then feed the updated nodes and expandedIds back.

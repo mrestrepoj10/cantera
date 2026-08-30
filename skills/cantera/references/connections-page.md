@@ -21,6 +21,7 @@ Environment variables added to `.env.local`:
 - `APS_CLIENT_ID`
 - `APS_CLIENT_SECRET`
 - `SESSION_SECRET`
+- `APP_ORIGIN`
 - `APS_AUTH_BASE_URL`
 
 ## Install notes
@@ -30,6 +31,7 @@ Installed: app/connections/page.tsx with its loading skeleton, plus ConnectionsV
 This block takes acc-auth-routes as a registry dependency for the /api/auth/* routes and the aec-auth glue — no /sign-in page is installed — so one environment configures both:
 - APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.
 - SESSION_SECRET — required in production; the block fails closed without it.
+- APP_ORIGIN — the canonical public origin. Required in production.
 - APS_AUTH_BASE_URL — optional auth-origin override for an emulator. Unset means real APS.
 
 ACC_AUTH_DEMO=1 allows the insecure fallback session secret and must never be set where real accounts exist.

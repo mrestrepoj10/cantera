@@ -11,7 +11,7 @@ import {
   UploadIcon,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { APSViewer } from '@/components/ui/aps-viewer/aps-viewer'
 import { Button } from '@/components/ui/button'
@@ -31,7 +31,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ModelStatusCard } from '@/components/ui/model-status-card'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
-import type { Item, ModelTranslationStatus } from '@/lib/project-types'
+import { type Item, type ModelTranslationStatus, normalizeSearchText } from '@/lib/project-types'
 import { MODEL_FILE_ACCEPT, type UploadFile, type UploadRejection } from '@/lib/upload-types'
 import { cn } from '@/lib/utils'
 import { AEC_STARTER_EXTENSIONS } from '@/lib/viewer-extension-types'
@@ -73,6 +73,7 @@ interface ViewerIssue {
 }
 
 interface StartResponse {
+  objectKey?: string
   objectId?: string
   uploadKey?: string
   urls?: string[]
@@ -94,16 +95,21 @@ interface StatusResponse {
 
 interface ActiveUpload {
   file: File
+  controller: AbortController
   zipEntrypoint?: string
   xhr?: XMLHttpRequest
   cancelled?: boolean
+  lastProgressAt?: number
   /** Set once finish succeeds — retries resume polling, never re-upload. */
   urn?: string
 }
 
 const UPLOAD_ACCEPT = `${MODEL_FILE_ACCEPT},.zip`
 const STATUS_POLL_MS = 2500
-const STATUS_POLL_LIMIT = 240
+const STATUS_POLL_MAX_MS = 15_000
+const STATUS_POLL_TIMEOUT_MS = 10 * 60 * 1000
+const PROGRESS_UPDATE_MS = 100
+const EMPTY_MODELS: BucketModel[] = []
 
 const rejectionReasonLabel = {
   'file-type': 'is not a supported file type',
@@ -111,15 +117,26 @@ const rejectionReasonLabel = {
   'file-count': 'exceeds the file limit',
 } satisfies Record<UploadRejection['reason'], string>
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => window.setTimeout(resolve, ms))
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('The operation was aborted.', 'AbortError'))
+      return
+    }
+    const onAbort = () => {
+      window.clearTimeout(timer)
+      reject(new DOMException('The operation was aborted.', 'AbortError'))
+    }
+    const timer = window.setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
 }
 
-function searchNormalize(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/\p{M}+/gu, '')
-    .toLocaleLowerCase()
+function nextPollDelay(current: number): number {
+  return Math.min(STATUS_POLL_MAX_MS, Math.round(current * 1.5))
 }
 
 function isZip(name: string): boolean {
@@ -208,12 +225,25 @@ function ModelUpload({
   const [models3d, setModels3d] = useState(true)
   const [masterViews, setMasterViews] = useState(false)
   const uploads = useRef(new Map<string, ActiveUpload>())
+  const completedUrns = useRef(new Set<string>())
+
+  useEffect(
+    () => () => {
+      for (const upload of uploads.current.values()) {
+        upload.cancelled = true
+        upload.controller.abort()
+        upload.xhr?.abort()
+      }
+      uploads.current.clear()
+    },
+    [],
+  )
 
   // Callers set the loading state first; the initial load relies on the
   // state initializer so the effect never writes state synchronously.
   const loadModels = useCallback(
-    () =>
-      fetch(`${uploadEndpoint}?kind=models`, { cache: 'no-store' })
+    (signal?: AbortSignal) =>
+      fetch(`${uploadEndpoint}?kind=models`, { cache: 'no-store', signal })
         .then(async (response) => {
           const body = (await response.json()) as { models?: BucketModel[]; error?: string }
           if (!response.ok || !body.models) {
@@ -223,6 +253,7 @@ function ModelUpload({
           return body.models
         })
         .catch((error: unknown) => {
+          if (signal?.aborted) return [] as BucketModel[]
           setModelsState({
             status: 'error',
             message: error instanceof Error ? error.message : 'Models could not be listed.',
@@ -233,25 +264,29 @@ function ModelUpload({
   )
 
   useEffect(() => {
-    void loadModels().then((models) => {
+    const controller = new AbortController()
+    void loadModels(controller.signal).then((models) => {
       // A shared link restores its model: ?urn=... names the selection.
       const shared = new URLSearchParams(window.location.search).get('urn')
       if (!shared) return
       const model = models.find((entry) => entry.urn === shared)
       if (model) {
+        if (model.status === 'success') completedUrns.current.add(model.urn)
         setSelected(model)
-        setSelectionState({ kind: 'checking' })
+        setSelectionState({ kind: model.status === 'success' ? 'ready' : 'checking' })
         setViewerIssue(undefined)
       }
     })
+    return () => controller.abort()
   }, [loadModels])
 
   function selectModel(
     model: { urn: string; name: string },
-    options?: { fromUrl?: boolean },
+    options?: { fromUrl?: boolean; ready?: boolean },
   ): void {
+    if (options?.ready) completedUrns.current.add(model.urn)
     setSelected(model)
-    setSelectionState({ kind: 'checking' })
+    setSelectionState({ kind: options?.ready ? 'ready' : 'checking' })
     setViewerIssue(undefined)
     if (!embedded && !options?.fromUrl) {
       const url = new URL(window.location.href)
@@ -264,18 +299,22 @@ function ModelUpload({
   // translation is still running.
   useEffect(() => {
     if (!selected) return
-    let cancelled = false
+    if (completedUrns.current.has(selected.urn)) return
+    const controller = new AbortController()
     async function track(urn: string): Promise<void> {
-      for (let attempt = 0; attempt < STATUS_POLL_LIMIT && !cancelled; attempt += 1) {
+      const deadline = Date.now() + STATUS_POLL_TIMEOUT_MS
+      let pollDelay = STATUS_POLL_MS
+      while (Date.now() < deadline && !controller.signal.aborted) {
         try {
           const response = await fetch(
             `${uploadEndpoint}?kind=status&urn=${encodeURIComponent(urn)}`,
             {
               cache: 'no-store',
+              signal: controller.signal,
             },
           )
           const body = (await response.json()) as StatusResponse
-          if (cancelled) return
+          if (controller.signal.aborted) return
           if (!response.ok) throw new Error(body.error ?? 'The translation status is unavailable.')
           const snapshot: TranslationSnapshot = {
             status: body.status ?? 'pending',
@@ -292,7 +331,7 @@ function ModelUpload({
           }
           setSelectionState({ kind: 'translating', snapshot })
         } catch (error) {
-          if (cancelled) return
+          if (controller.signal.aborted) return
           setSelectionState({
             kind: 'failed',
             snapshot: {
@@ -304,13 +343,12 @@ function ModelUpload({
           })
           return
         }
-        await delay(STATUS_POLL_MS)
+        await delay(pollDelay, controller.signal).catch(() => undefined)
+        pollDelay = nextPollDelay(pollDelay)
       }
     }
     void track(selected.urn)
-    return () => {
-      cancelled = true
-    }
+    return () => controller.abort()
   }, [selected, uploadEndpoint])
 
   const getAccessToken = useCallback<GetAccessToken>(async () => {
@@ -325,11 +363,12 @@ function ModelUpload({
     )
   }
 
-  async function postUpload<T>(body: unknown): Promise<T> {
+  async function postUpload<T>(body: unknown, signal: AbortSignal): Promise<T> {
     const response = await fetch(uploadEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal,
     })
     const parsed = (await response.json()) as T & { error?: string }
     if (!response.ok) throw new Error(parsed.error ?? 'The upload request failed.')
@@ -352,7 +391,13 @@ function ModelUpload({
       active.xhr = xhr
       xhr.open('PUT', url)
       xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) onProgress(event.loaded)
+        if (!event.lengthComputable) return
+        const now = performance.now()
+        if (event.loaded < event.total && now - (active.lastProgressAt ?? 0) < PROGRESS_UPDATE_MS) {
+          return
+        }
+        active.lastProgressAt = now
+        onProgress(event.loaded)
       }
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) resolve()
@@ -366,17 +411,22 @@ function ModelUpload({
     })
   }
 
-  async function trackUploadTranslation(id: string, urn: string): Promise<void> {
-    for (let attempt = 0; attempt < STATUS_POLL_LIMIT; attempt += 1) {
-      if (uploads.current.get(id)?.cancelled) return
+  async function trackUploadTranslation(id: string, urn: string): Promise<boolean> {
+    let elapsed = 0
+    let pollDelay = STATUS_POLL_MS
+    while (elapsed < STATUS_POLL_TIMEOUT_MS) {
+      const active = uploads.current.get(id)
+      if (!active || active.cancelled) return false
       const response = await fetch(`${uploadEndpoint}?kind=status&urn=${encodeURIComponent(urn)}`, {
         cache: 'no-store',
+        signal: active.controller.signal,
       })
       const body = (await response.json()) as StatusResponse
       if (!response.ok) throw new Error(body.error ?? 'The translation status is unavailable.')
       if (body.status === 'success') {
         patchFile(id, { phase: 'complete', processingLabel: undefined })
-        return
+        completedUrns.current.add(urn)
+        return true
       }
       if (body.status === 'failed' || body.status === 'timeout') {
         patchFile(id, {
@@ -384,12 +434,14 @@ function ModelUpload({
           error: body.messages?.[0] ?? 'The upload finished but translation failed.',
           retryable: false,
         })
-        return
+        return false
       }
       patchFile(id, {
         processingLabel: body.progress ? `Translating · ${body.progress}` : 'Translating',
       })
-      await delay(STATUS_POLL_MS)
+      await delay(pollDelay, active.controller.signal)
+      elapsed += pollDelay
+      pollDelay = nextPollDelay(pollDelay)
     }
     throw new Error('Translation is taking longer than expected.')
   }
@@ -401,15 +453,24 @@ function ModelUpload({
     try {
       if (active.urn) {
         patchFile(id, { phase: 'processing', processingLabel: 'Translating', error: undefined })
-        await trackUploadTranslation(id, active.urn)
+        if (!(await trackUploadTranslation(id, active.urn))) return
       } else {
         patchFile(id, { phase: 'queued', progress: undefined, error: undefined })
-        const start = await postUpload<StartResponse>({
-          kind: 'start',
-          name: file.name,
-          size: file.size,
-        })
-        if (!start.objectId || !start.uploadKey || !start.urls?.length || !start.partSize) {
+        const start = await postUpload<StartResponse>(
+          {
+            kind: 'start',
+            name: file.name,
+            size: file.size,
+          },
+          active.controller.signal,
+        )
+        if (
+          !start.objectKey ||
+          !start.objectId ||
+          !start.uploadKey ||
+          !start.urls?.length ||
+          !start.partSize
+        ) {
           throw new Error('The upload could not be started.')
         }
         patchFile(id, { phase: 'uploading', progress: 0 })
@@ -423,34 +484,43 @@ function ModelUpload({
           })
         }
         patchFile(id, { phase: 'processing', progress: undefined, processingLabel: 'Translating' })
-        const finish = await postUpload<FinishResponse>({
-          kind: 'finish',
-          name: file.name,
-          objectId: start.objectId,
-          uploadKey: start.uploadKey,
-          views: [...(sheets ? ['2d' as const] : []), ...(models3d ? ['3d' as const] : [])],
-          masterViews,
-          zipEntrypoint: active.zipEntrypoint,
-        })
+        const finish = await postUpload<FinishResponse>(
+          {
+            kind: 'finish',
+            name: file.name,
+            objectKey: start.objectKey,
+            objectId: start.objectId,
+            uploadKey: start.uploadKey,
+            views: [...(sheets ? ['2d' as const] : []), ...(models3d ? ['3d' as const] : [])],
+            masterViews,
+            zipEntrypoint: active.zipEntrypoint,
+          },
+          active.controller.signal,
+        )
         if (!finish.urn) throw new Error('The version could not be created.')
         active.urn = finish.urn
-        await trackUploadTranslation(id, finish.urn)
+        if (!(await trackUploadTranslation(id, finish.urn))) return
       }
-      if (uploads.current.get(id)?.cancelled) return
-      const models = await loadModels()
+      const current = uploads.current.get(id)
+      if (!current || current.cancelled) return
+      const models = await loadModels(active.controller.signal)
       const uploaded = models.find((entry) => entry.urn === active.urn)
-      if (uploaded) selectModel(uploaded)
+      if (uploaded) selectModel(uploaded, { ready: true })
+      uploads.current.delete(id)
     } catch (error) {
-      if (uploads.current.get(id)?.cancelled) return
+      const current = uploads.current.get(id)
+      if (!current || current.cancelled || active.controller.signal.aborted) return
       const message = error instanceof Error ? error.message : 'The upload failed.'
       if (message === 'cancelled') return
       patchFile(id, { phase: 'error', progress: undefined, error: message, retryable: true })
+    } finally {
+      active.xhr = undefined
     }
   }
 
   function startFile(file: File, zipEntrypoint?: string): void {
     const id = crypto.randomUUID()
-    uploads.current.set(id, { file, zipEntrypoint })
+    uploads.current.set(id, { file, zipEntrypoint, controller: new AbortController() })
     setFiles((current) => [...current, { id, name: file.name, size: file.size, phase: 'queued' }])
     void runUpload(id)
   }
@@ -461,7 +531,7 @@ function ModelUpload({
       if (isZip(file.name)) {
         // An archive translates its root design file — ask which one first.
         const id = crypto.randomUUID()
-        uploads.current.set(id, { file })
+        uploads.current.set(id, { file, controller: new AbortController() })
         setPendingZips((current) => [...current, { id, name: file.name, entry: '' }])
         continue
       }
@@ -497,28 +567,42 @@ function ModelUpload({
     const active = uploads.current.get(file.id)
     if (active) {
       active.cancelled = true
+      active.controller.abort()
       active.xhr?.abort()
       uploads.current.delete(file.id)
     }
     setFiles((current) => current.filter((entry) => entry.id !== file.id))
   }
 
+  function removePendingZip(id: string): void {
+    const active = uploads.current.get(id)
+    if (active) {
+      active.cancelled = true
+      active.controller.abort()
+      uploads.current.delete(id)
+    }
+    setPendingZips((current) => current.filter((entry) => entry.id !== id))
+  }
+
   async function handleRetry(file: UploadFile): Promise<void> {
     const active = uploads.current.get(file.id)
     if (!active) return
     active.cancelled = false
+    active.controller = new AbortController()
     active.xhr = undefined
     await runUpload(file.id)
   }
 
-  const models = modelsState.status === 'ready' ? modelsState.models : []
-  const nodes = models.map(modelNode)
-  const term = searchNormalize(query.trim())
-  const finderEntries: FinderEntry[] = term
-    ? models
-        .filter((model) => searchNormalize(model.name).includes(term))
-        .map((model) => ({ item: modelNode(model).value }))
-    : []
+  const models = modelsState.status === 'ready' ? modelsState.models : EMPTY_MODELS
+  const nodes = useMemo(() => models.map(modelNode), [models])
+  const finderEntries: FinderEntry[] = useMemo(() => {
+    const term = normalizeSearchText(query.trim())
+    return term
+      ? models
+          .filter((model) => normalizeSearchText(model.name).includes(term))
+          .map((model) => ({ item: modelNode(model).value }))
+      : []
+  }, [models, query])
 
   const treeEmpty =
     modelsState.status === 'loading' ? (
@@ -591,7 +675,11 @@ function ModelUpload({
           query,
           onQueryChange: setQuery,
           groups: [{ id: 'models', label: 'Models', entries: finderEntries }],
-          onItemOpen: (entry) => selectModel({ urn: entry.item.id, name: entry.item.name }),
+          onItemOpen: (entry) =>
+            selectModel(
+              { urn: entry.item.id, name: entry.item.name },
+              { ready: entry.item.translationStatus === 'success' },
+            ),
           placeholder: 'Find a model',
           emptyLabel: `No models match "${query.trim()}".`,
         }}
@@ -603,7 +691,11 @@ function ModelUpload({
           'aria-label': 'Uploaded models',
           onExpand: () => {},
           onCollapse: () => {},
-          onItemOpen: (item) => selectModel({ urn: item.id, name: item.name }),
+          onItemOpen: (item) =>
+            selectModel(
+              { urn: item.id, name: item.name },
+              { ready: item.translationStatus === 'success' },
+            ),
         }}
         treeLabel={models.length > 0 ? `Models · ${models.length}` : 'Models'}
         treeAction={
@@ -842,6 +934,9 @@ function ModelUpload({
                 onClick={() => startZip(zip.id)}
               >
                 Upload archive
+              </Button>
+              <Button variant="ghost" className="min-h-11" onClick={() => removePendingZip(zip.id)}>
+                Remove
               </Button>
             </div>
           ))}

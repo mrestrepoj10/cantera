@@ -46,16 +46,30 @@ Agents: install the skill with `npx skills add mrestrepoj10/cantera` for the reg
 | `user-account-badge` | component | Avatar-and-name chip for a connected account. Server-safe. |
 | `token-status` | component | Grant status line: connection state, token expiry, held scopes. Server-safe. |
 | `connection-card` | component | A provider connection at a glance, with disconnect / reconnect. |
+| `acc-auth-routes` | block | Headless Autodesk OAuth routes, vault wiring, and a signed application session. |
 | `acc-sign-in` | block | Complete Autodesk sign-in flow on [aec-auth](https://github.com/mrestrepoj10/aec-auth): consent redirect, code exchange, vault-managed single-use refresh, signed session, live connection panel. |
 | `connections-page` | block | The manage-grants page: one card per provider connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states. |
 | `project-types` | lib | Generic hubs, projects, folders, items, immutable versions, model translations, and sheet issuances. |
 | `aps-data-preset` | lib | Data Management, Model Derivative, and ACC Sheets adapters into the generic project types. |
+| `hub-switcher` | component | Controlled hub selector for switching account-level project containers. |
+| `project-picker` | component | Searchable project picker with optional hub grouping. |
+| `version-set-select` | component | ACC Sheets issuance selector with locale-aware dates. |
 | `hub-browser` | component | Controlled hub-to-file browser with breadcrumbs, pagination, translation status, and on-demand version selection. |
+| `hub-tree` | component | Accessible lazy hub, project, folder, item, and version tree. |
+| `finder` | component | Search surface for loaded, recent, and remote files with path-aware results. |
+| `hub-sidebar` | component | Finder and project tree composed into a shadcn sidebar. |
+| `crew-avatar` | component | Deterministic monochrome construction-worker avatar generated from a name and role. |
 | `file-picker-dialog` | component | The hub browser in a dialog, returning an item tip or an exact version. |
 | `viewer-types` | lib | Structural types for the public Autodesk Viewer global runtime. |
+| `viewer-extension-types` | lib | Typed Autodesk Viewer extension catalog, options, and compatibility metadata. |
 | `aps-viewer` | component | Strict-Mode-safe Viewer host with native-toolbar docking and sizing, live theme changes, URN swaps, resize, and hooks. |
+| `model-status-card` | component | Translation status, progress, diagnostics, retry, and open actions. |
+| `model-viewer-page` | block | Signed-in ACC project tree, recursive finder, and full-bleed Autodesk Viewer page. |
+| `model-upload-page` | block | Two-legged OSS upload, translation tracking, model library, and Viewer page. |
+| `upload-types` | lib | Generic upload lifecycle types, accept matching, and localized byte formatting. |
+| `file-drop-zone` | component | Validated AEC drag-and-drop surface with progress, processing, retry, and removal states. |
 
-Components are data-agnostic by design: they never fetch. The pattern every future domain (issues, RFIs, submittals, model viewers) follows is **types + adapters + blocks** — generic types as props, adapters per provider, blocks for the batteries-included path.
+Components are data-agnostic by design: they never fetch. The pattern every domain follows is **types + adapters + blocks** — generic types as props, adapters per provider, blocks for the batteries-included path. Issues, RFIs, and submittals are future domains; model viewing already follows the pattern above.
 
 `aps-viewer` follows the same boundary: pass a Model Derivative URN and a promise-based `getAccessToken` callback. It never ships credentials or a route. The site’s live playground uses the showcase-only `/api/viewer-token` route with `viewables:read`; configure it through `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, and `APS_VIEWER_DEMO_URN` in the root `.env` (see `.env.example`).
 
@@ -66,6 +80,7 @@ Components are data-agnostic by design: they never fetch. The pattern every futu
 | Variable | Meaning |
 | --- | --- |
 | `APS_CLIENT_ID` / `APS_CLIENT_SECRET` | Your APS app credentials. |
+| `APP_ORIGIN` | Canonical public origin, such as `https://app.example.com`. Required in production so OAuth never trusts forwarded host headers. |
 | `APS_AUTH_BASE_URL` | Optional auth origin override — absolute, or relative like `/emulate/aps` for an embedded emulator. Unset = real APS. |
 | `SESSION_SECRET` | HMAC key for the session cookie. Required in production — the block refuses to start without it. |
 | `ACC_AUTH_DEMO` | Set to `1` only for emulator-backed demos: allows the insecure fallback session secret in production. |
@@ -86,6 +101,19 @@ The block ships all four states, each exported so adapting the page keeps them:
 | `ConnectionsError` | The whole fetch failed: message plus a retry on the async-pending contract. A single provider that failed stays a row, not a page. |
 
 Point `ConnectionsView` at any backend — it never fetches.
+
+## The model-upload-page block
+
+`npx shadcn@latest add @cantera/model-upload-page` installs `/upload`, its two-legged upload and Viewer token routes, and the upload UI. Protect the routes with your application access control: they intentionally use application credentials rather than an end-user session.
+
+| Variable | Meaning |
+| --- | --- |
+| `APS_CLIENT_ID` / `APS_CLIENT_SECRET` | APS application credentials used for OSS, translation, and Viewer tokens. |
+| `APS_BUCKET` | Optional OSS bucket key. The block otherwise derives one from the client id and creates it with a persistent policy. |
+| `APP_ORIGIN` | Canonical public origin. Required in production when `APS_AUTH_BASE_URL` is relative. |
+| `APS_AUTH_BASE_URL` | Optional absolute APS origin or relative embedded-emulator mount. |
+
+Files are uploaded under server-issued object keys and translation/status requests are restricted to that bucket. The default limit is 250 MiB per file.
 
 ## Development
 

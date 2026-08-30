@@ -4,7 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 
 import type { FinderGroup } from '@/components/ui/finder'
 import type { HubTreeBranchNode, HubTreeNode } from '@/components/ui/hub-tree'
-import type { BrowsePathSegment, Item, ItemVersion } from '@/lib/project-types'
+import {
+  type BrowsePathSegment,
+  type Item,
+  type ItemVersion,
+  normalizeSearchText,
+} from '@/lib/project-types'
 
 export interface FinderSearchEntry {
   item: Item
@@ -29,6 +34,32 @@ export interface FinderScope {
 interface FinderSearchResponse {
   entries?: Array<{ item: Item; version: ItemVersion; folder?: BrowsePathSegment }>
   error?: string
+}
+
+const MAX_SEARCH_PROJECTS = 6
+const SEARCH_PROJECT_CONCURRENCY = 2
+
+async function settleWithConcurrency<T>(
+  tasks: (() => Promise<T>)[],
+  concurrency: number,
+): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = Array.from({ length: tasks.length })
+  let nextTask = 0
+  async function worker(): Promise<void> {
+    for (;;) {
+      const index = nextTask
+      nextTask += 1
+      const task = tasks[index]
+      if (!task) return
+      try {
+        results[index] = { status: 'fulfilled', value: await task() }
+      } catch (reason) {
+        results[index] = { status: 'rejected', reason }
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, () => worker()))
+  return results
 }
 
 function browsePath(nodes: HubTreeNode[]): BrowsePathSegment[] {
@@ -87,13 +118,6 @@ function loadedFinderEntries(
 
 // Matches the server-side search: case-folded and diacritic-stripped, so
 // "cana" finds "CAÑA VIVA" in both groups.
-function searchNormalize(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/\p{M}+/gu, '')
-    .toLocaleLowerCase()
-}
-
 function uniqueFinderEntries(entries: FinderSearchEntry[]): FinderSearchEntry[] {
   const seen = new Set<string>()
   return entries.filter((entry) => {
@@ -132,11 +156,11 @@ export function useModelFinder({
   const [remoteError, setRemoteError] = useState<string>()
 
   const loadedMatches = useMemo(() => {
-    const term = searchNormalize(query.trim())
+    const term = normalizeSearchText(query.trim())
     if (!term) return []
     return loadedFinderEntries(nodes).filter((entry) => {
       const location = entry.path.map((segment) => segment.name).join(' ')
-      return searchNormalize(
+      return normalizeSearchText(
         `${entry.item.name} ${entry.version?.displayName ?? ''} ${location}`,
       ).includes(term)
     })
@@ -157,8 +181,10 @@ export function useModelFinder({
       setRemoteEntries([])
       setRemoteStatus('loading')
       setRemoteError(undefined)
-      void Promise.allSettled(
-        scope.projects.map(async (project) => {
+      const projects = scope.projects.slice(0, MAX_SEARCH_PROJECTS)
+      const limited = scope.projects.length > projects.length
+      void settleWithConcurrency(
+        projects.map((project) => async () => {
           const params = new URLSearchParams({
             kind: 'search',
             hubId: scope.hubId,
@@ -179,6 +205,7 @@ export function useModelFinder({
             path: entry.folder ? [...project.path, entry.folder] : project.path,
           }))
         }),
+        SEARCH_PROJECT_CONCURRENCY,
       ).then((results) => {
         if (controller.signal.aborted) return
         const found = results.flatMap((result) =>
@@ -186,7 +213,7 @@ export function useModelFinder({
         )
         const failures = results.filter((result) => result.status === 'rejected').length
         setRemoteEntries(uniqueFinderEntries(found))
-        if (failures === 0) {
+        if (failures === 0 && !limited) {
           setRemoteStatus('ready')
           return
         }
@@ -194,7 +221,9 @@ export function useModelFinder({
         setRemoteError(
           failures === results.length
             ? `Search in ${scope.label} failed. Keep typing to retry.`
-            : 'Some projects could not be searched. Results may be incomplete.',
+            : limited && failures === 0
+              ? `Search is limited to the first ${MAX_SEARCH_PROJECTS} projects in this hub.`
+              : 'Some projects could not be searched. Results may be incomplete.',
         )
       })
     }, 250)

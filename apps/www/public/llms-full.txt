@@ -472,6 +472,7 @@ Files written into the consumer project:
 - `Folder / Item / FolderEntry` (`interface / union`) — Folder-like navigation rows and file-like item rows. FolderEntry is their rendering union; Hub and Project are structurally compatible with Folder.
 - `ItemVersion` (`interface`) — An immutable file version: id, version number, display name, creator/time, storage size, and nullable derivative URN.
 - `isItem` (`(entry: FolderEntry) => entry is Item`) — Narrows a browser row to its file-like Item shape.
+- `normalizeSearchText` (`(value: string) => string`) — Case-folds and strips diacritics for consistent client and server search.
 - `ModelTranslationStatus` (`type`) — 'pending' | 'inprogress' | 'success' | 'failed' | 'timeout'.
 - `ModelTranslation` (`interface`) — The translation state of one design: urn, status, and optional name, progress, outputs, error.
 - `SheetVersionSet` (`interface`) — A named issuance of construction sheets: id, name, and when it was issued.
@@ -658,6 +659,7 @@ Files written into the consumer project:
 - `expandedIds` (`string[]`) — Controlled ids of branches whose children are visible.
 - `selectedId` (`string`) — Tree id of the selected item or version.
 - `pendingId` (`string`) — Branch currently loading children. Its label stays mounted while the disclosure icon crossfades to a spinner.
+- `pendingIds` (`string[]`) — Branches concurrently loading children. Each keeps its own mounted label and spinner.
 - `density` (`'comfortable' | 'compact'`, default `'comfortable'`) — Row density. Comfortable keeps the 44px field target; compact is the explicit desktop escape hatch.
 - `empty` (`ReactNode`) — Rendered instead of the default "No projects found." when nodes is empty — the place for loading, error, and reconnect states.
 - `onExpand / onCollapse` (`(node: HubTreeBranchNode) => void | Promise<void>`) — Controlled disclosure callbacks. Fetch children in onExpand, then feed the updated nodes and expandedIds back.
@@ -986,6 +988,7 @@ Files written into the consumer project:
 - app/upload/loading.tsx
 - components/model-upload.tsx
 - app/api/models/upload/route.ts
+- app/api/models/upload/upload-request.ts
 - app/api/viewer-token/route.ts
 
 #### ModelUpload props

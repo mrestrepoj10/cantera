@@ -23,6 +23,7 @@ Environment variables added to `.env.local`:
 - `APS_CLIENT_ID`
 - `APS_CLIENT_SECRET`
 - `SESSION_SECRET`
+- `APP_ORIGIN`
 - `APS_AUTH_BASE_URL`
 
 ## Install notes
@@ -32,6 +33,7 @@ Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route,
 Environment (added to .env.local as empty keys — fill them in):
 - APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.
 - SESSION_SECRET — required in production. Generate one with `openssl rand -base64 32`.
+- APP_ORIGIN — the canonical public origin. Required in production.
 - APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS. A relative value such as "/emulate/aps" is useful only when your app mounts a compatible embedded emulator at that path.
 
 The default aec-auth vault from acc-sign-in is in-memory: appropriate for a demo, not production. Replace it with a durable encrypted VaultStore before real users connect.

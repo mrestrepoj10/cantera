@@ -2,6 +2,17 @@ import { APS_BASE_URL, type TokenSource } from 'aec-auth'
 import { apsOAuth, memoryVaultStore, vaultTokenSource } from 'aec-auth/vault'
 
 import type { ModelTranslationStatus } from '@/lib/project-types'
+import {
+  displayObjectName,
+  isOwnedUrn,
+  issuedObjectKey,
+  MAX_PARTS,
+  objectIdFor,
+  PART_SIZE,
+  parseUploadRequest,
+  type UploadFinishRequest,
+  type UploadStartRequest,
+} from './upload-request'
 
 interface OssObject {
   objectKey?: string
@@ -31,25 +42,6 @@ interface ManifestResponse {
   derivatives?: ManifestDerivative[]
 }
 
-export interface UploadStartRequest {
-  kind: 'start'
-  name: string
-  size: number
-}
-
-export interface UploadFinishRequest {
-  kind: 'finish'
-  name: string
-  objectId: string
-  uploadKey: string
-  /** Model Derivative views to produce — sheets are the 2D views. */
-  views: ('2d' | '3d')[]
-  /** Revit only: also export the phase-based master views. */
-  masterViews?: boolean
-  /** Root design filename inside an uploaded archive — makes the job compressed. */
-  zipEntrypoint?: string
-}
-
 interface TranslateFormat {
   type: 'svf2'
   views: ('2d' | '3d')[]
@@ -57,13 +49,17 @@ interface TranslateFormat {
 }
 
 const UPLOAD_SCOPES = ['bucket:create', 'bucket:read', 'data:read', 'data:create', 'data:write']
-const PART_SIZE = 10 * 1024 * 1024
-const MAX_PARTS = 25
+const MANIFEST_CONCURRENCY = 6
 
 function apiBase(origin: string): string {
   const configured = process.env.APS_AUTH_BASE_URL
   if (!configured) return APS_BASE_URL
-  return configured.startsWith('/') ? `${origin}${configured}` : configured
+  if (!configured.startsWith('/')) return configured
+  const trusted = process.env.APP_ORIGIN
+  if (!trusted && process.env.NODE_ENV === 'production') {
+    throw new Error('APP_ORIGIN is required with a relative APS_AUTH_BASE_URL in production')
+  }
+  return `${trusted ? new URL(trusted).origin : origin}${configured}`
 }
 
 function segment(value: string): string {
@@ -170,29 +166,45 @@ async function manifestStatus(base: string, urn: string): Promise<ModelTranslati
   return known.find((value) => value === manifest.status) ?? 'pending'
 }
 
+async function mapWithConcurrency<T, Result>(
+  values: T[],
+  concurrency: number,
+  transform: (value: T) => Promise<Result>,
+): Promise<Result[]> {
+  const results: Result[] = Array.from({ length: values.length })
+  let nextValue = 0
+  async function worker(): Promise<void> {
+    for (;;) {
+      const index = nextValue
+      nextValue += 1
+      const value = values[index]
+      if (value === undefined) return
+      results[index] = await transform(value)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, values.length) }, () => worker()))
+  return results
+}
+
 async function listModels(base: string): Promise<Response> {
   const bucket = await ensureBucket(base)
   const listing = await apsFetch<{ items?: OssObject[] }>(
     base,
     `/oss/v2/buckets/${segment(bucket)}/objects?limit=100`,
   )
-  const models = await Promise.all(
-    (listing.items ?? []).flatMap((object) =>
-      object.objectKey && object.objectId
-        ? [
-            (async () => {
-              const urn = base64Url(object.objectId as string)
-              return {
-                name: object.objectKey,
-                urn,
-                size: object.size,
-                status: await manifestStatus(base, urn),
-              }
-            })(),
-          ]
-        : [],
-    ),
+  const objects = (listing.items ?? []).filter(
+    (object): object is OssObject & { objectKey: string; objectId: string } =>
+      Boolean(object.objectKey && object.objectId),
   )
+  const models = await mapWithConcurrency(objects, MANIFEST_CONCURRENCY, async (object) => {
+    const urn = base64Url(object.objectId)
+    return {
+      name: displayObjectName(object.objectKey),
+      urn,
+      size: object.size,
+      status: await manifestStatus(base, urn),
+    }
+  })
   return Response.json({ models }, { headers: { 'Cache-Control': 'no-store' } })
 }
 
@@ -205,7 +217,7 @@ async function startUpload(base: string, request: UploadStartRequest): Promise<R
     )
   }
   const bucket = await ensureBucket(base)
-  const objectKey = request.name
+  const objectKey = issuedObjectKey(request.name)
   const signed = await apsFetch<SignedUploadResponse>(
     base,
     `/oss/v2/buckets/${segment(bucket)}/objects/${segment(objectKey)}/signeds3upload?parts=${parts}&firstPart=1`,
@@ -215,7 +227,8 @@ async function startUpload(base: string, request: UploadStartRequest): Promise<R
   }
   return Response.json(
     {
-      objectId: `urn:adsk.objects:os.object:${bucket}/${objectKey}`,
+      objectKey,
+      objectId: objectIdFor(bucket, objectKey),
       uploadKey: signed.uploadKey,
       urls: signed.urls,
       partSize: PART_SIZE,
@@ -228,13 +241,12 @@ async function finishUpload(base: string, request: UploadFinishRequest): Promise
   const bucket = bucketKey()
   await apsFetch(
     base,
-    `/oss/v2/buckets/${segment(bucket)}/objects/${segment(request.name)}/signeds3upload`,
+    `/oss/v2/buckets/${segment(bucket)}/objects/${segment(request.objectKey)}/signeds3upload`,
     { method: 'POST', body: { uploadKey: request.uploadKey } },
   )
 
   const urn = base64Url(request.objectId)
-  const views = request.views.length > 0 ? request.views : ['2d' as const, '3d' as const]
-  const format: TranslateFormat = { type: 'svf2', views }
+  const format: TranslateFormat = { type: 'svf2', views: request.views }
   if (request.masterViews) format.advanced = { generateMasterViews: true }
   await apsFetch(base, '/modelderivative/v2/designdata/job', {
     method: 'POST',
@@ -321,6 +333,12 @@ export async function GET(request: Request): Promise<Response> {
     if (kind === 'status') {
       const urn = url.searchParams.get('urn')
       if (!urn) return Response.json({ error: 'urn is required.' }, { status: 400 })
+      if (!isOwnedUrn(urn, bucketKey())) {
+        return Response.json(
+          { error: 'urn does not belong to this upload bucket.' },
+          { status: 400 },
+        )
+      }
       return await translationStatus(base, urn)
     }
     return Response.json({ error: 'Unknown upload request.' }, { status: 400 })
@@ -331,20 +349,20 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   const url = new URL(request.url)
-  let body: UploadStartRequest | UploadFinishRequest
+  let value: unknown
   try {
-    body = (await request.json()) as UploadStartRequest | UploadFinishRequest
+    value = await request.json()
   } catch {
     return Response.json({ error: 'The request body must be JSON.' }, { status: 400 })
   }
-  if (!body.name) {
-    return Response.json({ error: 'name is required.' }, { status: 400 })
+  const parsed = parseUploadRequest(value, bucketKey())
+  if (!parsed.ok) {
+    return Response.json({ error: parsed.error }, { status: parsed.status ?? 400 })
   }
   try {
     const base = apiBase(url.origin)
-    if (body.kind === 'start') return await startUpload(base, body)
-    if (body.kind === 'finish') return await finishUpload(base, body)
-    return Response.json({ error: 'Unknown upload request.' }, { status: 400 })
+    if (parsed.value.kind === 'start') return await startUpload(base, parsed.value)
+    return await finishUpload(base, parsed.value)
   } catch (error) {
     return errorResponse(error)
   }

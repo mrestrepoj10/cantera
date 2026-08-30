@@ -2,7 +2,13 @@ import { TokenError } from 'aec-auth'
 import { cookies, headers } from 'next/headers'
 
 import { ConnectionsManager } from '@/components/connections-manager'
-import { APS_PROVIDER_ID, getTokenSource, openSession, SESSION_COOKIE } from '@/lib/acc-auth'
+import {
+  APS_PROVIDER_ID,
+  appOrigin,
+  getTokenSource,
+  openSession,
+  SESSION_COOKIE,
+} from '@/lib/acc-auth'
 import { apsProvider } from '@/lib/aps-oauth-preset'
 import type { OAuthAccount, OAuthConnection, OAuthProvider } from '@/lib/oauth-types'
 
@@ -17,7 +23,7 @@ async function requestOrigin(): Promise<string> {
   const headerList = await headers()
   const host = headerList.get('x-forwarded-host') ?? headerList.get('host') ?? 'localhost:3000'
   const proto = headerList.get('x-forwarded-proto') ?? 'http'
-  return `${proto}://${host}`
+  return appOrigin(`${proto}://${host}`)
 }
 
 /** Row-level failures stay on the row; only a backend that cannot answer at

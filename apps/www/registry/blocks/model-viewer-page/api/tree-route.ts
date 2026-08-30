@@ -9,7 +9,7 @@ import type {
   HubTreeProjectNode,
   HubTreeVersionNode,
 } from '@/components/ui/hub-tree'
-import { getSessionToken, openSession, SESSION_COOKIE } from '@/lib/acc-auth'
+import { appOrigin, getSessionToken, openSession, SESSION_COOKIE } from '@/lib/acc-auth'
 import {
   type ApsFolderDoc,
   type ApsHubDoc,
@@ -22,7 +22,12 @@ import {
   fromApsProject,
   fromApsVersion,
 } from '@/lib/aps-data-preset'
-import type { BrowsePathSegment, Item, ItemVersion } from '@/lib/project-types'
+import {
+  type BrowsePathSegment,
+  type Item,
+  type ItemVersion,
+  normalizeSearchText,
+} from '@/lib/project-types'
 
 interface JsonApiDocument<T> {
   data?: T
@@ -76,18 +81,12 @@ class MissingQueryParameterError extends Error {}
 
 const FOLDER_PAGE_LIMIT = 200
 const MAX_FOLDER_PAGES = 20
+const MAX_SEARCH_PAGES = 2
+const MAX_SEARCH_FOLDERS = 5
+const SEARCH_FOLDER_CONCURRENCY = 2
 const SEARCH_MIN_QUERY_LENGTH = 2
 const MAX_SEARCH_MATCHES = 50
 const MAX_PATH_DEPTH = 20
-
-// APS's displayName filters match case- and diacritic-sensitively ("cana"
-// misses "CAÑA"), so the recursive listing is filtered here instead.
-function searchNormalize(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/\p{M}+/gu, '')
-    .toLocaleLowerCase()
-}
 
 function apiBase(origin: string): string {
   const configured = process.env.APS_AUTH_BASE_URL
@@ -199,7 +198,7 @@ async function searchFolder(
   folderId: string,
   query: string,
 ): Promise<SearchEntry[]> {
-  const needle = searchNormalize(query)
+  const needle = normalizeSearchText(query)
   const entries: SearchEntry[] = []
   const seenVersionIds = new Set<string>()
 
@@ -210,7 +209,7 @@ async function searchFolder(
       if (!itemId) continue
       const version = fromApsVersion(doc)
       if (seenVersionIds.has(version.id)) continue
-      if (!searchNormalize(version.displayName).includes(needle)) continue
+      if (!normalizeSearchText(version.displayName).includes(needle)) continue
       seenVersionIds.add(version.id)
       entries.push({
         item: {
@@ -229,7 +228,7 @@ async function searchFolder(
     let hasNext = true
     for (
       let page = 0;
-      hasNext && page < MAX_FOLDER_PAGES && entries.length < MAX_SEARCH_MATCHES;
+      hasNext && page < MAX_SEARCH_PAGES && entries.length < MAX_SEARCH_MATCHES;
       page += 1
     ) {
       const searchUrl = new URL(
@@ -263,15 +262,24 @@ async function searchProject(
     `${base}/project/v1/hubs/${segment(hubId)}/projects/${segment(projectId)}/topFolders`,
     token,
   )
-  const folders = (document.data ?? []).map(fromApsFolder)
-  const results = await Promise.all(
-    folders.map(async (folder) => {
+  const folders = (document.data ?? []).map(fromApsFolder).slice(0, MAX_SEARCH_FOLDERS)
+  const results: SearchEntry[][] = Array.from({ length: folders.length })
+  let nextFolder = 0
+  async function worker(): Promise<void> {
+    for (;;) {
+      const index = nextFolder
+      nextFolder += 1
+      const folder = folders[index]
+      if (!folder) return
       const entries = await searchFolder(base, token, projectId, folder.id, query)
-      return entries.map((entry) => ({
+      results[index] = entries.map((entry) => ({
         ...entry,
         folder: { id: folder.id, name: folder.name, type: 'folder' as const },
       }))
-    }),
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(SEARCH_FOLDER_CONCURRENCY, folders.length) }, () => worker()),
   )
   return results.flat()
 }
@@ -369,12 +377,13 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   try {
+    const origin = appOrigin(url.origin)
     const cookieStore = await cookies()
     const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)
     if (!session) {
       return Response.json({ error: 'Sign in with Autodesk to browse models.' }, { status: 401 })
     }
-    const token = await getSessionToken(url.origin, session)
+    const token = await getSessionToken(origin, session)
     if (kind === 'search') {
       const query = required(url.searchParams, 'q').trim()
       if (query.length < SEARCH_MIN_QUERY_LENGTH) {
@@ -383,14 +392,14 @@ export async function GET(request: Request): Promise<Response> {
       const folderId = url.searchParams.get('folderId')
       const entries = folderId
         ? await searchFolder(
-            apiBase(url.origin),
+            apiBase(origin),
             token,
             required(url.searchParams, 'projectId'),
             folderId,
             query,
           )
         : await searchProject(
-            apiBase(url.origin),
+            apiBase(origin),
             token,
             required(url.searchParams, 'hubId'),
             required(url.searchParams, 'projectId'),
@@ -400,7 +409,7 @@ export async function GET(request: Request): Promise<Response> {
     }
     if (kind === 'path') {
       const segments = await itemFolderPath(
-        apiBase(url.origin),
+        apiBase(origin),
         token,
         required(url.searchParams, 'projectId'),
         required(url.searchParams, 'itemId'),
@@ -414,7 +423,7 @@ export async function GET(request: Request): Promise<Response> {
       }
       return Response.json({ segments }, { headers: { 'Cache-Control': 'no-store' } })
     }
-    const nodes = await loadNodes(kind, url.searchParams, apiBase(url.origin), token)
+    const nodes = await loadNodes(kind, url.searchParams, apiBase(origin), token)
     return Response.json({ nodes }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     if (error instanceof MissingQueryParameterError) {

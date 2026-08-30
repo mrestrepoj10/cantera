@@ -10,8 +10,9 @@ import type { NextConfig } from 'next'
 const repositoryEnv = fileURLToPath(new URL('../../.env', import.meta.url))
 if (existsSync(repositoryEnv)) process.loadEnvFile?.(repositoryEnv)
 
-// Showcase-only emulator defaults. Production deployments replace these with
-// platform environment variables; none are exposed through NEXT_PUBLIC_*.
+// Showcase-only emulator defaults. Production deployments opt in with
+// ACC_AUTH_DEMO=1 or provide real platform environment variables; none are
+// exposed through NEXT_PUBLIC_*.
 //
 // An empty string counts as unset, not as an override: CI hands every job the
 // APS secrets, and on a fork-originated pull request GitHub hands those
@@ -21,10 +22,13 @@ function envDefault(key: string, value: string): void {
   if (!process.env[key]) process.env[key] = value
 }
 
-envDefault('APS_CLIENT_ID', 'cantera-demo-client')
-envDefault('APS_CLIENT_SECRET', 'cantera-demo-secret')
-envDefault('APS_AUTH_BASE_URL', '/emulate/aps')
-envDefault('ACC_AUTH_DEMO', '1')
+const emulatorDefaults = process.env.NODE_ENV !== 'production' || process.env.ACC_AUTH_DEMO === '1'
+if (emulatorDefaults) {
+  envDefault('APS_CLIENT_ID', 'cantera-demo-client')
+  envDefault('APS_CLIENT_SECRET', 'cantera-demo-secret')
+  envDefault('APS_AUTH_BASE_URL', '/emulate/aps')
+  if (process.env.NODE_ENV !== 'production') envDefault('ACC_AUTH_DEMO', '1')
+}
 
 const nextConfig: NextConfig = {
   // Next 16.3 can prefetch one reusable shell per route. Runtime data stays

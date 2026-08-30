@@ -8,18 +8,19 @@
     "typecheck": "tsc --noEmit",
     "lint:registry": "eslint . --max-warnings 0",
     "registry:build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-examples.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-demo-registry.mts && shadcn build && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-llms.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-skill.mts",
-    "registry:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-file-closure.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-npm-deps.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-drift.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-installed.mts",
-    "registry:verify:static": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-file-closure.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-npm-deps.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-installed.mts"
+    "registry:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-tsconfig-paths.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-file-closure.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-npm-deps.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-drift.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-installed.mts",
+    "registry:verify:static": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-tsconfig-paths.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-file-closure.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-npm-deps.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-installed.mts",
+    "test:unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/*.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
     "@emulators/adapter-next": "workspace:*",
     "@emulators/aps": "workspace:*",
-    "aec-auth": "^0.2.0",
+    "aec-auth": "^0.3.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "lucide-react": "^0.577.0",
+    "lucide-react": "^1.0.0",
     "next": "16.3.2",
     "next-themes": "^0.4.6",
     "react": "19.2.8",
@@ -36,7 +37,7 @@
     "@types/react-dom": "19.2.4",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.2",
-    "shadcn": "^3",
+    "shadcn": "^4.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

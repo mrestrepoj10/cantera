@@ -1,7 +1,8 @@
 import {
   APS_PROVIDER_ID,
+  allowedSignInScopes,
+  appOrigin,
   cookieSecurity,
-  DEFAULT_SIGN_IN_SCOPES,
   getApsOAuth,
   newState,
   safeNext,
@@ -16,13 +17,13 @@ export async function GET(request: Request, ctx: { params: Promise<{ provider: s
   }
 
   const url = new URL(request.url)
-  const scopesParam = url.searchParams.get('scopes')
-  const scopes = scopesParam ? scopesParam.split(/[\s,]+/).filter(Boolean) : DEFAULT_SIGN_IN_SCOPES
+  const origin = appOrigin(url.origin)
+  const scopes = allowedSignInScopes(url.searchParams.get('scopes'))
   const oauthState = newState(safeNext(url.searchParams.get('next'), '/sign-in'), scopes)
 
-  const oauth = getApsOAuth(url.origin)
+  const oauth = getApsOAuth(origin)
   const authorizeUrl = oauth.authorizeUrl({
-    redirectUri: `${url.origin}/api/auth/callback/${APS_PROVIDER_ID}`,
+    redirectUri: `${origin}/api/auth/callback/${APS_PROVIDER_ID}`,
     scopes,
     state: oauthState.state,
   })
@@ -31,7 +32,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ provider: s
     status: 302,
     headers: {
       Location: authorizeUrl,
-      'Set-Cookie': stateCookie(oauthState, cookieSecurity(url)),
+      'Set-Cookie': stateCookie(oauthState, cookieSecurity(origin)),
     },
   })
 }

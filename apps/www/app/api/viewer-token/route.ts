@@ -28,6 +28,7 @@ export async function GET(): Promise<Response> {
       provider: 'aps',
       subject: { type: 'app' },
       scopes: VIEWER_SCOPES,
+      forceRefresh: true,
     })
     return Response.json(
       {

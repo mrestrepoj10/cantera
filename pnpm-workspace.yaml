@@ -7,7 +7,7 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
 minimumReleaseAgeExclude:
-  - aec-auth@0.2.0
+  - aec-auth@0.3.1
 overrides:
   "@types/react": 19.2.18
   "@types/react-dom": 19.2.4

@@ -177,7 +177,7 @@ function ModelBrowser({
   const [nodes, setNodes] = useState(initialNodes)
   const [expandedIds, setExpandedIds] = useState<string[]>([])
   const [selectedId, setSelectedId] = useState<string>()
-  const [pendingId, setPendingId] = useState<string>()
+  const [pendingIds, setPendingIds] = useState<string[]>([])
   const [rootPending, setRootPending] = useState(initialNodes.length === 0)
   const [treeIssue, setTreeIssue] = useState<TreeIssue>()
   const [selection, setSelection] = useState<{ item: Item; version?: ItemVersion }>()
@@ -243,7 +243,7 @@ function ModelBrowser({
       return
     }
     finder.updateScope(node, path, undefined)
-    setPendingId(node.id)
+    setPendingIds((current) => (current.includes(node.id) ? current : [...current, node.id]))
     setTreeIssue(undefined)
     try {
       const children = await loadChildren(node, path)
@@ -252,7 +252,7 @@ function ModelBrowser({
     } catch (error) {
       setTreeIssue(treeIssueFor(error, `${node.name} could not be loaded.`))
     } finally {
-      setPendingId(undefined)
+      setPendingIds((current) => current.filter((id) => id !== node.id))
     }
   }
 
@@ -421,7 +421,7 @@ function ModelBrowser({
           nodes,
           expandedIds,
           selectedId,
-          pendingId,
+          pendingIds,
           empty: treeEmpty,
           onExpand: expand,
           onCollapse: (node) => setExpandedIds((current) => current.filter((id) => id !== node.id)),

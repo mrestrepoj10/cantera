@@ -55,6 +55,13 @@ export function isItem(entry: FolderEntry): entry is Item {
   return entry.type === 'item'
 }
 
+export function normalizeSearchText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{M}+/gu, '')
+    .toLocaleLowerCase()
+}
+
 /** Mirrors the Model Derivative manifest vocabulary; adapters normalize into it. */
 export type ModelTranslationStatus = 'pending' | 'inprogress' | 'success' | 'failed' | 'timeout'
 

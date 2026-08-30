@@ -20,5 +20,10 @@ export default defineConfig({
     url: 'http://localhost:3456',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: {
+      ...process.env,
+      APP_ORIGIN: process.env.APP_ORIGIN ?? 'http://localhost:3456',
+      ACC_AUTH_DEMO: process.env.ACC_AUTH_DEMO ?? '1',
+    },
   },
 })

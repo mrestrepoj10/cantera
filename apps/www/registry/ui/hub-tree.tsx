@@ -59,11 +59,14 @@ export type HubTreeBranchNode =
 
 export type HubTreeNode = HubTreeBranchNode | HubTreeVersionNode
 
+const EMPTY_PENDING_IDS: readonly string[] = []
+
 export interface HubTreeProps extends Omit<ComponentProps<'div'>, 'children'> {
   nodes: HubTreeNode[]
   expandedIds: readonly string[]
   selectedId?: string
   pendingId?: string
+  pendingIds?: readonly string[]
   density?: 'comfortable' | 'compact'
   /** Rendered instead of the default "No projects found." when `nodes` is empty
    * — the place for loading, error, and reconnect states. */
@@ -154,6 +157,7 @@ function HubTree({
   expandedIds,
   selectedId,
   pendingId,
+  pendingIds = EMPTY_PENDING_IDS,
   density = 'comfortable',
   empty,
   onExpand,
@@ -164,6 +168,10 @@ function HubTree({
   ...props
 }: HubTreeProps) {
   const expanded = useMemo(() => new Set(expandedIds), [expandedIds])
+  const pending = useMemo(
+    () => new Set(pendingId ? [pendingId, ...pendingIds] : pendingIds),
+    [pendingId, pendingIds],
+  )
   const visible = useMemo(() => visibleNodes(nodes, expanded), [nodes, expanded])
   const visibleIds = useMemo(() => visible.map(({ node }) => node.id), [visible])
   const rows = useRef(new Map<string, HTMLDivElement>())
@@ -201,14 +209,14 @@ function HubTree({
   }
 
   function toggle(node: HubTreeBranchNode): void {
-    if (pendingId === node.id) return
+    if (pending.has(node.id)) return
     if (expanded.has(node.id)) void onCollapse(node)
     else void onExpand(node)
   }
 
   function activate(entry: VisibleNode): void {
     const { node, parentItem } = entry
-    if (pendingId === node.id) return
+    if (pending.has(node.id)) return
     if (node.type === 'item') {
       void onItemOpen(node.value)
       return
@@ -246,7 +254,7 @@ function HubTree({
     return entries.map((node, index) => {
       const branch = isBranch(node)
       const open = branch && expanded.has(node.id)
-      const busy = pendingId === node.id
+      const busy = pending.has(node.id)
       const currentEntry: VisibleNode = { node, parent, parentItem }
       const selected = selectedId === node.id
       const children = node.children ?? []
