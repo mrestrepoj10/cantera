@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronsUpDownIcon } from 'lucide-react'
-import { type ComponentProps, Fragment, type ReactNode, useState } from 'react'
+import { type ComponentProps, Fragment, type ReactElement, type ReactNode, useState } from 'react'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -18,6 +18,8 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -55,6 +57,11 @@ export interface HubSidebarProps extends ComponentProps<typeof Sidebar> {
   tree: HubTreeProps
   user?: HubSidebarUser
   header?: ReactNode
+  /** Names the tree group ("Models · 4"); renders as the group label. */
+  treeLabel?: ReactNode
+  /** One quiet control beside the group label — an icon button element, not a
+   * filled primary. Give it an aria-label. */
+  treeAction?: ReactElement
   footer?: ReactNode
 }
 
@@ -162,7 +169,16 @@ function UserRow({ user }: { user: HubSidebarUser }) {
   )
 }
 
-function HubSidebar({ finder, tree, user, header, footer, ...props }: HubSidebarProps) {
+function HubSidebar({
+  finder,
+  tree,
+  user,
+  header,
+  treeLabel,
+  treeAction,
+  footer,
+  ...props
+}: HubSidebarProps) {
   const [finderOpen, setFinderOpen] = useState(false)
 
   return (
@@ -174,6 +190,8 @@ function HubSidebar({ finder, tree, user, header, footer, ...props }: HubSidebar
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="transition-[opacity,visibility] duration-200 ease-linear group-data-[collapsible=icon]:invisible group-data-[collapsible=icon]:opacity-0">
+          {treeLabel != null && <SidebarGroupLabel>{treeLabel}</SidebarGroupLabel>}
+          {treeAction != null && <SidebarGroupAction render={treeAction} />}
           <HubTree {...tree} />
         </SidebarGroup>
       </SidebarContent>

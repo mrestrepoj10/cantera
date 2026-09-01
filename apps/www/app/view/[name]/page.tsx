@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { preconnect } from 'react-dom'
 
+import { ModelUploadPageDemo } from '@/components/site/demos/model-upload-page-demo'
 import { ModelViewerPageDemo } from '@/components/site/demos/model-viewer-page-demo'
 import { getRegistryItem } from '@/components/site/registry'
 
@@ -11,7 +12,7 @@ interface PreviewPageProps {
 }
 
 export function generateStaticParams() {
-  return [{ name: 'model-viewer-page' }]
+  return [{ name: 'model-viewer-page' }, { name: 'model-upload-page' }]
 }
 
 export async function generateMetadata({ params }: PreviewPageProps): Promise<Metadata> {
@@ -25,11 +26,13 @@ export async function generateMetadata({ params }: PreviewPageProps): Promise<Me
 
 async function BlockPreview({ params }: PreviewPageProps) {
   const { name } = await params
-  if (name !== 'model-viewer-page') notFound()
 
   if (name === 'model-viewer-page') {
     if (process.env.APS_VIEWER_DEMO_URN) preconnect('https://developer.api.autodesk.com')
     return <ModelViewerPageDemo nextPath="/view/model-viewer-page" titleAs="h1" />
+  }
+  if (name === 'model-upload-page') {
+    return <ModelUploadPageDemo />
   }
 
   notFound()

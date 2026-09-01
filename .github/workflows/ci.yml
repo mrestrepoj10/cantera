@@ -23,6 +23,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
+      - run: pnpm test:unit
       - name: Registry builds, verifies, and is committed
         # verify-drift's second rebuild-and-byte-compare stays a local/manual
         # tool (pnpm registry:verify); here git status proves the committed
@@ -41,6 +42,8 @@ jobs:
       - name: Build (turbo-cached; the e2e job serves this output via next start)
         run: pnpm build --filter www
         env:
+          ACC_AUTH_DEMO: 1
+          APP_ORIGIN: http://localhost:3456
           APS_CLIENT_ID: ${{ secrets.APS_CLIENT_ID }}
           APS_CLIENT_SECRET: ${{ secrets.APS_CLIENT_SECRET }}
           APS_VIEWER_DEMO_URN: ${{ secrets.APS_VIEWER_DEMO_URN }}
@@ -85,6 +88,8 @@ jobs:
       - name: Build (cache hit from the checks job)
         run: pnpm build --filter www
         env:
+          ACC_AUTH_DEMO: 1
+          APP_ORIGIN: http://localhost:3456
           APS_CLIENT_ID: ${{ secrets.APS_CLIENT_ID }}
           APS_CLIENT_SECRET: ${{ secrets.APS_CLIENT_SECRET }}
           APS_VIEWER_DEMO_URN: ${{ secrets.APS_VIEWER_DEMO_URN }}
@@ -93,6 +98,8 @@ jobs:
           pnpm exec playwright install --with-deps chromium
           pnpm e2e
         env:
+          ACC_AUTH_DEMO: 1
+          APP_ORIGIN: http://localhost:3456
           CI: true
           APS_E2E: ${{ (github.event_name == 'push' || steps.viewer.outputs.viewer == 'true') && '1' || '' }}
           APS_CLIENT_ID: ${{ secrets.APS_CLIENT_ID }}

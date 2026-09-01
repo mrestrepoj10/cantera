@@ -831,6 +831,11 @@ export const apiTables: ApiTablesByItem = {
           description: 'Narrows a browser row to its file-like Item shape.',
         },
         {
+          name: 'normalizeSearchText',
+          type: '(value: string) => string',
+          description: 'Case-folds and strips diacritics for consistent client and server search.',
+        },
+        {
           name: 'ModelTranslationStatus',
           type: 'type',
           description: "'pending' | 'inprogress' | 'success' | 'failed' | 'timeout'.",
@@ -1238,6 +1243,12 @@ export const apiTables: ApiTablesByItem = {
             'Branch currently loading children. Its label stays mounted while the disclosure icon crossfades to a spinner.',
         },
         {
+          name: 'pendingIds',
+          type: 'string[]',
+          description:
+            'Branches concurrently loading children. Each keeps its own mounted label and spinner.',
+        },
+        {
           name: 'density',
           type: "'comfortable' | 'compact'",
           defaultValue: "'comfortable'",
@@ -1445,6 +1456,18 @@ export const apiTables: ApiTablesByItem = {
             'Account menu items. With any, the identity row becomes the menu trigger (chevron affordance, menu anchored beside the rail — below it on mobile) and repeats the identity as the menu header; with none the row stays a plain label. separatorBefore opens a group; destructive carries the sign-out ink.',
         },
         {
+          name: 'treeLabel',
+          type: 'ReactNode',
+          description:
+            'Names the tree group ("Models · 4"); renders as the sidebar group label above the tree.',
+        },
+        {
+          name: 'treeAction',
+          type: 'ReactElement',
+          description:
+            'One quiet control beside the group label — an icon button element with an aria-label, positioned as the sidebar group action.',
+        },
+        {
           name: 'header / footer',
           type: 'ReactNode',
           description:
@@ -1455,6 +1478,66 @@ export const apiTables: ApiTablesByItem = {
           type: 'ComponentProps<typeof Sidebar>',
           description:
             'Remaining props reach the shadcn Sidebar — side, variant, collapsible (the trigger compacts to an icon in icon mode). Render inside your own SidebarProvider with page content in SidebarInset.',
+        },
+      ],
+    },
+  ],
+  'model-upload-page': [
+    {
+      caption: 'ModelUpload props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'uploadEndpoint',
+          type: 'string',
+          defaultValue: "'/api/models/upload'",
+          description:
+            'Two-legged route implementing the models, start, finish, and status contract over the app bucket.',
+        },
+        {
+          name: 'viewerTokenEndpoint',
+          type: 'string',
+          defaultValue: "'/api/viewer-token'",
+          description:
+            'Separate two-legged viewer token route, scoped to viewables:read. Upload-scoped tokens never cross into the viewer.',
+        },
+        {
+          name: 'embedded',
+          type: 'boolean',
+          defaultValue: 'false',
+          description:
+            'Constrains the desktop sidebar and shell height to the nearest positioned preview container, and skips writing ?urn= to the URL. Leave false for the full-page route.',
+        },
+      ],
+    },
+    {
+      caption: 'Upload route',
+      nameHeader: 'Request',
+      rows: [
+        {
+          name: 'kind=models',
+          type: 'GET',
+          description:
+            'Ensures the app bucket exists and lists its objects as { name, urn, size } models.',
+        },
+        {
+          name: 'kind=start',
+          type: 'POST · name, size',
+          description:
+            'Returns signed S3 part URLs for the object the browser uploads to directly.',
+        },
+        {
+          name: 'kind=finish',
+          type: 'POST · objectId, uploadKey, views, masterViews, zipEntrypoint',
+          description:
+            'Completes the signed upload and submits the svf2 job — compressed with the archive root when zipEntrypoint is set.',
+        },
+        {
+          name: 'kind=status',
+          type: 'GET · urn',
+          description:
+            'Reads the Model Derivative manifest into the translation status vocabulary, with the derivative diagnostic messages.',
         },
       ],
     },

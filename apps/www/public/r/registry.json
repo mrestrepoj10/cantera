@@ -248,9 +248,10 @@
         "APS_CLIENT_ID": "",
         "APS_CLIENT_SECRET": "",
         "SESSION_SECRET": "",
+        "APP_ORIGIN": "",
         "APS_AUTH_BASE_URL": ""
       },
-      "docs": "Installed: the /api/auth/* route handlers, lib/acc-auth.ts (aec-auth vault wiring and the signed session cookie), and ScopedAutodeskSignIn — render it anywhere with a nextPath and the callback returns there. No pages: pair with @cantera/acc-sign-in for a ready-made /sign-in, or mount the component in your own page the way model-viewer-page does.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — HMAC key for the session cookie. Generate one with `openssl rand -base64 32`. In production the routes fail closed without it.\n- APS_AUTH_BASE_URL — optional auth-origin override, absolute or relative (\"/emulate/aps\") for an embedded emulator. Leave it unset to talk to real APS.\n\nThe default vault store is in-memory: correct for a demo, wrong for production. Swap in a durable VaultStore (see the aec-auth README) before you ship."
+      "docs": "Installed: the /api/auth/* route handlers, lib/acc-auth.ts (aec-auth vault wiring and the signed session cookie), and ScopedAutodeskSignIn — render it anywhere with a nextPath and the callback returns there. No pages: pair with @cantera/acc-sign-in for a ready-made /sign-in, or mount the component in your own page the way model-viewer-page does.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — HMAC key for the session cookie. Generate one with `openssl rand -base64 32`. In production the routes fail closed without it.\n- APP_ORIGIN — the canonical public origin, such as \"https://app.example.com\". Required in production so forwarded host headers cannot redirect OAuth or receive credentials.\n- APS_AUTH_BASE_URL — optional auth-origin override, absolute or relative (\"/emulate/aps\") for an embedded emulator. Leave it unset to talk to real APS.\n\nThe default vault store is in-memory: correct for a demo, wrong for production. Swap in a durable VaultStore (see the aec-auth README) before you ship."
     },
     {
       "name": "acc-sign-in",
@@ -330,9 +331,10 @@
         "APS_CLIENT_ID": "",
         "APS_CLIENT_SECRET": "",
         "SESSION_SECRET": "",
+        "APP_ORIGIN": "",
         "APS_AUTH_BASE_URL": ""
       },
-      "docs": "Installed: app/connections/page.tsx with its loading skeleton, plus ConnectionsView (presentational) and ConnectionsManager (wiring).\n\nThis block takes acc-auth-routes as a registry dependency for the /api/auth/* routes and the aec-auth glue — no /sign-in page is installed — so one environment configures both:\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — required in production; the block fails closed without it.\n- APS_AUTH_BASE_URL — optional auth-origin override for an emulator. Unset means real APS.\n\nACC_AUTH_DEMO=1 allows the insecure fallback session secret and must never be set where real accounts exist.\n\nConnectionsView never fetches — providers and connections in, callbacks out — so point it at any backend."
+      "docs": "Installed: app/connections/page.tsx with its loading skeleton, plus ConnectionsView (presentational) and ConnectionsManager (wiring).\n\nThis block takes acc-auth-routes as a registry dependency for the /api/auth/* routes and the aec-auth glue — no /sign-in page is installed — so one environment configures both:\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — required in production; the block fails closed without it.\n- APP_ORIGIN — the canonical public origin. Required in production.\n- APS_AUTH_BASE_URL — optional auth-origin override for an emulator. Unset means real APS.\n\nACC_AUTH_DEMO=1 allows the insecure fallback session secret and must never be set where real accounts exist.\n\nConnectionsView never fetches — providers and connections in, callbacks out — so point it at any backend."
     },
     {
       "name": "project-types",
@@ -453,7 +455,11 @@
       "description": "A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation.",
       "categories": ["projects", "files", "navigation", "autodesk"],
       "dependencies": ["lucide-react"],
-      "registryDependencies": ["@cantera/project-types", "@cantera/status-tokens"],
+      "registryDependencies": [
+        "@cantera/project-types",
+        "@cantera/status-tokens",
+        "@cantera/upload-types"
+      ],
       "files": [
         {
           "path": "registry/ui/hub-tree.tsx",
@@ -718,9 +724,74 @@
         "APS_CLIENT_ID": "",
         "APS_CLIENT_SECRET": "",
         "SESSION_SECRET": "",
+        "APP_ORIGIN": "",
         "APS_AUTH_BASE_URL": ""
       },
-      "docs": "Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-auth-routes dependency supplies the OAuth routes, lib/acc-auth.ts, and the scoped sign-in component — no /sign-in page is installed. Signed out, /models renders ScopedAutodeskSignIn inline, returning to /models after the callback. Add @cantera/acc-sign-in separately if you also want a standalone /sign-in page.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.\n- SESSION_SECRET — required in production. Generate one with `openssl rand -base64 32`.\n- APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS. A relative value such as \"/emulate/aps\" is useful only when your app mounts a compatible embedded emulator at that path.\n\nThe default aec-auth vault from acc-sign-in is in-memory: appropriate for a demo, not production. Replace it with a durable encrypted VaultStore before real users connect.\n\nThe cantera showcase emulator supplies the project tree but no SVF geometry. Its seeded demo links one tip version to an externally translated sample URN when credentials are configured; every other item intentionally renders the no-geometry state. Your application should store real derivative URNs on normalized item versions."
+      "docs": "Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-auth-routes dependency supplies the OAuth routes, lib/acc-auth.ts, and the scoped sign-in component — no /sign-in page is installed. Signed out, /models renders ScopedAutodeskSignIn inline, returning to /models after the callback. Add @cantera/acc-sign-in separately if you also want a standalone /sign-in page.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.\n- SESSION_SECRET — required in production. Generate one with `openssl rand -base64 32`.\n- APP_ORIGIN — the canonical public origin. Required in production.\n- APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS. A relative value such as \"/emulate/aps\" is useful only when your app mounts a compatible embedded emulator at that path.\n\nThe default aec-auth vault from acc-sign-in is in-memory: appropriate for a demo, not production. Replace it with a durable encrypted VaultStore before real users connect.\n\nThe cantera showcase emulator supplies the project tree but no SVF geometry. Its seeded demo links one tip version to an externally translated sample URN when credentials are configured; every other item intentionally renders the no-geometry state. Your application should store real derivative URNs on normalized item versions."
+    },
+    {
+      "name": "model-upload-page",
+      "type": "registry:block",
+      "title": "Model Upload Page",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.",
+      "categories": ["files", "upload", "viewer", "autodesk"],
+      "dependencies": ["aec-auth", "lucide-react"],
+      "registryDependencies": [
+        "button",
+        "checkbox",
+        "dialog",
+        "input",
+        "label",
+        "@cantera/hub-sidebar",
+        "@cantera/file-drop-zone",
+        "@cantera/aps-viewer",
+        "@cantera/viewer-extension-types",
+        "@cantera/model-status-card",
+        "@cantera/upload-types",
+        "@cantera/project-types",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/model-upload-page/page.tsx",
+          "type": "registry:page",
+          "target": "app/upload/page.tsx"
+        },
+        {
+          "path": "registry/blocks/model-upload-page/loading.tsx",
+          "type": "registry:file",
+          "target": "app/upload/loading.tsx"
+        },
+        {
+          "path": "registry/blocks/model-upload-page/components/model-upload.tsx",
+          "type": "registry:component",
+          "target": "components/model-upload.tsx"
+        },
+        {
+          "path": "registry/blocks/model-upload-page/api/upload-route.ts",
+          "type": "registry:file",
+          "target": "app/api/models/upload/route.ts"
+        },
+        {
+          "path": "registry/blocks/model-upload-page/api/upload-request.ts",
+          "type": "registry:file",
+          "target": "app/api/models/upload/upload-request.ts"
+        },
+        {
+          "path": "registry/blocks/model-viewer-page/api/viewer-token-route.ts",
+          "type": "registry:file",
+          "target": "app/api/viewer-token/route.ts"
+        }
+      ],
+      "envVars": {
+        "APS_CLIENT_ID": "",
+        "APS_CLIENT_SECRET": "",
+        "APS_BUCKET": "",
+        "APP_ORIGIN": "",
+        "APS_AUTH_BASE_URL": ""
+      },
+      "docs": "Installed: app/upload/page.tsx, its loading UI, the two-legged /api/models/upload route (bucket bootstrap, signed-S3 uploads, translation jobs, manifest status with diagnostics), and the 2-legged /api/viewer-token route. No sign-in is installed: every route runs on the app's credentials against the app's own OSS bucket, so anyone who can reach the deployment can read and write it — add your own access control before shipping beyond a trusted team.\n\nUploads go browser-to-storage through signed S3 part URLs. A .zip upload asks for the root design filename and translates through compressedUrn. Every finished upload submits an svf2 job with the chosen views (2D sheets, 3D views, optional Revit master views), appears in the sidebar list, and becomes the selection — the URL carries ?urn=... so a view is shareable. Failed translations surface the manifest's diagnostic messages.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- APS_BUCKET — optional OSS bucket key; defaults to one derived from the client id. Buckets are global per client, and the route creates it with a persistent policy on first use.\n- APP_ORIGIN — the canonical public origin. Required in production when APS_AUTH_BASE_URL is relative.\n- APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS; a relative value such as \"/emulate/aps\" targets a compatible embedded emulator.\n\nFiles over 250 MB are rejected at start — raise PART_SIZE or MAX_PARTS in the route to lift the bound."
     },
     {
       "name": "upload-types",

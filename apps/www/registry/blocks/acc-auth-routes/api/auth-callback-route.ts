@@ -1,5 +1,6 @@
 import {
   APS_PROVIDER_ID,
+  appOrigin,
   clearStateCookie,
   cookieSecurity,
   getApsOAuth,
@@ -20,11 +21,12 @@ export async function GET(request: Request, ctx: { params: Promise<{ provider: s
   }
 
   const url = new URL(request.url)
+  const origin = appOrigin(url.origin)
   const code = url.searchParams.get('code')
   const state = url.searchParams.get('state')
   const stored = readStateCookie(request.headers.get('cookie'))
 
-  const secure = cookieSecurity(url)
+  const secure = cookieSecurity(origin)
   if (!code || !state || !stored || stored.state !== state) {
     return new Response('Invalid OAuth state', {
       status: 400,
@@ -32,13 +34,13 @@ export async function GET(request: Request, ctx: { params: Promise<{ provider: s
     })
   }
 
-  const oauth = getApsOAuth(url.origin)
+  const oauth = getApsOAuth(origin)
   const result = await oauth.exchangeCode({
     code,
-    redirectUri: `${url.origin}/api/auth/callback/${APS_PROVIDER_ID}`,
+    redirectUri: `${origin}/api/auth/callback/${APS_PROVIDER_ID}`,
   })
 
-  const infoResponse = await fetch(userInfoUrl(url.origin), {
+  const infoResponse = await fetch(userInfoUrl(origin), {
     headers: { Authorization: `Bearer ${result.accessToken.token}` },
   })
   if (!infoResponse.ok) {

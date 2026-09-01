@@ -22,6 +22,7 @@ Environment variables added to `.env.local`:
 - `APS_CLIENT_ID`
 - `APS_CLIENT_SECRET`
 - `SESSION_SECRET`
+- `APP_ORIGIN`
 - `APS_AUTH_BASE_URL`
 
 ## Install notes
@@ -31,6 +32,7 @@ Installed: the /api/auth/* route handlers, lib/acc-auth.ts (aec-auth vault wirin
 Environment (added to .env.local as empty keys — fill them in):
 - APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.
 - SESSION_SECRET — HMAC key for the session cookie. Generate one with `openssl rand -base64 32`. In production the routes fail closed without it.
+- APP_ORIGIN — the canonical public origin, such as "https://app.example.com". Required in production so forwarded host headers cannot redirect OAuth or receive credentials.
 - APS_AUTH_BASE_URL — optional auth-origin override, absolute or relative ("/emulate/aps") for an embedded emulator. Leave it unset to talk to real APS.
 
 The default vault store is in-memory: correct for a demo, wrong for production. Swap in a durable VaultStore (see the aec-auth README) before you ship.

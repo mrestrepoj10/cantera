@@ -37,6 +37,7 @@ const versions: ItemVersion[] = []
 - `Folder / Item / FolderEntry` (`interface / union`) — Folder-like navigation rows and file-like item rows. FolderEntry is their rendering union; Hub and Project are structurally compatible with Folder.
 - `ItemVersion` (`interface`) — An immutable file version: id, version number, display name, creator/time, storage size, and nullable derivative URN.
 - `isItem` (`(entry: FolderEntry) => entry is Item`) — Narrows a browser row to its file-like Item shape.
+- `normalizeSearchText` (`(value: string) => string`) — Case-folds and strips diacritics for consistent client and server search.
 - `ModelTranslationStatus` (`type`) — 'pending' | 'inprogress' | 'success' | 'failed' | 'timeout'.
 - `ModelTranslation` (`interface`) — The translation state of one design: urn, status, and optional name, progress, outputs, error.
 - `SheetVersionSet` (`interface`) — A named issuance of construction sheets: id, name, and when it was issued.

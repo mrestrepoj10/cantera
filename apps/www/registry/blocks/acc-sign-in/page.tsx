@@ -6,6 +6,7 @@ import { AccConnectionPanel } from '@/components/acc-connection-panel'
 import { ScopedAutodeskSignIn } from '@/components/scoped-autodesk-sign-in'
 import {
   APS_PROVIDER_ID,
+  appOrigin,
   getSessionToken,
   openSession,
   SESSION_COOKIE,
@@ -20,7 +21,7 @@ async function requestOrigin(): Promise<string> {
   const headerList = await headers()
   const host = headerList.get('x-forwarded-host') ?? headerList.get('host') ?? 'localhost:3000'
   const proto = headerList.get('x-forwarded-proto') ?? 'http'
-  return `${proto}://${host}`
+  return appOrigin(`${proto}://${host}`)
 }
 
 export async function AccSignIn({

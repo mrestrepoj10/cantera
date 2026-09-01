@@ -12,7 +12,7 @@ import { cache } from 'react'
 /**
  * Environment: APS_CLIENT_ID / APS_CLIENT_SECRET, optional APS_AUTH_BASE_URL
  * (absolute, or relative like "/emulate/aps" for the emulator; unset = real
- * APS), SESSION_SECRET — required in production.
+ * APS), APP_ORIGIN and SESSION_SECRET — required in production.
  *
  * The default vault store is in-memory: fine for demos, wrong for production.
  * Swap in a durable VaultStore — see the aec-auth README.
@@ -21,12 +21,41 @@ import { cache } from 'react'
 export const APS_PROVIDER_ID = 'aps'
 
 export const DEFAULT_SIGN_IN_SCOPES = ['user-profile:read', 'data:read', 'viewables:read']
+export const ALLOWED_SIGN_IN_SCOPES = new Set([
+  ...DEFAULT_SIGN_IN_SCOPES,
+  'data:write',
+  'data:create',
+  'account:read',
+  'account:write',
+])
+
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 14
 
 const globalStore = globalThis as { __accVaultStore?: VaultStore }
 
 export function getVaultStore(): VaultStore {
   globalStore.__accVaultStore ??= memoryVaultStore()
   return globalStore.__accVaultStore
+}
+
+export function appOrigin(requestOrigin: string): string {
+  const configured = process.env.APP_ORIGIN
+  if (!configured) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('APP_ORIGIN is required in production')
+    }
+    return new URL(requestOrigin).origin
+  }
+  const url = new URL(configured)
+  if (
+    !['http:', 'https:'].includes(url.protocol) ||
+    url.pathname !== '/' ||
+    url.search ||
+    url.hash
+  ) {
+    throw new Error('APP_ORIGIN must be an HTTP(S) origin without a path, query, or fragment')
+  }
+  return url.origin
 }
 
 function resolveAuthBase(origin: string): string | undefined {
@@ -79,6 +108,10 @@ export interface AccSession {
   scopes?: string[]
 }
 
+interface SessionPayload extends AccSession {
+  expiresAt: number
+}
+
 export const SESSION_COOKIE = 'acc-session'
 const STATE_COOKIE = 'acc-oauth-state'
 
@@ -121,7 +154,7 @@ function hmacKey(): Promise<CryptoKey> {
         encoder.encode(secret),
         { name: 'HMAC', hash: 'SHA-256' },
         false,
-        ['sign'],
+        ['sign', 'verify'],
       ),
     }
   }
@@ -133,25 +166,69 @@ async function hmac(payload: string): Promise<string> {
   return toBase64Url(new Uint8Array(signature))
 }
 
-export async function sealSession(session: AccSession): Promise<string> {
-  const payload = toBase64Url(encoder.encode(JSON.stringify(session)))
+export async function sealSession(
+  session: AccSession,
+  maxAgeSeconds = SESSION_MAX_AGE_SECONDS,
+): Promise<string> {
+  const payload = toBase64Url(
+    encoder.encode(JSON.stringify({ ...session, expiresAt: Date.now() + maxAgeSeconds * 1000 })),
+  )
   return `${payload}.${await hmac(payload)}`
+}
+
+async function verifyHmac(payload: string, signature: string): Promise<boolean> {
+  try {
+    const decoded = fromBase64Url(signature)
+    const signatureBytes = new Uint8Array(decoded.byteLength)
+    signatureBytes.set(decoded)
+    return await crypto.subtle.verify(
+      'HMAC',
+      await hmacKey(),
+      signatureBytes,
+      encoder.encode(payload),
+    )
+  } catch {
+    return false
+  }
+}
+
+export async function verifySealedSession(
+  cookieValue: string | undefined,
+): Promise<AccSession | null> {
+  if (!cookieValue) return null
+  const [payload, signature] = cookieValue.split('.')
+  if (!payload || !signature || !(await verifyHmac(payload, signature))) return null
+  try {
+    const session = JSON.parse(new TextDecoder().decode(fromBase64Url(payload))) as SessionPayload
+    if (
+      typeof session.userId !== 'string' ||
+      session.userId.length === 0 ||
+      !Number.isFinite(session.expiresAt) ||
+      session.expiresAt <= Date.now()
+    ) {
+      return null
+    }
+    const account: AccSession = { userId: session.userId }
+    if (typeof session.name === 'string') account.name = session.name
+    if (typeof session.email === 'string') account.email = session.email
+    if (typeof session.avatarUrl === 'string') account.avatarUrl = session.avatarUrl
+    if (
+      Array.isArray(session.scopes) &&
+      session.scopes.every((scope) => typeof scope === 'string')
+    ) {
+      account.scopes = session.scopes
+    }
+    return account
+  } catch {
+    return null
+  }
 }
 
 // React.cache: a page plus the panels it mounts verify one HMAC per request
 // instead of one each.
 export const openSession = cache(
-  async (cookieValue: string | undefined): Promise<AccSession | null> => {
-    if (!cookieValue) return null
-    const [payload, signature] = cookieValue.split('.')
-    if (!payload || !signature) return null
-    if ((await hmac(payload)) !== signature) return null
-    try {
-      return JSON.parse(new TextDecoder().decode(fromBase64Url(payload))) as AccSession
-    } catch {
-      return null
-    }
-  },
+  async (cookieValue: string | undefined): Promise<AccSession | null> =>
+    verifySealedSession(cookieValue),
 )
 
 /** `Secure` only for HTTPS requests, so local plain-HTTP development stays usable. */
@@ -163,7 +240,7 @@ export function cookieSecurity(requestUrl: URL | string): string {
 export function sessionCookie(
   value: string,
   secure: string,
-  maxAgeSeconds = 60 * 60 * 24 * 14,
+  maxAgeSeconds = SESSION_MAX_AGE_SECONDS,
 ): string {
   return `${SESSION_COOKIE}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}${secure}`
 }
@@ -212,4 +289,11 @@ export function safeNext(next: string | null | undefined, fallback: string): str
   // so both are external redirects in disguise.
   if (next?.startsWith('/') && !next.startsWith('//') && !next.includes('\\')) return next
   return fallback
+}
+
+export function allowedSignInScopes(scopesParam: string | null): string[] {
+  const requested = scopesParam?.split(/[\s,]+/).filter(Boolean) ?? []
+  return [...new Set([...DEFAULT_SIGN_IN_SCOPES, ...requested])].filter((scope) =>
+    ALLOWED_SIGN_IN_SCOPES.has(scope),
+  )
 }
