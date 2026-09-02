@@ -2,7 +2,7 @@
 
 A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract.
 
-- Type: component
+- Type: block
 - Install: `npx shadcn@latest add @cantera/file-drop-zone`
 - Docs: https://canteraui.vercel.app/components/file-drop-zone
 - Registry item: https://canteraui.vercel.app/r/file-drop-zone.json

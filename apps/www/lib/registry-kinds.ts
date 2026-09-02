@@ -20,7 +20,7 @@ export function catalogGroupFor(item: KindSource): CatalogGroupId {
   return 'foundations'
 }
 
-/** Kind for blocks, role for foundations: the word that sits next to an item name. */
+/** Kind for blocks and templates, role for the rest: the word next to an item name. */
 export function kindLabelFor(item: KindSource): string {
   const kind = itemKind(item)
   if (kind) return kind
@@ -31,8 +31,6 @@ export function kindLabelFor(item: KindSource): string {
       return 'tokens'
     case 'registry:lib':
       return item.name.endsWith('-types') ? 'types' : 'preset'
-    case 'registry:block':
-      return 'block'
     case 'registry:example':
       return 'example'
     default:
@@ -51,13 +49,13 @@ export const catalogGroupDefinitions: CatalogGroupDefinition[] = [
     id: 'templates',
     title: 'Templates',
     description:
-      'Wired pages — routes, environment keys, and provider calls already connected. One command installs a working screen.',
+      'Ready-to-deploy pages: the route, its API handlers, environment keys, and the aec-auth glue in one install.',
   },
   {
     id: 'blocks',
     title: 'Blocks',
     description:
-      'Page-sized compositions with no routes and no environment: props, endpoints, or callbacks in, a whole screen out.',
+      'Sections and surfaces built from the components — sign-in cards, pickers, sidebars, browsers, drop zones — with sample data in and callbacks out.',
   },
   {
     id: 'components',

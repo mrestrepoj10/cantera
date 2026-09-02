@@ -32,8 +32,6 @@ const previewFrameClasses: PreviewFrameClassByItem = {
   'hub-sidebar': 'flex min-h-[28rem] items-stretch overflow-hidden rounded-lg border border-border',
   'connections-view':
     'flex min-h-[28rem] items-start justify-center rounded-lg border border-border p-4 sm:p-6',
-  'model-browser': fullBleedPreview,
-  'model-upload': fullBleedPreview,
   'model-viewer-page': fullBleedPreview,
   'model-upload-page': fullBleedPreview,
   'aps-viewer': 'flex min-h-[36rem] items-stretch',
@@ -81,14 +79,16 @@ function groupsIn(...order: CatalogGroupId[]): RegistryGroup[] {
   return order.flatMap((id) => registryGroups.filter((group) => group.id === id))
 }
 
-/** What the /blocks page shows: the templates and the blocks they mount. */
-export const showcaseGroups = groupsIn('templates', 'blocks')
+export const blockItems = groupsIn('blocks').flatMap((group) => group.items)
 
-export const showcaseItems = showcaseGroups.flatMap((group) => group.items)
+export const templateItems = groupsIn('templates').flatMap((group) => group.items)
+
+/** What /view/<name> previews. */
+export const showcaseItems = [...templateItems, ...blockItems]
 
 export const componentRegistryGroups = groupsIn('components', 'foundations')
 
-export const componentSidebarGroups = groupsIn('components', 'blocks', 'templates', 'foundations')
+export const componentSidebarGroups = groupsIn('components', 'foundations')
 
 const examplesByName = new Map(
   allItems

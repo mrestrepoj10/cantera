@@ -59,7 +59,7 @@ Item: https://canteraui.vercel.app/r/provider-sign-in-button.json
 ### sign-in-card
 
 Title: Sign-In Card
-Type: component
+Type: block
 Description: A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
 Install: npx shadcn@latest add @cantera/sign-in-card
 Docs: https://canteraui.vercel.app/components/sign-in-card
@@ -68,7 +68,7 @@ Item: https://canteraui.vercel.app/r/sign-in-card.json
 ### scope-picker
 
 Title: Scope Picker
-Type: component
+Type: block
 Description: A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog.
 Install: npx shadcn@latest add @cantera/scope-picker
 Docs: https://canteraui.vercel.app/components/scope-picker
@@ -194,7 +194,7 @@ Item: https://canteraui.vercel.app/r/version-set-select.json
 ### hub-browser
 
 Title: Hub Browser
-Type: component
+Type: block
 Description: A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics.
 Install: npx shadcn@latest add @cantera/hub-browser
 Docs: https://canteraui.vercel.app/components/hub-browser
@@ -212,7 +212,7 @@ Item: https://canteraui.vercel.app/r/hub-tree.json
 ### finder
 
 Title: Finder
-Type: component
+Type: block
 Description: Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives.
 Install: npx shadcn@latest add @cantera/finder
 Docs: https://canteraui.vercel.app/components/finder
@@ -221,7 +221,7 @@ Item: https://canteraui.vercel.app/r/finder.json
 ### hub-sidebar
 
 Title: Hub Sidebar
-Type: component
+Type: block
 Description: The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.
 Install: npx shadcn@latest add @cantera/hub-sidebar
 Docs: https://canteraui.vercel.app/components/hub-sidebar
@@ -281,15 +281,6 @@ Install: npx shadcn@latest add @cantera/model-status-card
 Docs: https://canteraui.vercel.app/components/model-status-card
 Item: https://canteraui.vercel.app/r/model-status-card.json
 
-### model-browser
-
-Title: Model Browser
-Type: block
-Description: Hub sidebar, recursive finder, account controls, and a full-bleed Autodesk Viewer composed into one screen, with untranslated-model states. Points at your tree and viewer-token endpoints; model-viewer-page ships those routes.
-Install: npx shadcn@latest add @cantera/model-browser
-Docs: https://canteraui.vercel.app/components/model-browser
-Item: https://canteraui.vercel.app/r/model-browser.json
-
 ### model-viewer-page
 
 Title: Model Viewer Page
@@ -298,15 +289,6 @@ Description: A complete APS project-tree and Autodesk Viewer page: scoped Autode
 Install: npx shadcn@latest add @cantera/model-viewer-page
 Docs: https://canteraui.vercel.app/components/model-viewer-page
 Item: https://canteraui.vercel.app/r/model-viewer-page.json
-
-### model-upload
-
-Title: Model Upload
-Type: block
-Description: Drop zone with archive support, translation options and tracking with manifest diagnostics, a searchable model library, and a shareable full-bleed Viewer composed into one screen. Points at your upload and viewer-token endpoints; model-upload-page ships those routes.
-Install: npx shadcn@latest add @cantera/model-upload
-Docs: https://canteraui.vercel.app/components/model-upload
-Item: https://canteraui.vercel.app/r/model-upload.json
 
 ### model-upload-page
 
@@ -329,7 +311,7 @@ Item: https://canteraui.vercel.app/r/upload-types.json
 ### file-drop-zone
 
 Title: File Drop Zone
-Type: component
+Type: block
 Description: A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract.
 Install: npx shadcn@latest add @cantera/file-drop-zone
 Docs: https://canteraui.vercel.app/components/file-drop-zone

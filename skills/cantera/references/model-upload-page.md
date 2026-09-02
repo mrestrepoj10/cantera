@@ -6,13 +6,14 @@ A two-legged upload and viewing page over the app's own OSS bucket: drag-and-dro
 - Install: `npx shadcn@latest add @cantera/model-upload-page`
 - Docs: https://canteraui.vercel.app/components/model-upload-page
 - Registry item: https://canteraui.vercel.app/r/model-upload-page.json
-- Registry dependencies: @cantera/model-upload, @cantera/upload-types, @cantera/project-types
+- Registry dependencies: button, checkbox, dialog, input, label, sidebar, @cantera/upload-types, @cantera/project-types, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/finder, @cantera/file-drop-zone, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/model-status-card, @cantera/status-tokens
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
 
 - `app/upload/page.tsx`
 - `app/upload/loading.tsx`
+- `components/model-upload.tsx`
 - `app/api/models/upload/route.ts`
 - `app/api/models/upload/upload-request.ts`
 - `app/api/viewer-token/route.ts`
@@ -27,7 +28,7 @@ Environment variables added to `.env.local`:
 
 ## Install notes
 
-Installed at /upload: the page, its loading UI, the two-legged /api/models/upload route (bucket bootstrap, signed S3 uploads, translation jobs, manifest status), and /api/viewer-token. The screen is @cantera/model-upload. No sign-in is installed: every route runs on the app's credentials, so add your own access control before shipping beyond a trusted team.
+Installed at /upload: the page, its loading UI, the two-legged /api/models/upload route (bucket bootstrap, signed S3 uploads, translation jobs, manifest status), and /api/viewer-token. ModelUpload is the screen. No sign-in is installed: every route runs on the app's credentials, so add your own access control before shipping beyond a trusted team.
 
 Next:
 1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_BUCKET optional (derived from the client id); APP_ORIGIN in production.
@@ -35,6 +36,16 @@ Next:
 
 Files over 250 MB are rejected; raise PART_SIZE or MAX_PARTS in the route.
 Reference: https://canteraui.vercel.app/components/model-upload-page
+
+## Notes
+
+ModelUpload fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame.
+
+## ModelUpload props
+
+- `uploadEndpoint` (`string`, default `'/api/models/upload'`) — Two-legged route implementing the models, start, finish, and status contract over the app bucket.
+- `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Separate two-legged viewer token route, scoped to viewables:read. Upload-scoped tokens never cross into the viewer.
+- `embedded` (`boolean`, default `false`) — Constrains the desktop sidebar and shell height to the nearest positioned preview container, and skips writing ?urn= to the URL. Leave false for the full-page route.
 
 ## Upload route
 

@@ -24,6 +24,10 @@
       "type": "registry:ui"
     }
   ],
+  "meta": {
+    "kind": "block",
+    "iframeHeight": "560px"
+  },
   "categories": [
     "projects",
     "files",

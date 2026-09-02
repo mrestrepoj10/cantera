@@ -17,7 +17,6 @@ export const componentPages = registry.items
 
 export const markdownPages = componentPages.map((route) => `${route}.md`)
 
-/** Blocks and templates: what /blocks lists and /view/<name> previews. */
-export const showcaseItems = registry.items.filter(
-  (item) => item.meta?.kind === 'block' || item.meta?.kind === 'template',
-)
+export const blockItems = registry.items.filter((item) => item.meta?.kind === 'block')
+
+export const templateItems = registry.items.filter((item) => item.meta?.kind === 'template')

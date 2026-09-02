@@ -72,17 +72,11 @@ const demos: Record<string, DemoComponent> = {
   'model-status-card': lazy(async () => ({
     default: (await import('./demos/model-status-card-demo')).ModelStatusCardDemo,
   })) as DemoComponent,
-  'model-browser': lazy(async () => ({
-    default: (await import('./demos/model-browser-demo')).ModelBrowserDemo,
-  })) as DemoComponent,
   'model-viewer-page': lazy(async () => ({
-    default: (await import('./demos/model-browser-demo')).ModelBrowserDemo,
-  })) as DemoComponent,
-  'model-upload': lazy(async () => ({
-    default: (await import('./demos/model-upload-demo')).ModelUploadDemo,
+    default: (await import('./demos/model-viewer-page-demo')).ModelViewerPageDemo,
   })) as DemoComponent,
   'model-upload-page': lazy(async () => ({
-    default: (await import('./demos/model-upload-demo')).ModelUploadDemo,
+    default: (await import('./demos/model-upload-page-demo')).ModelUploadPageDemo,
   })) as DemoComponent,
   'file-drop-zone': lazy(async () => ({
     default: (await import('@/components/examples/file-drop-zone-demo')).FileDropZoneDemo,

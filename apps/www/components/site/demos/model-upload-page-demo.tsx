@@ -8,7 +8,7 @@ import { ModelUpload } from '@/components/model-upload'
 type DemoState = 'loading' | 'ready' | 'error'
 
 // Two-legged: no sign-in — the first read only proves the route is configured.
-export function ModelUploadDemo() {
+export function ModelUploadPageDemo() {
   const [state, setState] = useState<DemoState>('loading')
   const [message, setMessage] = useState<string>()
 

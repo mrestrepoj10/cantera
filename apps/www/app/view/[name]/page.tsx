@@ -34,7 +34,7 @@ async function BlockPreview({ params }: PreviewPageProps) {
 
   return (
     <main className="flex min-h-svh items-start justify-center p-6 sm:p-10">
-      <div className="flex w-full max-w-2xl justify-center">
+      <div className="flex w-full max-w-5xl justify-center">
         <ComponentDemo name={name} titleAs="h1" />
       </div>
     </main>

@@ -19,8 +19,14 @@ for (const item of catalogItems(registry.items)) {
       `${namespace}/${item.name}: a registry:block must carry meta.kind template, block, or kit`,
     )
   }
-  if (item.type !== 'registry:block' && item.meta?.kind) {
-    problems.push(`${namespace}/${item.name}: meta.kind belongs on registry:block items only`)
+  if (item.meta?.kind && !kind) {
+    problems.push(`${namespace}/${item.name}: meta.kind must be template, block, or kit`)
+  }
+  if (kind === 'template' && !item.files?.some((file) => file.type === 'registry:page')) {
+    problems.push(`${namespace}/${item.name}: a template ships a registry:page file`)
+  }
+  if (kind === 'block' && item.files?.some((file) => file.target?.startsWith('app/'))) {
+    problems.push(`${namespace}/${item.name}: a block never writes into app/`)
   }
   const carriesDocs = kind === 'template' || kind === 'kit'
   const words = item.docs?.trim().split(/\s+/).filter(Boolean).length ?? 0

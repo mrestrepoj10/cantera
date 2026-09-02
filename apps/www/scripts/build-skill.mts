@@ -29,12 +29,12 @@ Every domain follows the same layers, and new work stays inside them:
 2. **Provider adapters** (\`registry:lib\`) — data-only presets that translate one
    API into those types: \`aps-oauth-preset\` carries Autodesk's provider metadata,
    scope catalog, scope bundles, and a \`fromApsUserInfo\` adapter.
-3. **Blocks** (\`registry:block\`, \`meta.kind: "block"\`) — page-sized compositions of
-   those components: props, endpoints, or callbacks in, a whole screen out, with no
-   routes and no environment of their own.
-4. **Templates** (\`registry:block\`, \`meta.kind: "template"\`) — the batteries-included
-   path: a page, its route handlers, environment keys, and the aec-auth glue,
-   mounting a block. \`acc-auth-routes\` is the shared kit underneath them.
+3. **Blocks** (\`meta.kind: "block"\`) — sections and surfaces built from those
+   components: sign-in cards, pickers, sidebars, browsers, drop zones. Sample data
+   in, callbacks out, no routes and no environment of their own.
+4. **Templates** (\`registry:block\`, \`meta.kind: "template"\`) — ready-to-deploy
+   pages: the route, its API handlers, environment keys, and the aec-auth glue in
+   one install. \`acc-auth-routes\` is the shared kit underneath them.
 
 Components are data-agnostic and style-agnostic: plain typed props in, callbacks
 out, no fetching, no token mechanics, built only on the consumer's own shadcn

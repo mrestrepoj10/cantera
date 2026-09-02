@@ -126,7 +126,7 @@ function BlockShowcase({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
           <Heading id={`${name}-title`} className="flex items-center gap-2 font-medium text-base">
-            <a href={`#${name}`} className="focus-ring rounded-md">
+            <a href={`/components/${name}`} className="focus-ring rounded-md">
               {title}
             </a>
             <span className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs uppercase tracking-wide">

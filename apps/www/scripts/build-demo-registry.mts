@@ -24,8 +24,6 @@ interface DemoAliasByItem {
 /** A template previews as the block it mounts; one module serves both names. */
 const aliases: DemoAliasByItem = {
   'connections-page': 'connections-view',
-  'model-viewer-page': 'model-browser',
-  'model-upload-page': 'model-upload',
 }
 
 const overrides: DemoSourceByItem = {

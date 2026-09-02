@@ -49,12 +49,19 @@ export default function ComponentsPage() {
 
         <div className="mt-12 border-border border-t pt-8">
           <p className="text-muted-foreground text-sm">
-            Looking for complete, provider-wired workflows? Browse the{' '}
+            Looking for bigger pieces? Browse the{' '}
             <Link
               href="/blocks"
               className="focus-ring rounded-sm text-foreground underline underline-offset-4"
             >
               blocks
+            </Link>{' '}
+            and the ready-to-deploy{' '}
+            <Link
+              href="/templates"
+              className="focus-ring rounded-sm text-foreground underline underline-offset-4"
+            >
+              templates
             </Link>
             .
           </p>
