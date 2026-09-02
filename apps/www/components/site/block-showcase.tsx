@@ -127,7 +127,7 @@ function BlockShowcase({
 
   return (
     <article id={name} className="scroll-mt-24" aria-labelledby={`${name}-title`}>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="max-w-2xl">
           <Heading id={`${name}-title`} className="flex items-center gap-2 font-medium text-base">
             <a href={`/components/${name}`} className="focus-ring rounded-md">
@@ -166,7 +166,7 @@ function BlockShowcase({
             </a>
           </p>
         </div>
-        <div className="flex min-w-0 flex-col gap-2 lg:items-end">
+        <div className="flex min-w-0 flex-col gap-2 xl:items-end">
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
             <InstallCommand command={installCommand} className="min-w-0 sm:w-[23rem]" />
             <CopyPrompt prompt={prompt} title={title} />
