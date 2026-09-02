@@ -19,7 +19,7 @@ import {
   installCommandFor,
   registryItems,
 } from '@/components/site/registry'
-import { kindLabelFor } from '@/lib/registry-kinds'
+import { blockFlavor, kindLabelFor } from '@/lib/registry-kinds'
 import { installPromptFor, markdownPathFor, markdownUrlFor } from '@/lib/site'
 
 export function generateStaticParams() {
@@ -146,7 +146,8 @@ async function ComponentPageContent({ params }: PageProps) {
   const tables = apiTables[item.name] ?? []
   const files = item.files ?? []
   const sources = await getSources(files)
-  const kind = kindLabelFor(item)
+  const flavor = blockFlavor(item)
+  const kind = flavor ? `${kindLabelFor(item)} · ${flavor}` : kindLabelFor(item)
   const notes = installNotes[item.name]
 
   return (

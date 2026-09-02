@@ -22,7 +22,7 @@ import {
 const wwwRoot = path.join(import.meta.dirname, '..')
 
 const SUMMARY =
-  "cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, page-sized blocks, and wired Autodesk (APS / ACC) templates for sign-in, connections, model viewing, and model upload. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme."
+  "cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, plus wired Autodesk (APS / ACC) blocks for sign-in, connections, model viewing, and model upload. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme."
 
 function typeLabel(item: RegistryItem): string {
   const label = kindLabelFor(item)

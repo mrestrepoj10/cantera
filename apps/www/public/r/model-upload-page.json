@@ -53,7 +53,7 @@
     "APS_AUTH_BASE_URL": ""
   },
   "meta": {
-    "kind": "template",
+    "kind": "block",
     "iframeHeight": "720px"
   },
   "docs": "Installed at /upload: the page, its loading UI, the two-legged /api/models/upload route (bucket bootstrap, signed S3 uploads, translation jobs, manifest status), and /api/viewer-token. The screen is @cantera/model-upload. No sign-in is installed: every route runs on the app's credentials, so add your own access control before shipping beyond a trusted team.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_BUCKET optional (derived from the client id); APP_ORIGIN in production.\n2. Run next dev and open /upload.\n\nFiles over 250 MB are rejected; raise PART_SIZE or MAX_PARTS in the route.\nReference: https://canteraui.vercel.app/components/model-upload-page",

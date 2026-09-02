@@ -2,7 +2,7 @@
 
 The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
 
-- Type: template
+- Type: block
 - Install: `npx shadcn@latest add @cantera/connections-page`
 - Docs: https://canteraui.vercel.app/components/connections-page
 - Registry item: https://canteraui.vercel.app/r/connections-page.json

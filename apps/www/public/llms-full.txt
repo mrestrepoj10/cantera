@@ -1,6 +1,6 @@
 # cantera — full reference
 
-> cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, page-sized blocks, and wired Autodesk (APS / ACC) templates for sign-in, connections, model viewing, and model upload. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
+> cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, plus wired Autodesk (APS / ACC) blocks for sign-in, connections, model viewing, and model upload. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
 
 Site: https://canteraui.vercel.app
 Installation guide: https://canteraui.vercel.app/installation
@@ -400,7 +400,7 @@ One ConnectionCard bound to two hrefs: signOutHref takes a POST that clears the 
 
 ### ACC Sign-In (`@cantera/acc-sign-in`)
 
-Type: template
+Type: block
 Install: npx shadcn@latest add @cantera/acc-sign-in
 Docs: https://canteraui.vercel.app/components/acc-sign-in
 Item: https://canteraui.vercel.app/r/acc-sign-in.json
@@ -479,7 +479,7 @@ Presentational only: providers and connections in, callbacks out. "ready" with n
 
 ### Connections Page (`@cantera/connections-page`)
 
-Type: template
+Type: block
 Install: npx shadcn@latest add @cantera/connections-page
 Docs: https://canteraui.vercel.app/components/connections-page
 Item: https://canteraui.vercel.app/r/connections-page.json
@@ -1077,7 +1077,7 @@ Fetches from treeEndpoint (default /api/models/tree) and viewerTokenEndpoint (de
 
 ### Model Viewer Page (`@cantera/model-viewer-page`)
 
-Type: template
+Type: block
 Install: npx shadcn@latest add @cantera/model-viewer-page
 Docs: https://canteraui.vercel.app/components/model-viewer-page
 Item: https://canteraui.vercel.app/r/model-viewer-page.json
@@ -1141,7 +1141,7 @@ Fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint
 
 ### Model Upload Page (`@cantera/model-upload-page`)
 
-Type: template
+Type: block
 Install: npx shadcn@latest add @cantera/model-upload-page
 Docs: https://canteraui.vercel.app/components/model-upload-page
 Item: https://canteraui.vercel.app/r/model-upload-page.json

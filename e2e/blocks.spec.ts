@@ -3,14 +3,14 @@ import { expect, test } from '@playwright/test'
 import { waitForHydration } from './hydration'
 import { showcaseItems } from './pages'
 
-const catalogArticles = '#templates article, #blocks article'
+const catalogArticles = '#pages article, #screens article'
 
-test('the blocks page lists every block and template, filtered by category', async ({ page }) => {
+test('the blocks page lists every page and screen, filtered by category', async ({ page }) => {
   await page.goto('/blocks')
   await waitForHydration(page)
 
-  await expect(page.getByRole('heading', { level: 2, name: 'Templates' })).toBeVisible()
-  await expect(page.getByRole('heading', { level: 2, name: 'Blocks' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Pages' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Screens' })).toBeVisible()
   for (const item of showcaseItems) {
     await expect(page.locator(`article#${item.name}`), item.name).toBeVisible()
   }

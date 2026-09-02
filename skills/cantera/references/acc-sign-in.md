@@ -2,7 +2,7 @@
 
 A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.
 
-- Type: template
+- Type: block
 - Install: `npx shadcn@latest add @cantera/acc-sign-in`
 - Docs: https://canteraui.vercel.app/components/acc-sign-in
 - Registry item: https://canteraui.vercel.app/r/acc-sign-in.json

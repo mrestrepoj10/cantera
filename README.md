@@ -47,10 +47,10 @@ Agents: install the skill with `npx skills add mrestrepoj10/cantera` for the reg
 | `token-status` | component | Grant status line: connection state, token expiry, held scopes. Server-safe. |
 | `connection-card` | component | A provider connection at a glance, with disconnect / reconnect. |
 | `acc-auth-routes` | kit | Headless Autodesk OAuth routes, vault wiring, and a signed application session. |
-| `acc-connection-panel` | block | The live Autodesk connection panel: one connection card wired to sign-out and consent restart. |
-| `acc-sign-in` | template | Complete Autodesk sign-in flow on [aec-auth](https://github.com/mrestrepoj10/aec-auth): consent redirect, code exchange, vault-managed single-use refresh, signed session, live connection panel. |
-| `connections-view` | block | The connections dashboard, presentational: providers and connections in, callbacks out, with the list, empty, loading, and error states. |
-| `connections-page` | template | The manage-grants page: one card per provider connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states. |
+| `acc-connection-panel` | screen | The live Autodesk connection panel: one connection card wired to sign-out and consent restart. |
+| `acc-sign-in` | page | Complete Autodesk sign-in flow on [aec-auth](https://github.com/mrestrepoj10/aec-auth): consent redirect, code exchange, vault-managed single-use refresh, signed session, live connection panel. |
+| `connections-view` | screen | The connections dashboard, presentational: providers and connections in, callbacks out, with the list, empty, loading, and error states. |
+| `connections-page` | page | The manage-grants page: one card per provider connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states. |
 | `project-types` | lib | Generic hubs, projects, folders, items, immutable versions, model translations, and sheet issuances. |
 | `aps-data-preset` | lib | Data Management, Model Derivative, and ACC Sheets adapters into the generic project types. |
 | `hub-switcher` | component | Controlled hub selector for switching account-level project containers. |
@@ -66,20 +66,20 @@ Agents: install the skill with `npx skills add mrestrepoj10/cantera` for the reg
 | `viewer-extension-types` | lib | Typed Autodesk Viewer extension catalog, options, and compatibility metadata. |
 | `aps-viewer` | component | Strict-Mode-safe Viewer host with native-toolbar docking and sizing, live theme changes, URN swaps, resize, and hooks. |
 | `model-status-card` | component | Translation status, progress, diagnostics, retry, and open actions. |
-| `model-browser` | block | Hub sidebar, recursive finder, and full-bleed Viewer in one screen, pointed at your tree and token endpoints. |
-| `model-viewer-page` | template | Signed-in ACC project tree, recursive finder, and full-bleed Autodesk Viewer page. |
-| `model-upload` | block | Drop zone, translation tracking, model library, and Viewer in one screen, pointed at your upload and token endpoints. |
-| `model-upload-page` | template | Two-legged OSS upload, translation tracking, model library, and Viewer page. |
+| `model-browser` | screen | Hub sidebar, recursive finder, and full-bleed Viewer in one screen, pointed at your tree and token endpoints. |
+| `model-viewer-page` | page | Signed-in ACC project tree, recursive finder, and full-bleed Autodesk Viewer page. |
+| `model-upload` | screen | Drop zone, translation tracking, model library, and Viewer in one screen, pointed at your upload and token endpoints. |
+| `model-upload-page` | page | Two-legged OSS upload, translation tracking, model library, and Viewer page. |
 | `upload-types` | lib | Generic upload lifecycle types, accept matching, and localized byte formatting. |
 | `file-drop-zone` | component | Validated AEC drag-and-drop surface with progress, processing, retry, and removal states. |
 
-Items sit on four rungs. **Foundations** are the shared types, provider presets, status tokens, and the auth kit. **Components** are data-agnostic by design: they never fetch. **Blocks** are page-sized compositions of components with no routes and no environment — props, endpoints, or callbacks in, a whole screen out. **Templates** are the batteries-included path: a page, its route handlers, environment keys, and the aec-auth glue, mounting a block. In `registry.json` a block and a template are both `registry:block`; `meta.kind` tells them apart, and the site, the skill, and the llms artifacts group by it. The pattern every domain follows is **types + adapters + blocks + templates**. Issues, RFIs, and submittals are future domains; model viewing already follows the pattern above.
+Items sit on three rungs. **Foundations** are the shared types, provider presets, status tokens, and the auth kit. **Components** are data-agnostic by design: they never fetch. **Blocks** are page-sized surfaces in two flavors: a **page** ships its route, API handlers, environment keys, and the aec-auth glue, so one command installs a working URL; a **screen** is the same surface over endpoints you provide, for apps with their own backend. In `registry.json` both are `registry:block` with `meta.kind: "block"`; a page is the one that writes a `registry:page` file. The site, the skill, and the llms artifacts group by it. The pattern every domain follows is **types + adapters + components + blocks**. Templates — whole Next.js starters, the way the rest of the ecosystem uses the word — are not shipped yet. Issues, RFIs, and submittals are future domains; model viewing already follows the pattern above.
 
-Every item page carries a **Copy prompt** button: the install as an agent-runnable prompt — register the namespace, run the add, then read the keys and the Next list the CLI prints. Only templates and the kit print install notes; every other item keeps its notes on its docs page.
+Every item page carries a **Copy prompt** button: the install as an agent-runnable prompt — register the namespace, run the add, then read the keys and the Next list the CLI prints. Only pages and the kit print install notes; every other item keeps its notes on its docs page.
 
 `aps-viewer` follows the same boundary: pass a Model Derivative URN and a promise-based `getAccessToken` callback. It never ships credentials or a route. The site’s live playground uses the showcase-only `/api/viewer-token` route with `viewables:read`; configure it through `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, and `APS_VIEWER_DEMO_URN` in the root `.env` (see `.env.example`).
 
-## The acc-sign-in template
+## The acc-sign-in page
 
 `npx shadcn@latest add @cantera/acc-sign-in` installs a working `/sign-in` page, `/api/auth/*` route handlers, and the auth wiring on aec-auth's vault. Configure with environment variables:
 
@@ -93,11 +93,11 @@ Every item page carries a **Copy prompt** button: the install as an agent-runnab
 
 The default vault store is in-memory. For production, swap in a durable `VaultStore` (Upstash Redis + encryption) — two lines, see the [aec-auth README](https://github.com/mrestrepoj10/aec-auth).
 
-## The connections-page template
+## The connections-page page
 
-`npx shadcn@latest add @cantera/connections-page` installs a `/connections` page, its streamed `loading.tsx`, and `ConnectionsManager` (the wiring) over the `connections-view` block (presentational — providers and connections in, callbacks out). It depends on `acc-auth-routes` for the routes and the aec-auth glue, so the same environment variables above configure both.
+`npx shadcn@latest add @cantera/connections-page` installs a `/connections` page, its streamed `loading.tsx`, and `ConnectionsManager` (the wiring) over the `connections-view` screen (presentational — providers and connections in, callbacks out). It depends on `acc-auth-routes` for the routes and the aec-auth glue, so the same environment variables above configure both.
 
-The `connections-view` block ships all four states, each exported so adapting the page keeps them:
+The `connections-view` screen ships all four states, each exported so adapting the page keeps them:
 
 | State | What it is |
 | --- | --- |
@@ -108,9 +108,9 @@ The `connections-view` block ships all four states, each exported so adapting th
 
 Point `ConnectionsView` at any backend — it never fetches.
 
-## The model-upload-page template
+## The model-upload-page page
 
-`npx shadcn@latest add @cantera/model-upload-page` installs `/upload`, its two-legged upload and Viewer token routes, and the `model-upload` block as the UI. Protect the routes with your application access control: they intentionally use application credentials rather than an end-user session.
+`npx shadcn@latest add @cantera/model-upload-page` installs `/upload`, its two-legged upload and Viewer token routes, and the `model-upload` screen as the UI. Protect the routes with your application access control: they intentionally use application credentials rather than an end-user session.
 
 | Variable | Meaning |
 | --- | --- |

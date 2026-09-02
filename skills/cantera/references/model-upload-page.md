@@ -2,7 +2,7 @@
 
 A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.
 
-- Type: template
+- Type: block
 - Install: `npx shadcn@latest add @cantera/model-upload-page`
 - Docs: https://canteraui.vercel.app/components/model-upload-page
 - Registry item: https://canteraui.vercel.app/r/model-upload-page.json

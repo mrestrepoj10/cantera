@@ -2,7 +2,7 @@
 
 A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.
 
-- Type: template
+- Type: block
 - Install: `npx shadcn@latest add @cantera/model-viewer-page`
 - Docs: https://canteraui.vercel.app/components/model-viewer-page
 - Registry item: https://canteraui.vercel.app/r/model-viewer-page.json

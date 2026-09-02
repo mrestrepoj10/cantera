@@ -1,10 +1,10 @@
 // `docs` prints in the consumer's terminal for every item in an install's
-// closure, concatenated with no separators. Only templates and the auth kit earn
-// that line — they own the routes and environment a consumer must act on — and
+// closure, concatenated with no separators. Only pages and the auth kit earn that
+// line — they own the routes and environment a consumer must act on — and
 // each stays short enough to read before the prompt returns. Everything else
 // documents itself in components/site/install-notes.ts.
 
-import { itemKind } from '../lib/registry-kinds.ts'
+import { blockFlavor, itemKind } from '../lib/registry-kinds.ts'
 import { catalogItems, namespace, readRegistry } from './lib/registry-source.mts'
 
 const MAX_WORDS = 120
@@ -15,22 +15,22 @@ const problems: string[] = []
 for (const item of catalogItems(registry.items)) {
   const kind = itemKind(item)
   if (item.type === 'registry:block' && !kind) {
-    problems.push(
-      `${namespace}/${item.name}: a registry:block must carry meta.kind template, block, or kit`,
-    )
+    problems.push(`${namespace}/${item.name}: a registry:block must carry meta.kind block or kit`)
   }
   if (item.type !== 'registry:block' && item.meta?.kind) {
     problems.push(`${namespace}/${item.name}: meta.kind belongs on registry:block items only`)
   }
-  const carriesDocs = kind === 'template' || kind === 'kit'
+  const carriesDocs = kind === 'kit' || blockFlavor(item) === 'page'
   const words = item.docs?.trim().split(/\s+/).filter(Boolean).length ?? 0
 
   if (carriesDocs && words === 0) {
-    problems.push(`${namespace}/${item.name}: a ${kind} must ship install docs`)
+    problems.push(
+      `${namespace}/${item.name}: a ${kind === 'kit' ? 'kit' : 'page'} must ship install docs`,
+    )
   }
   if (!carriesDocs && words > 0) {
     problems.push(
-      `${namespace}/${item.name}: only templates and the kit carry docs — move this to installNotes in components/site/props-tables.ts`,
+      `${namespace}/${item.name}: only pages and the kit carry docs — move this to installNotes in components/site/props-tables.ts`,
     )
   }
   if (words > MAX_WORDS) {
@@ -49,4 +49,4 @@ if (problems.length > 0) {
   process.exit(1)
 }
 
-console.log('docs: every block carries a kind; only templates and the kit print install notes')
+console.log('docs: every block carries a kind; only pages and the kit print install notes')

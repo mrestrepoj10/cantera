@@ -29,7 +29,7 @@
     }
   ],
   "meta": {
-    "kind": "template",
+    "kind": "block",
     "iframeHeight": "520px"
   },
   "docs": "Installed at /sign-in: the page and its loading skeleton. Signed out, it renders ScopedAutodeskSignIn; /sign-in?next=/your-page returns there after the callback. Signed in, it shows AccConnectionPanel.\n\nNext:\n1. Fill the keys acc-auth-routes added to .env.local (see its notes above).\n2. Run next dev and open /sign-in.\n\nNever set ACC_AUTH_DEMO=1 where real accounts exist.\nReference: https://canteraui.vercel.app/components/acc-sign-in",

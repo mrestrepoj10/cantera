@@ -1,6 +1,12 @@
 import { resolveClosure } from '@/lib/registry-closure'
 import type { RegistryItem } from '@/lib/registry-item'
-import { type CatalogGroupId, catalogGroupDefinitions, catalogGroupFor } from '@/lib/registry-kinds'
+import {
+  type BlockFlavor,
+  blockFlavor,
+  type CatalogGroupId,
+  catalogGroupDefinitions,
+  catalogGroupFor,
+} from '@/lib/registry-kinds'
 import registryJson from '@/registry.json'
 
 export type { RegistryFile, RegistryItem } from '@/lib/registry-item'
@@ -81,14 +87,16 @@ function groupsIn(...order: CatalogGroupId[]): RegistryGroup[] {
   return order.flatMap((id) => registryGroups.filter((group) => group.id === id))
 }
 
-/** What the /blocks page shows: the templates and the blocks they mount. */
-export const showcaseGroups = groupsIn('templates', 'blocks')
+/** What the /blocks page shows and /view/<name> previews. */
+export const showcaseItems = registryItems.filter((item) => blockFlavor(item) !== undefined)
 
-export const showcaseItems = showcaseGroups.flatMap((group) => group.items)
+export function showcaseItemsOf(flavor: BlockFlavor): RegistryItem[] {
+  return showcaseItems.filter((item) => blockFlavor(item) === flavor)
+}
 
 export const componentRegistryGroups = groupsIn('components', 'foundations')
 
-export const componentSidebarGroups = groupsIn('components', 'blocks', 'templates', 'foundations')
+export const componentSidebarGroups = groupsIn('components', 'blocks', 'foundations')
 
 const examplesByName = new Map(
   allItems

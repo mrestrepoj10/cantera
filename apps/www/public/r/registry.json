@@ -283,7 +283,7 @@
       "description": "A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.",
       "categories": ["authentication", "login", "autodesk"],
       "meta": {
-        "kind": "template",
+        "kind": "block",
         "iframeHeight": "520px"
       },
       "dependencies": ["aec-auth", "lucide-react"],
@@ -344,7 +344,7 @@
       "description": "The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.",
       "categories": ["authentication", "connections", "dashboard", "autodesk"],
       "meta": {
-        "kind": "template",
+        "kind": "block",
         "iframeHeight": "640px"
       },
       "dependencies": ["aec-auth", "lucide-react"],
@@ -751,7 +751,7 @@
       "description": "A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.",
       "categories": ["projects", "files", "viewer", "autodesk"],
       "meta": {
-        "kind": "template",
+        "kind": "block",
         "iframeHeight": "720px"
       },
       "dependencies": ["aec-auth", "lucide-react"],
@@ -840,7 +840,7 @@
       "description": "A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.",
       "categories": ["files", "upload", "viewer", "autodesk"],
       "meta": {
-        "kind": "template",
+        "kind": "block",
         "iframeHeight": "720px"
       },
       "dependencies": ["aec-auth", "lucide-react"],

@@ -49,7 +49,7 @@
     "APS_AUTH_BASE_URL": ""
   },
   "meta": {
-    "kind": "template",
+    "kind": "block",
     "iframeHeight": "720px"
   },
   "docs": "Installed at /models: the page, its loading UI, the lazy /api/models/tree route, and the two-legged /api/viewer-token route. The screen is @cantera/model-browser; signed out, /models renders ScopedAutodeskSignIn inline.\n\nNext:\n1. Fill the keys acc-auth-routes added to .env.local (see its notes above).\n2. Run next dev and open /models.\n\nThe cantera showcase emulator supplies a project tree but no geometry; store real derivative URNs on your item versions.\nReference: https://canteraui.vercel.app/components/model-viewer-page",

@@ -8,24 +8,24 @@ import {
   installSummaryFor,
   previewHeightFor,
   type RegistryItem,
-  showcaseGroups,
+  showcaseItemsOf,
 } from '@/components/site/registry'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { kindLabelFor } from '@/lib/registry-kinds'
+import { type BlockFlavor, blockFlavorDefinitions, kindLabelFor } from '@/lib/registry-kinds'
 import { installPromptFor, issueUrlFor } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Blocks',
   description:
-    'Page-sized blocks and wired templates for authentication, provider connections, project browsing, Autodesk model viewing, and model upload.',
+    'Page-sized blocks for authentication, provider connections, project browsing, Autodesk model viewing, and model upload — as wired pages or as screens over your own backend.',
 }
 
 function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? '' : 's'}`
 }
 
-function entryFor(item: RegistryItem): ShowcaseGroup['entries'][number] {
+function entryFor(item: RegistryItem, flavor: BlockFlavor): ShowcaseGroup['entries'][number] {
   const summary = installSummaryFor(item.name)
   const parts = [
     `Installs ${plural(summary.files, 'registry file')} across ${plural(summary.items.length, 'cantera item')}`,
@@ -38,7 +38,7 @@ function entryFor(item: RegistryItem): ShowcaseGroup['entries'][number] {
     name: item.name,
     title: item.title,
     description: item.description,
-    kind: kindLabelFor(item),
+    kind: flavor,
     categories: item.categories ?? [],
     installCommand: installCommandFor(item.name),
     previewHeight: previewHeightFor(item),
@@ -54,11 +54,10 @@ function entryFor(item: RegistryItem): ShowcaseGroup['entries'][number] {
 }
 
 export default function BlocksPage() {
-  const groups = showcaseGroups.map((group) => ({
-    id: group.id,
-    title: group.title,
-    description: group.description,
-    entries: group.items.map(entryFor),
+  const groups = blockFlavorDefinitions.map((flavor) => ({
+    ...flavor,
+    id: `${flavor.id}s`,
+    entries: showcaseItemsOf(flavor.id).map((item) => entryFor(item, flavor.id)),
   }))
 
   return (
@@ -68,32 +67,32 @@ export default function BlocksPage() {
           Cantera blocks
         </Badge>
         <h1 className="mt-4 text-balance font-semibold text-4xl tracking-tight sm:text-5xl">
-          Blocks and templates for AEC apps
+          Blocks for AEC apps
         </h1>
         <p className="mt-4 max-w-2xl text-balance text-muted-foreground sm:text-lg">
-          Templates install a working page with its routes and environment keys. Blocks install the
-          same screen with no wiring, ready for your own backend. Copy either into your app and own
-          every line of the result.
+          Pages install a working route with its API handlers and environment keys. Screens install
+          the same surface with no wiring, ready for your own backend. Copy either into your app and
+          own every line of the result.
         </p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Button
-            render={<a href="#templates" />}
+            render={<a href="#pages" />}
             nativeButton={false}
             role="link"
             size="lg"
             className="min-h-11 px-4"
           >
-            Browse templates
+            Browse pages
           </Button>
           <Button
-            render={<a href="#blocks" />}
+            render={<a href="#screens" />}
             nativeButton={false}
             role="link"
             variant="outline"
             size="lg"
             className="min-h-11 px-4"
           >
-            Browse blocks
+            Browse screens
           </Button>
           <Button
             render={<Link href="/components" />}

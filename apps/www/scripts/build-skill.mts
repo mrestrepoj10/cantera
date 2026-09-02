@@ -17,7 +17,7 @@ const siteHost = new URL(siteUrl).host
 
 const FRONTMATTER = `---
 name: cantera
-description: Use when building or reviewing construction (AEC) interfaces with the cantera shadcn registry — Autodesk (APS / ACC) sign-in, OAuth scope pickers, provider connection cards, status tokens, page-sized blocks, and the wired sign-in, connections, model viewer, and model upload templates. Triggers on "cantera", "@cantera/<item>", ${siteHost}, or any request for ACC / APS OAuth, scope, or connection UI in a shadcn project.
+description: Use when building or reviewing construction (AEC) interfaces with the cantera shadcn registry — Autodesk (APS / ACC) sign-in, OAuth scope pickers, provider connection cards, status tokens, and the sign-in, connections, model viewer, and model upload blocks. Triggers on "cantera", "@cantera/<item>", ${siteHost}, or any request for ACC / APS OAuth, scope, or connection UI in a shadcn project.
 ---`
 
 const PATTERN = `## The locked pattern
@@ -29,12 +29,11 @@ Every domain follows the same layers, and new work stays inside them:
 2. **Provider adapters** (\`registry:lib\`) — data-only presets that translate one
    API into those types: \`aps-oauth-preset\` carries Autodesk's provider metadata,
    scope catalog, scope bundles, and a \`fromApsUserInfo\` adapter.
-3. **Blocks** (\`registry:block\`, \`meta.kind: "block"\`) — page-sized compositions of
-   those components: props, endpoints, or callbacks in, a whole screen out, with no
-   routes and no environment of their own.
-4. **Templates** (\`registry:block\`, \`meta.kind: "template"\`) — the batteries-included
-   path: a page, its route handlers, environment keys, and the aec-auth glue,
-   mounting a block. \`acc-auth-routes\` is the shared kit underneath them.
+3. **Blocks** (\`registry:block\`, \`meta.kind: "block"\`) — page-sized surfaces in two
+   flavors. A *page* ships its route, API handlers, environment keys, and the
+   aec-auth glue; a *screen* is the same surface over endpoints you provide.
+   \`acc-auth-routes\` (\`meta.kind: "kit"\`) is the headless auth wiring the pages share.
+   Templates — whole Next.js starters — are not shipped yet.
 
 Components are data-agnostic and style-agnostic: plain typed props in, callbacks
 out, no fetching, no token mechanics, built only on the consumer's own shadcn
@@ -70,8 +69,8 @@ function skillFor(items: RegistryItem[], examples: Map<string, RegistryItem>): s
 # cantera
 
 cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in,
-scope, and connection components, page-sized blocks, and end-to-end Autodesk
-(APS / ACC) templates. It is **not an npm package** — \`npx shadcn@latest add ${namespace}/<item>\` copies the
+scope, and connection components, plus end-to-end Autodesk (APS / ACC) blocks. It
+is **not an npm package** — \`npx shadcn@latest add ${namespace}/<item>\` copies the
 source into the project, where it renders on that project's own shadcn primitives
 and theme. The consumer owns the code from there, and editing it is expected.
 

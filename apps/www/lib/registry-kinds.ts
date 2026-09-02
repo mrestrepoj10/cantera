@@ -1,21 +1,27 @@
 import type { RegistryItem } from './registry-item.ts'
 
-export type ItemKind = 'template' | 'block' | 'kit'
+export type ItemKind = 'block' | 'kit'
 
-export type CatalogGroupId = 'templates' | 'blocks' | 'components' | 'foundations'
+export type CatalogGroupId = 'blocks' | 'components' | 'foundations'
 
-type KindSource = Pick<RegistryItem, 'name' | 'type' | 'meta'>
+/** A page ships its route and environment; a screen is the same surface over endpoints you provide. */
+export type BlockFlavor = 'page' | 'screen'
 
-const ITEM_KINDS = ['template', 'block', 'kit'] as const
+type KindSource = Pick<RegistryItem, 'name' | 'type' | 'meta' | 'files'>
+
+const ITEM_KINDS = ['block', 'kit'] as const
 
 export function itemKind(item: KindSource): ItemKind | undefined {
   return ITEM_KINDS.find((kind) => kind === item.meta?.kind)
 }
 
+export function blockFlavor(item: KindSource): BlockFlavor | undefined {
+  if (itemKind(item) !== 'block') return undefined
+  return item.files?.some((file) => file.type === 'registry:page') ? 'page' : 'screen'
+}
+
 export function catalogGroupFor(item: KindSource): CatalogGroupId {
-  const kind = itemKind(item)
-  if (kind === 'template') return 'templates'
-  if (kind === 'block') return 'blocks'
+  if (itemKind(item) === 'block') return 'blocks'
   if (item.type === 'registry:component') return 'components'
   return 'foundations'
 }
@@ -31,8 +37,6 @@ export function kindLabelFor(item: KindSource): string {
       return 'tokens'
     case 'registry:lib':
       return item.name.endsWith('-types') ? 'types' : 'preset'
-    case 'registry:block':
-      return 'block'
     case 'registry:example':
       return 'example'
     default:
@@ -48,16 +52,10 @@ export interface CatalogGroupDefinition {
 
 export const catalogGroupDefinitions: CatalogGroupDefinition[] = [
   {
-    id: 'templates',
-    title: 'Templates',
-    description:
-      'Wired pages — routes, environment keys, and provider calls already connected. One command installs a working screen.',
-  },
-  {
     id: 'blocks',
     title: 'Blocks',
     description:
-      'Page-sized compositions with no routes and no environment: props, endpoints, or callbacks in, a whole screen out.',
+      'Page-sized surfaces. Pages ship their routes and environment keys; screens take your endpoints instead. One command installs either.',
   },
   {
     id: 'components',
@@ -70,5 +68,26 @@ export const catalogGroupDefinitions: CatalogGroupDefinition[] = [
     title: 'Foundations',
     description:
       'The shared types, provider presets, design tokens, and auth wiring kit every other item is written against.',
+  },
+]
+
+export interface BlockFlavorDefinition {
+  id: BlockFlavor
+  title: string
+  description: string
+}
+
+export const blockFlavorDefinitions: BlockFlavorDefinition[] = [
+  {
+    id: 'page',
+    title: 'Pages',
+    description:
+      'A route in your app with its API handlers, environment keys, and the aec-auth glue already wired. Install, fill the keys, open the URL.',
+  },
+  {
+    id: 'screen',
+    title: 'Screens',
+    description:
+      'The same surfaces without the wiring: props, endpoints, or callbacks in, a whole screen out. Mount them over your own backend.',
   },
 ]

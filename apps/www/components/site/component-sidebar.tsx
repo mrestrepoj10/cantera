@@ -52,22 +52,23 @@ function CatalogLinks({ groups, pathname }: { groups: SidebarGroup[]; pathname: 
                 </Link>
               </li>
             )}
-            {group.items.map((item) => {
-              const href = `/components/${item.name}`
-              const isCurrent = pathname === href
-              return (
-                <li key={item.name}>
-                  <Link
-                    href={href}
-                    prefetch={true}
-                    aria-current={isCurrent ? 'page' : undefined}
-                    className={linkClass}
-                  >
-                    {item.title}
-                  </Link>
-                </li>
-              )
-            })}
+            {group.id !== 'blocks' &&
+              group.items.map((item) => {
+                const href = `/components/${item.name}`
+                const isCurrent = pathname === href
+                return (
+                  <li key={item.name}>
+                    <Link
+                      href={href}
+                      prefetch={true}
+                      aria-current={isCurrent ? 'page' : undefined}
+                      className={linkClass}
+                    >
+                      {item.title}
+                    </Link>
+                  </li>
+                )
+              })}
           </ul>
         </div>
       ))}

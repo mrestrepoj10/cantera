@@ -1,6 +1,6 @@
 # cantera
 
-> cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, page-sized blocks, and wired Autodesk (APS / ACC) templates for sign-in, connections, model viewing, and model upload. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
+> cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, plus wired Autodesk (APS / ACC) blocks for sign-in, connections, model viewing, and model upload. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
 
 - Install any item with `npx shadcn@latest add @cantera/<name>` once @cantera is registered in components.json.
 - Components take plain typed props and never fetch: provider adapters translate an API payload into the shared oauth types, and the same components render Autodesk, Procore, or anything else.
@@ -12,23 +12,18 @@
 - [Components](https://canteraui.vercel.app/components): Index of every registry item, with a live preview and the exact installed source on each page.
 - [Demo](https://canteraui.vercel.app/demo): The whole Autodesk OAuth flow, running against an embedded APS emulator — no credentials needed.
 
-## Templates
-
-Wired pages — routes, environment keys, and provider calls already connected. One command installs a working screen.
-
-- [ACC Sign-In](https://canteraui.vercel.app/components/acc-sign-in): A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.
-- [Connections Page](https://canteraui.vercel.app/components/connections-page): The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
-- [Model Viewer Page](https://canteraui.vercel.app/components/model-viewer-page): A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.
-- [Model Upload Page](https://canteraui.vercel.app/components/model-upload-page): A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.
-
 ## Blocks
 
-Page-sized compositions with no routes and no environment: props, endpoints, or callbacks in, a whole screen out.
+Page-sized surfaces. Pages ship their routes and environment keys; screens take your endpoints instead. One command installs either.
 
 - [ACC Connection Panel](https://canteraui.vercel.app/components/acc-connection-panel): The live Autodesk connection panel: one ConnectionCard wired to a sign-out route and a consent restart, with disconnect and reconnect on the async-pending contract.
+- [ACC Sign-In](https://canteraui.vercel.app/components/acc-sign-in): A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.
 - [Connections View](https://canteraui.vercel.app/components/connections-view): The connections dashboard as a presentational block: providers and connections in, connect, reconnect, disconnect, and retry callbacks out — with the designed list, empty, loading, and error states, each exported.
+- [Connections Page](https://canteraui.vercel.app/components/connections-page): The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
 - [Model Browser](https://canteraui.vercel.app/components/model-browser): Hub sidebar, recursive finder, account controls, and a full-bleed Autodesk Viewer composed into one screen, with untranslated-model states. Points at your tree and viewer-token endpoints; model-viewer-page ships those routes.
+- [Model Viewer Page](https://canteraui.vercel.app/components/model-viewer-page): A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.
 - [Model Upload](https://canteraui.vercel.app/components/model-upload): Drop zone with archive support, translation options and tracking with manifest diagnostics, a searchable model library, and a shareable full-bleed Viewer composed into one screen. Points at your upload and viewer-token endpoints; model-upload-page ships those routes.
+- [Model Upload Page](https://canteraui.vercel.app/components/model-upload-page): A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.
 
 ## Components
 
