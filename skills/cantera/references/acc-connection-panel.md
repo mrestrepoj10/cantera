@@ -15,3 +15,9 @@ Files written into the consumer project:
 ## Notes
 
 One ConnectionCard bound to two hrefs: signOutHref takes a POST that clears the grant and session, signInHref restarts consent. Disconnect settles by refreshing the server page, so the server view stays the truth; reconnect navigates. @cantera/acc-sign-in mounts it under a heading once a session exists.
+
+## AccConnectionPanel props
+
+- `connection` (`OAuthConnection`) — The Autodesk grant to render — status, account, scopes, expiry.
+- `signOutHref` (`string`) — POST target that clears the grant and session, e.g. "/api/auth/signout?next=/sign-in". Disconnect settles by refreshing the server page.
+- `signInHref` (`string`) — GET target that restarts consent, e.g. "/api/auth/aps?next=/sign-in". Reconnect navigates there and keeps its spinner until the page changes.

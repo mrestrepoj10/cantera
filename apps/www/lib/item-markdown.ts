@@ -1,24 +1,30 @@
 // The single serializer behind the skill's per-item references and the
 // `/components/<name>.md` route — both surfaces must emit identical bytes.
 
-import { installNotes } from '../components/site/install-notes.ts'
-import { type ApiTable, apiTables, libUsage } from '../components/site/props-tables.ts'
+import {
+  type ApiTable,
+  apiTables,
+  installNotes,
+  libUsage,
+} from '../components/site/props-tables.ts'
+import type { RegistryItem } from './registry-item.ts'
 import { kindLabelFor } from './registry-kinds.ts'
 import { docsUrl, installCommandFor, registryItemUrl, registryNamespace } from './site.ts'
 
-export interface MarkdownItem {
-  name: string
-  type: string
-  title?: string
-  description?: string
-  registryDependencies?: string[]
-  dependencies?: string[]
-  files?: { path: string; type: string; target?: string }[]
-  cssVars?: Record<string, Record<string, string>>
-  envVars?: Record<string, string>
-  docs?: string
-  meta?: { kind?: string; iframeHeight?: string }
-}
+export type MarkdownItem = Pick<
+  RegistryItem,
+  | 'name'
+  | 'type'
+  | 'title'
+  | 'description'
+  | 'registryDependencies'
+  | 'dependencies'
+  | 'files'
+  | 'cssVars'
+  | 'envVars'
+  | 'docs'
+  | 'meta'
+>
 
 function serializeTable(table: ApiTable): string {
   const rows = table.rows.map((row) => {

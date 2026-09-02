@@ -3,17 +3,14 @@
 import { useState } from 'react'
 
 import { BlockShowcase, type BlockShowcaseProps } from '@/components/site/block-showcase'
-import { catalogGroupDefinitions } from '@/lib/registry-kinds'
 import { cn } from '@/lib/utils'
 
-export interface ShowcaseEntry extends Omit<BlockShowcaseProps, 'headingLevel'> {
-  group: 'templates' | 'blocks'
-  categories: string[]
+export interface ShowcaseGroup {
+  id: string
+  title: string
+  description: string
+  entries: (Omit<BlockShowcaseProps, 'headingLevel'> & { categories: string[] })[]
 }
-
-const showcaseGroups = catalogGroupDefinitions.filter(
-  (group) => group.id === 'templates' || group.id === 'blocks',
-)
 
 function CategoryFilter({
   categories,
@@ -56,24 +53,25 @@ function CategoryFilter({
   )
 }
 
-function BlocksCatalog({ entries }: { entries: ShowcaseEntry[] }) {
+function BlocksCatalog({ groups }: { groups: ShowcaseGroup[] }) {
   const [category, setCategory] = useState<string>()
+  const entries = groups.flatMap((group) => group.entries)
   const categories = [...new Set(entries.flatMap((entry) => entry.categories))].sort()
-  const visible = category
-    ? entries.filter((entry) => entry.categories.includes(category))
-    : entries
+  const matches = (entry: ShowcaseGroup['entries'][number]) =>
+    !category || entry.categories.includes(category)
+  const shown = entries.filter(matches).length
 
   return (
     <div className="flex flex-col gap-12">
       <div className="flex flex-col gap-3">
         <CategoryFilter categories={categories} value={category} onChange={setCategory} />
         <p role="status" className="text-muted-foreground text-xs">
-          Showing {visible.length} of {entries.length}
+          Showing {shown} of {entries.length}
         </p>
       </div>
 
-      {showcaseGroups.map((group) => {
-        const members = visible.filter((entry) => entry.group === group.id)
+      {groups.map((group) => {
+        const members = group.entries.filter(matches)
         if (members.length === 0) return null
         return (
           <section
@@ -91,7 +89,7 @@ function BlocksCatalog({ entries }: { entries: ShowcaseEntry[] }) {
               </h2>
               <p className="mt-1 text-muted-foreground text-sm">{group.description}</p>
             </div>
-            {members.map(({ group: _group, categories: _categories, ...entry }) => (
+            {members.map(({ categories: _categories, ...entry }) => (
               <BlockShowcase key={entry.name} {...entry} headingLevel="h3" />
             ))}
           </section>

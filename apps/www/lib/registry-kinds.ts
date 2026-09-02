@@ -1,21 +1,15 @@
-// The site-level taxonomy over the shadcn schema. `meta.kind` marks the three
-// shapes a `registry:block` can take; everything else derives from `type`.
+import type { RegistryItem } from './registry-item.ts'
 
 export type ItemKind = 'template' | 'block' | 'kit'
 
 export type CatalogGroupId = 'templates' | 'blocks' | 'components' | 'foundations'
 
-export interface KindSource {
-  name: string
-  type: string
-  meta?: { kind?: string }
-}
+type KindSource = Pick<RegistryItem, 'name' | 'type' | 'meta'>
 
-const ITEM_KINDS: ReadonlySet<string> = new Set<ItemKind>(['template', 'block', 'kit'])
+const ITEM_KINDS = ['template', 'block', 'kit'] as const
 
 export function itemKind(item: KindSource): ItemKind | undefined {
-  const kind = item.meta?.kind
-  return kind && ITEM_KINDS.has(kind) ? (kind as ItemKind) : undefined
+  return ITEM_KINDS.find((kind) => kind === item.meta?.kind)
 }
 
 export function catalogGroupFor(item: KindSource): CatalogGroupId {

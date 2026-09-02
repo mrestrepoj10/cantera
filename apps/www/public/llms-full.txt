@@ -392,6 +392,12 @@ Notes:
 
 One ConnectionCard bound to two hrefs: signOutHref takes a POST that clears the grant and session, signInHref restarts consent. Disconnect settles by refreshing the server page, so the server view stays the truth; reconnect navigates. @cantera/acc-sign-in mounts it under a heading once a session exists.
 
+#### AccConnectionPanel props
+
+- `connection` (`OAuthConnection`) — The Autodesk grant to render — status, account, scopes, expiry.
+- `signOutHref` (`string`) — POST target that clears the grant and session, e.g. "/api/auth/signout?next=/sign-in". Disconnect settles by refreshing the server page.
+- `signInHref` (`string`) — GET target that restarts consent, e.g. "/api/auth/aps?next=/sign-in". Reconnect navigates there and keeps its spinner until the page changes.
+
 ### ACC Sign-In (`@cantera/acc-sign-in`)
 
 Type: template
@@ -438,6 +444,39 @@ Notes:
 
 Presentational only: providers and connections in, callbacks out. "ready" with nothing connected renders the empty state, and each state — ConnectionsList, ConnectionsEmpty, ConnectionsLoading, ConnectionsError — is exported so adapting the page keeps them. @cantera/connections-page ships ConnectionsManager, the wiring that points these callbacks at the acc-auth-routes handlers.
 
+#### ConnectionsView props
+
+- `providers` (`OAuthProvider[]`) — Every provider this app can connect to, in display order. A provider with no grant renders as a "not connected" row, and a page where none of them has a grant renders the empty state.
+- `connections` (`OAuthConnection[]`) — The grants that exist, matched to providers by connection.provider.id. A grant for a provider outside the catalog is appended rather than dropped, so a removed provider never vanishes silently.
+- `status` (`'ready' | 'loading' | 'error'`, default `'ready'`) — The fetch state. Loading and error replace the list while the heading stays put — the page never shifts under a resolve. A single provider that failed is not this state: that is a row with status "error", which keeps its healthy siblings visible.
+- `error` (`string`) — Page-level failure detail, shown with the retry when status is "error". Wired to the retry button with aria-describedby.
+- `account` (`OAuthAccount`) — Who these grants belong to. Rendered as a UserAccountBadge beside the heading when set.
+- `onConnect` (`(providerId: string) => void | Promise<void>`) — Starts consent for one provider. Connect and reconnect are the same act, so one callback serves the empty-state chooser and every row button. A returned promise drives that row's pending state.
+- `onDisconnect` (`(providerId: string) => void | Promise<void>`) — Revokes one grant. A returned promise drives the pending state on that card's Disconnect button.
+- `onRetry` (`() => void | Promise<void>`) — Retries the whole fetch. Shown only in the error state.
+- `pending` (`{ connecting?: string; disconnecting?: string; retrying?: boolean }`) — Consumer-driven pending, for wiring where no promise comes back — a server action, or a navigation that never resolves. One provider id, not a set: a second consent redirect would race the first.
+- `title` (`ReactNode`, default `'Connections'`) — Page heading text.
+- `titleAs` (`'h1' | 'h2' | 'h3'`, default `'h1'`) — Heading element for the title — a block ships a real heading, not a styled div. Drop to h2 when embedding under one.
+- `description` (`ReactNode`, default `'The accounts this app can read from…'`) — Sentence under the heading. Pass null to drop it.
+- `showScopes` (`boolean`, default `true`) — Forwarded to every ConnectionCard, and through it to TokenStatus.
+- `...props` (`ComponentProps<'section'>`) — Remaining props are spread onto the page section.
+
+#### Exports
+
+- `ConnectionsView` (`component`) — The presentational page: heading, summary, and whichever of the four states applies. Data in, callbacks out, no fetching.
+- `ConnectionsList` (`component`) — The ready state — one ConnectionCard per row, where the whole status vocabulary shows up at once.
+- `ConnectionsEmpty` (`component`) — The empty state: the provider chooser itself, with one sentence on what a connection buys. No illustration — the system is monochrome.
+- `ConnectionsLoading` (`component`) — The loading state: static skeleton rows built from the ConnectionCard box model, so nothing shifts on resolve, plus one spinner in a live region.
+- `ConnectionsError` (`component`) — The page-level failure: message in danger ink plus a retry on the async-pending contract, wired with aria-describedby.
+- `resolveConnections` (`(providers, connections?) => OAuthConnection[]`) — The data model: one row per provider in catalog order, a disconnected placeholder where no grant exists, and unknown grants appended.
+- `ConnectionsManager` (`component`) — The client wiring: connect navigates to the consent route, disconnect posts to the revoke route, and both settle by re-rendering the server page. Swap it for your own backend and ConnectionsView does not change.
+- `AccConnections` (`async component`) — The wired server component, on the lib and routes the acc-sign-in block installs. Render it from any server page; the default export is a ready-made /connections page with a streamed loading.tsx beside it.
+
+#### Data attributes
+
+- `data-slot` (`connections-view · connections-list · connections-empty · connections-loading · connections-error`) — Which state is on the page, for styling and for tests.
+- `data-status` (`ready · loading · error`) — On the page section: the fetch state it was rendered with.
+
 ### Connections Page (`@cantera/connections-page`)
 
 Type: template
@@ -466,44 +505,11 @@ Next:
 List a provider only after lib/acc-auth.ts knows it: an unwired Connect fails at the route on purpose.
 Reference: https://canteraui.vercel.app/components/connections-page
 
-#### ConnectionsView props
-
-- `providers` (`OAuthProvider[]`) — Every provider this app can connect to, in display order. A provider with no grant renders as a "not connected" row, and a page where none of them has a grant renders the empty state.
-- `connections` (`OAuthConnection[]`) — The grants that exist, matched to providers by connection.provider.id. A grant for a provider outside the catalog is appended rather than dropped, so a removed provider never vanishes silently.
-- `status` (`'ready' | 'loading' | 'error'`, default `'ready'`) — The fetch state. Loading and error replace the list while the heading stays put — the page never shifts under a resolve. A single provider that failed is not this state: that is a row with status "error", which keeps its healthy siblings visible.
-- `error` (`string`) — Page-level failure detail, shown with the retry when status is "error". Wired to the retry button with aria-describedby.
-- `account` (`OAuthAccount`) — Who these grants belong to. Rendered as a UserAccountBadge beside the heading when set.
-- `onConnect` (`(providerId: string) => void | Promise<void>`) — Starts consent for one provider. Connect and reconnect are the same act, so one callback serves the empty-state chooser and every row button. A returned promise drives that row's pending state.
-- `onDisconnect` (`(providerId: string) => void | Promise<void>`) — Revokes one grant. A returned promise drives the pending state on that card's Disconnect button.
-- `onRetry` (`() => void | Promise<void>`) — Retries the whole fetch. Shown only in the error state.
-- `pending` (`{ connecting?: string; disconnecting?: string; retrying?: boolean }`) — Consumer-driven pending, for wiring where no promise comes back — a server action, or a navigation that never resolves. One provider id, not a set: a second consent redirect would race the first.
-- `title` (`ReactNode`, default `'Connections'`) — Page heading text.
-- `titleAs` (`'h1' | 'h2' | 'h3'`, default `'h1'`) — Heading element for the title — a block ships a real heading, not a styled div. Drop to h2 when embedding under one.
-- `description` (`ReactNode`, default `'The accounts this app can read from…'`) — Sentence under the heading. Pass null to drop it.
-- `showScopes` (`boolean`, default `true`) — Forwarded to every ConnectionCard, and through it to TokenStatus.
-- `...props` (`ComponentProps<'section'>`) — Remaining props are spread onto the page section.
-
 #### AccConnections props
 
 - `providers` (`OAuthProvider[]`, default `[apsProvider]`) — Providers to list. Autodesk is the wired one; an extra entry renders as "not connected" and its Connect button hits /api/auth/<id>, which 404s until lib/acc-auth.ts knows that provider.
 - `nextPath` (`string`, default `'/connections'`) — Where the consent flow returns to.
 - `headingLevel` (`'h1' | 'h2' | 'h3'`, default `'h1'`) — Heading level for the block title, forwarded to ConnectionsView.
-
-#### Exports
-
-- `ConnectionsView` (`component`) — The presentational page: heading, summary, and whichever of the four states applies. Data in, callbacks out, no fetching.
-- `ConnectionsList` (`component`) — The ready state — one ConnectionCard per row, where the whole status vocabulary shows up at once.
-- `ConnectionsEmpty` (`component`) — The empty state: the provider chooser itself, with one sentence on what a connection buys. No illustration — the system is monochrome.
-- `ConnectionsLoading` (`component`) — The loading state: static skeleton rows built from the ConnectionCard box model, so nothing shifts on resolve, plus one spinner in a live region.
-- `ConnectionsError` (`component`) — The page-level failure: message in danger ink plus a retry on the async-pending contract, wired with aria-describedby.
-- `resolveConnections` (`(providers, connections?) => OAuthConnection[]`) — The data model: one row per provider in catalog order, a disconnected placeholder where no grant exists, and unknown grants appended.
-- `ConnectionsManager` (`component`) — The client wiring: connect navigates to the consent route, disconnect posts to the revoke route, and both settle by re-rendering the server page. Swap it for your own backend and ConnectionsView does not change.
-- `AccConnections` (`async component`) — The wired server component, on the lib and routes the acc-sign-in block installs. Render it from any server page; the default export is a ready-made /connections page with a streamed loading.tsx beside it.
-
-#### Data attributes
-
-- `data-slot` (`connections-view · connections-list · connections-empty · connections-loading · connections-error`) — Which state is on the page, for styling and for tests.
-- `data-status` (`ready · loading · error`) — On the page section: the fetch state it was rendered with.
 
 ### Project Types (`@cantera/project-types`)
 
@@ -1060,6 +1066,15 @@ Notes:
 
 Fetches from treeEndpoint (default /api/models/tree) and viewerTokenEndpoint (default /api/viewer-token) — the routes @cantera/model-viewer-page ships. Point both at your own handlers to mount the screen without the template. initialNodes skips the first hub read when the server already has the tree; embedded drops the page chrome so the browser fits a docs or preview frame.
 
+#### ModelBrowser props
+
+- `account` (`OAuthAccount`) — Signed-in account shown in the fixed top-right account control.
+- `initialNodes` (`HubTreeNode[]`, default `[]`) — Optional normalized roots. When empty, the client starts by requesting hubs from treeEndpoint.
+- `treeEndpoint` (`string`, default `'/api/models/tree'`) — Session-backed lazy Data Management route implementing the shared kind and id query contract.
+- `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Separate two-legged viewer token route, scoped to viewables:read. Three-legged Data Management tokens never cross into the viewer.
+- `signOutHref` (`string`, default `'/api/auth/signout?next=/sign-in'`) — POST route used by the account control to revoke the grant and clear the session.
+- `embedded` (`boolean`, default `false`) — Constrains the desktop sidebar and shell height to the nearest positioned preview container. Leave false for the full-page route.
+
 ### Model Viewer Page (`@cantera/model-viewer-page`)
 
 Type: template
@@ -1088,15 +1103,6 @@ Next:
 
 The cantera showcase emulator supplies a project tree but no geometry; store real derivative URNs on your item versions.
 Reference: https://canteraui.vercel.app/components/model-viewer-page
-
-#### ModelBrowser props
-
-- `account` (`OAuthAccount`) — Signed-in account shown in the fixed top-right account control.
-- `initialNodes` (`HubTreeNode[]`, default `[]`) — Optional normalized roots. When empty, the client starts by requesting hubs from treeEndpoint.
-- `treeEndpoint` (`string`, default `'/api/models/tree'`) — Session-backed lazy Data Management route implementing the shared kind and id query contract.
-- `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Separate two-legged viewer token route, scoped to viewables:read. Three-legged Data Management tokens never cross into the viewer.
-- `signOutHref` (`string`, default `'/api/auth/signout?next=/sign-in'`) — POST route used by the account control to revoke the grant and clear the session.
-- `embedded` (`boolean`, default `false`) — Constrains the desktop sidebar and shell height to the nearest positioned preview container. Leave false for the full-page route.
 
 #### Tree route
 
@@ -1127,6 +1133,12 @@ Notes:
 
 Fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token) — the routes @cantera/model-upload-page ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame.
 
+#### ModelUpload props
+
+- `uploadEndpoint` (`string`, default `'/api/models/upload'`) — Two-legged route implementing the models, start, finish, and status contract over the app bucket.
+- `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Separate two-legged viewer token route, scoped to viewables:read. Upload-scoped tokens never cross into the viewer.
+- `embedded` (`boolean`, default `false`) — Constrains the desktop sidebar and shell height to the nearest positioned preview container, and skips writing ?urn= to the URL. Leave false for the full-page route.
+
 ### Model Upload Page (`@cantera/model-upload-page`)
 
 Type: template
@@ -1156,12 +1168,6 @@ Next:
 
 Files over 250 MB are rejected; raise PART_SIZE or MAX_PARTS in the route.
 Reference: https://canteraui.vercel.app/components/model-upload-page
-
-#### ModelUpload props
-
-- `uploadEndpoint` (`string`, default `'/api/models/upload'`) — Two-legged route implementing the models, start, finish, and status contract over the app bucket.
-- `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Separate two-legged viewer token route, scoped to viewables:read. Upload-scoped tokens never cross into the viewer.
-- `embedded` (`boolean`, default `false`) — Constrains the desktop sidebar and shell height to the nearest positioned preview container, and skips writing ?urn= to the URL. Leave false for the full-page route.
 
 #### Upload route
 

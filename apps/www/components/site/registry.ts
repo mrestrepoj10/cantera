@@ -1,39 +1,10 @@
-import {
-  type CatalogGroupId,
-  catalogGroupDefinitions,
-  catalogGroupFor,
-  itemKind,
-} from '@/lib/registry-kinds'
-import { registryNamespace } from '@/lib/site'
+import { resolveClosure } from '@/lib/registry-closure'
+import type { RegistryItem } from '@/lib/registry-item'
+import { type CatalogGroupId, catalogGroupDefinitions, catalogGroupFor } from '@/lib/registry-kinds'
 import registryJson from '@/registry.json'
 
+export type { RegistryFile, RegistryItem } from '@/lib/registry-item'
 export { installCommandFor } from '@/lib/site'
-
-export interface RegistryFile {
-  path: string
-  type: string
-  target?: string
-}
-
-export interface RegistryItem {
-  name: string
-  type:
-    | 'registry:lib'
-    | 'registry:component'
-    | 'registry:block'
-    | 'registry:item'
-    | 'registry:example'
-  title: string
-  description: string
-  author?: string
-  categories?: string[]
-  meta?: { kind?: string; iframeHeight?: string }
-  dependencies?: string[]
-  registryDependencies?: string[]
-  files?: RegistryFile[]
-  envVars?: Record<string, string>
-  docs?: string
-}
 
 const allItems = registryJson.items as RegistryItem[]
 
@@ -69,6 +40,10 @@ const previewFrameClasses: PreviewFrameClassByItem = {
   'file-drop-zone': 'flex min-h-[26rem] items-start rounded-lg border border-border p-4 sm:p-6',
 }
 
+export function previewLayoutFor(name: string): 'full-bleed' | 'centered' {
+  return previewFrameClasses[name] === fullBleedPreview ? 'full-bleed' : 'centered'
+}
+
 export function getPreviewFrameClassName(name: string): string {
   return (
     previewFrameClasses[name] ??
@@ -100,17 +75,16 @@ function buildGroups(): RegistryGroup[] {
     .filter((group) => group.items.length > 0)
 }
 
-export const registryGroups: RegistryGroup[] = buildGroups()
+const registryGroups: RegistryGroup[] = buildGroups()
 
 function groupsIn(...order: CatalogGroupId[]): RegistryGroup[] {
   return order.flatMap((id) => registryGroups.filter((group) => group.id === id))
 }
 
-/** What the /blocks page shows: blocks and the templates that mount them. */
-export const showcaseItems = registryItems.filter((item) => {
-  const kind = itemKind(item)
-  return kind === 'block' || kind === 'template'
-})
+/** What the /blocks page shows: the templates and the blocks they mount. */
+export const showcaseGroups = groupsIn('templates', 'blocks')
+
+export const showcaseItems = showcaseGroups.flatMap((group) => group.items)
 
 export const componentRegistryGroups = groupsIn('components', 'foundations')
 
@@ -131,45 +105,27 @@ export interface InstallSummary {
   items: RegistryItem[]
   /** shadcn primitives the closure asks the consumer's own registry for. */
   primitives: string[]
-  /** Registry files the closure writes; primitives add their own on top. */
+  /** Distinct installed paths the closure writes; primitives add their own on top. */
   files: number
   routes: number
   packages: string[]
+  envKeys: string[]
 }
 
-const ROUTE_TARGET = /^app\/api\/.*route\.tsx?$/
+const ROUTE_MODULE = /^app\/api\/.*\/route$/
 
-/** Walks `registryDependencies` the way the CLI resolves them, counting what lands. */
 export function installSummaryFor(name: string): InstallSummary {
-  const items: RegistryItem[] = []
-  const primitives = new Set<string>()
-  const packages = new Set<string>()
-  const seen = new Set<string>()
-
-  const walk = (item: RegistryItem) => {
-    if (seen.has(item.name)) return
-    seen.add(item.name)
-    items.push(item)
-    for (const pkg of item.dependencies ?? []) packages.add(pkg)
-    for (const dependency of item.registryDependencies ?? []) {
-      if (!dependency.startsWith(`${registryNamespace}/`)) {
-        primitives.add(dependency)
-        continue
-      }
-      const next = itemsByName.get(dependency.slice(registryNamespace.length + 1))
-      if (next) walk(next)
-    }
-  }
-
   const root = itemsByName.get(name)
-  if (root) walk(root)
+  if (!root) return { items: [], primitives: [], files: 0, routes: 0, packages: [], envKeys: [] }
 
-  const files = items.flatMap((item) => item.files ?? [])
+  const closure = resolveClosure(itemsByName, root)
+  const modules = [...closure.modules.keys()]
   return {
-    items,
-    primitives: [...primitives].sort(),
-    files: files.length,
-    routes: files.filter((file) => ROUTE_TARGET.test(file.target ?? '')).length,
-    packages: [...packages].sort(),
+    items: closure.items,
+    primitives: [...closure.primitives].sort(),
+    files: modules.length,
+    routes: modules.filter((module) => ROUTE_MODULE.test(module)).length,
+    packages: [...new Set(closure.items.flatMap((item) => item.dependencies ?? []))].sort(),
+    envKeys: [...new Set(closure.items.flatMap((item) => Object.keys(item.envVars ?? {})))],
   }
 }

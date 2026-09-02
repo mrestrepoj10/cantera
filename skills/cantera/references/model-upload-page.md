@@ -36,12 +36,6 @@ Next:
 Files over 250 MB are rejected; raise PART_SIZE or MAX_PARTS in the route.
 Reference: https://canteraui.vercel.app/components/model-upload-page
 
-## ModelUpload props
-
-- `uploadEndpoint` (`string`, default `'/api/models/upload'`) — Two-legged route implementing the models, start, finish, and status contract over the app bucket.
-- `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Separate two-legged viewer token route, scoped to viewables:read. Upload-scoped tokens never cross into the viewer.
-- `embedded` (`boolean`, default `false`) — Constrains the desktop sidebar and shell height to the nearest positioned preview container, and skips writing ?urn= to the URL. Leave false for the full-page route.
-
 ## Upload route
 
 - `kind=models` (`GET`) — Ensures the app bucket exists and lists its objects as { name, urn, size } models.

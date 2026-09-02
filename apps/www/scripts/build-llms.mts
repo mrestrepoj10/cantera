@@ -1,10 +1,14 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { installNotes } from '../components/site/install-notes.ts'
-import { type ApiTable, apiTables, libUsage } from '../components/site/props-tables.ts'
-import type { RegistryItem } from '../components/site/registry.ts'
+import {
+  type ApiTable,
+  apiTables,
+  installNotes,
+  libUsage,
+} from '../components/site/props-tables.ts'
 import { designContracts } from '../lib/design-contracts.ts'
+import type { RegistryItem } from '../lib/registry-item.ts'
 import { catalogGroupDefinitions, catalogGroupFor, kindLabelFor } from '../lib/registry-kinds.ts'
 import {
   docsUrl,

@@ -73,7 +73,7 @@ function useDemoConnections(): OAuthConnection[] {
   ]
 }
 
-export function ConnectionsViewDemo() {
+export function ConnectionsViewDemo({ titleAs = 'h3' }: { titleAs?: 'h1' | 'h2' | 'h3' } = {}) {
   const [state, setState] = useState<ConnectionsDemoState>('partial')
   const held = useDemoConnections()
   const [revoked, setRevoked] = useState<string[]>([siteworksProvider.id])
@@ -100,8 +100,7 @@ export function ConnectionsViewDemo() {
         status={connectionsDemoStatus[state]}
         error={state === 'error' ? 'The token vault did not respond.' : undefined}
         account={sampleAccount}
-        // The docs page owns h1 and h2; slot in one level down.
-        titleAs="h3"
+        titleAs={titleAs}
         showScopes={false}
         onConnect={async (providerId) => {
           await delay()

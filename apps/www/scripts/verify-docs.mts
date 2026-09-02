@@ -14,6 +14,14 @@ const problems: string[] = []
 
 for (const item of catalogItems(registry.items)) {
   const kind = itemKind(item)
+  if (item.type === 'registry:block' && !kind) {
+    problems.push(
+      `${namespace}/${item.name}: a registry:block must carry meta.kind template, block, or kit`,
+    )
+  }
+  if (item.type !== 'registry:block' && item.meta?.kind) {
+    problems.push(`${namespace}/${item.name}: meta.kind belongs on registry:block items only`)
+  }
   const carriesDocs = kind === 'template' || kind === 'kit'
   const words = item.docs?.trim().split(/\s+/).filter(Boolean).length ?? 0
 
@@ -22,11 +30,15 @@ for (const item of catalogItems(registry.items)) {
   }
   if (!carriesDocs && words > 0) {
     problems.push(
-      `${namespace}/${item.name}: only templates and the kit carry docs — move this to components/site/install-notes.ts`,
+      `${namespace}/${item.name}: only templates and the kit carry docs — move this to installNotes in components/site/props-tables.ts`,
     )
   }
   if (words > MAX_WORDS) {
     problems.push(`${namespace}/${item.name}: docs run ${words} words; the cap is ${MAX_WORDS}`)
+  }
+  const reference = `Reference: ${registry.homepage}/components/${item.name}`
+  if (item.docs && !item.docs.trimEnd().endsWith(reference)) {
+    problems.push(`${namespace}/${item.name}: docs must end with "${reference}"`)
   }
 }
 
@@ -37,4 +49,4 @@ if (problems.length > 0) {
   process.exit(1)
 }
 
-console.log('docs: only templates and the kit print install notes, each under the word cap')
+console.log('docs: every block carries a kind; only templates and the kit print install notes')

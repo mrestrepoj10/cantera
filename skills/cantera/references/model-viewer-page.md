@@ -35,15 +35,6 @@ Next:
 The cantera showcase emulator supplies a project tree but no geometry; store real derivative URNs on your item versions.
 Reference: https://canteraui.vercel.app/components/model-viewer-page
 
-## ModelBrowser props
-
-- `account` (`OAuthAccount`) — Signed-in account shown in the fixed top-right account control.
-- `initialNodes` (`HubTreeNode[]`, default `[]`) — Optional normalized roots. When empty, the client starts by requesting hubs from treeEndpoint.
-- `treeEndpoint` (`string`, default `'/api/models/tree'`) — Session-backed lazy Data Management route implementing the shared kind and id query contract.
-- `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Separate two-legged viewer token route, scoped to viewables:read. Three-legged Data Management tokens never cross into the viewer.
-- `signOutHref` (`string`, default `'/api/auth/signout?next=/sign-in'`) — POST route used by the account control to revoke the grant and clear the session.
-- `embedded` (`boolean`, default `false`) — Constrains the desktop sidebar and shell height to the nearest positioned preview container. Leave false for the full-page route.
-
 ## Tree route
 
 - `kind=hubs` (`no ids`) — Loads the signed-in account’s hubs.

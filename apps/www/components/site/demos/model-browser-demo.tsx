@@ -1,5 +1,99 @@
-import { ModelViewerPageDemo } from '@/components/site/demos/model-viewer-page-demo'
+'use client'
 
-export function ModelBrowserDemo() {
-  return <ModelViewerPageDemo nextPath="/components/model-browser" />
+import { LoaderCircleIcon } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+
+import { ModelBrowser } from '@/components/model-browser'
+import { ScopedAutodeskSignIn } from '@/components/scoped-autodesk-sign-in'
+import type { HubTreeNode } from '@/components/ui/hub-tree'
+
+type DemoState =
+  | { status: 'loading' }
+  | { status: 'signed-out' }
+  | { status: 'ready'; nodes: HubTreeNode[] }
+  | { status: 'error'; message: string }
+
+interface TreeResponse {
+  nodes?: HubTreeNode[]
+  error?: string
+}
+
+// The first read also distinguishes a real session from signed-out without
+// exposing session data to the client. Consent returns to whichever page
+// mounted the demo.
+export function ModelBrowserDemo({ titleAs = 'h3' }: { titleAs?: 'h1' | 'h2' | 'h3' } = {}) {
+  const nextPath = usePathname()
+  const [state, setState] = useState<DemoState>({ status: 'loading' })
+
+  useEffect(() => {
+    const controller = new AbortController()
+    void fetch('/api/models/tree?kind=hubs', {
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const body = (await response.json()) as TreeResponse
+        if (response.status === 401) {
+          setState({ status: 'signed-out' })
+          return
+        }
+        if (!response.ok || !body.nodes) {
+          setState({
+            status: 'error',
+            message: body.error ?? 'The model tree could not be loaded.',
+          })
+          return
+        }
+        setState({ status: 'ready', nodes: body.nodes })
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setState({ status: 'error', message: 'The model tree could not be loaded.' })
+      })
+    return () => controller.abort()
+  }, [])
+
+  if (state.status === 'loading') {
+    return (
+      <output className="flex min-h-[36rem] w-full items-center justify-center gap-2 text-muted-foreground text-sm">
+        <span aria-hidden className="grid size-4 animate-spin place-items-center">
+          <LoaderCircleIcon className="size-4" />
+        </span>
+        Checking your Autodesk connection
+      </output>
+    )
+  }
+
+  if (state.status === 'signed-out') {
+    return (
+      <div className="flex min-h-[36rem] w-full items-center justify-center p-6">
+        <ScopedAutodeskSignIn
+          nextPath={nextPath}
+          title="Browse models"
+          titleAs={titleAs}
+          description="Connect the credential-free Autodesk emulator to browse the live project tree."
+        />
+      </div>
+    )
+  }
+
+  if (state.status === 'error') {
+    return (
+      <div className="flex min-h-[36rem] w-full items-center justify-center p-6">
+        <p role="status" className="max-w-md text-center text-sm text-status-danger">
+          {state.message}
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <ModelBrowser
+      account={{ name: 'Autodesk account' }}
+      initialNodes={state.nodes}
+      signOutHref={`/api/auth/signout?next=${encodeURIComponent(nextPath)}`}
+      embedded
+    />
+  )
 }

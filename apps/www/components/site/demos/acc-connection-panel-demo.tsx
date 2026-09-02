@@ -15,7 +15,8 @@ const accConnectionPanelDemoStates: { id: AccConnectionPanelDemoState; label: st
   { id: 'expired', label: 'Consent lost' },
 ]
 
-export function AccConnectionPanelDemo() {
+export function AccConnectionPanelDemo({ titleAs = 'h3' }: { titleAs?: 'h1' | 'h2' | 'h3' } = {}) {
+  const Heading = titleAs
   const [state, setState] = useState<AccConnectionPanelDemoState>('connected')
   const expiresAt = useDemoExpiry(52)
 
@@ -38,6 +39,9 @@ export function AccConnectionPanelDemo() {
 
   return (
     <div className="flex w-full max-w-sm flex-col gap-4">
+      <Heading className="font-heading font-medium text-2xl tracking-tight">
+        Autodesk connection
+      </Heading>
       <StateSwitcher
         value={state}
         onChange={setState}

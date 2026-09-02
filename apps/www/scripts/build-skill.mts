@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import { designContracts } from '../lib/design-contracts.ts'
 import { itemMarkdown } from '../lib/item-markdown.ts'
-import { kindLabelFor } from '../lib/registry-kinds.ts'
+import { catalogGroupDefinitions, catalogGroupFor, kindLabelFor } from '../lib/registry-kinds.ts'
 import { installCommandFor, registryConfigSnippet, siteUrl } from '../lib/site.ts'
 import {
   catalogItems,
@@ -51,10 +51,17 @@ ${Object.values(designContracts(namespace))
   .join('\n\n')}`
 
 function skillFor(items: RegistryItem[], examples: Map<string, RegistryItem>): string {
-  const rows = items.map(
-    (item) =>
-      `| \`${namespace}/${item.name}\` | ${kindLabelFor(item)} | ${item.description} | [references/${item.name}.md](references/${item.name}.md) |`,
-  )
+  const sections = catalogGroupDefinitions.flatMap((group) => {
+    const members = items.filter((item) => catalogGroupFor(item) === group.id)
+    if (members.length === 0) return []
+    const rows = members.map(
+      (item) =>
+        `| \`${namespace}/${item.name}\` | ${kindLabelFor(item)} | ${item.description} | [references/${item.name}.md](references/${item.name}.md) |`,
+    )
+    return [
+      `### ${group.title}\n\n${group.description}\n\n| Item | Type | What it is | Reference |\n| --- | --- | --- | --- |\n${rows.join('\n')}`,
+    ]
+  })
 
   const withExamples = items.filter((item) => examples.has(item.name))
 
@@ -63,9 +70,8 @@ function skillFor(items: RegistryItem[], examples: Map<string, RegistryItem>): s
 # cantera
 
 cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in,
-scope, and connection components, page-sized blocks, and end-to-end Autodesk (APS / ACC)
-templates. It
-is **not an npm package** — \`npx shadcn@latest add ${namespace}/<item>\` copies the
+scope, and connection components, page-sized blocks, and end-to-end Autodesk
+(APS / ACC) templates. It is **not an npm package** — \`npx shadcn@latest add ${namespace}/<item>\` copies the
 source into the project, where it renders on that project's own shadcn primitives
 and theme. The consumer owns the code from there, and editing it is expected.
 
@@ -92,9 +98,7 @@ ${CONTRACTS}
 Read the reference before writing code against an item: it carries the props, the
 exports, the files the install writes, and the environment it needs.
 
-| Item | Type | What it is | Reference |
-| --- | --- | --- | --- |
-${rows.join('\n')}
+${sections.join('\n\n')}
 
 ## Working examples
 

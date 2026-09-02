@@ -8,13 +8,11 @@ import { preconnect } from 'react-dom'
 
 import { CodeBlock } from '@/components/site/code-block'
 import { CopyPrompt } from '@/components/site/copy-prompt'
-import { ComponentDemo } from '@/components/site/demos'
-import { getDemoComponent } from '@/components/site/demos.generated'
+import { ComponentDemo, hasDemo } from '@/components/site/demos'
 import { InstallCommand } from '@/components/site/install-command'
-import { installNotes } from '@/components/site/install-notes'
 import { OpenInV0 } from '@/components/site/open-in-v0'
 import { PageHandoff } from '@/components/site/page-handoff'
-import { type ApiTable, apiTables, libUsage } from '@/components/site/props-tables'
+import { type ApiTable, apiTables, installNotes, libUsage } from '@/components/site/props-tables'
 import {
   getPreviewFrameClassName,
   getRegistryItem,
@@ -81,6 +79,21 @@ function ApiSection({ table }: { table: ApiTable }) {
   )
 }
 
+function NotesSection({ title, text }: { title: string; text: string }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="font-medium text-sm">{title}</h2>
+      <div className="flex max-w-2xl flex-col gap-3 text-muted-foreground text-sm">
+        {text.split('\n\n').map((paragraph) => (
+          <p key={paragraph} className="whitespace-pre-line">
+            {paragraph}
+          </p>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function ComponentDocumentationFallback() {
   return (
     <div
@@ -134,8 +147,7 @@ async function ComponentPageContent({ params }: PageProps) {
   const files = item.files ?? []
   const sources = await getSources(files)
   const kind = kindLabelFor(item)
-  const notes = installNotes[item.name] ?? item.docs
-  const hasDemo = getDemoComponent(item.name) !== undefined
+  const notes = installNotes[item.name]
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 py-12 sm:py-16">
@@ -172,7 +184,7 @@ async function ComponentPageContent({ params }: PageProps) {
           <p className="max-w-2xl text-muted-foreground text-sm">{usage.intro}</p>
           <CodeBlock code={usage.example} />
         </section>
-      ) : hasDemo ? (
+      ) : hasDemo(item.name) ? (
         <section className="flex flex-col gap-3">
           <h2 className="font-medium text-sm">Preview</h2>
           <div className={getPreviewFrameClassName(item.name)}>
@@ -184,18 +196,8 @@ async function ComponentPageContent({ params }: PageProps) {
         </section>
       ) : null}
 
-      {notes && (
-        <section className="flex flex-col gap-3">
-          <h2 className="font-medium text-sm">{item.docs ? 'Install notes' : 'Notes'}</h2>
-          <div className="flex max-w-2xl flex-col gap-3 text-muted-foreground text-sm">
-            {notes.split('\n\n').map((paragraph) => (
-              <p key={paragraph} className="whitespace-pre-line">
-                {paragraph}
-              </p>
-            ))}
-          </div>
-        </section>
-      )}
+      {item.docs && <NotesSection title="Install notes" text={item.docs} />}
+      {notes && <NotesSection title="Notes" text={notes} />}
 
       {tables.map((table) => (
         <ApiSection key={table.caption} table={table} />

@@ -507,7 +507,32 @@ export const apiTables: ApiTablesByItem = {
       ],
     },
   ],
-  'connections-page': [
+  'acc-connection-panel': [
+    {
+      caption: 'AccConnectionPanel props',
+      nameHeader: 'Prop',
+      rows: [
+        {
+          name: 'connection',
+          type: 'OAuthConnection',
+          description: 'The Autodesk grant to render — status, account, scopes, expiry.',
+        },
+        {
+          name: 'signOutHref',
+          type: 'string',
+          description:
+            'POST target that clears the grant and session, e.g. "/api/auth/signout?next=/sign-in". Disconnect settles by refreshing the server page.',
+        },
+        {
+          name: 'signInHref',
+          type: 'string',
+          description:
+            'GET target that restarts consent, e.g. "/api/auth/aps?next=/sign-in". Reconnect navigates there and keeps its spinner until the page changes.',
+        },
+      ],
+    },
+  ],
+  'connections-view': [
     {
       caption: 'ConnectionsView props',
       nameHeader: 'Prop',
@@ -600,32 +625,6 @@ export const apiTables: ApiTablesByItem = {
       ],
     },
     {
-      caption: 'AccConnections props',
-      nameHeader: 'Prop',
-      showDefault: true,
-      rows: [
-        {
-          name: 'providers',
-          type: 'OAuthProvider[]',
-          defaultValue: '[apsProvider]',
-          description:
-            'Providers to list. Autodesk is the wired one; an extra entry renders as "not connected" and its Connect button hits /api/auth/<id>, which 404s until lib/acc-auth.ts knows that provider.',
-        },
-        {
-          name: 'nextPath',
-          type: 'string',
-          defaultValue: "'/connections'",
-          description: 'Where the consent flow returns to.',
-        },
-        {
-          name: 'headingLevel',
-          type: "'h1' | 'h2' | 'h3'",
-          defaultValue: "'h1'",
-          description: 'Heading level for the block title, forwarded to ConnectionsView.',
-        },
-      ],
-    },
-    {
       caption: 'Exports',
       nameHeader: 'Export',
       typeHeader: 'Kind',
@@ -694,6 +693,34 @@ export const apiTables: ApiTablesByItem = {
           name: 'data-status',
           type: 'ready · loading · error',
           description: 'On the page section: the fetch state it was rendered with.',
+        },
+      ],
+    },
+  ],
+  'connections-page': [
+    {
+      caption: 'AccConnections props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'providers',
+          type: 'OAuthProvider[]',
+          defaultValue: '[apsProvider]',
+          description:
+            'Providers to list. Autodesk is the wired one; an extra entry renders as "not connected" and its Connect button hits /api/auth/<id>, which 404s until lib/acc-auth.ts knows that provider.',
+        },
+        {
+          name: 'nextPath',
+          type: 'string',
+          defaultValue: "'/connections'",
+          description: 'Where the consent flow returns to.',
+        },
+        {
+          name: 'headingLevel',
+          type: "'h1' | 'h2' | 'h3'",
+          defaultValue: "'h1'",
+          description: 'Heading level for the block title, forwarded to ConnectionsView.',
         },
       ],
     },
@@ -1482,7 +1509,7 @@ export const apiTables: ApiTablesByItem = {
       ],
     },
   ],
-  'model-upload-page': [
+  'model-upload': [
     {
       caption: 'ModelUpload props',
       nameHeader: 'Prop',
@@ -1511,6 +1538,8 @@ export const apiTables: ApiTablesByItem = {
         },
       ],
     },
+  ],
+  'model-upload-page': [
     {
       caption: 'Upload route',
       nameHeader: 'Request',
@@ -1542,7 +1571,7 @@ export const apiTables: ApiTablesByItem = {
       ],
     },
   ],
-  'model-viewer-page': [
+  'model-browser': [
     {
       caption: 'ModelBrowser props',
       nameHeader: 'Prop',
@@ -1590,6 +1619,8 @@ export const apiTables: ApiTablesByItem = {
         },
       ],
     },
+  ],
+  'model-viewer-page': [
     {
       caption: 'Tree route',
       nameHeader: 'Query',
@@ -2328,4 +2359,41 @@ const files: UploadFile[] = [
 
 const caption = \`\${MODEL_FILE_ACCEPT} · up to \${formatBytes(800_000_000)}\``,
   },
+}
+
+// Notes the CLI would otherwise print: only templates and the kit carry a
+// `docs` string, so every other item's install notes live here.
+interface InstallNotesByItem {
+  [item: string]: string
+}
+
+export const installNotes: InstallNotesByItem = {
+  'status-tokens':
+    'The solid pairs (bg-status-* with text-status-*-foreground) are the default treatment; the -surface companions are for soft rows and callouts and must always carry text-status-* ink. If your theme redefines :root without these variables, the utilities fall back to foreground / destructive / muted so nothing renders invisible. lib/status-tokens.ts ships the same twelve tokens as typed var() strings (statusCssVars) for the places a class cannot reach: inline styles, chart series, canvas fills.',
+  'hub-browser':
+    'HubBrowser is fully controlled and never fetches. An empty path renders the hub list; each callback advances or rewinds the consumer-owned path and entries. Activating the Hubs breadcrumb passes ROOT_BROWSE_SEGMENT — the exported empty-id sentinel — to onNavigate.\n\nVersion history is on demand: onRequestVersions receives one item id, and the consumer feeds the single-item versions prop back. Picking a row calls onItemOpen(item); picking history calls onItemOpen(item, version). Status badges use @cantera/status-tokens.',
+  'hub-tree':
+    'HubTree is fully controlled and never fetches. Give every node a stable, globally unique tree id and preserve the provider-normalized Hub, Project, Folder, Item, or ItemVersion in its value field. Expanding calls onExpand; feed the loaded children back through nodes and include the id in expandedIds. Items open their tip through onItemOpen(item); version rows call onItemOpen(item, version). The comfortable default uses 44px rows; compact is an explicit opt-in.',
+  finder:
+    'Fully controlled and data-agnostic: query out through onQueryChange, groups in as props; the consumer owns fetching, debouncing, and persistence. APS has no cross-hub search API, so label each group after the scope actually searched (folders/{id}/search is recursive within one project) and pass the scoped project\'s name as scope — it renders as a persistent "Searching in" notice under the input, wired to it with aria-describedby. Entries carry path: BrowsePathSegment[] — onReveal hands it back so a hub-tree (expandedIds + selectedId) or hub-browser (a location change) unfolds to the entry. Three surfaces share the contract: Finder renders inline, FinderDialog is the ⌘K palette (shortcut built in, closes on select or reveal), and FinderTrigger is the input-shaped button that opens it.',
+  'hub-sidebar':
+    "Render inside your own SidebarProvider with page content in SidebarInset — HubSidebar is the sidebar, not the app shell. The header stacks an identity row (avatar + name with the collapse toggle inline — the toggle stays reachable in the icon rail) above a FinderTrigger opening the ⌘K FinderDialog (fed by the finder prop); the tree fills the content slot. Give user.actions and the identity row becomes the account menu's trigger — typed items with icons, optional separators, and a destructive variant for sign-out, anchored beside the rail on desktop and below the row on mobile; with no actions the row stays a plain label. It forwards grouped props to its two controlled halves and adds no state of its own; wire reveal by mapping a finder entry's path to the tree's expandedIds and selectedId in one update.",
+  'crew-avatar':
+    "The same name always renders the same worker — a salted FNV-1a hash drives every trait, so avatars are SSR-safe and hydration-identical with no randomness at render time. The mark is monochrome by construction: a near-black or near-white canvas, the figure drawn in whichever end the canvas is not, and exactly one chroma — the hard hat, whose color codes the trade and is repeated as text on spec.role, so nothing depends on reading the color alone. The disc needs no theme awareness: it carries a hairline ring one step off its own canvas, so a light disc keeps its edge on a light page. Pass title for a meaningful image (role=img); omit it next to a visible name and the mark stays decorative (aria-hidden). crewAvatarSvg(name) returns standalone markup for non-React surfaces; colors overrides the canvas palette. Not a photo component: when a person has a real picture, compose shadcn's Avatar/AvatarImage/AvatarFallback instead — crew-avatar is for the names that don't.",
+  'viewer-types':
+    'Types come from Autodesk\'s official @types/forge-viewer package (installed as a dev dependency), which declares the global Autodesk namespace plus a bundled minimal THREE namespace. lib/forge-viewer.d.ts adds the few members the official definitions miss (Profile, ProfileSettings, setProfile). If your tsconfig sets an explicit "types" array, add "forge-viewer" to it.',
+  'viewer-extension-types':
+    'Pure types and data — no runtime dependency on the viewer. Pair with @cantera/aps-viewer: pass viewerExtension(...) entries to the extensions prop, or use AEC_STARTER_EXTENSIONS as a field-tested default for AEC models. Entries marked deprecated or removedIn should not ship in new code.',
+  'aps-viewer':
+    "APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance, viewCube, radius, toolbarPosition, and toolbarScale changes apply in place. toolbar=none uses the core Viewer3D without Autodesk's native toolbar; viewCube controls the cube independently.\n\nAPSViewerSettings renders an end-user settings panel as a viewer child: a trigger button appended to the SDK toolbar (a corner button when the native toolbar is off) opens a floating panel over the canvas, collapsed by default. It is controlled — hold an APSViewerSettingsValue in state, spread apsViewerPropsFor(value) onto APSViewer, and pass value/onValueChange to the panel. Extra sections compose through children; APSViewerSettingsTrigger is exported alone for custom panels.\n\nThe native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are not a published stable contract, so docking is best-effort and should be checked when changing the Viewer major version. Autodesk Viewer also renders third-party DOM that cantera cannot repair. The docs accessibility suite excludes only the subtree rooted inside the viewer canvas; controls you add around or over the viewer remain in scope. Audit the inherited Autodesk controls against your own product requirements.",
+  'file-drop-zone':
+    'The component never uploads: onDropFiles hands over validated File objects and the consumer drives the controlled files array as the transfer moves through queued, uploading, processing, complete, and error. The grid surface derives one phase from those files — magnetized during a drag, plotted bottom-up by aggregate progress, an ambient glow while providers translate, and a status tint when work settles. Ambient motion is confined to the surface and falls back to a static treatment under prefers-reduced-motion.\n\nValidation runs before any callback: accept (extension, MIME, and type/* wildcard grammar), maxSize per file, and maxFiles against the tracked list; refusals arrive at onReject with a reason. MODEL_FILE_ACCEPT from upload-types covers the common APS design formats. Retry follows the async-pending contract; remove doubles as cancel while a file is in flight.\n\nshowList false hides the built-in rows while files keep driving the grid; FileDropZoneItem is exported for rendering the same rows in your own layout.',
+  'model-browser':
+    'Fetches from treeEndpoint (default /api/models/tree) and viewerTokenEndpoint (default /api/viewer-token) — the routes @cantera/model-viewer-page ships. Point both at your own handlers to mount the screen without the template. initialNodes skips the first hub read when the server already has the tree; embedded drops the page chrome so the browser fits a docs or preview frame.',
+  'model-upload':
+    'Fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token) — the routes @cantera/model-upload-page ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame.',
+  'connections-view':
+    'Presentational only: providers and connections in, callbacks out. "ready" with nothing connected renders the empty state, and each state — ConnectionsList, ConnectionsEmpty, ConnectionsLoading, ConnectionsError — is exported so adapting the page keeps them. @cantera/connections-page ships ConnectionsManager, the wiring that points these callbacks at the acc-auth-routes handlers.',
+  'acc-connection-panel':
+    'One ConnectionCard bound to two hrefs: signOutHref takes a POST that clears the grant and session, signInHref restarts consent. Disconnect settles by refreshing the server page, so the server view stays the truth; reconnect navigates. @cantera/acc-sign-in mounts it under a heading once a session exists.',
 }

@@ -1,18 +1,18 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-import { BlocksCatalog, type ShowcaseEntry } from '@/components/site/blocks-catalog'
+import { BlocksCatalog, type ShowcaseGroup } from '@/components/site/blocks-catalog'
 import { OpenInV0 } from '@/components/site/open-in-v0'
 import {
   installCommandFor,
   installSummaryFor,
   previewHeightFor,
   type RegistryItem,
-  showcaseItems,
+  showcaseGroups,
 } from '@/components/site/registry'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { catalogGroupFor, kindLabelFor } from '@/lib/registry-kinds'
+import { kindLabelFor } from '@/lib/registry-kinds'
 import { installPromptFor, issueUrlFor } from '@/lib/site'
 
 export const metadata: Metadata = {
@@ -25,21 +25,20 @@ function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? '' : 's'}`
 }
 
-function entryFor(item: RegistryItem): ShowcaseEntry {
+function entryFor(item: RegistryItem): ShowcaseGroup['entries'][number] {
   const summary = installSummaryFor(item.name)
   const parts = [
     `Installs ${plural(summary.files, 'registry file')} across ${plural(summary.items.length, 'cantera item')}`,
   ]
   if (summary.routes > 0) parts.push(plural(summary.routes, 'route handler'))
   if (summary.packages.length > 0) parts.push(plural(summary.packages.length, 'npm package'))
-  if (item.envVars) parts.push(plural(Object.keys(item.envVars).length, 'environment key'))
+  if (summary.envKeys.length > 0) parts.push(plural(summary.envKeys.length, 'environment key'))
 
   return {
     name: item.name,
     title: item.title,
     description: item.description,
     kind: kindLabelFor(item),
-    group: catalogGroupFor(item) === 'templates' ? 'templates' : 'blocks',
     categories: item.categories ?? [],
     installCommand: installCommandFor(item.name),
     previewHeight: previewHeightFor(item),
@@ -55,7 +54,12 @@ function entryFor(item: RegistryItem): ShowcaseEntry {
 }
 
 export default function BlocksPage() {
-  const entries = showcaseItems.map(entryFor)
+  const groups = showcaseGroups.map((group) => ({
+    id: group.id,
+    title: group.title,
+    description: group.description,
+    entries: group.items.map(entryFor),
+  }))
 
   return (
     <div className="mx-auto w-full max-w-[90rem] px-4 pb-24 sm:px-6">
@@ -105,7 +109,7 @@ export default function BlocksPage() {
       </section>
 
       <div className="border-border border-t pt-12">
-        <BlocksCatalog entries={entries} />
+        <BlocksCatalog groups={groups} />
       </div>
     </div>
   )

@@ -1,8 +1,8 @@
 'use client'
 
-import { CheckIcon, CopyIcon } from 'lucide-react'
-import { useState } from 'react'
+import { CopyIcon } from 'lucide-react'
 
+import { CopyGlyph, CopyStatus, useCopyToClipboard } from '@/components/site/use-copy'
 import { cn } from '@/lib/utils'
 
 interface InstallCommandProps {
@@ -11,17 +11,7 @@ interface InstallCommandProps {
 }
 
 function InstallCommand({ command, className }: InstallCommandProps) {
-  const [copied, setCopied] = useState(false)
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(command)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1600)
-    } catch {
-      // Clipboard unavailable — leave the command selectable.
-    }
-  }
+  const { copied, copy } = useCopyToClipboard()
 
   return (
     <div
@@ -35,30 +25,13 @@ function InstallCommand({ command, className }: InstallCommandProps) {
       </code>
       <button
         type="button"
-        onClick={() => void copy()}
+        onClick={() => void copy(command)}
         aria-label={copied ? 'Copied' : 'Copy command'}
         className="focus-ring flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
-        <span aria-hidden className="grid size-4 place-items-center">
-          <CopyIcon
-            className={cn(
-              'col-start-1 row-start-1 size-4 transition-opacity duration-150 ease-out',
-              copied ? 'opacity-0' : 'opacity-100',
-            )}
-          />
-          <CheckIcon
-            className={cn(
-              'col-start-1 row-start-1 size-4 transition-opacity duration-150 ease-out',
-              copied ? 'opacity-100' : 'opacity-0',
-            )}
-          />
-        </span>
+        <CopyGlyph copied={copied} icon={CopyIcon} />
       </button>
-      {/* The icon change is invisible to a screen reader, so announce it. The
-          live region is always in the DOM; only its text changes. */}
-      <span role="status" aria-live="polite" className="sr-only">
-        {copied ? `Copied ${command} to the clipboard` : ''}
-      </span>
+      <CopyStatus copied={copied} message={`Copied ${command} to the clipboard`} />
     </div>
   )
 }
