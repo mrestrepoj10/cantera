@@ -33,7 +33,7 @@ jobs:
         run: |
           pnpm registry:build
           pnpm --filter www run registry:verify:static
-          CHANGES=$(git status --porcelain -- apps/www/registry.json apps/www/registry apps/www/public/r apps/www/public/llms.txt apps/www/public/llms-full.txt skills)
+          CHANGES=$(git status --porcelain -- apps/www/registry.json apps/www/registry apps/www/public/r apps/www/public/llms.txt apps/www/public/llms-full.txt skills templates)
           if [ -n "$CHANGES" ]; then
             echo "$CHANGES"
             echo "Generated registry output is not committed. Run pnpm registry:build and commit the result."

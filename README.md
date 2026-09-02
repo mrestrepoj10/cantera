@@ -77,6 +77,10 @@ Every item page carries a **Copy prompt** button: the install as an agent-runnab
 
 `aps-viewer` follows the same boundary: pass a Model Derivative URN and a promise-based `getAccessToken` callback. It never ships credentials or a route. The site’s live playground uses the showcase-only `/api/viewer-token` route with `viewables:read`; configure it through `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, and `APS_VIEWER_DEMO_URN` in the root `.env` (see `.env.example`).
 
+## Templates on Vercel
+
+Every template also exists as a whole Next.js app under [`templates/`](templates/), generated from the registry by `pnpm registry:build`. The **Deploy to Vercel** button on each template's page clones that directory into your account and prompts for the keys that have no default: `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, and, where a session is involved, `SESSION_SECRET`. `APP_ORIGIN` defaults to Vercel's production URL. Register `<your-deployment-url>/api/auth/callback/aps` on your APS app for the templates that sign users in.
+
 ## The acc-sign-in template
 
 `npx shadcn@latest add @cantera/acc-sign-in` installs a working `/sign-in` page, `/api/auth/*` route handlers, and the auth wiring on aec-auth's vault. Configure with environment variables:

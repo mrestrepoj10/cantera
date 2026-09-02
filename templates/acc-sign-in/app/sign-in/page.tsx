@@ -1,0 +1,112 @@
+import { TokenError } from 'aec-auth'
+import { cookies, headers } from 'next/headers'
+import { redirect } from 'next/navigation'
+
+import { AccConnectionPanel } from '@/components/acc-connection-panel'
+import { ScopedAutodeskSignIn } from '@/components/scoped-autodesk-sign-in'
+import {
+  APS_PROVIDER_ID,
+  appOrigin,
+  getSessionToken,
+  openSession,
+  SESSION_COOKIE,
+  safeNext,
+} from '@/lib/acc-auth'
+import { apsProvider } from '@/lib/aps-oauth-preset'
+import type { OAuthConnection } from '@/lib/oauth-types'
+
+/** Render <AccSignIn nextPath="/your-page" /> from any server page; the
+ * default export is a ready-made /sign-in page. */
+async function requestOrigin(): Promise<string> {
+  const headerList = await headers()
+  const host = headerList.get('x-forwarded-host') ?? headerList.get('host') ?? 'localhost:3000'
+  const proto = headerList.get('x-forwarded-proto') ?? 'http'
+  return appOrigin(`${proto}://${host}`)
+}
+
+export async function AccSignIn({
+  nextPath = '/sign-in',
+  headingLevel = 'h1',
+}: {
+  nextPath?: string
+  /** Heading level for the block's title. Drop to h2 when embedding under one. */
+  headingLevel?: 'h1' | 'h2' | 'h3'
+}) {
+  const Heading = headingLevel
+  const cookieStore = await cookies()
+  const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)
+  const signInHref = `/api/auth/${APS_PROVIDER_ID}?next=${encodeURIComponent(nextPath)}`
+
+  if (!session) {
+    return (
+      <ScopedAutodeskSignIn
+        nextPath={nextPath}
+        title="Sign in"
+        titleAs={headingLevel}
+        description="Choose the access to grant, then continue with Autodesk."
+      />
+    )
+  }
+
+  const account = { name: session.name, email: session.email, avatarUrl: session.avatarUrl }
+  let connection: OAuthConnection
+  try {
+    const origin = await requestOrigin()
+    const token = await getSessionToken(origin, session)
+    connection = {
+      provider: apsProvider,
+      status: 'connected',
+      account,
+      scopes: token.scopes ? [...token.scopes] : session.scopes,
+      expiresAt: token.expiresAt,
+    }
+  } catch (error) {
+    connection = {
+      provider: apsProvider,
+      status:
+        error instanceof TokenError && error.code === 'consent_required' ? 'expired' : 'error',
+      account,
+      scopes: session.scopes,
+      error:
+        error instanceof TokenError && error.code === 'consent_required'
+          ? 'Grant lost — reconnect to continue.'
+          : 'Could not refresh the token.',
+    }
+  }
+
+  return (
+    <div className="flex w-full max-w-sm flex-col gap-4">
+      <Heading className="font-heading font-medium text-2xl tracking-tight">
+        Autodesk connection
+      </Heading>
+      <AccConnectionPanel
+        connection={connection}
+        signOutHref={`/api/auth/signout?next=${encodeURIComponent(nextPath)}`}
+        signInHref={signInHref}
+      />
+    </div>
+  )
+}
+
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>
+}) {
+  // A repeated ?next= arrives as an array; treat it as absent rather than
+  // guessing which destination was meant.
+  const { next } = await searchParams
+  const nextPath = safeNext(typeof next === 'string' ? next : undefined, '/sign-in')
+  if (nextPath !== '/sign-in') {
+    // ?next= means the same thing signed in or out: an already-signed-in
+    // visitor continues to the destination instead of stalling on the panel.
+    const cookieStore = await cookies()
+    const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)
+    if (session) redirect(nextPath)
+  }
+  return (
+    <main className="flex flex-1 items-center justify-center p-6">
+      <AccSignIn nextPath={nextPath} />
+    </main>
+  )
+}

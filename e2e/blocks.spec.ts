@@ -58,4 +58,13 @@ test('a template card carries the install, the prompt, and the composition', asy
     'href',
     /github\.com\/mrestrepoj10\/cantera\/issues\/new/,
   )
+  await expect(
+    article.getByRole('link', { name: /deploy model viewer page to vercel/i }),
+  ).toHaveAttribute('href', /^https:\/\/vercel\.com\/new\/clone\?.*templates%2Fmodel-viewer-page/)
+  await expect(
+    article.getByRole('link', { name: /view the model viewer page template source/i }),
+  ).toHaveAttribute(
+    'href',
+    /github\.com\/mrestrepoj10\/cantera\/tree\/main\/templates\/model-viewer-page/,
+  )
 })

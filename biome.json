@@ -12,6 +12,7 @@
       "!tools/oxlint/anti-slop",
       "!**/public/r",
       "!test-apps",
+      "!templates",
       "!test-results",
       "!playwright-report",
       "!**/*.css"
