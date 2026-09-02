@@ -14,9 +14,9 @@ Files written into the consumer project:
 
 Installs CSS variables into the consumer theme (light and dark).
 
-## Install notes
+## Notes
 
-Status tokens installed. The solid pairs (bg-status-* with text-status-*-foreground) are the default treatment; the -surface companions are for soft rows and callouts and must always carry text-status-* ink. If your theme redefines :root without these variables, the utilities fall back to foreground / destructive / muted so nothing renders invisible. lib/status-tokens.ts ships the same twelve tokens as typed var() strings (statusCssVars) for the places a class cannot reach: inline styles, chart series, canvas fills.
+The solid pairs (bg-status-* with text-status-*-foreground) are the default treatment; the -surface companions are for soft rows and callouts and must always carry text-status-* ink. If your theme redefines :root without these variables, the utilities fall back to foreground / destructive / muted so nothing renders invisible. lib/status-tokens.ts ships the same twelve tokens as typed var() strings (statusCssVars) for the places a class cannot reach: inline styles, chart series, canvas fills.
 
 ## Tokens
 

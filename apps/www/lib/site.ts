@@ -54,3 +54,28 @@ export const registryConfigSnippet = `{
     "${registryNamespace}": "${siteUrl}/r/{name}.json"
   }
 }`
+
+export const repositoryUrl = 'https://github.com/mrestrepoj10/cantera'
+
+export function issueUrlFor(name: string): string {
+  const params = new URLSearchParams({
+    title: `${name}: `,
+    body: `Item: ${registryNamespace}/${name}\nDocs: ${docsUrl(name)}\n\nWhat happened:\n\nWhat you expected:\n`,
+  })
+  return `${repositoryUrl}/issues/new?${params.toString()}`
+}
+
+/** The paste-into-an-agent install, mirroring the steps a person follows by hand. */
+export function installPromptFor(name: string, kind: string): string {
+  return `Install the ${registryNamespace}/${name} ${kind} into this project.
+
+Steps:
+1. Install the shadcn skill if missing: npx skills add shadcn/ui
+2. Ensure this is a shadcn project (has components.json). If not, run: npx shadcn@latest init
+3. Add the ${registryNamespace} registry to components.json (if missing):
+${registryConfigSnippet}
+4. Run: ${installCommandFor(name)}
+5. Read what the CLI prints after the file list: keys added to .env.local and a Next list. Fill the keys, then follow the list.
+
+After install, summarize what was added, which environment keys still need values, and any next steps. Docs: ${docsUrl(name)}`
+}

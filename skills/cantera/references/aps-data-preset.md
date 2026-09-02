@@ -2,7 +2,7 @@
 
 Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.
 
-- Type: lib
+- Type: preset
 - Install: `npx shadcn@latest add @cantera/aps-data-preset`
 - Docs: https://canteraui.vercel.app/components/aps-data-preset
 - Registry item: https://canteraui.vercel.app/r/aps-data-preset.json

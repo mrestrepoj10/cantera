@@ -2,7 +2,8 @@ import { mkdir, readdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { designContracts } from '../lib/design-contracts.ts'
-import { itemMarkdown, typeLabelFor } from '../lib/item-markdown.ts'
+import { itemMarkdown } from '../lib/item-markdown.ts'
+import { catalogGroupDefinitions, catalogGroupFor, kindLabelFor } from '../lib/registry-kinds.ts'
 import { installCommandFor, registryConfigSnippet, siteUrl } from '../lib/site.ts'
 import {
   catalogItems,
@@ -16,20 +17,24 @@ const siteHost = new URL(siteUrl).host
 
 const FRONTMATTER = `---
 name: cantera
-description: Use when building or reviewing construction (AEC) interfaces with the cantera shadcn registry — Autodesk (APS / ACC) sign-in, OAuth scope pickers, provider connection cards, status tokens, and the wired sign-in and connections blocks. Triggers on "cantera", "@cantera/<item>", ${siteHost}, or any request for ACC / APS OAuth, scope, or connection UI in a shadcn project.
+description: Use when building or reviewing construction (AEC) interfaces with the cantera shadcn registry — Autodesk (APS / ACC) sign-in, OAuth scope pickers, provider connection cards, status tokens, page-sized blocks, and the wired sign-in, connections, model viewer, and model upload templates. Triggers on "cantera", "@cantera/<item>", ${siteHost}, or any request for ACC / APS OAuth, scope, or connection UI in a shadcn project.
 ---`
 
 const PATTERN = `## The locked pattern
 
-Every domain follows the same three layers, and new work stays inside it:
+Every domain follows the same layers, and new work stays inside them:
 
 1. **Generic types** (\`registry:lib\`) — the vocabulary components speak:
    \`OAuthProvider\`, \`OAuthScope\`, \`OAuthConnection\`. Never provider-specific.
 2. **Provider adapters** (\`registry:lib\`) — data-only presets that translate one
    API into those types: \`aps-oauth-preset\` carries Autodesk's provider metadata,
    scope catalog, scope bundles, and a \`fromApsUserInfo\` adapter.
-3. **Wired blocks** (\`registry:block\`) — the batteries-included path: pages, route
-   handlers, and the aec-auth glue, composing the same components.
+3. **Blocks** (\`registry:block\`, \`meta.kind: "block"\`) — page-sized compositions of
+   those components: props, endpoints, or callbacks in, a whole screen out, with no
+   routes and no environment of their own.
+4. **Templates** (\`registry:block\`, \`meta.kind: "template"\`) — the batteries-included
+   path: a page, its route handlers, environment keys, and the aec-auth glue,
+   mounting a block. \`acc-auth-routes\` is the shared kit underneath them.
 
 Components are data-agnostic and style-agnostic: plain typed props in, callbacks
 out, no fetching, no token mechanics, built only on the consumer's own shadcn
@@ -46,10 +51,17 @@ ${Object.values(designContracts(namespace))
   .join('\n\n')}`
 
 function skillFor(items: RegistryItem[], examples: Map<string, RegistryItem>): string {
-  const rows = items.map(
-    (item) =>
-      `| \`${namespace}/${item.name}\` | ${typeLabelFor(item.type)} | ${item.description} | [references/${item.name}.md](references/${item.name}.md) |`,
-  )
+  const sections = catalogGroupDefinitions.flatMap((group) => {
+    const members = items.filter((item) => catalogGroupFor(item) === group.id)
+    if (members.length === 0) return []
+    const rows = members.map(
+      (item) =>
+        `| \`${namespace}/${item.name}\` | ${kindLabelFor(item)} | ${item.description} | [references/${item.name}.md](references/${item.name}.md) |`,
+    )
+    return [
+      `### ${group.title}\n\n${group.description}\n\n| Item | Type | What it is | Reference |\n| --- | --- | --- | --- |\n${rows.join('\n')}`,
+    ]
+  })
 
   const withExamples = items.filter((item) => examples.has(item.name))
 
@@ -58,8 +70,8 @@ function skillFor(items: RegistryItem[], examples: Map<string, RegistryItem>): s
 # cantera
 
 cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in,
-scope, and connection components, plus end-to-end Autodesk (APS / ACC) blocks. It
-is **not an npm package** — \`npx shadcn@latest add ${namespace}/<item>\` copies the
+scope, and connection components, page-sized blocks, and end-to-end Autodesk
+(APS / ACC) templates. It is **not an npm package** — \`npx shadcn@latest add ${namespace}/<item>\` copies the
 source into the project, where it renders on that project's own shadcn primitives
 and theme. The consumer owns the code from there, and editing it is expected.
 
@@ -86,9 +98,7 @@ ${CONTRACTS}
 Read the reference before writing code against an item: it carries the props, the
 exports, the files the install writes, and the environment it needs.
 
-| Item | Type | What it is | Reference |
-| --- | --- | --- | --- |
-${rows.join('\n')}
+${sections.join('\n\n')}
 
 ## Working examples
 

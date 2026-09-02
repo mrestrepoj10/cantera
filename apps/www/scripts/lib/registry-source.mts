@@ -1,33 +1,21 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { withoutExtension } from '../../lib/registry-closure.ts'
+import type { RegistryItem } from '../../lib/registry-item.ts'
 
 export const wwwRoot = path.join(import.meta.dirname, '..', '..')
 export const repoRoot = path.join(wwwRoot, '..', '..')
 export const registryPath = path.join(wwwRoot, 'registry.json')
 
-export const namespace = '@cantera'
-
-export interface RegistryFile {
-  path: string
-  type: string
-  target?: string
-}
-
-export interface RegistryItem {
-  name: string
-  type: string
-  title?: string
-  description?: string
-  author?: string
-  categories?: string[]
-  dependencies?: string[]
-  devDependencies?: string[]
-  registryDependencies?: string[]
-  files?: RegistryFile[]
-  cssVars?: Record<string, Record<string, string>>
-  envVars?: Record<string, string>
-  docs?: string
-}
+export {
+  type ClosureFile,
+  type ItemClosure,
+  installedPath,
+  resolveClosure,
+  withoutExtension,
+} from '../../lib/registry-closure.ts'
+export type { RegistryFile, RegistryItem } from '../../lib/registry-item.ts'
+export { registryNamespace as namespace } from '../../lib/site.ts'
 
 export interface Registry {
   $schema?: string
@@ -123,28 +111,6 @@ export function packageNameFor(specifier: string): string {
   return specifier.startsWith('@') ? segments.slice(0, 2).join('/') : segments[0]
 }
 
-/** Where the shadcn CLI writes one registry file in a consumer project with the
- * default aliases: an explicit `target` wins, otherwise the file type picks the
- * directory. Must match the CLI or the closure verifiers check the wrong paths. */
-export function installedPath(file: RegistryFile): string {
-  if (file.target) return file.target.replace(/^\.\//, '').replace(/^src\//, '')
-  const base = path.posix.basename(file.path)
-  switch (file.type) {
-    case 'registry:ui':
-      return `components/ui/${base}`
-    case 'registry:lib':
-      return `lib/${base}`
-    case 'registry:hook':
-      return `hooks/${base}`
-    default:
-      return `components/${base}`
-  }
-}
-
-export function withoutExtension(filePath: string): string {
-  return filePath.replace(/\.(tsx|ts|jsx|js|css)$/, '')
-}
-
 export function aliasTargetFor(specifier: string): string {
   return withoutExtension(specifier.replace(/^@\//, ''))
 }
@@ -152,49 +118,3 @@ export function aliasTargetFor(specifier: string): string {
 export const PROJECT_PROVIDED_MODULES = new Set(['lib/utils'])
 
 export const AMBIENT_PACKAGES = new Set(['react', 'react-dom', 'next'])
-
-export interface ClosureFile {
-  item: string
-  file: RegistryFile
-  module: string
-}
-
-export interface ItemClosure {
-  items: RegistryItem[]
-  primitives: Set<string>
-  modules: Map<string, ClosureFile>
-  missing: string[]
-}
-
-export function resolveClosure(byName: Map<string, RegistryItem>, root: RegistryItem): ItemClosure {
-  const items: RegistryItem[] = []
-  const primitives = new Set<string>()
-  const modules = new Map<string, ClosureFile>()
-  const missing: string[] = []
-  const seen = new Set<string>()
-
-  const walk = (item: RegistryItem) => {
-    if (seen.has(item.name)) return
-    seen.add(item.name)
-    items.push(item)
-    for (const file of item.files ?? []) {
-      modules.set(withoutExtension(installedPath(file)), {
-        item: item.name,
-        file,
-        module: withoutExtension(installedPath(file)),
-      })
-    }
-    for (const dependency of item.registryDependencies ?? []) {
-      if (!dependency.startsWith(`${namespace}/`)) {
-        primitives.add(dependency)
-        continue
-      }
-      const next = byName.get(dependency.slice(namespace.length + 1))
-      if (next) walk(next)
-      else missing.push(dependency)
-    }
-  }
-
-  walk(root)
-  return { items, primitives, modules, missing }
-}

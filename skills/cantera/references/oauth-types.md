@@ -2,7 +2,7 @@
 
 Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.
 
-- Type: lib
+- Type: types
 - Install: `npx shadcn@latest add @cantera/oauth-types`
 - Docs: https://canteraui.vercel.app/components/oauth-types
 - Registry item: https://canteraui.vercel.app/r/oauth-types.json

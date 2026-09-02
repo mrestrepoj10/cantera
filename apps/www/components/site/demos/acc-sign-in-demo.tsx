@@ -17,7 +17,8 @@ const accSignInDemoStates: { id: AccSignInDemoState; label: string }[] = [
   { id: 'expired', label: 'Consent lost' },
 ]
 
-export function AccSignInDemo() {
+export function AccSignInDemo({ titleAs = 'h3' }: { titleAs?: 'h1' | 'h2' | 'h3' } = {}) {
+  const Heading = titleAs
   const [state, setState] = useState<AccSignInDemoState>('signed-out')
   const expiresAt = useDemoExpiry(52)
 
@@ -53,12 +54,14 @@ export function AccSignInDemo() {
           // consent redirect from a docs page.
           startPath="/demo"
           title="Sign in"
-          titleAs="h3"
+          titleAs={titleAs}
           description="Choose the access to grant, then continue with Autodesk."
         />
       ) : (
         <div className="flex w-full max-w-sm flex-col gap-4">
-          <h3 className="font-heading font-medium text-2xl tracking-tight">Autodesk connection</h3>
+          <Heading className="font-heading font-medium text-2xl tracking-tight">
+            Autodesk connection
+          </Heading>
           <AccConnectionPanel connection={connection} signOutHref="/demo" signInHref="/demo" />
         </div>
       )}

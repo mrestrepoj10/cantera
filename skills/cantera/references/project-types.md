@@ -2,7 +2,7 @@
 
 Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into.
 
-- Type: lib
+- Type: types
 - Install: `npx shadcn@latest add @cantera/project-types`
 - Docs: https://canteraui.vercel.app/components/project-types
 - Registry item: https://canteraui.vercel.app/r/project-types.json

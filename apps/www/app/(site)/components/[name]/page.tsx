@@ -7,18 +7,20 @@ import { Suspense } from 'react'
 import { preconnect } from 'react-dom'
 
 import { CodeBlock } from '@/components/site/code-block'
-import { ComponentDemo } from '@/components/site/demos'
+import { CopyPrompt } from '@/components/site/copy-prompt'
+import { ComponentDemo, hasDemo } from '@/components/site/demos'
 import { InstallCommand } from '@/components/site/install-command'
 import { OpenInV0 } from '@/components/site/open-in-v0'
 import { PageHandoff } from '@/components/site/page-handoff'
-import { type ApiTable, apiTables, libUsage } from '@/components/site/props-tables'
+import { type ApiTable, apiTables, installNotes, libUsage } from '@/components/site/props-tables'
 import {
   getPreviewFrameClassName,
   getRegistryItem,
   installCommandFor,
   registryItems,
 } from '@/components/site/registry'
-import { markdownPathFor, markdownUrlFor } from '@/lib/site'
+import { kindLabelFor } from '@/lib/registry-kinds'
+import { installPromptFor, markdownPathFor, markdownUrlFor } from '@/lib/site'
 
 export function generateStaticParams() {
   return registryItems.map((item) => ({ name: item.name }))
@@ -77,6 +79,21 @@ function ApiSection({ table }: { table: ApiTable }) {
   )
 }
 
+function NotesSection({ title, text }: { title: string; text: string }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="font-medium text-sm">{title}</h2>
+      <div className="flex max-w-2xl flex-col gap-3 text-muted-foreground text-sm">
+        {text.split('\n\n').map((paragraph) => (
+          <p key={paragraph} className="whitespace-pre-line">
+            {paragraph}
+          </p>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function ComponentDocumentationFallback() {
   return (
     <div
@@ -129,6 +146,8 @@ async function ComponentPageContent({ params }: PageProps) {
   const tables = apiTables[item.name] ?? []
   const files = item.files ?? []
   const sources = await getSources(files)
+  const kind = kindLabelFor(item)
+  const notes = installNotes[item.name]
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 py-12 sm:py-16">
@@ -136,7 +155,7 @@ async function ComponentPageContent({ params }: PageProps) {
         <div className="flex flex-col gap-2">
           <p className="font-mono text-code text-muted-foreground">
             @cantera/{item.name}
-            {isLib && <span className="ml-2 text-xs uppercase tracking-wide">lib</span>}
+            <span className="ml-2 text-xs uppercase tracking-wide">{kind}</span>
           </p>
           <h1 className="text-balance font-semibold text-3xl tracking-tight">{item.title}</h1>
           <p className="max-w-2xl text-muted-foreground">{item.description}</p>
@@ -152,7 +171,10 @@ async function ComponentPageContent({ params }: PageProps) {
         <h2 className="font-medium text-sm">Install</h2>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <InstallCommand command={installCommandFor(item.name)} className="w-full max-w-xl" />
-          {files.length > 0 && <OpenInV0 name={item.name} title={item.title} />}
+          <div className="flex shrink-0 gap-3">
+            <CopyPrompt prompt={installPromptFor(item.name, kind)} title={item.title} />
+            {files.length > 0 && <OpenInV0 name={item.name} title={item.title} />}
+          </div>
         </div>
       </section>
 
@@ -162,7 +184,7 @@ async function ComponentPageContent({ params }: PageProps) {
           <p className="max-w-2xl text-muted-foreground text-sm">{usage.intro}</p>
           <CodeBlock code={usage.example} />
         </section>
-      ) : (
+      ) : hasDemo(item.name) ? (
         <section className="flex flex-col gap-3">
           <h2 className="font-medium text-sm">Preview</h2>
           <div className={getPreviewFrameClassName(item.name)}>
@@ -172,7 +194,10 @@ async function ComponentPageContent({ params }: PageProps) {
             />
           </div>
         </section>
-      )}
+      ) : null}
+
+      {item.docs && <NotesSection title="Install notes" text={item.docs} />}
+      {notes && <NotesSection title="Notes" text={notes} />}
 
       {tables.map((table) => (
         <ApiSection key={table.caption} table={table} />

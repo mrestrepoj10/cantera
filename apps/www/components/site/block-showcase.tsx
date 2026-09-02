@@ -10,6 +10,7 @@ import {
 import type { KeyboardEvent, ReactNode } from 'react'
 import { useState } from 'react'
 
+import { CopyPrompt } from '@/components/site/copy-prompt'
 import { InstallCommand } from '@/components/site/install-command'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -28,13 +29,27 @@ const previewSizes: Array<{
   { id: 'mobile', label: 'Mobile', maxWidth: '24.375rem', icon: SmartphoneIcon },
 ]
 
+interface ShowcaseComposition {
+  /** Other cantera items the install resolves, in dependency order. */
+  items: string[]
+  /** shadcn primitives pulled from the consumer's own registry. */
+  primitives: string[]
+}
+
 interface BlockShowcaseProps {
   name: string
   title: string
   description: string
+  kind: string
   installCommand: string
   previewHeight: number
+  /** What one `add` writes, said before anyone runs it. */
+  summary: string
+  composition: ShowcaseComposition
+  reportHref: string
+  prompt: string
   openInV0: ReactNode
+  headingLevel?: 'h2' | 'h3'
 }
 
 interface RegistrySourceFile {
@@ -47,10 +62,17 @@ function BlockShowcase({
   name,
   title,
   description,
+  kind,
   installCommand,
   previewHeight,
+  summary,
+  composition,
+  reportHref,
+  prompt,
   openInV0,
+  headingLevel = 'h2',
 }: BlockShowcaseProps) {
+  const Heading = headingLevel
   const [tab, setTab] = useState<ShowcaseTab>('preview')
   const [previewSize, setPreviewSize] = useState<PreviewSize>('desktop')
   const [refreshKey, setRefreshKey] = useState(0)
@@ -103,15 +125,46 @@ function BlockShowcase({
     <article id={name} className="scroll-mt-24" aria-labelledby={`${name}-title`}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
-          <h2 id={`${name}-title`} className="font-medium text-base">
+          <Heading id={`${name}-title`} className="flex items-center gap-2 font-medium text-base">
             <a href={`#${name}`} className="focus-ring rounded-md">
               {title}
             </a>
-          </h2>
+            <span className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs uppercase tracking-wide">
+              {kind}
+            </span>
+          </Heading>
           <p className="mt-1 text-muted-foreground text-sm">{description}</p>
+          <p className="mt-2 text-muted-foreground text-xs">{summary}</p>
+          <p className="mt-1 text-muted-foreground text-xs">
+            Composition:{' '}
+            {composition.items.map((item, index) => (
+              <span key={item}>
+                {index > 0 && ', '}
+                <a href={`/components/${item}`} className="focus-ring rounded-sm font-mono">
+                  {item}
+                </a>
+              </span>
+            ))}
+            {composition.primitives.length > 0 && (
+              <>
+                {' '}
+                on shadcn <span className="font-mono">{composition.primitives.join(', ')}</span>
+              </>
+            )}
+            {' · '}
+            <a
+              href={reportHref}
+              target="_blank"
+              rel="noreferrer"
+              className="focus-ring rounded-sm underline underline-offset-4"
+            >
+              Report a bug
+            </a>
+          </p>
         </div>
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
           <InstallCommand command={installCommand} className="min-w-0 sm:w-[23rem]" />
+          <CopyPrompt prompt={prompt} title={title} />
           {openInV0}
         </div>
       </div>
@@ -249,4 +302,4 @@ function BlockShowcase({
   )
 }
 
-export { BlockShowcase }
+export { BlockShowcase, type BlockShowcaseProps, type ShowcaseComposition }

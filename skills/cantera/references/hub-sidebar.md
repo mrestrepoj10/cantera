@@ -12,7 +12,7 @@ Files written into the consumer project:
 
 - `hub-sidebar.tsx`
 
-## Install notes
+## Notes
 
 Render inside your own SidebarProvider with page content in SidebarInset — HubSidebar is the sidebar, not the app shell. The header stacks an identity row (avatar + name with the collapse toggle inline — the toggle stays reachable in the icon rail) above a FinderTrigger opening the ⌘K FinderDialog (fed by the finder prop); the tree fills the content slot. Give user.actions and the identity row becomes the account menu's trigger — typed items with icons, optional separators, and a destructive variant for sign-out, anchored beside the rail on desktop and below the row on mobile; with no actions the row stays a plain label. It forwards grouped props to its two controlled halves and adds no state of its own; wire reveal by mapping a finder entry's path to the tree's expandedIds and selectedId in one update.
 

@@ -24,10 +24,11 @@
       "@/components/examples/*": ["./registry/examples/*"],
       "@/components/*": [
         "./registry/blocks/acc-auth-routes/components/*",
-        "./registry/blocks/acc-sign-in/components/*",
+        "./registry/blocks/acc-connection-panel/*",
         "./registry/blocks/connections-page/components/*",
-        "./registry/blocks/model-upload-page/components/*",
-        "./registry/blocks/model-viewer-page/components/*",
+        "./registry/blocks/connections-view/*",
+        "./registry/blocks/model-browser/*",
+        "./registry/blocks/model-upload/*",
         "./components/*"
       ],
       "@/lib/*": ["./registry/lib/*", "./registry/blocks/acc-auth-routes/lib/*", "./lib/*"],

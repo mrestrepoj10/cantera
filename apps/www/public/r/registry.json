@@ -92,8 +92,7 @@
           "status-neutral-foreground": "oklch(0.2 0 0)",
           "status-neutral-surface": "oklch(0.29 0 0)"
         }
-      },
-      "docs": "Status tokens installed. The solid pairs (bg-status-* with text-status-*-foreground) are the default treatment; the -surface companions are for soft rows and callouts and must always carry text-status-* ink. If your theme redefines :root without these variables, the utilities fall back to foreground / destructive / muted so nothing renders invisible. lib/status-tokens.ts ships the same twelve tokens as typed var() strings (statusCssVars) for the places a class cannot reach: inline styles, chart series, canvas fills."
+      }
     },
     {
       "name": "provider-sign-in-button",
@@ -209,6 +208,9 @@
       "author": "MR <contact@bimframe.co>",
       "description": "The headless half of Autodesk sign-in on aec-auth: consent start, code exchange, and sign-out route handlers, the signed session library, and the scoped sign-in component — no pages.",
       "categories": ["authentication", "autodesk"],
+      "meta": {
+        "kind": "kit"
+      },
       "dependencies": ["aec-auth"],
       "registryDependencies": [
         "card",
@@ -251,7 +253,27 @@
         "APP_ORIGIN": "",
         "APS_AUTH_BASE_URL": ""
       },
-      "docs": "Installed: the /api/auth/* route handlers, lib/acc-auth.ts (aec-auth vault wiring and the signed session cookie), and ScopedAutodeskSignIn — render it anywhere with a nextPath and the callback returns there. No pages: pair with @cantera/acc-sign-in for a ready-made /sign-in, or mount the component in your own page the way model-viewer-page does.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — HMAC key for the session cookie. Generate one with `openssl rand -base64 32`. In production the routes fail closed without it.\n- APP_ORIGIN — the canonical public origin, such as \"https://app.example.com\". Required in production so forwarded host headers cannot redirect OAuth or receive credentials.\n- APS_AUTH_BASE_URL — optional auth-origin override, absolute or relative (\"/emulate/aps\") for an embedded emulator. Leave it unset to talk to real APS.\n\nThe default vault store is in-memory: correct for a demo, wrong for production. Swap in a durable VaultStore (see the aec-auth README) before you ship."
+      "docs": "Installed: the /api/auth/* route handlers, lib/acc-auth.ts (aec-auth vault wiring and the signed session cookie), and ScopedAutodeskSignIn. No page: pair with @cantera/acc-sign-in, or mount the component with a nextPath.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; SESSION_SECRET from `openssl rand -base64 32` (required in production); APP_ORIGIN, your canonical public origin (required in production); APS_AUTH_BASE_URL only for an emulator.\n2. The default vault store is in-memory. Swap in a durable VaultStore before real users connect.\nReference: https://canteraui.vercel.app/components/acc-auth-routes"
+    },
+    {
+      "name": "acc-connection-panel",
+      "type": "registry:block",
+      "title": "ACC Connection Panel",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The live Autodesk connection panel: one ConnectionCard wired to a sign-out route and a consent restart, with disconnect and reconnect on the async-pending contract.",
+      "categories": ["authentication", "autodesk"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "420px"
+      },
+      "registryDependencies": ["@cantera/connection-card", "@cantera/oauth-types"],
+      "files": [
+        {
+          "path": "registry/blocks/acc-connection-panel/acc-connection-panel.tsx",
+          "type": "registry:component",
+          "target": "components/acc-connection-panel.tsx"
+        }
+      ]
     },
     {
       "name": "acc-sign-in",
@@ -260,10 +282,14 @@
       "author": "MR <contact@bimframe.co>",
       "description": "A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.",
       "categories": ["authentication", "login", "autodesk"],
+      "meta": {
+        "kind": "template",
+        "iframeHeight": "520px"
+      },
       "dependencies": ["aec-auth", "lucide-react"],
       "registryDependencies": [
         "@cantera/acc-auth-routes",
-        "@cantera/connection-card",
+        "@cantera/acc-connection-panel",
         "@cantera/aps-oauth-preset",
         "@cantera/oauth-types"
       ],
@@ -277,14 +303,38 @@
           "path": "registry/blocks/acc-sign-in/loading.tsx",
           "type": "registry:file",
           "target": "app/sign-in/loading.tsx"
-        },
-        {
-          "path": "registry/blocks/acc-sign-in/components/acc-connection-panel.tsx",
-          "type": "registry:component",
-          "target": "components/acc-connection-panel.tsx"
         }
       ],
-      "docs": "Installed: app/sign-in/page.tsx with its loading skeleton and AccConnectionPanel. The acc-auth-routes dependency supplies the /api/auth/* handlers, lib/acc-auth.ts, and the scoped sign-in component, plus the environment keys.\n\nSigned out, the page renders ScopedAutodeskSignIn and forwards the selection to the consent redirect; /sign-in?next=/your-page returns there after the callback, and an already-signed-in visitor with a next is redirected on arrival. Signed in with no next, the page shows the connection panel.\n\nACC_AUTH_DEMO=1 is the escape hatch that allows the insecure fallback session secret in production. It exists for emulator-backed showcases only — never set it anywhere real accounts exist."
+      "docs": "Installed at /sign-in: the page and its loading skeleton. Signed out, it renders ScopedAutodeskSignIn; /sign-in?next=/your-page returns there after the callback. Signed in, it shows AccConnectionPanel.\n\nNext:\n1. Fill the keys acc-auth-routes added to .env.local (see its notes above).\n2. Run next dev and open /sign-in.\n\nNever set ACC_AUTH_DEMO=1 where real accounts exist.\nReference: https://canteraui.vercel.app/components/acc-sign-in"
+    },
+    {
+      "name": "connections-view",
+      "type": "registry:block",
+      "title": "Connections View",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The connections dashboard as a presentational block: providers and connections in, connect, reconnect, disconnect, and retry callbacks out — with the designed list, empty, loading, and error states, each exported.",
+      "categories": ["authentication", "connections", "dashboard"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "640px"
+      },
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "button",
+        "@cantera/connection-card",
+        "@cantera/provider-sign-in-button",
+        "@cantera/token-status",
+        "@cantera/user-account-badge",
+        "@cantera/oauth-types",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/connections-view/connections-view.tsx",
+          "type": "registry:component",
+          "target": "components/connections-view.tsx"
+        }
+      ]
     },
     {
       "name": "connections-page",
@@ -293,17 +343,16 @@
       "author": "MR <contact@bimframe.co>",
       "description": "The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.",
       "categories": ["authentication", "connections", "dashboard", "autodesk"],
+      "meta": {
+        "kind": "template",
+        "iframeHeight": "640px"
+      },
       "dependencies": ["aec-auth", "lucide-react"],
       "registryDependencies": [
-        "button",
-        "@cantera/connection-card",
-        "@cantera/provider-sign-in-button",
-        "@cantera/token-status",
-        "@cantera/user-account-badge",
+        "@cantera/connections-view",
         "@cantera/acc-auth-routes",
         "@cantera/aps-oauth-preset",
-        "@cantera/oauth-types",
-        "@cantera/status-tokens"
+        "@cantera/oauth-types"
       ],
       "files": [
         {
@@ -315,11 +364,6 @@
           "path": "registry/blocks/connections-page/loading.tsx",
           "type": "registry:file",
           "target": "app/connections/loading.tsx"
-        },
-        {
-          "path": "registry/blocks/connections-page/components/connections-view.tsx",
-          "type": "registry:component",
-          "target": "components/connections-view.tsx"
         },
         {
           "path": "registry/blocks/connections-page/components/connections-manager.tsx",
@@ -334,7 +378,7 @@
         "APP_ORIGIN": "",
         "APS_AUTH_BASE_URL": ""
       },
-      "docs": "Installed: app/connections/page.tsx with its loading skeleton, plus ConnectionsView (presentational) and ConnectionsManager (wiring).\n\nThis block takes acc-auth-routes as a registry dependency for the /api/auth/* routes and the aec-auth glue — no /sign-in page is installed — so one environment configures both:\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — required in production; the block fails closed without it.\n- APP_ORIGIN — the canonical public origin. Required in production.\n- APS_AUTH_BASE_URL — optional auth-origin override for an emulator. Unset means real APS.\n\nACC_AUTH_DEMO=1 allows the insecure fallback session secret and must never be set where real accounts exist.\n\nConnectionsView never fetches — providers and connections in, callbacks out — so point it at any backend."
+      "docs": "Installed at /connections: the page, its loading skeleton, and ConnectionsManager, the wiring over @cantera/connections-view. acc-auth-routes supplies the /api/auth/* routes; no /sign-in page is installed.\n\nNext:\n1. Fill the keys acc-auth-routes added to .env.local (see its notes above).\n2. Run next dev and open /connections.\n\nList a provider only after lib/acc-auth.ts knows it: an unwired Connect fails at the route on purpose.\nReference: https://canteraui.vercel.app/components/connections-page"
     },
     {
       "name": "project-types",
@@ -444,8 +488,7 @@
           "path": "registry/ui/hub-browser.tsx",
           "type": "registry:ui"
         }
-      ],
-      "docs": "HubBrowser is fully controlled and never fetches. An empty path renders the hub list; each callback advances or rewinds the consumer-owned path and entries. Activating the Hubs breadcrumb passes ROOT_BROWSE_SEGMENT — the exported empty-id sentinel — to onNavigate.\n\nVersion history is on demand: onRequestVersions receives one item id, and the consumer feeds the single-item versions prop back. Picking a row calls onItemOpen(item); picking history calls onItemOpen(item, version). Status badges use @cantera/status-tokens."
+      ]
     },
     {
       "name": "hub-tree",
@@ -465,8 +508,7 @@
           "path": "registry/ui/hub-tree.tsx",
           "type": "registry:ui"
         }
-      ],
-      "docs": "HubTree is fully controlled and never fetches. Give every node a stable, globally unique tree id and preserve the provider-normalized Hub, Project, Folder, Item, or ItemVersion in its value field. Expanding calls onExpand; feed the loaded children back through nodes and include the id in expandedIds. Items open their tip through onItemOpen(item); version rows call onItemOpen(item, version). The comfortable default uses 44px rows; compact is an explicit opt-in."
+      ]
     },
     {
       "name": "finder",
@@ -487,8 +529,7 @@
           "path": "registry/ui/finder.tsx",
           "type": "registry:ui"
         }
-      ],
-      "docs": "Fully controlled and data-agnostic: query out through onQueryChange, groups in as props; the consumer owns fetching, debouncing, and persistence. APS has no cross-hub search API, so label each group after the scope actually searched (folders/{id}/search is recursive within one project) and pass the scoped project's name as scope — it renders as a persistent \"Searching in\" notice under the input, wired to it with aria-describedby. Entries carry path: BrowsePathSegment[] — onReveal hands it back so a hub-tree (expandedIds + selectedId) or hub-browser (a location change) unfolds to the entry. Three surfaces share the contract: Finder renders inline, FinderDialog is the ⌘K palette (shortcut built in, closes on select or reveal), and FinderTrigger is the input-shaped button that opens it."
+      ]
     },
     {
       "name": "hub-sidebar",
@@ -509,8 +550,7 @@
           "path": "registry/ui/hub-sidebar.tsx",
           "type": "registry:ui"
         }
-      ],
-      "docs": "Render inside your own SidebarProvider with page content in SidebarInset — HubSidebar is the sidebar, not the app shell. The header stacks an identity row (avatar + name with the collapse toggle inline — the toggle stays reachable in the icon rail) above a FinderTrigger opening the ⌘K FinderDialog (fed by the finder prop); the tree fills the content slot. Give user.actions and the identity row becomes the account menu's trigger — typed items with icons, optional separators, and a destructive variant for sign-out, anchored beside the rail on desktop and below the row on mobile; with no actions the row stays a plain label. It forwards grouped props to its two controlled halves and adds no state of its own; wire reveal by mapping a finder entry's path to the tree's expandedIds and selectedId in one update."
+      ]
     },
     {
       "name": "crew-avatar",
@@ -529,8 +569,7 @@
           "path": "registry/ui/crew-avatar.tsx",
           "type": "registry:ui"
         }
-      ],
-      "docs": "The same name always renders the same worker — a salted FNV-1a hash drives every trait, so avatars are SSR-safe and hydration-identical with no randomness at render time. The mark is monochrome by construction: a near-black or near-white canvas, the figure drawn in whichever end the canvas is not, and exactly one chroma — the hard hat, whose color codes the trade and is repeated as text on spec.role, so nothing depends on reading the color alone. The disc needs no theme awareness: it carries a hairline ring one step off its own canvas, so a light disc keeps its edge on a light page. Pass title for a meaningful image (role=img); omit it next to a visible name and the mark stays decorative (aria-hidden). crewAvatarSvg(name) returns standalone markup for non-React surfaces; colors overrides the canvas palette. Not a photo component: when a person has a real picture, compose shadcn's Avatar/AvatarImage/AvatarFallback instead — crew-avatar is for the names that don't."
+      ]
     },
     {
       "name": "file-picker-dialog",
@@ -571,8 +610,7 @@
           "type": "registry:lib",
           "target": "lib/forge-viewer.d.ts"
         }
-      ],
-      "docs": "Types come from Autodesk's official @types/forge-viewer package (installed as a dev dependency), which declares the global Autodesk namespace plus a bundled minimal THREE namespace. lib/forge-viewer.d.ts adds the few members the official definitions miss (Profile, ProfileSettings, setProfile). If your tsconfig sets an explicit \"types\" array, add \"forge-viewer\" to it."
+      ]
     },
     {
       "name": "viewer-extension-types",
@@ -587,8 +625,7 @@
           "type": "registry:lib",
           "target": "lib/viewer-extension-types.ts"
         }
-      ],
-      "docs": "Pure types and data — no runtime dependency on the viewer. Pair with @cantera/aps-viewer: pass viewerExtension(...) entries to the extensions prop, or use AEC_STARTER_EXTENSIONS as a field-tested default for AEC models. Entries marked deprecated or removedIn should not ship in new code."
+      ]
     },
     {
       "name": "aps-viewer",
@@ -640,8 +677,7 @@
           "type": "registry:ui",
           "target": "components/ui/aps-viewer/index.ts"
         }
-      ],
-      "docs": "APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance, viewCube, radius, toolbarPosition, and toolbarScale changes apply in place. toolbar=none uses the core Viewer3D without Autodesk's native toolbar; viewCube controls the cube independently.\n\nAPSViewerSettings renders an end-user settings panel as a viewer child: a trigger button appended to the SDK toolbar (a corner button when the native toolbar is off) opens a floating panel over the canvas, collapsed by default. It is controlled — hold an APSViewerSettingsValue in state, spread apsViewerPropsFor(value) onto APSViewer, and pass value/onValueChange to the panel. Extra sections compose through children; APSViewerSettingsTrigger is exported alone for custom panels.\n\nThe native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are not a published stable contract, so docking is best-effort and should be checked when changing the Viewer major version. Autodesk Viewer also renders third-party DOM that cantera cannot repair. The docs accessibility suite excludes only the subtree rooted inside the viewer canvas; controls you add around or over the viewer remain in scope. Audit the inherited Autodesk controls against your own product requirements."
+      ]
     },
     {
       "name": "model-status-card",
@@ -667,26 +703,64 @@
       ]
     },
     {
+      "name": "model-browser",
+      "type": "registry:block",
+      "title": "Model Browser",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Hub sidebar, recursive finder, account controls, and a full-bleed Autodesk Viewer composed into one screen, with untranslated-model states. Points at your tree and viewer-token endpoints; model-viewer-page ships those routes.",
+      "categories": ["projects", "files", "viewer", "autodesk"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "720px"
+      },
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "button",
+        "sidebar",
+        "@cantera/hub-sidebar",
+        "@cantera/hub-tree",
+        "@cantera/finder",
+        "@cantera/aps-viewer",
+        "@cantera/viewer-types",
+        "@cantera/viewer-extension-types",
+        "@cantera/project-types",
+        "@cantera/model-status-card",
+        "@cantera/token-status",
+        "@cantera/user-account-badge",
+        "@cantera/oauth-types",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/model-browser/model-browser.tsx",
+          "type": "registry:component",
+          "target": "components/model-browser.tsx"
+        },
+        {
+          "path": "registry/blocks/model-browser/model-finder.ts",
+          "type": "registry:component",
+          "target": "components/model-finder.ts"
+        }
+      ]
+    },
+    {
       "name": "model-viewer-page",
       "type": "registry:block",
       "title": "Model Viewer Page",
       "author": "MR <contact@bimframe.co>",
       "description": "A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.",
       "categories": ["projects", "files", "viewer", "autodesk"],
+      "meta": {
+        "kind": "template",
+        "iframeHeight": "720px"
+      },
       "dependencies": ["aec-auth", "lucide-react"],
       "registryDependencies": [
-        "button",
-        "sidebar",
-        "@cantera/hub-sidebar",
-        "@cantera/hub-tree",
-        "@cantera/aps-viewer",
-        "@cantera/viewer-extension-types",
+        "@cantera/model-browser",
+        "@cantera/acc-auth-routes",
         "@cantera/aps-data-preset",
         "@cantera/project-types",
-        "@cantera/acc-auth-routes",
-        "@cantera/model-status-card",
-        "@cantera/status-tokens",
-        "@cantera/user-account-badge"
+        "@cantera/oauth-types"
       ],
       "files": [
         {
@@ -698,16 +772,6 @@
           "path": "registry/blocks/model-viewer-page/loading.tsx",
           "type": "registry:file",
           "target": "app/models/loading.tsx"
-        },
-        {
-          "path": "registry/blocks/model-viewer-page/components/model-browser.tsx",
-          "type": "registry:component",
-          "target": "components/model-browser.tsx"
-        },
-        {
-          "path": "registry/blocks/model-viewer-page/components/model-finder.ts",
-          "type": "registry:component",
-          "target": "components/model-finder.ts"
         },
         {
           "path": "registry/blocks/model-viewer-page/api/tree-route.ts",
@@ -727,7 +791,46 @@
         "APP_ORIGIN": "",
         "APS_AUTH_BASE_URL": ""
       },
-      "docs": "Installed: app/models/page.tsx, its loading UI, the lazy /api/models/tree route, and the 2-legged /api/viewer-token route. The acc-auth-routes dependency supplies the OAuth routes, lib/acc-auth.ts, and the scoped sign-in component — no /sign-in page is installed. Signed out, /models renders ScopedAutodeskSignIn inline, returning to /models after the callback. Add @cantera/acc-sign-in separately if you also want a standalone /sign-in page.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials. The tree uses the signed-in user's 3-legged grant; the viewer route uses the same app credentials with viewables:read only.\n- SESSION_SECRET — required in production. Generate one with `openssl rand -base64 32`.\n- APP_ORIGIN — the canonical public origin. Required in production.\n- APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS. A relative value such as \"/emulate/aps\" is useful only when your app mounts a compatible embedded emulator at that path.\n\nThe default aec-auth vault from acc-sign-in is in-memory: appropriate for a demo, not production. Replace it with a durable encrypted VaultStore before real users connect.\n\nThe cantera showcase emulator supplies the project tree but no SVF geometry. Its seeded demo links one tip version to an externally translated sample URN when credentials are configured; every other item intentionally renders the no-geometry state. Your application should store real derivative URNs on normalized item versions."
+      "docs": "Installed at /models: the page, its loading UI, the lazy /api/models/tree route, and the two-legged /api/viewer-token route. The screen is @cantera/model-browser; signed out, /models renders ScopedAutodeskSignIn inline.\n\nNext:\n1. Fill the keys acc-auth-routes added to .env.local (see its notes above).\n2. Run next dev and open /models.\n\nThe cantera showcase emulator supplies a project tree but no geometry; store real derivative URNs on your item versions.\nReference: https://canteraui.vercel.app/components/model-viewer-page"
+    },
+    {
+      "name": "model-upload",
+      "type": "registry:block",
+      "title": "Model Upload",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Drop zone with archive support, translation options and tracking with manifest diagnostics, a searchable model library, and a shareable full-bleed Viewer composed into one screen. Points at your upload and viewer-token endpoints; model-upload-page ships those routes.",
+      "categories": ["files", "upload", "viewer", "autodesk"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "720px"
+      },
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "button",
+        "checkbox",
+        "dialog",
+        "input",
+        "label",
+        "sidebar",
+        "@cantera/hub-sidebar",
+        "@cantera/hub-tree",
+        "@cantera/finder",
+        "@cantera/file-drop-zone",
+        "@cantera/aps-viewer",
+        "@cantera/viewer-types",
+        "@cantera/viewer-extension-types",
+        "@cantera/model-status-card",
+        "@cantera/upload-types",
+        "@cantera/project-types",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/model-upload/model-upload.tsx",
+          "type": "registry:component",
+          "target": "components/model-upload.tsx"
+        }
+      ]
     },
     {
       "name": "model-upload-page",
@@ -736,21 +839,15 @@
       "author": "MR <contact@bimframe.co>",
       "description": "A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.",
       "categories": ["files", "upload", "viewer", "autodesk"],
+      "meta": {
+        "kind": "template",
+        "iframeHeight": "720px"
+      },
       "dependencies": ["aec-auth", "lucide-react"],
       "registryDependencies": [
-        "button",
-        "checkbox",
-        "dialog",
-        "input",
-        "label",
-        "@cantera/hub-sidebar",
-        "@cantera/file-drop-zone",
-        "@cantera/aps-viewer",
-        "@cantera/viewer-extension-types",
-        "@cantera/model-status-card",
+        "@cantera/model-upload",
         "@cantera/upload-types",
-        "@cantera/project-types",
-        "@cantera/status-tokens"
+        "@cantera/project-types"
       ],
       "files": [
         {
@@ -762,11 +859,6 @@
           "path": "registry/blocks/model-upload-page/loading.tsx",
           "type": "registry:file",
           "target": "app/upload/loading.tsx"
-        },
-        {
-          "path": "registry/blocks/model-upload-page/components/model-upload.tsx",
-          "type": "registry:component",
-          "target": "components/model-upload.tsx"
         },
         {
           "path": "registry/blocks/model-upload-page/api/upload-route.ts",
@@ -791,7 +883,7 @@
         "APP_ORIGIN": "",
         "APS_AUTH_BASE_URL": ""
       },
-      "docs": "Installed: app/upload/page.tsx, its loading UI, the two-legged /api/models/upload route (bucket bootstrap, signed-S3 uploads, translation jobs, manifest status with diagnostics), and the 2-legged /api/viewer-token route. No sign-in is installed: every route runs on the app's credentials against the app's own OSS bucket, so anyone who can reach the deployment can read and write it — add your own access control before shipping beyond a trusted team.\n\nUploads go browser-to-storage through signed S3 part URLs. A .zip upload asks for the root design filename and translates through compressedUrn. Every finished upload submits an svf2 job with the chosen views (2D sheets, 3D views, optional Revit master views), appears in the sidebar list, and becomes the selection — the URL carries ?urn=... so a view is shareable. Failed translations surface the manifest's diagnostic messages.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- APS_BUCKET — optional OSS bucket key; defaults to one derived from the client id. Buckets are global per client, and the route creates it with a persistent policy on first use.\n- APP_ORIGIN — the canonical public origin. Required in production when APS_AUTH_BASE_URL is relative.\n- APS_AUTH_BASE_URL — optional APS origin override. Leave unset for real APS; a relative value such as \"/emulate/aps\" targets a compatible embedded emulator.\n\nFiles over 250 MB are rejected at start — raise PART_SIZE or MAX_PARTS in the route to lift the bound."
+      "docs": "Installed at /upload: the page, its loading UI, the two-legged /api/models/upload route (bucket bootstrap, signed S3 uploads, translation jobs, manifest status), and /api/viewer-token. The screen is @cantera/model-upload. No sign-in is installed: every route runs on the app's credentials, so add your own access control before shipping beyond a trusted team.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_BUCKET optional (derived from the client id); APP_ORIGIN in production.\n2. Run next dev and open /upload.\n\nFiles over 250 MB are rejected; raise PART_SIZE or MAX_PARTS in the route.\nReference: https://canteraui.vercel.app/components/model-upload-page"
     },
     {
       "name": "upload-types",
@@ -827,8 +919,7 @@
           "path": "registry/ui/file-drop-zone.tsx",
           "type": "registry:ui"
         }
-      ],
-      "docs": "The component never uploads: onDropFiles hands over validated File objects and the consumer drives the controlled files array as the transfer moves through queued, uploading, processing, complete, and error. The grid surface derives one phase from those files — magnetized during a drag, plotted bottom-up by aggregate progress, an ambient glow while providers translate, and a status tint when work settles. Ambient motion is confined to the surface and falls back to a static treatment under prefers-reduced-motion.\n\nValidation runs before any callback: accept (extension, MIME, and type/* wildcard grammar), maxSize per file, and maxFiles against the tracked list; refusals arrive at onReject with a reason. MODEL_FILE_ACCEPT from upload-types covers the common APS design formats. Retry follows the async-pending contract; remove doubles as cancel while a file is in flight.\n\nshowList false hides the built-in rows while files keep driving the grid; FileDropZoneItem is exported for rendering the same rows in your own layout."
+      ]
     },
     {
       "name": "status-tokens-demo",

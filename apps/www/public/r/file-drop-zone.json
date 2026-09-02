@@ -20,7 +20,6 @@
       "type": "registry:ui"
     }
   ],
-  "docs": "The component never uploads: onDropFiles hands over validated File objects and the consumer drives the controlled files array as the transfer moves through queued, uploading, processing, complete, and error. The grid surface derives one phase from those files — magnetized during a drag, plotted bottom-up by aggregate progress, an ambient glow while providers translate, and a status tint when work settles. Ambient motion is confined to the surface and falls back to a static treatment under prefers-reduced-motion.\n\nValidation runs before any callback: accept (extension, MIME, and type/* wildcard grammar), maxSize per file, and maxFiles against the tracked list; refusals arrive at onReject with a reason. MODEL_FILE_ACCEPT from upload-types covers the common APS design formats. Retry follows the async-pending contract; remove doubles as cancel while a file is in flight.\n\nshowList false hides the built-in rows while files keep driving the grid; FileDropZoneItem is exported for rendering the same rows in your own layout.",
   "categories": [
     "uploads",
     "files"

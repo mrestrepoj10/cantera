@@ -1,37 +1,30 @@
 // The single serializer behind the skill's per-item references and the
 // `/components/<name>.md` route — both surfaces must emit identical bytes.
 
-import { type ApiTable, apiTables, libUsage } from '../components/site/props-tables.ts'
+import {
+  type ApiTable,
+  apiTables,
+  installNotes,
+  libUsage,
+} from '../components/site/props-tables.ts'
+import type { RegistryItem } from './registry-item.ts'
+import { kindLabelFor } from './registry-kinds.ts'
 import { docsUrl, installCommandFor, registryItemUrl, registryNamespace } from './site.ts'
 
-export interface MarkdownItem {
-  name: string
-  type: string
-  title?: string
-  description?: string
-  registryDependencies?: string[]
-  dependencies?: string[]
-  files?: { path: string; type: string; target?: string }[]
-  cssVars?: Record<string, Record<string, string>>
-  envVars?: Record<string, string>
-  docs?: string
-}
-
-interface LabelByRegistryType {
-  [type: string]: string
-}
-
-const TYPE_LABELS: LabelByRegistryType = {
-  'registry:component': 'component',
-  'registry:block': 'block',
-  'registry:lib': 'lib',
-  'registry:item': 'tokens',
-  'registry:example': 'example',
-}
-
-export function typeLabelFor(type: string): string {
-  return TYPE_LABELS[type] ?? type
-}
+export type MarkdownItem = Pick<
+  RegistryItem,
+  | 'name'
+  | 'type'
+  | 'title'
+  | 'description'
+  | 'registryDependencies'
+  | 'dependencies'
+  | 'files'
+  | 'cssVars'
+  | 'envVars'
+  | 'docs'
+  | 'meta'
+>
 
 function serializeTable(table: ApiTable): string {
   const rows = table.rows.map((row) => {
@@ -55,7 +48,7 @@ export function itemMarkdown(item: MarkdownItem, example?: MarkdownItem): string
     '',
     item.description ?? '',
     '',
-    `- Type: ${typeLabelFor(item.type)}`,
+    `- Type: ${kindLabelFor(item)}`,
     `- Install: \`${installCommandFor(item.name)}\``,
     `- Docs: ${docsUrl(item.name)}`,
     `- Registry item: ${registryItemUrl(item.name)}`,
@@ -88,6 +81,10 @@ export function itemMarkdown(item: MarkdownItem, example?: MarkdownItem): string
   }
   if (item.docs) {
     lines.push('', '## Install notes', '', item.docs)
+  }
+  const notes = installNotes[item.name]
+  if (notes) {
+    lines.push('', '## Notes', '', notes)
   }
 
   const usage = libUsage[item.name]

@@ -147,10 +147,14 @@ async function ensureBucket(base: string): Promise<string> {
   if (response.status !== 404) {
     throw new Error(`${response.status} ${response.statusText}`.trim())
   }
-  await apsFetch(base, '/oss/v2/buckets', {
+  // Two first requests can race here; the loser's 409 still means the bucket exists.
+  const created = await apsRequest(base, '/oss/v2/buckets', {
     method: 'POST',
     body: { bucketKey: bucket, policyKey: 'persistent' },
   })
+  if (!created.ok && created.status !== 409) {
+    throw new Error(`${created.status} ${created.statusText}`.trim())
+  }
   return bucket
 }
 

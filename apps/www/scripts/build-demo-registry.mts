@@ -17,6 +17,17 @@ interface DemoSourceByItem {
   [item: string]: DemoSource
 }
 
+interface DemoAliasByItem {
+  [item: string]: string
+}
+
+/** A template previews as the block it mounts; one module serves both names. */
+const aliases: DemoAliasByItem = {
+  'connections-page': 'connections-view',
+  'model-viewer-page': 'model-browser',
+  'model-upload-page': 'model-upload',
+}
+
 const overrides: DemoSourceByItem = {
   'aps-viewer': {
     component: 'APSViewerDemo',
@@ -50,21 +61,22 @@ async function buildDemoRegistry(): Promise<{ contents: string; count: number }>
   const sources: Array<[string, DemoSource]> = []
 
   for (const item of catalogItems(registry.items)) {
-    const fileName = `${item.name}-demo.tsx`
-    const component = `${pascalCase(item.name)}Demo`
-    let source = overrides[item.name]
+    const demoName = aliases[item.name] ?? item.name
+    const fileName = `${demoName}-demo.tsx`
+    const component = `${pascalCase(demoName)}Demo`
+    let source = overrides[demoName]
 
     if (!source && siteFileSet.has(fileName)) {
       source = {
         component,
-        module: `./demos/${item.name}-demo`,
+        module: `./demos/${demoName}-demo`,
         sourcePath: path.join(siteDemosDir, fileName),
       }
     }
     if (!source && registryFileSet.has(fileName)) {
       source = {
         component,
-        module: `@/components/examples/${item.name}-demo`,
+        module: `@/components/examples/${demoName}-demo`,
         sourcePath: path.join(registryExamplesDir, fileName),
       }
     }
@@ -85,7 +97,7 @@ import 'server-only'
 
 import { type ComponentType, lazy } from 'react'
 
-export type DemoComponent = ComponentType<{ urn?: string }>
+export type DemoComponent = ComponentType<{ urn?: string; titleAs?: 'h1' | 'h2' | 'h3' }>
 
 const demos: Record<string, DemoComponent> = {
 ${entries}

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 interface RegistryFile {
-  items: { name: string; type: string }[]
+  items: { name: string; type: string; meta?: { kind?: string }; categories?: string[] }[]
 }
 
 // Derived from registry.json so the page list cannot drift when an item is
@@ -16,3 +16,8 @@ export const componentPages = registry.items
   .map((item) => `/components/${item.name}`)
 
 export const markdownPages = componentPages.map((route) => `${route}.md`)
+
+/** Blocks and templates: what /blocks lists and /view/<name> previews. */
+export const showcaseItems = registry.items.filter(
+  (item) => item.meta?.kind === 'block' || item.meta?.kind === 'template',
+)

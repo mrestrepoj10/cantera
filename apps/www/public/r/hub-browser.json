@@ -24,7 +24,6 @@
       "type": "registry:ui"
     }
   ],
-  "docs": "HubBrowser is fully controlled and never fetches. An empty path renders the hub list; each callback advances or rewinds the consumer-owned path and entries. Activating the Hubs breadcrumb passes ROOT_BROWSE_SEGMENT — the exported empty-id sentinel — to onNavigate.\n\nVersion history is on demand: onRequestVersions receives one item id, and the consumer feeds the single-item versions prop back. Picking a row calls onItemOpen(item); picking history calls onItemOpen(item, version). Status badges use @cantera/status-tokens.",
   "categories": [
     "projects",
     "files",

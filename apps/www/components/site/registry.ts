@@ -1,31 +1,10 @@
+import { resolveClosure } from '@/lib/registry-closure'
+import type { RegistryItem } from '@/lib/registry-item'
+import { type CatalogGroupId, catalogGroupDefinitions, catalogGroupFor } from '@/lib/registry-kinds'
 import registryJson from '@/registry.json'
 
+export type { RegistryFile, RegistryItem } from '@/lib/registry-item'
 export { installCommandFor } from '@/lib/site'
-
-export interface RegistryFile {
-  path: string
-  type: string
-  target?: string
-}
-
-export interface RegistryItem {
-  name: string
-  type:
-    | 'registry:lib'
-    | 'registry:component'
-    | 'registry:block'
-    | 'registry:item'
-    | 'registry:example'
-  title: string
-  description: string
-  author?: string
-  categories?: string[]
-  dependencies?: string[]
-  registryDependencies?: string[]
-  files?: RegistryFile[]
-  envVars?: Record<string, string>
-  docs?: string
-}
 
 const allItems = registryJson.items as RegistryItem[]
 
@@ -42,18 +21,27 @@ interface PreviewFrameClassByItem {
   [item: string]: string
 }
 
+const fullBleedPreview =
+  'flex min-h-[36rem] items-stretch overflow-hidden rounded-lg border border-border'
+
 const previewFrameClasses: PreviewFrameClassByItem = {
   'hub-browser': 'flex min-h-64 items-stretch rounded-lg border border-border p-4 sm:p-6',
   'hub-tree': 'flex min-h-[28rem] items-stretch rounded-lg border border-border p-4 sm:p-6',
   finder:
     'flex min-h-[24rem] items-start justify-center rounded-lg border border-border p-4 sm:p-6',
   'hub-sidebar': 'flex min-h-[28rem] items-stretch overflow-hidden rounded-lg border border-border',
-  'model-viewer-page':
-    'flex min-h-[36rem] items-stretch overflow-hidden rounded-lg border border-border',
-  'model-upload-page':
-    'flex min-h-[36rem] items-stretch overflow-hidden rounded-lg border border-border',
+  'connections-view':
+    'flex min-h-[28rem] items-start justify-center rounded-lg border border-border p-4 sm:p-6',
+  'model-browser': fullBleedPreview,
+  'model-upload': fullBleedPreview,
+  'model-viewer-page': fullBleedPreview,
+  'model-upload-page': fullBleedPreview,
   'aps-viewer': 'flex min-h-[36rem] items-stretch',
   'file-drop-zone': 'flex min-h-[26rem] items-start rounded-lg border border-border p-4 sm:p-6',
+}
+
+export function previewLayoutFor(name: string): 'full-bleed' | 'centered' {
+  return previewFrameClasses[name] === fullBleedPreview ? 'full-bleed' : 'centered'
 }
 
 export function getPreviewFrameClassName(name: string): string {
@@ -63,90 +51,44 @@ export function getPreviewFrameClassName(name: string): string {
   )
 }
 
+const DEFAULT_PREVIEW_HEIGHT = 640
+
+/** `meta.iframeHeight` in pixels — the same field shadcn's own blocks carry. */
+export function previewHeightFor(item: RegistryItem): number {
+  const parsed = Number.parseInt(item.meta?.iframeHeight ?? '', 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_PREVIEW_HEIGHT
+}
+
 export interface RegistryGroup {
-  id: string
+  id: CatalogGroupId
   title: string
   description: string
   items: RegistryItem[]
 }
 
-// Grouping derives from item `type`, never a hardcoded name list; the one
-// name-shaped rule is the `-types` suffix splitting shared shapes from adapters.
-type GroupDefinition = Omit<RegistryGroup, 'items'> & {
-  match: (item: RegistryItem) => boolean
-}
-
-const groupDefinitions: GroupDefinition[] = [
-  {
-    id: 'blocks',
-    title: 'Blocks',
-    description:
-      'Wired pages — routes, state, and provider calls already connected, ready to mount in an app.',
-    match: (item) => item.type === 'registry:block',
-  },
-  {
-    id: 'components',
-    title: 'Components',
-    description:
-      'Data-agnostic UI — plain typed props in, callbacks out, no fetching and no provider knowledge.',
-    match: (item) => item.type === 'registry:component',
-  },
-  {
-    id: 'types',
-    title: 'Types',
-    description: 'The shared prop shapes every cantera component and preset is written against.',
-    match: (item) => item.type === 'registry:lib' && item.name.endsWith('-types'),
-  },
-  {
-    id: 'presets',
-    title: 'Provider presets',
-    description: 'Provider adapters that map a vendor API onto the shared types.',
-    match: (item) => item.type === 'registry:lib',
-  },
-  {
-    id: 'tokens',
-    title: 'Design tokens',
-    description: 'cssVars items — the CSS variables components render their state from.',
-    match: (item) => item.type === 'registry:item',
-  },
-]
-
-const otherGroup: Omit<RegistryGroup, 'items'> = {
-  id: 'other',
-  title: 'Other items',
-  description: 'Registry items that do not belong to one of the kinds above.',
-}
-
 function buildGroups(): RegistryGroup[] {
-  const remaining = [...registryItems]
-  const groups: RegistryGroup[] = []
-
-  for (const { match, ...group } of groupDefinitions) {
-    const items: RegistryItem[] = []
-    for (let i = remaining.length - 1; i >= 0; i -= 1) {
-      const item = remaining[i]
-      if (item && match(item)) {
-        items.unshift(item)
-        remaining.splice(i, 1)
-      }
-    }
-    if (items.length > 0) groups.push({ ...group, items })
-  }
-
-  if (remaining.length > 0) groups.push({ ...otherGroup, items: remaining })
-  return groups
+  return catalogGroupDefinitions
+    .map((group) => ({
+      ...group,
+      items: registryItems.filter((item) => catalogGroupFor(item) === group.id),
+    }))
+    .filter((group) => group.items.length > 0)
 }
 
-export const registryGroups: RegistryGroup[] = buildGroups()
+const registryGroups: RegistryGroup[] = buildGroups()
 
-export const blockItems = registryItems.filter((item) => item.type === 'registry:block')
-export const componentRegistryGroups = registryGroups.filter((group) => group.id !== 'blocks')
+function groupsIn(...order: CatalogGroupId[]): RegistryGroup[] {
+  return order.flatMap((id) => registryGroups.filter((group) => group.id === id))
+}
 
-export const componentSidebarGroups: RegistryGroup[] = [
-  ...registryGroups.filter((group) => group.id === 'components'),
-  ...registryGroups.filter((group) => group.id === 'blocks'),
-  ...registryGroups.filter((group) => group.id !== 'components' && group.id !== 'blocks'),
-]
+/** What the /blocks page shows: the templates and the blocks they mount. */
+export const showcaseGroups = groupsIn('templates', 'blocks')
+
+export const showcaseItems = showcaseGroups.flatMap((group) => group.items)
+
+export const componentRegistryGroups = groupsIn('components', 'foundations')
+
+export const componentSidebarGroups = groupsIn('components', 'blocks', 'templates', 'foundations')
 
 const examplesByName = new Map(
   allItems
@@ -156,4 +98,34 @@ const examplesByName = new Map(
 
 export function getExampleItem(name: string): RegistryItem | undefined {
   return examplesByName.get(`${name}-demo`)
+}
+
+export interface InstallSummary {
+  /** Every cantera item the install resolves, root first. */
+  items: RegistryItem[]
+  /** shadcn primitives the closure asks the consumer's own registry for. */
+  primitives: string[]
+  /** Distinct installed paths the closure writes; primitives add their own on top. */
+  files: number
+  routes: number
+  packages: string[]
+  envKeys: string[]
+}
+
+const ROUTE_MODULE = /^app\/api\/.*\/route$/
+
+export function installSummaryFor(name: string): InstallSummary {
+  const root = itemsByName.get(name)
+  if (!root) return { items: [], primitives: [], files: 0, routes: 0, packages: [], envKeys: [] }
+
+  const closure = resolveClosure(itemsByName, root)
+  const modules = [...closure.modules.keys()]
+  return {
+    items: closure.items,
+    primitives: [...closure.primitives].sort(),
+    files: modules.length,
+    routes: modules.filter((module) => ROUTE_MODULE.test(module)).length,
+    packages: [...new Set(closure.items.flatMap((item) => item.dependencies ?? []))].sort(),
+    envKeys: [...new Set(closure.items.flatMap((item) => Object.keys(item.envVars ?? {})))],
+  }
 }

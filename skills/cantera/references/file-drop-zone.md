@@ -14,7 +14,7 @@ Files written into the consumer project:
 
 - `file-drop-zone.tsx`
 
-## Install notes
+## Notes
 
 The component never uploads: onDropFiles hands over validated File objects and the consumer drives the controlled files array as the transfer moves through queued, uploading, processing, complete, and error. The grid surface derives one phase from those files — magnetized during a drag, plotted bottom-up by aggregate progress, an ambient glow while providers translate, and a status tint when work settles. Ambient motion is confined to the surface and falls back to a static treatment under prefers-reduced-motion.
 

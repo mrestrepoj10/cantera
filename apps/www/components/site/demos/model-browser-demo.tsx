@@ -1,6 +1,7 @@
 'use client'
 
 import { LoaderCircleIcon } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 import { ModelBrowser } from '@/components/model-browser'
@@ -19,14 +20,10 @@ interface TreeResponse {
 }
 
 // The first read also distinguishes a real session from signed-out without
-// exposing session data to the client.
-export function ModelViewerPageDemo({
-  nextPath = '/components/model-viewer-page',
-  titleAs = 'h3',
-}: {
-  nextPath?: string
-  titleAs?: 'h1' | 'h2' | 'h3'
-} = {}) {
+// exposing session data to the client. Consent returns to whichever page
+// mounted the demo.
+export function ModelBrowserDemo({ titleAs = 'h3' }: { titleAs?: 'h1' | 'h2' | 'h3' } = {}) {
+  const nextPath = usePathname()
   const [state, setState] = useState<DemoState>({ status: 'loading' })
 
   useEffect(() => {

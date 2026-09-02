@@ -17,7 +17,6 @@
       "type": "registry:ui"
     }
   ],
-  "docs": "The same name always renders the same worker — a salted FNV-1a hash drives every trait, so avatars are SSR-safe and hydration-identical with no randomness at render time. The mark is monochrome by construction: a near-black or near-white canvas, the figure drawn in whichever end the canvas is not, and exactly one chroma — the hard hat, whose color codes the trade and is repeated as text on spec.role, so nothing depends on reading the color alone. The disc needs no theme awareness: it carries a hairline ring one step off its own canvas, so a light disc keeps its edge on a light page. Pass title for a meaningful image (role=img); omit it next to a visible name and the mark stays decorative (aria-hidden). crewAvatarSvg(name) returns standalone markup for non-React surfaces; colors overrides the canvas palette. Not a photo component: when a person has a real picture, compose shadcn's Avatar/AvatarImage/AvatarFallback instead — crew-avatar is for the names that don't.",
   "categories": [
     "identity",
     "avatars"

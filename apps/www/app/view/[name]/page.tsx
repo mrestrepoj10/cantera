@@ -3,16 +3,15 @@ import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { preconnect } from 'react-dom'
 
-import { ModelUploadPageDemo } from '@/components/site/demos/model-upload-page-demo'
-import { ModelViewerPageDemo } from '@/components/site/demos/model-viewer-page-demo'
-import { getRegistryItem } from '@/components/site/registry'
+import { ComponentDemo } from '@/components/site/demos'
+import { getRegistryItem, previewLayoutFor, showcaseItems } from '@/components/site/registry'
 
 interface PreviewPageProps {
   params: Promise<{ name: string }>
 }
 
 export function generateStaticParams() {
-  return [{ name: 'model-viewer-page' }, { name: 'model-upload-page' }]
+  return showcaseItems.map((item) => ({ name: item.name }))
 }
 
 export async function generateMetadata({ params }: PreviewPageProps): Promise<Metadata> {
@@ -26,16 +25,20 @@ export async function generateMetadata({ params }: PreviewPageProps): Promise<Me
 
 async function BlockPreview({ params }: PreviewPageProps) {
   const { name } = await params
+  if (!showcaseItems.some((item) => item.name === name)) notFound()
 
-  if (name === 'model-viewer-page') {
+  if (previewLayoutFor(name) === 'full-bleed') {
     if (process.env.APS_VIEWER_DEMO_URN) preconnect('https://developer.api.autodesk.com')
-    return <ModelViewerPageDemo nextPath="/view/model-viewer-page" titleAs="h1" />
-  }
-  if (name === 'model-upload-page') {
-    return <ModelUploadPageDemo />
+    return <ComponentDemo name={name} titleAs="h1" />
   }
 
-  notFound()
+  return (
+    <main className="flex min-h-svh items-start justify-center p-6 sm:p-10">
+      <div className="flex w-full max-w-2xl justify-center">
+        <ComponentDemo name={name} titleAs="h1" />
+      </div>
+    </main>
+  )
 }
 
 export default function BlockPreviewPage({ params }: PreviewPageProps) {

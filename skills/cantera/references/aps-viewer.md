@@ -21,7 +21,7 @@ Files written into the consumer project:
 - `components/ui/aps-viewer/settings.tsx`
 - `components/ui/aps-viewer/index.ts`
 
-## Install notes
+## Notes
 
 APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance, viewCube, radius, toolbarPosition, and toolbarScale changes apply in place. toolbar=none uses the core Viewer3D without Autodesk's native toolbar; viewCube controls the cube independently.
 

@@ -3,7 +3,7 @@ import 'server-only'
 
 import { type ComponentType, lazy } from 'react'
 
-export type DemoComponent = ComponentType<{ urn?: string }>
+export type DemoComponent = ComponentType<{ urn?: string; titleAs?: 'h1' | 'h2' | 'h3' }>
 
 const demos: Record<string, DemoComponent> = {
   'status-tokens': lazy(async () => ({
@@ -27,11 +27,17 @@ const demos: Record<string, DemoComponent> = {
   'connection-card': lazy(async () => ({
     default: (await import('./demos/connection-card-demo')).ConnectionCardDemo,
   })) as DemoComponent,
+  'acc-connection-panel': lazy(async () => ({
+    default: (await import('./demos/acc-connection-panel-demo')).AccConnectionPanelDemo,
+  })) as DemoComponent,
   'acc-sign-in': lazy(async () => ({
     default: (await import('./demos/acc-sign-in-demo')).AccSignInDemo,
   })) as DemoComponent,
+  'connections-view': lazy(async () => ({
+    default: (await import('./demos/connections-view-demo')).ConnectionsViewDemo,
+  })) as DemoComponent,
   'connections-page': lazy(async () => ({
-    default: (await import('./demos/connections-page-demo')).ConnectionsPageDemo,
+    default: (await import('./demos/connections-view-demo')).ConnectionsViewDemo,
   })) as DemoComponent,
   'hub-switcher': lazy(async () => ({
     default: (await import('./demos/hub-switcher-demo')).HubSwitcherDemo,
@@ -66,11 +72,17 @@ const demos: Record<string, DemoComponent> = {
   'model-status-card': lazy(async () => ({
     default: (await import('./demos/model-status-card-demo')).ModelStatusCardDemo,
   })) as DemoComponent,
+  'model-browser': lazy(async () => ({
+    default: (await import('./demos/model-browser-demo')).ModelBrowserDemo,
+  })) as DemoComponent,
   'model-viewer-page': lazy(async () => ({
-    default: (await import('./demos/model-viewer-page-demo')).ModelViewerPageDemo,
+    default: (await import('./demos/model-browser-demo')).ModelBrowserDemo,
+  })) as DemoComponent,
+  'model-upload': lazy(async () => ({
+    default: (await import('./demos/model-upload-demo')).ModelUploadDemo,
   })) as DemoComponent,
   'model-upload-page': lazy(async () => ({
-    default: (await import('./demos/model-upload-page-demo')).ModelUploadPageDemo,
+    default: (await import('./demos/model-upload-demo')).ModelUploadDemo,
   })) as DemoComponent,
   'file-drop-zone': lazy(async () => ({
     default: (await import('@/components/examples/file-drop-zone-demo')).FileDropZoneDemo,

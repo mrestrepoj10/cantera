@@ -1,13 +1,13 @@
 ---
 name: cantera
-description: Use when building or reviewing construction (AEC) interfaces with the cantera shadcn registry — Autodesk (APS / ACC) sign-in, OAuth scope pickers, provider connection cards, status tokens, and the wired sign-in and connections blocks. Triggers on "cantera", "@cantera/<item>", canteraui.vercel.app, or any request for ACC / APS OAuth, scope, or connection UI in a shadcn project.
+description: Use when building or reviewing construction (AEC) interfaces with the cantera shadcn registry — Autodesk (APS / ACC) sign-in, OAuth scope pickers, provider connection cards, status tokens, page-sized blocks, and the wired sign-in, connections, model viewer, and model upload templates. Triggers on "cantera", "@cantera/<item>", canteraui.vercel.app, or any request for ACC / APS OAuth, scope, or connection UI in a shadcn project.
 ---
 
 # cantera
 
 cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in,
-scope, and connection components, plus end-to-end Autodesk (APS / ACC) blocks. It
-is **not an npm package** — `npx shadcn@latest add @cantera/<item>` copies the
+scope, and connection components, page-sized blocks, and end-to-end Autodesk
+(APS / ACC) templates. It is **not an npm package** — `npx shadcn@latest add @cantera/<item>` copies the
 source into the project, where it renders on that project's own shadcn primitives
 and theme. The consumer owns the code from there, and editing it is expected.
 
@@ -31,15 +31,19 @@ npx shadcn@latest add @cantera/acc-sign-in
 
 ## The locked pattern
 
-Every domain follows the same three layers, and new work stays inside it:
+Every domain follows the same layers, and new work stays inside them:
 
 1. **Generic types** (`registry:lib`) — the vocabulary components speak:
    `OAuthProvider`, `OAuthScope`, `OAuthConnection`. Never provider-specific.
 2. **Provider adapters** (`registry:lib`) — data-only presets that translate one
    API into those types: `aps-oauth-preset` carries Autodesk's provider metadata,
    scope catalog, scope bundles, and a `fromApsUserInfo` adapter.
-3. **Wired blocks** (`registry:block`) — the batteries-included path: pages, route
-   handlers, and the aec-auth glue, composing the same components.
+3. **Blocks** (`registry:block`, `meta.kind: "block"`) — page-sized compositions of
+   those components: props, endpoints, or callbacks in, a whole screen out, with no
+   routes and no environment of their own.
+4. **Templates** (`registry:block`, `meta.kind: "template"`) — the batteries-included
+   path: a page, its route handlers, environment keys, and the aec-auth glue,
+   mounting a block. `acc-auth-routes` is the shared kit underneath them.
 
 Components are data-agnostic and style-agnostic: plain typed props in, callbacks
 out, no fetching, no token mechanics, built only on the consumer's own shadcn
@@ -66,22 +70,40 @@ These are not style preferences. Code that breaks them is wrong here.
 Read the reference before writing code against an item: it carries the props, the
 exports, the files the install writes, and the environment it needs.
 
+### Templates
+
+Wired pages — routes, environment keys, and provider calls already connected. One command installs a working screen.
+
 | Item | Type | What it is | Reference |
 | --- | --- | --- | --- |
-| `@cantera/oauth-types` | lib | Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into. | [references/oauth-types.md](references/oauth-types.md) |
-| `@cantera/aps-oauth-preset` | lib | Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types. | [references/aps-oauth-preset.md](references/aps-oauth-preset.md) |
-| `@cantera/status-tokens` | tokens | Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from. | [references/status-tokens.md](references/status-tokens.md) |
+| `@cantera/acc-sign-in` | template | A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected. | [references/acc-sign-in.md](references/acc-sign-in.md) |
+| `@cantera/connections-page` | template | The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs. | [references/connections-page.md](references/connections-page.md) |
+| `@cantera/model-viewer-page` | template | A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states. | [references/model-viewer-page.md](references/model-viewer-page.md) |
+| `@cantera/model-upload-page` | template | A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer. | [references/model-upload-page.md](references/model-upload-page.md) |
+
+### Blocks
+
+Page-sized compositions with no routes and no environment: props, endpoints, or callbacks in, a whole screen out.
+
+| Item | Type | What it is | Reference |
+| --- | --- | --- | --- |
+| `@cantera/acc-connection-panel` | block | The live Autodesk connection panel: one ConnectionCard wired to a sign-out route and a consent restart, with disconnect and reconnect on the async-pending contract. | [references/acc-connection-panel.md](references/acc-connection-panel.md) |
+| `@cantera/connections-view` | block | The connections dashboard as a presentational block: providers and connections in, connect, reconnect, disconnect, and retry callbacks out — with the designed list, empty, loading, and error states, each exported. | [references/connections-view.md](references/connections-view.md) |
+| `@cantera/model-browser` | block | Hub sidebar, recursive finder, account controls, and a full-bleed Autodesk Viewer composed into one screen, with untranslated-model states. Points at your tree and viewer-token endpoints; model-viewer-page ships those routes. | [references/model-browser.md](references/model-browser.md) |
+| `@cantera/model-upload` | block | Drop zone with archive support, translation options and tracking with manifest diagnostics, a searchable model library, and a shareable full-bleed Viewer composed into one screen. Points at your upload and viewer-token endpoints; model-upload-page ships those routes. | [references/model-upload.md](references/model-upload.md) |
+
+### Components
+
+Data-agnostic UI — plain typed props in, callbacks out, no fetching and no provider knowledge.
+
+| Item | Type | What it is | Reference |
+| --- | --- | --- | --- |
 | `@cantera/provider-sign-in-button` | component | A sign-in button and link for a single OAuth provider: brand icon, label, loading state. ProviderSignInButton handles a click; ProviderSignInLink navigates to an auth route. | [references/provider-sign-in-button.md](references/provider-sign-in-button.md) |
 | `@cantera/sign-in-card` | component | A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback. | [references/sign-in-card.md](references/sign-in-card.md) |
 | `@cantera/scope-picker` | component | A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog. | [references/scope-picker.md](references/scope-picker.md) |
 | `@cantera/user-account-badge` | component | An avatar-and-name chip for a connected account, with optional provider mark. Server-safe. | [references/user-account-badge.md](references/user-account-badge.md) |
 | `@cantera/token-status` | component | Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe. | [references/token-status.md](references/token-status.md) |
 | `@cantera/connection-card` | component | A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions. | [references/connection-card.md](references/connection-card.md) |
-| `@cantera/acc-auth-routes` | block | The headless half of Autodesk sign-in on aec-auth: consent start, code exchange, and sign-out route handlers, the signed session library, and the scoped sign-in component — no pages. | [references/acc-auth-routes.md](references/acc-auth-routes.md) |
-| `@cantera/acc-sign-in` | block | A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected. | [references/acc-sign-in.md](references/acc-sign-in.md) |
-| `@cantera/connections-page` | block | The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs. | [references/connections-page.md](references/connections-page.md) |
-| `@cantera/project-types` | lib | Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into. | [references/project-types.md](references/project-types.md) |
-| `@cantera/aps-data-preset` | lib | Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types. | [references/aps-data-preset.md](references/aps-data-preset.md) |
 | `@cantera/hub-switcher` | component | The hub context switch: which ACC hub — or any Hub — the rest of the screen works against, with region context and a pending state for the switch itself. | [references/hub-switcher.md](references/hub-switcher.md) |
 | `@cantera/project-picker` | component | The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs. | [references/project-picker.md](references/project-picker.md) |
 | `@cantera/version-set-select` | component | Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake. | [references/version-set-select.md](references/version-set-select.md) |
@@ -91,14 +113,25 @@ exports, the files the install writes, and the environment it needs.
 | `@cantera/hub-sidebar` | component | The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below. | [references/hub-sidebar.md](references/hub-sidebar.md) |
 | `@cantera/crew-avatar` | component | Deterministic construction-crew SVG avatars — monochrome disc, geometric figure, one accent for the trade on the hard hat — generated from a name with zero dependencies, boring-avatars style. | [references/crew-avatar.md](references/crew-avatar.md) |
 | `@cantera/file-picker-dialog` | component | Hub Browser inside a dialog, with tip-or-version selection and an explicit cancel action. | [references/file-picker-dialog.md](references/file-picker-dialog.md) |
-| `@cantera/viewer-types` | lib | Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks. | [references/viewer-types.md](references/viewer-types.md) |
-| `@cantera/viewer-extension-types` | lib | A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source. | [references/viewer-extension-types.md](references/viewer-extension-types.md) |
 | `@cantera/aps-viewer` | component | A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar. | [references/aps-viewer.md](references/aps-viewer.md) |
 | `@cantera/model-status-card` | component | The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract. | [references/model-status-card.md](references/model-status-card.md) |
-| `@cantera/model-viewer-page` | block | A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states. | [references/model-viewer-page.md](references/model-viewer-page.md) |
-| `@cantera/model-upload-page` | block | A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer. | [references/model-upload-page.md](references/model-upload-page.md) |
-| `@cantera/upload-types` | lib | Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting. | [references/upload-types.md](references/upload-types.md) |
 | `@cantera/file-drop-zone` | component | A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract. | [references/file-drop-zone.md](references/file-drop-zone.md) |
+
+### Foundations
+
+The shared types, provider presets, design tokens, and auth wiring kit every other item is written against.
+
+| Item | Type | What it is | Reference |
+| --- | --- | --- | --- |
+| `@cantera/oauth-types` | types | Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into. | [references/oauth-types.md](references/oauth-types.md) |
+| `@cantera/aps-oauth-preset` | preset | Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types. | [references/aps-oauth-preset.md](references/aps-oauth-preset.md) |
+| `@cantera/status-tokens` | tokens | Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from. | [references/status-tokens.md](references/status-tokens.md) |
+| `@cantera/acc-auth-routes` | kit | The headless half of Autodesk sign-in on aec-auth: consent start, code exchange, and sign-out route handlers, the signed session library, and the scoped sign-in component — no pages. | [references/acc-auth-routes.md](references/acc-auth-routes.md) |
+| `@cantera/project-types` | types | Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into. | [references/project-types.md](references/project-types.md) |
+| `@cantera/aps-data-preset` | preset | Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types. | [references/aps-data-preset.md](references/aps-data-preset.md) |
+| `@cantera/viewer-types` | types | Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks. | [references/viewer-types.md](references/viewer-types.md) |
+| `@cantera/viewer-extension-types` | types | A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source. | [references/viewer-extension-types.md](references/viewer-extension-types.md) |
+| `@cantera/upload-types` | types | Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting. | [references/upload-types.md](references/upload-types.md) |
 
 ## Working examples
 
