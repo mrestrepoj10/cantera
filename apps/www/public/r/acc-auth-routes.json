@@ -53,7 +53,10 @@
     "APP_ORIGIN": "",
     "APS_AUTH_BASE_URL": ""
   },
-  "docs": "Installed: the /api/auth/* route handlers, lib/acc-auth.ts (aec-auth vault wiring and the signed session cookie), and ScopedAutodeskSignIn — render it anywhere with a nextPath and the callback returns there. No pages: pair with @cantera/acc-sign-in for a ready-made /sign-in, or mount the component in your own page the way model-viewer-page does.\n\nEnvironment (added to .env.local as empty keys — fill them in):\n- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.\n- SESSION_SECRET — HMAC key for the session cookie. Generate one with `openssl rand -base64 32`. In production the routes fail closed without it.\n- APP_ORIGIN — the canonical public origin, such as \"https://app.example.com\". Required in production so forwarded host headers cannot redirect OAuth or receive credentials.\n- APS_AUTH_BASE_URL — optional auth-origin override, absolute or relative (\"/emulate/aps\") for an embedded emulator. Leave it unset to talk to real APS.\n\nThe default vault store is in-memory: correct for a demo, wrong for production. Swap in a durable VaultStore (see the aec-auth README) before you ship.",
+  "meta": {
+    "kind": "kit"
+  },
+  "docs": "Installed: the /api/auth/* route handlers, lib/acc-auth.ts (aec-auth vault wiring and the signed session cookie), and ScopedAutodeskSignIn. No page: pair with @cantera/acc-sign-in, or mount the component with a nextPath.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; SESSION_SECRET from `openssl rand -base64 32` (required in production); APP_ORIGIN, your canonical public origin (required in production); APS_AUTH_BASE_URL only for an emulator.\n2. The default vault store is in-memory. Swap in a durable VaultStore before real users connect.\nReference: https://canteraui.vercel.app/components/acc-auth-routes",
   "categories": [
     "authentication",
     "autodesk"

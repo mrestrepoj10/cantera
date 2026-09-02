@@ -13,7 +13,7 @@ Files written into the consumer project:
 
 - `finder.tsx`
 
-## Install notes
+## Notes
 
 Fully controlled and data-agnostic: query out through onQueryChange, groups in as props; the consumer owns fetching, debouncing, and persistence. APS has no cross-hub search API, so label each group after the scope actually searched (folders/{id}/search is recursive within one project) and pass the scoped project's name as scope — it renders as a persistent "Searching in" notice under the input, wired to it with aria-describedby. Entries carry path: BrowsePathSegment[] — onReveal hands it back so a hub-tree (expandedIds + selectedId) or hub-browser (a location change) unfolds to the entry. Three surfaces share the contract: Finder renders inline, FinderDialog is the ⌘K palette (shortcut built in, closes on select or reveal), and FinderTrigger is the input-shaped button that opens it.
 

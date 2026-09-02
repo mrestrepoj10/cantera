@@ -1,9 +1,11 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
+import { installNotes } from '../components/site/install-notes.ts'
 import { type ApiTable, apiTables, libUsage } from '../components/site/props-tables.ts'
 import type { RegistryItem } from '../components/site/registry.ts'
 import { designContracts } from '../lib/design-contracts.ts'
+import { catalogGroupDefinitions, catalogGroupFor, kindLabelFor } from '../lib/registry-kinds.ts'
 import {
   docsUrl,
   installCommandFor,
@@ -16,38 +18,12 @@ import {
 const wwwRoot = path.join(import.meta.dirname, '..')
 
 const SUMMARY =
-  "cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, plus an end-to-end Autodesk (APS / ACC) sign-in block. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme."
+  "cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, page-sized blocks, and wired Autodesk (APS / ACC) templates for sign-in, connections, model viewing, and model upload. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme."
 
-const TYPE_SECTIONS: { type: RegistryItem['type']; heading: string; blurb: string }[] = [
-  {
-    type: 'registry:component',
-    heading: 'Components',
-    blurb: 'Data-agnostic UI: typed props in, callbacks out, no fetching.',
-  },
-  {
-    type: 'registry:block',
-    heading: 'Blocks',
-    blurb: 'Wired end-to-end flows — pages, route handlers, and the auth glue between them.',
-  },
-  {
-    type: 'registry:lib',
-    heading: 'Libraries',
-    blurb: 'The types the components speak, and the provider presets that translate into them.',
-  },
-  {
-    type: 'registry:item',
-    heading: 'Tokens',
-    blurb: 'CSS variables installed into the consumer theme.',
-  },
-]
-
-const TYPE_LABELS = {
-  'registry:component': 'component',
-  'registry:block': 'block',
-  'registry:lib': 'lib',
-  'registry:item': 'tokens (CSS variables plus a typed accessor)',
-  'registry:example': 'example page',
-} satisfies Record<RegistryItem['type'], string>
+function typeLabel(item: RegistryItem): string {
+  const label = kindLabelFor(item)
+  return label === 'tokens' ? 'tokens (CSS variables plus a typed accessor)' : label
+}
 
 const DESIGN_CONTRACTS = Object.values(designContracts(registryNamespace))
   .map((contract) => `### ${contract.title}\n\n${contract.body}`)
@@ -105,7 +81,7 @@ function buildRegistryIndex(items: RegistryItem[]): string {
       `### ${item.name}`,
       '',
       `Title: ${item.title}`,
-      `Type: ${TYPE_LABELS[item.type]}`,
+      `Type: ${typeLabel(item)}`,
       `Description: ${item.description}`,
       `Install: ${installCommandFor(item.name)}`,
       `Docs: ${docsUrl(item.name)}`,
@@ -117,13 +93,13 @@ function buildRegistryIndex(items: RegistryItem[]): string {
 }
 
 function buildSiteIndex(items: RegistryItem[]): string {
-  const sections = TYPE_SECTIONS.flatMap(({ type, heading, blurb }) => {
-    const matching = items.filter((item) => item.type === type)
+  const sections = catalogGroupDefinitions.flatMap(({ id, title, description }) => {
+    const matching = items.filter((item) => catalogGroupFor(item) === id)
     if (matching.length === 0) return []
     const links = matching.map(
       (item) => `- [${item.title}](${docsUrl(item.name)}): ${item.description}`,
     )
-    return [`## ${heading}\n\n${blurb}\n\n${links.join('\n')}`]
+    return [`## ${title}\n\n${description}\n\n${links.join('\n')}`]
   })
 
   const docs = [
@@ -187,7 +163,7 @@ function buildFullReference(items: RegistryItem[], examples: Set<string>): strin
     const lines: string[] = [
       `### ${item.title} (\`${registryNamespace}/${item.name}\`)`,
       '',
-      `Type: ${TYPE_LABELS[item.type]}`,
+      `Type: ${typeLabel(item)}`,
       `Install: ${installCommandFor(item.name)}`,
       `Docs: ${docsUrl(item.name)}`,
       `Item: ${registryItemUrl(item.name)}`,
@@ -209,6 +185,10 @@ function buildFullReference(items: RegistryItem[], examples: Set<string>): strin
       const targets = files.map((file) => `- ${file.target ?? path.basename(file.path)}`)
       lines.push('', 'Files written into the consumer project:', '', ...targets)
     }
+
+    if (item.docs) lines.push('', 'Install notes:', '', item.docs)
+    const notes = installNotes[item.name]
+    if (notes) lines.push('', 'Notes:', '', notes)
 
     for (const table of apiTables[item.name] ?? []) {
       lines.push('', serializeTable(table))

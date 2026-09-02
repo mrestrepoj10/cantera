@@ -1,6 +1,6 @@
 # cantera registry
 
-> cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, plus an end-to-end Autodesk (APS / ACC) sign-in block. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
+> cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, page-sized blocks, and wired Autodesk (APS / ACC) templates for sign-in, connections, model viewing, and model upload. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
 
 Namespace: @cantera
 Registry item URL: https://canteraui.vercel.app/r/{name}.json
@@ -23,7 +23,7 @@ One-time setup — add the namespace to components.json, then install items by n
 ### oauth-types
 
 Title: OAuth Types
-Type: lib
+Type: types
 Description: Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.
 Install: npx shadcn@latest add @cantera/oauth-types
 Docs: https://canteraui.vercel.app/components/oauth-types
@@ -32,7 +32,7 @@ Item: https://canteraui.vercel.app/r/oauth-types.json
 ### aps-oauth-preset
 
 Title: APS OAuth Preset
-Type: lib
+Type: preset
 Description: Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.
 Install: npx shadcn@latest add @cantera/aps-oauth-preset
 Docs: https://canteraui.vercel.app/components/aps-oauth-preset
@@ -104,25 +104,43 @@ Item: https://canteraui.vercel.app/r/connection-card.json
 ### acc-auth-routes
 
 Title: ACC Auth Routes
-Type: block
+Type: kit
 Description: The headless half of Autodesk sign-in on aec-auth: consent start, code exchange, and sign-out route handlers, the signed session library, and the scoped sign-in component — no pages.
 Install: npx shadcn@latest add @cantera/acc-auth-routes
 Docs: https://canteraui.vercel.app/components/acc-auth-routes
 Item: https://canteraui.vercel.app/r/acc-auth-routes.json
 
+### acc-connection-panel
+
+Title: ACC Connection Panel
+Type: block
+Description: The live Autodesk connection panel: one ConnectionCard wired to a sign-out route and a consent restart, with disconnect and reconnect on the async-pending contract.
+Install: npx shadcn@latest add @cantera/acc-connection-panel
+Docs: https://canteraui.vercel.app/components/acc-connection-panel
+Item: https://canteraui.vercel.app/r/acc-connection-panel.json
+
 ### acc-sign-in
 
 Title: ACC Sign-In
-Type: block
+Type: template
 Description: A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.
 Install: npx shadcn@latest add @cantera/acc-sign-in
 Docs: https://canteraui.vercel.app/components/acc-sign-in
 Item: https://canteraui.vercel.app/r/acc-sign-in.json
 
+### connections-view
+
+Title: Connections View
+Type: block
+Description: The connections dashboard as a presentational block: providers and connections in, connect, reconnect, disconnect, and retry callbacks out — with the designed list, empty, loading, and error states, each exported.
+Install: npx shadcn@latest add @cantera/connections-view
+Docs: https://canteraui.vercel.app/components/connections-view
+Item: https://canteraui.vercel.app/r/connections-view.json
+
 ### connections-page
 
 Title: Connections Page
-Type: block
+Type: template
 Description: The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
 Install: npx shadcn@latest add @cantera/connections-page
 Docs: https://canteraui.vercel.app/components/connections-page
@@ -131,7 +149,7 @@ Item: https://canteraui.vercel.app/r/connections-page.json
 ### project-types
 
 Title: Project Types
-Type: lib
+Type: types
 Description: Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into.
 Install: npx shadcn@latest add @cantera/project-types
 Docs: https://canteraui.vercel.app/components/project-types
@@ -140,7 +158,7 @@ Item: https://canteraui.vercel.app/r/project-types.json
 ### aps-data-preset
 
 Title: APS Data Preset
-Type: lib
+Type: preset
 Description: Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.
 Install: npx shadcn@latest add @cantera/aps-data-preset
 Docs: https://canteraui.vercel.app/components/aps-data-preset
@@ -230,7 +248,7 @@ Item: https://canteraui.vercel.app/r/file-picker-dialog.json
 ### viewer-types
 
 Title: Viewer Types
-Type: lib
+Type: types
 Description: Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks.
 Install: npx shadcn@latest add @cantera/viewer-types
 Docs: https://canteraui.vercel.app/components/viewer-types
@@ -239,7 +257,7 @@ Item: https://canteraui.vercel.app/r/viewer-types.json
 ### viewer-extension-types
 
 Title: Viewer Extension Types
-Type: lib
+Type: types
 Description: A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.
 Install: npx shadcn@latest add @cantera/viewer-extension-types
 Docs: https://canteraui.vercel.app/components/viewer-extension-types
@@ -263,19 +281,37 @@ Install: npx shadcn@latest add @cantera/model-status-card
 Docs: https://canteraui.vercel.app/components/model-status-card
 Item: https://canteraui.vercel.app/r/model-status-card.json
 
+### model-browser
+
+Title: Model Browser
+Type: block
+Description: Hub sidebar, recursive finder, account controls, and a full-bleed Autodesk Viewer composed into one screen, with untranslated-model states. Points at your tree and viewer-token endpoints; model-viewer-page ships those routes.
+Install: npx shadcn@latest add @cantera/model-browser
+Docs: https://canteraui.vercel.app/components/model-browser
+Item: https://canteraui.vercel.app/r/model-browser.json
+
 ### model-viewer-page
 
 Title: Model Viewer Page
-Type: block
+Type: template
 Description: A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.
 Install: npx shadcn@latest add @cantera/model-viewer-page
 Docs: https://canteraui.vercel.app/components/model-viewer-page
 Item: https://canteraui.vercel.app/r/model-viewer-page.json
 
+### model-upload
+
+Title: Model Upload
+Type: block
+Description: Drop zone with archive support, translation options and tracking with manifest diagnostics, a searchable model library, and a shareable full-bleed Viewer composed into one screen. Points at your upload and viewer-token endpoints; model-upload-page ships those routes.
+Install: npx shadcn@latest add @cantera/model-upload
+Docs: https://canteraui.vercel.app/components/model-upload
+Item: https://canteraui.vercel.app/r/model-upload.json
+
 ### model-upload-page
 
 Title: Model Upload Page
-Type: block
+Type: template
 Description: A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.
 Install: npx shadcn@latest add @cantera/model-upload-page
 Docs: https://canteraui.vercel.app/components/model-upload-page
@@ -284,7 +320,7 @@ Item: https://canteraui.vercel.app/r/model-upload-page.json
 ### upload-types
 
 Title: Upload Types
-Type: lib
+Type: types
 Description: Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.
 Install: npx shadcn@latest add @cantera/upload-types
 Docs: https://canteraui.vercel.app/components/upload-types

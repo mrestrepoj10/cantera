@@ -2,18 +2,17 @@
 
 The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
 
-- Type: block
+- Type: template
 - Install: `npx shadcn@latest add @cantera/connections-page`
 - Docs: https://canteraui.vercel.app/components/connections-page
 - Registry item: https://canteraui.vercel.app/r/connections-page.json
-- Registry dependencies: button, @cantera/connection-card, @cantera/provider-sign-in-button, @cantera/token-status, @cantera/user-account-badge, @cantera/acc-auth-routes, @cantera/aps-oauth-preset, @cantera/oauth-types, @cantera/status-tokens
+- Registry dependencies: @cantera/connections-view, @cantera/acc-auth-routes, @cantera/aps-oauth-preset, @cantera/oauth-types
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
 
 - `app/connections/page.tsx`
 - `app/connections/loading.tsx`
-- `components/connections-view.tsx`
 - `components/connections-manager.tsx`
 
 Environment variables added to `.env.local`:
@@ -26,17 +25,14 @@ Environment variables added to `.env.local`:
 
 ## Install notes
 
-Installed: app/connections/page.tsx with its loading skeleton, plus ConnectionsView (presentational) and ConnectionsManager (wiring).
+Installed at /connections: the page, its loading skeleton, and ConnectionsManager, the wiring over @cantera/connections-view. acc-auth-routes supplies the /api/auth/* routes; no /sign-in page is installed.
 
-This block takes acc-auth-routes as a registry dependency for the /api/auth/* routes and the aec-auth glue — no /sign-in page is installed — so one environment configures both:
-- APS_CLIENT_ID / APS_CLIENT_SECRET — your APS app credentials.
-- SESSION_SECRET — required in production; the block fails closed without it.
-- APP_ORIGIN — the canonical public origin. Required in production.
-- APS_AUTH_BASE_URL — optional auth-origin override for an emulator. Unset means real APS.
+Next:
+1. Fill the keys acc-auth-routes added to .env.local (see its notes above).
+2. Run next dev and open /connections.
 
-ACC_AUTH_DEMO=1 allows the insecure fallback session secret and must never be set where real accounts exist.
-
-ConnectionsView never fetches — providers and connections in, callbacks out — so point it at any backend.
+List a provider only after lib/acc-auth.ts knows it: an unwired Connect fails at the route on purpose.
+Reference: https://canteraui.vercel.app/components/connections-page
 
 ## ConnectionsView props
 

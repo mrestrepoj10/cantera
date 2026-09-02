@@ -27,6 +27,7 @@ export interface RegistryItem {
   cssVars?: Record<string, Record<string, string>>
   envVars?: Record<string, string>
   docs?: string
+  meta?: { kind?: string; iframeHeight?: string }
 }
 
 export interface Registry {

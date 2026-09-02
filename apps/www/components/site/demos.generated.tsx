@@ -27,8 +27,14 @@ const demos: Record<string, DemoComponent> = {
   'connection-card': lazy(async () => ({
     default: (await import('./demos/connection-card-demo')).ConnectionCardDemo,
   })) as DemoComponent,
+  'acc-connection-panel': lazy(async () => ({
+    default: (await import('./demos/acc-connection-panel-demo')).AccConnectionPanelDemo,
+  })) as DemoComponent,
   'acc-sign-in': lazy(async () => ({
     default: (await import('./demos/acc-sign-in-demo')).AccSignInDemo,
+  })) as DemoComponent,
+  'connections-view': lazy(async () => ({
+    default: (await import('./demos/connections-view-demo')).ConnectionsViewDemo,
   })) as DemoComponent,
   'connections-page': lazy(async () => ({
     default: (await import('./demos/connections-page-demo')).ConnectionsPageDemo,
@@ -66,8 +72,14 @@ const demos: Record<string, DemoComponent> = {
   'model-status-card': lazy(async () => ({
     default: (await import('./demos/model-status-card-demo')).ModelStatusCardDemo,
   })) as DemoComponent,
+  'model-browser': lazy(async () => ({
+    default: (await import('./demos/model-browser-demo')).ModelBrowserDemo,
+  })) as DemoComponent,
   'model-viewer-page': lazy(async () => ({
     default: (await import('./demos/model-viewer-page-demo')).ModelViewerPageDemo,
+  })) as DemoComponent,
+  'model-upload': lazy(async () => ({
+    default: (await import('./demos/model-upload-demo')).ModelUploadDemo,
   })) as DemoComponent,
   'model-upload-page': lazy(async () => ({
     default: (await import('./demos/model-upload-page-demo')).ModelUploadPageDemo,

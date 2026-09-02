@@ -2,7 +2,7 @@
 
 A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.
 
-- Type: lib
+- Type: types
 - Install: `npx shadcn@latest add @cantera/viewer-extension-types`
 - Docs: https://canteraui.vercel.app/components/viewer-extension-types
 - Registry item: https://canteraui.vercel.app/r/viewer-extension-types.json
@@ -11,7 +11,7 @@ Files written into the consumer project:
 
 - `lib/viewer-extension-types.ts`
 
-## Install notes
+## Notes
 
 Pure types and data — no runtime dependency on the viewer. Pair with @cantera/aps-viewer: pass viewerExtension(...) entries to the extensions prop, or use AEC_STARTER_EXTENSIONS as a field-tested default for AEC models. Entries marked deprecated or removedIn should not ship in new code.
 

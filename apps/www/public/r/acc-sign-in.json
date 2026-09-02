@@ -10,7 +10,7 @@
   ],
   "registryDependencies": [
     "@cantera/acc-auth-routes",
-    "@cantera/connection-card",
+    "@cantera/acc-connection-panel",
     "@cantera/aps-oauth-preset",
     "@cantera/oauth-types"
   ],
@@ -26,15 +26,13 @@
       "content": "import { LoaderCircleIcon } from 'lucide-react'\n\n/** Deliberately still: skeleton rows at the panel's own geometry, no shimmer;\n * the one spinner carries the announcement. */\nexport default function SignInLoading() {\n  return (\n    <main className=\"flex flex-1 items-center justify-center p-6\">\n      <div className=\"flex w-full max-w-sm flex-col gap-4\">\n        <output className=\"flex items-center gap-2 text-muted-foreground text-sm\">\n          {/* The spin lives on a wrapper: transform animations on the <svg>\n              itself skip the compositor in some engines. */}\n          <span aria-hidden className=\"grid size-3.5 shrink-0 animate-spin place-items-center\">\n            <LoaderCircleIcon className=\"size-3.5\" />\n          </span>\n          Checking your Autodesk connection\n        </output>\n        {/* Same box as Card: rounded-xl, ring-1, py-(--card-spacing) at 4. */}\n        <div aria-hidden className=\"rounded-xl bg-card py-4 ring-1 ring-foreground/10\">\n          <div className=\"flex flex-col gap-3 px-4\">\n            <div className=\"flex items-center gap-3\">\n              <div className=\"size-5 shrink-0 rounded bg-muted\" />\n              <div className=\"h-4 w-28 rounded bg-muted\" />\n              <div className=\"ml-auto h-7 w-24 shrink-0 rounded-lg bg-muted\" />\n            </div>\n            <div className=\"flex items-center gap-2\">\n              <div className=\"size-7 shrink-0 rounded-full bg-muted\" />\n              <div className=\"flex flex-col gap-1\">\n                <div className=\"h-3.5 w-24 rounded bg-muted\" />\n                <div className=\"h-3.5 w-40 rounded bg-muted\" />\n              </div>\n            </div>\n            <div className=\"flex items-center gap-2\">\n              <div className=\"h-6 w-24 shrink-0 rounded-md bg-muted\" />\n              <div className=\"h-3 w-20 rounded bg-muted\" />\n            </div>\n          </div>\n        </div>\n      </div>\n    </main>\n  )\n}\n",
       "type": "registry:file",
       "target": "app/sign-in/loading.tsx"
-    },
-    {
-      "path": "registry/blocks/acc-sign-in/components/acc-connection-panel.tsx",
-      "content": "'use client'\n\nimport { useRouter } from 'next/navigation'\nimport { useState, useTransition } from 'react'\n\nimport { ConnectionCard } from '@/components/ui/connection-card'\nimport type { OAuthConnection } from '@/lib/oauth-types'\n\ninterface AccConnectionPanelProps {\n  connection: OAuthConnection\n  /** POST target that clears the grant and session, e.g. \"/api/auth/signout?next=/sign-in\". */\n  signOutHref: string\n  /** GET target that restarts consent, e.g. \"/api/auth/aps?next=/sign-in\". */\n  signInHref: string\n}\n\nfunction AccConnectionPanel({ connection, signOutHref, signInHref }: AccConnectionPanelProps) {\n  const router = useRouter()\n  const [disconnecting, setDisconnecting] = useState(false)\n  const [reconnecting, setReconnecting] = useState(false)\n  const [, startRefresh] = useTransition()\n\n  async function disconnect() {\n    setDisconnecting(true)\n    try {\n      await fetch(signOutHref, { method: 'POST', redirect: 'manual' })\n    } finally {\n      // Pending clears inside the transition so the button keeps its spinner\n      // until the re-rendered server page commits; refresh runs on failure too.\n      startRefresh(() => {\n        router.refresh()\n        setDisconnecting(false)\n      })\n    }\n  }\n\n  return (\n    <ConnectionCard\n      connection={connection}\n      // The handler is always passed: pending is a prop, never an absent\n      // callback, so the pressed button stays mounted through the request.\n      onDisconnect={disconnect}\n      disconnectPending={disconnecting}\n      onReconnect={() => {\n        setReconnecting(true)\n        window.location.href = signInHref\n      }}\n      reconnectPending={reconnecting}\n    />\n  )\n}\n\nexport { AccConnectionPanel, type AccConnectionPanelProps }\n",
-      "type": "registry:component",
-      "target": "components/acc-connection-panel.tsx"
     }
   ],
-  "docs": "Installed: app/sign-in/page.tsx with its loading skeleton and AccConnectionPanel. The acc-auth-routes dependency supplies the /api/auth/* handlers, lib/acc-auth.ts, and the scoped sign-in component, plus the environment keys.\n\nSigned out, the page renders ScopedAutodeskSignIn and forwards the selection to the consent redirect; /sign-in?next=/your-page returns there after the callback, and an already-signed-in visitor with a next is redirected on arrival. Signed in with no next, the page shows the connection panel.\n\nACC_AUTH_DEMO=1 is the escape hatch that allows the insecure fallback session secret in production. It exists for emulator-backed showcases only — never set it anywhere real accounts exist.",
+  "meta": {
+    "kind": "template",
+    "iframeHeight": "520px"
+  },
+  "docs": "Installed at /sign-in: the page and its loading skeleton. Signed out, it renders ScopedAutodeskSignIn; /sign-in?next=/your-page returns there after the callback. Signed in, it shows AccConnectionPanel.\n\nNext:\n1. Fill the keys acc-auth-routes added to .env.local (see its notes above).\n2. Run next dev and open /sign-in.\n\nNever set ACC_AUTH_DEMO=1 where real accounts exist.\nReference: https://canteraui.vercel.app/components/acc-sign-in",
   "categories": [
     "authentication",
     "login",

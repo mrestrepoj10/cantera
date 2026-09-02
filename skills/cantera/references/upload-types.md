@@ -2,7 +2,7 @@
 
 Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.
 
-- Type: lib
+- Type: types
 - Install: `npx shadcn@latest add @cantera/upload-types`
 - Docs: https://canteraui.vercel.app/components/upload-types
 - Registry item: https://canteraui.vercel.app/r/upload-types.json

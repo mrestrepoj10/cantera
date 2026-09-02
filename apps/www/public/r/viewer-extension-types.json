@@ -12,7 +12,6 @@
       "target": "lib/viewer-extension-types.ts"
     }
   ],
-  "docs": "Pure types and data — no runtime dependency on the viewer. Pair with @cantera/aps-viewer: pass viewerExtension(...) entries to the extensions prop, or use AEC_STARTER_EXTENSIONS as a field-tested default for AEC models. Entries marked deprecated or removedIn should not ship in new code.",
   "categories": [
     "viewer",
     "types",

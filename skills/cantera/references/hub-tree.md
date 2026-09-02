@@ -13,7 +13,7 @@ Files written into the consumer project:
 
 - `hub-tree.tsx`
 
-## Install notes
+## Notes
 
 HubTree is fully controlled and never fetches. Give every node a stable, globally unique tree id and preserve the provider-normalized Hub, Project, Folder, Item, or ItemVersion in its value field. Expanding calls onExpand; feed the loaded children back through nodes and include the id in expandedIds. Items open their tip through onItemOpen(item); version rows call onItemOpen(item, version). The comfortable default uses 44px rows; compact is an explicit opt-in.
 

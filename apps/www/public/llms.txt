@@ -1,6 +1,6 @@
 # cantera
 
-> cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, plus an end-to-end Autodesk (APS / ACC) sign-in block. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
+> cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, page-sized blocks, and wired Autodesk (APS / ACC) templates for sign-in, connections, model viewing, and model upload. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
 
 - Install any item with `npx shadcn@latest add @cantera/<name>` once @cantera is registered in components.json.
 - Components take plain typed props and never fetch: provider adapters translate an API payload into the shared oauth types, and the same components render Autodesk, Procore, or anything else.
@@ -12,9 +12,27 @@
 - [Components](https://canteraui.vercel.app/components): Index of every registry item, with a live preview and the exact installed source on each page.
 - [Demo](https://canteraui.vercel.app/demo): The whole Autodesk OAuth flow, running against an embedded APS emulator — no credentials needed.
 
+## Templates
+
+Wired pages — routes, environment keys, and provider calls already connected. One command installs a working screen.
+
+- [ACC Sign-In](https://canteraui.vercel.app/components/acc-sign-in): A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.
+- [Connections Page](https://canteraui.vercel.app/components/connections-page): The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
+- [Model Viewer Page](https://canteraui.vercel.app/components/model-viewer-page): A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.
+- [Model Upload Page](https://canteraui.vercel.app/components/model-upload-page): A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.
+
+## Blocks
+
+Page-sized compositions with no routes and no environment: props, endpoints, or callbacks in, a whole screen out.
+
+- [ACC Connection Panel](https://canteraui.vercel.app/components/acc-connection-panel): The live Autodesk connection panel: one ConnectionCard wired to a sign-out route and a consent restart, with disconnect and reconnect on the async-pending contract.
+- [Connections View](https://canteraui.vercel.app/components/connections-view): The connections dashboard as a presentational block: providers and connections in, connect, reconnect, disconnect, and retry callbacks out — with the designed list, empty, loading, and error states, each exported.
+- [Model Browser](https://canteraui.vercel.app/components/model-browser): Hub sidebar, recursive finder, account controls, and a full-bleed Autodesk Viewer composed into one screen, with untranslated-model states. Points at your tree and viewer-token endpoints; model-viewer-page ships those routes.
+- [Model Upload](https://canteraui.vercel.app/components/model-upload): Drop zone with archive support, translation options and tracking with manifest diagnostics, a searchable model library, and a shareable full-bleed Viewer composed into one screen. Points at your upload and viewer-token endpoints; model-upload-page ships those routes.
+
 ## Components
 
-Data-agnostic UI: typed props in, callbacks out, no fetching.
+Data-agnostic UI — plain typed props in, callbacks out, no fetching and no provider knowledge.
 
 - [Provider Sign-In Button](https://canteraui.vercel.app/components/provider-sign-in-button): A sign-in button and link for a single OAuth provider: brand icon, label, loading state. ProviderSignInButton handles a click; ProviderSignInLink navigates to an auth route.
 - [Sign-In Card](https://canteraui.vercel.app/components/sign-in-card): A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
@@ -35,33 +53,19 @@ Data-agnostic UI: typed props in, callbacks out, no fetching.
 - [Model Status Card](https://canteraui.vercel.app/components/model-status-card): The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract.
 - [File Drop Zone](https://canteraui.vercel.app/components/file-drop-zone): A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract.
 
-## Blocks
+## Foundations
 
-Wired end-to-end flows — pages, route handlers, and the auth glue between them.
-
-- [ACC Auth Routes](https://canteraui.vercel.app/components/acc-auth-routes): The headless half of Autodesk sign-in on aec-auth: consent start, code exchange, and sign-out route handlers, the signed session library, and the scoped sign-in component — no pages.
-- [ACC Sign-In](https://canteraui.vercel.app/components/acc-sign-in): A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.
-- [Connections Page](https://canteraui.vercel.app/components/connections-page): The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
-- [Model Viewer Page](https://canteraui.vercel.app/components/model-viewer-page): A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.
-- [Model Upload Page](https://canteraui.vercel.app/components/model-upload-page): A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.
-
-## Libraries
-
-The types the components speak, and the provider presets that translate into them.
+The shared types, provider presets, design tokens, and auth wiring kit every other item is written against.
 
 - [OAuth Types](https://canteraui.vercel.app/components/oauth-types): Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.
 - [APS OAuth Preset](https://canteraui.vercel.app/components/aps-oauth-preset): Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.
+- [Status Tokens](https://canteraui.vercel.app/components/status-tokens): Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.
+- [ACC Auth Routes](https://canteraui.vercel.app/components/acc-auth-routes): The headless half of Autodesk sign-in on aec-auth: consent start, code exchange, and sign-out route handlers, the signed session library, and the scoped sign-in component — no pages.
 - [Project Types](https://canteraui.vercel.app/components/project-types): Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into.
 - [APS Data Preset](https://canteraui.vercel.app/components/aps-data-preset): Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.
 - [Viewer Types](https://canteraui.vercel.app/components/viewer-types): Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks.
 - [Viewer Extension Types](https://canteraui.vercel.app/components/viewer-extension-types): A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.
 - [Upload Types](https://canteraui.vercel.app/components/upload-types): Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.
-
-## Tokens
-
-CSS variables installed into the consumer theme.
-
-- [Status Tokens](https://canteraui.vercel.app/components/status-tokens): Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.
 
 ## Optional
 

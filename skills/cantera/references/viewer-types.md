@@ -2,7 +2,7 @@
 
 Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks.
 
-- Type: lib
+- Type: types
 - Install: `npx shadcn@latest add @cantera/viewer-types`
 - Docs: https://canteraui.vercel.app/components/viewer-types
 - Registry item: https://canteraui.vercel.app/r/viewer-types.json
@@ -12,7 +12,7 @@ Files written into the consumer project:
 - `lib/viewer-types.ts`
 - `lib/forge-viewer.d.ts`
 
-## Install notes
+## Notes
 
 Types come from Autodesk's official @types/forge-viewer package (installed as a dev dependency), which declares the global Autodesk namespace plus a bundled minimal THREE namespace. lib/forge-viewer.d.ts adds the few members the official definitions miss (Profile, ProfileSettings, setProfile). If your tsconfig sets an explicit "types" array, add "forge-viewer" to it.
 

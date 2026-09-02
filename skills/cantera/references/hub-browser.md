@@ -14,7 +14,7 @@ Files written into the consumer project:
 
 - `hub-browser.tsx`
 
-## Install notes
+## Notes
 
 HubBrowser is fully controlled and never fetches. An empty path renders the hub list; each callback advances or rewinds the consumer-owned path and entries. Activating the Hubs breadcrumb passes ROOT_BROWSE_SEGMENT — the exported empty-id sentinel — to onNavigate.
 
