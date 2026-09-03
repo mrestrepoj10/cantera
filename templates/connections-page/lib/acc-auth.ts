@@ -2,11 +2,13 @@ import { APS_AUTH, TokenError, type TokenSource } from 'aec-auth'
 import {
   apsOAuth,
   deleteUserGrant,
+  encryptedVaultStore,
   memoryVaultStore,
   saveUserGrant,
   type VaultStore,
   vaultTokenSource,
 } from 'aec-auth/vault'
+import { upstashVaultStore } from 'aec-auth/vault/upstash'
 import { cache } from 'react'
 
 /**
@@ -14,8 +16,8 @@ import { cache } from 'react'
  * (absolute, or relative like "/emulate/aps" for the emulator; unset = real
  * APS), APP_ORIGIN and SESSION_SECRET — required in production.
  *
- * The default vault store is in-memory: fine for demos, wrong for production.
- * Swap in a durable VaultStore — see the aec-auth README.
+ * The vault store is in-memory until UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN,
+ * and VAULT_KEY are all set; then grants persist in Upstash Redis, encrypted at rest.
  */
 
 export const APS_PROVIDER_ID = 'aps'
@@ -33,8 +35,19 @@ const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 14
 
 const globalStore = globalThis as { __accVaultStore?: VaultStore }
 
+// Serverless hosts run many instances and recycle them, and the memory store
+// forgets a grant the moment another instance answers. Durable storage is
+// opt-in through the environment so a first deploy still boots without it.
+function createVaultStore(): VaultStore {
+  const url = process.env.UPSTASH_REDIS_REST_URL
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN
+  const key = process.env.VAULT_KEY
+  if (url && token && key) return encryptedVaultStore(upstashVaultStore({ url, token }), { key })
+  return memoryVaultStore()
+}
+
 export function getVaultStore(): VaultStore {
-  globalStore.__accVaultStore ??= memoryVaultStore()
+  globalStore.__accVaultStore ??= createVaultStore()
   return globalStore.__accVaultStore
 }
 

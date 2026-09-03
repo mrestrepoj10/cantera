@@ -6,7 +6,9 @@ A two-legged upload and viewing page over the app's own OSS bucket: drag-and-dro
 
 The deploy prompts for the keys marked required below. Register
 `<your-deployment-url>/api/auth/callback/aps` as a callback URL on your APS app if the
-template signs users in. Everything else has a default.
+template signs users in. Everything else has a default. On a serverless host, add the Upstash
+Redis integration and set `VAULT_KEY` so sign-in grants outlive one instance; until then they
+live in memory.
 
 ## Run locally
 

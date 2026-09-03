@@ -100,9 +100,21 @@ export const envDescriptions: EnvDescriptionByKey = {
   APS_AUTH_BASE_URL:
     'Optional APS origin override, absolute or relative (/emulate/aps) for an embedded emulator. Leave unset for real APS.',
   APS_BUCKET: 'Optional OSS bucket key. Defaults to one derived from the client ID.',
+  UPSTASH_REDIS_REST_URL:
+    'Upstash Redis REST URL. With the token and VAULT_KEY set, grants persist across serverless instances instead of living in memory.',
+  UPSTASH_REDIS_REST_TOKEN: 'Upstash Redis REST token, paired with the URL above.',
+  VAULT_KEY:
+    'AES-256 key that encrypts grants at rest in Upstash. Generate one with `openssl rand -base64 32`.',
 }
 
-const OPTIONAL_ENV_KEYS = new Set(['APP_ORIGIN', 'APS_AUTH_BASE_URL', 'APS_BUCKET'])
+const OPTIONAL_ENV_KEYS = new Set([
+  'APP_ORIGIN',
+  'APS_AUTH_BASE_URL',
+  'APS_BUCKET',
+  'UPSTASH_REDIS_REST_URL',
+  'UPSTASH_REDIS_REST_TOKEN',
+  'VAULT_KEY',
+])
 
 export function requiredEnvKeys(keys: string[]): string[] {
   return keys.filter((key) => !OPTIONAL_ENV_KEYS.has(key))

@@ -219,7 +219,7 @@
       "meta": {
         "kind": "kit"
       },
-      "dependencies": ["aec-auth"],
+      "dependencies": ["@upstash/redis", "aec-auth"],
       "registryDependencies": [
         "card",
         "@cantera/provider-sign-in-button",
@@ -259,9 +259,12 @@
         "APS_CLIENT_SECRET": "",
         "SESSION_SECRET": "",
         "APP_ORIGIN": "",
-        "APS_AUTH_BASE_URL": ""
+        "APS_AUTH_BASE_URL": "",
+        "UPSTASH_REDIS_REST_URL": "",
+        "UPSTASH_REDIS_REST_TOKEN": "",
+        "VAULT_KEY": ""
       },
-      "docs": "Installed: the /api/auth/* route handlers, lib/acc-auth.ts (aec-auth vault wiring and the signed session cookie), and ScopedAutodeskSignIn. No page: pair with @cantera/acc-sign-in, or mount the component with a nextPath.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; SESSION_SECRET from `openssl rand -base64 32` (required in production); APP_ORIGIN, your canonical public origin (required in production); APS_AUTH_BASE_URL only for an emulator.\n2. The default vault store is in-memory. Swap in a durable VaultStore before real users connect.\nReference: https://canteraui.vercel.app/components/acc-auth-routes"
+      "docs": "Installed: the /api/auth/* route handlers, lib/acc-auth.ts (aec-auth vault wiring and the signed session cookie), and ScopedAutodeskSignIn. No page: pair with @cantera/acc-sign-in, or mount the component with a nextPath.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; SESSION_SECRET from `openssl rand -base64 32` (required in production); APP_ORIGIN, your canonical public origin (required in production); APS_AUTH_BASE_URL only for an emulator.\n2. Grants live in memory until UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN, and VAULT_KEY (`openssl rand -base64 32`) are set; then they persist in Upstash Redis, encrypted. Set all three before real users connect.\nReference: https://canteraui.vercel.app/components/acc-auth-routes"
     },
     {
       "name": "acc-connection-panel",

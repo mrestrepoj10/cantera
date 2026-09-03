@@ -6,7 +6,9 @@ A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, l
 
 The deploy prompts for the keys marked required below. Register
 `<your-deployment-url>/api/auth/callback/aps` as a callback URL on your APS app if the
-template signs users in. Everything else has a default.
+template signs users in. Everything else has a default. On a serverless host, add the Upstash
+Redis integration and set `VAULT_KEY` so sign-in grants outlive one instance; until then they
+live in memory.
 
 ## Run locally
 
@@ -27,6 +29,9 @@ Then open /models. The home route redirects there.
 | `SESSION_SECRET` | yes | HMAC key for the session cookie. Generate one with `openssl rand -base64 32`. |
 | `APP_ORIGIN` | no | Canonical public origin, such as https://app.example.com. On Vercel it defaults to the production URL. |
 | `APS_AUTH_BASE_URL` | no | Optional APS origin override, absolute or relative (/emulate/aps) for an embedded emulator. Leave unset for real APS. |
+| `UPSTASH_REDIS_REST_URL` | no | Upstash Redis REST URL. With the token and VAULT_KEY set, grants persist across serverless instances instead of living in memory. |
+| `UPSTASH_REDIS_REST_TOKEN` | no | Upstash Redis REST token, paired with the URL above. |
+| `VAULT_KEY` | no | AES-256 key that encrypts grants at rest in Upstash. Generate one with `openssl rand -base64 32`. |
 
 ## What is inside
 

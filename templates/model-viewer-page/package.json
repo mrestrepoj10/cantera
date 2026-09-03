@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
+    "@upstash/redis": "^1.38.3",
     "aec-auth": "^0.3.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -29,6 +30,7 @@
     "@types/react-dom": "19.2.4",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.2",
+    "shadcn": "^4.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

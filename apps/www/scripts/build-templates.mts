@@ -40,6 +40,7 @@ const BASE_DEV_DEPENDENCIES = [
   '@types/react-dom',
   'eslint',
   'eslint-config-next',
+  'shadcn',
   'tailwindcss',
   'typescript',
 ]
@@ -258,7 +259,9 @@ ${item.description}
 
 The deploy prompts for the keys marked required below. Register
 \`<your-deployment-url>/api/auth/callback/aps\` as a callback URL on your APS app if the
-template signs users in. Everything else has a default.
+template signs users in. Everything else has a default. On a serverless host, add the Upstash
+Redis integration and set \`VAULT_KEY\` so sign-in grants outlive one instance; until then they
+live in memory.
 
 ## Run locally
 
@@ -316,6 +319,7 @@ async function buildTemplate(
   versions: VersionByPackage,
 ): Promise<{ files: TemplateFile[]; envKeys: string[] }> {
   const { closure, files, packages } = await collectFiles(item, byName)
+  for (const member of closure.items) for (const pkg of member.dependencies ?? []) packages.add(pkg)
   const devPackages = new Set(closure.items.flatMap((member) => member.devDependencies ?? []))
   const envKeys = [...new Set(closure.items.flatMap((member) => Object.keys(member.envVars ?? {})))]
   const route = routeOf(item)
