@@ -11,6 +11,7 @@ import type { KeyboardEvent, ReactNode } from 'react'
 import { useState } from 'react'
 
 import { CopyPrompt } from '@/components/site/copy-prompt'
+import { DeployButton } from '@/components/site/deploy-button'
 import { InstallCommand } from '@/components/site/install-command'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -49,6 +50,8 @@ interface BlockShowcaseProps {
   reportHref: string
   prompt: string
   openInV0: ReactNode
+  /** Templates only: Vercel's clone flow and the generated app it clones. */
+  deploy?: { href: string; sourceHref: string }
   headingLevel?: 'h2' | 'h3'
 }
 
@@ -70,6 +73,7 @@ function BlockShowcase({
   reportHref,
   prompt,
   openInV0,
+  deploy,
   headingLevel = 'h2',
 }: BlockShowcaseProps) {
   const Heading = headingLevel
@@ -123,7 +127,7 @@ function BlockShowcase({
 
   return (
     <article id={name} className="scroll-mt-24" aria-labelledby={`${name}-title`}>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="max-w-2xl">
           <Heading id={`${name}-title`} className="flex items-center gap-2 font-medium text-base">
             <a href={`/components/${name}`} className="focus-ring rounded-md">
@@ -162,10 +166,15 @@ function BlockShowcase({
             </a>
           </p>
         </div>
-        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
-          <InstallCommand command={installCommand} className="min-w-0 sm:w-[23rem]" />
-          <CopyPrompt prompt={prompt} title={title} />
-          {openInV0}
+        <div className="flex min-w-0 flex-col gap-2 xl:items-end">
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+            <InstallCommand command={installCommand} className="min-w-0 sm:w-[23rem]" />
+            <CopyPrompt prompt={prompt} title={title} />
+            {openInV0}
+          </div>
+          {deploy && (
+            <DeployButton href={deploy.href} sourceHref={deploy.sourceHref} title={title} />
+          )}
         </div>
       </div>
 

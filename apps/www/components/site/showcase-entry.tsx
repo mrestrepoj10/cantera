@@ -6,8 +6,8 @@ import {
   previewHeightFor,
   type RegistryItem,
 } from '@/components/site/registry'
-import { kindLabelFor } from '@/lib/registry-kinds'
-import { installPromptFor, issueUrlFor } from '@/lib/site'
+import { itemKind, kindLabelFor } from '@/lib/registry-kinds'
+import { deployUrlFor, installPromptFor, issueUrlFor, templateSourceUrl } from '@/lib/site'
 
 function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? '' : 's'}`
@@ -38,5 +38,12 @@ export function showcaseEntryFor(item: RegistryItem): ShowcaseEntry {
     reportHref: issueUrlFor(item.name),
     prompt: installPromptFor(item.name, kindLabelFor(item)),
     openInV0: <OpenInV0 name={item.name} title={item.title} />,
+    deploy:
+      itemKind(item) === 'template'
+        ? {
+            href: deployUrlFor(item.name, summary.envKeys),
+            sourceHref: templateSourceUrl(item.name),
+          }
+        : undefined,
   }
 }

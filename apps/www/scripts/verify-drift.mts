@@ -72,6 +72,7 @@ try {
   const shadcn = path.join(wwwRoot, 'node_modules/.bin/shadcn')
   await run(shadcn, ['build', '--output', path.join(scratch, 'r')], { cwd: wwwRoot })
   await script('build-llms.mts', ['--out-dir', scratch])
+  await script('build-templates.mts', ['--out-dir', path.join(scratch, 'templates')])
   await script('build-skill.mts', ['--out-dir', path.join(scratch, 'skills')])
 
   const problems = [
@@ -84,6 +85,11 @@ try {
       label: 'skills/cantera',
       committed: path.join(repoRoot, 'skills/cantera'),
       rebuilt: path.join(scratch, 'skills/cantera'),
+    })),
+    ...(await compare({
+      label: 'templates',
+      committed: path.join(repoRoot, 'templates'),
+      rebuilt: path.join(scratch, 'templates'),
     })),
   ]
 
@@ -102,7 +108,7 @@ try {
     process.exit(1)
   }
 
-  console.log('drift: committed registry, llms artifacts, and skill match a fresh build')
+  console.log('drift: committed registry, llms artifacts, skill, and templates match a fresh build')
 } finally {
   await rm(scratch, { recursive: true, force: true })
 }

@@ -9,6 +9,7 @@ import { preconnect } from 'react-dom'
 import { CodeBlock } from '@/components/site/code-block'
 import { CopyPrompt } from '@/components/site/copy-prompt'
 import { ComponentDemo, hasDemo } from '@/components/site/demos'
+import { DeployButton } from '@/components/site/deploy-button'
 import { InstallCommand } from '@/components/site/install-command'
 import { OpenInV0 } from '@/components/site/open-in-v0'
 import { PageHandoff } from '@/components/site/page-handoff'
@@ -17,10 +18,17 @@ import {
   getPreviewFrameClassName,
   getRegistryItem,
   installCommandFor,
+  installSummaryFor,
   registryItems,
 } from '@/components/site/registry'
-import { kindLabelFor } from '@/lib/registry-kinds'
-import { installPromptFor, markdownPathFor, markdownUrlFor } from '@/lib/site'
+import { itemKind, kindLabelFor } from '@/lib/registry-kinds'
+import {
+  deployUrlFor,
+  installPromptFor,
+  markdownPathFor,
+  markdownUrlFor,
+  templateSourceUrl,
+} from '@/lib/site'
 
 export function generateStaticParams() {
   return registryItems.map((item) => ({ name: item.name }))
@@ -147,6 +155,7 @@ async function ComponentPageContent({ params }: PageProps) {
   const files = item.files ?? []
   const sources = await getSources(files)
   const kind = kindLabelFor(item)
+  const isTemplate = itemKind(item) === 'template'
   const notes = installNotes[item.name]
 
   return (
@@ -177,6 +186,14 @@ async function ComponentPageContent({ params }: PageProps) {
           </div>
         </div>
       </section>
+
+      {isTemplate && (
+        <DeployButton
+          href={deployUrlFor(item.name, installSummaryFor(item.name).envKeys)}
+          sourceHref={templateSourceUrl(item.name)}
+          title={item.title}
+        />
+      )}
 
       {isLib && usage ? (
         <section className="flex flex-col gap-3">

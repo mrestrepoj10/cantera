@@ -79,3 +79,56 @@ ${registryConfigSnippet}
 
 After install, summarize what was added, which environment keys still need values, and any next steps. Docs: ${docsUrl(name)}`
 }
+
+export const defaultBranch = 'main'
+
+export function templateSourceUrl(name: string): string {
+  return `${repositoryUrl}/tree/${defaultBranch}/templates/${name}`
+}
+
+interface EnvDescriptionByKey {
+  [key: string]: string
+}
+
+/** Every environment key a template can ask for, in the words the README and the deploy prompt use. */
+export const envDescriptions: EnvDescriptionByKey = {
+  APS_CLIENT_ID: 'Client ID of your APS app (aps.autodesk.com).',
+  APS_CLIENT_SECRET: 'Client secret of the same APS app.',
+  SESSION_SECRET: 'HMAC key for the session cookie. Generate one with `openssl rand -base64 32`.',
+  APP_ORIGIN:
+    'Canonical public origin, such as https://app.example.com. On Vercel it defaults to the production URL.',
+  APS_AUTH_BASE_URL:
+    'Optional APS origin override, absolute or relative (/emulate/aps) for an embedded emulator. Leave unset for real APS.',
+  APS_BUCKET: 'Optional OSS bucket key. Defaults to one derived from the client ID.',
+  UPSTASH_REDIS_REST_URL:
+    'Upstash Redis REST URL. With the token and VAULT_KEY set, grants persist across serverless instances instead of living in memory.',
+  UPSTASH_REDIS_REST_TOKEN: 'Upstash Redis REST token, paired with the URL above.',
+  VAULT_KEY:
+    'AES-256 key that encrypts grants at rest in Upstash. Generate one with `openssl rand -base64 32`.',
+}
+
+const OPTIONAL_ENV_KEYS = new Set([
+  'APP_ORIGIN',
+  'APS_AUTH_BASE_URL',
+  'APS_BUCKET',
+  'UPSTASH_REDIS_REST_URL',
+  'UPSTASH_REDIS_REST_TOKEN',
+  'VAULT_KEY',
+])
+
+export function requiredEnvKeys(keys: string[]): string[] {
+  return keys.filter((key) => !OPTIONAL_ENV_KEYS.has(key))
+}
+
+/** Vercel's clone flow over the generated template directory, prompting for the keys that have no default. */
+export function deployUrlFor(name: string, envKeys: string[]): string {
+  const params = new URLSearchParams({
+    'repository-url': templateSourceUrl(name),
+    'project-name': `cantera-${name}`,
+    'repository-name': `cantera-${name}`,
+    env: requiredEnvKeys(envKeys).join(','),
+    envDescription: 'APS app credentials and a session secret. The README explains each key.',
+    envLink: docsUrl(name),
+  })
+  return `https://vercel.com/new/clone?${params.toString()}`
+}
