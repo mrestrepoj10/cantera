@@ -13,7 +13,6 @@ function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? '' : 's'}`
 }
 
-/** Everything a catalog card shows for one block or template, computed on the server. */
 export function showcaseEntryFor(item: RegistryItem): ShowcaseEntry {
   const summary = installSummaryFor(item.name)
   const parts = [

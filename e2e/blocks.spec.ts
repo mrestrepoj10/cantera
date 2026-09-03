@@ -13,7 +13,6 @@ test('the blocks page lists every block, filtered by category', async ({ page })
     await expect(page.locator(`article#${item.name}`), item.name).toBeVisible()
   }
 
-  // Any category that some, but not all, blocks carry proves the filter narrows.
   const categories = [...new Set(blockItems.flatMap((item) => item.categories ?? []))]
   const category = categories.find((candidate) => {
     const count = blockItems.filter((item) => item.categories?.includes(candidate)).length

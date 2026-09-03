@@ -83,7 +83,6 @@ export const blockItems = groupsIn('blocks').flatMap((group) => group.items)
 
 export const templateItems = groupsIn('templates').flatMap((group) => group.items)
 
-/** What /view/<name> previews. */
 export const showcaseItems = [...templateItems, ...blockItems]
 
 export const componentRegistryGroups = groupsIn('components', 'foundations')
