@@ -38,12 +38,12 @@ Every domain follows the same layers, and new work stays inside them:
 2. **Provider adapters** (`registry:lib`) — data-only presets that translate one
    API into those types: `aps-oauth-preset` carries Autodesk's provider metadata,
    scope catalog, scope bundles, and a `fromApsUserInfo` adapter.
-3. **Blocks** (`registry:block`, `meta.kind: "block"`) — page-sized compositions of
-   those components: props, endpoints, or callbacks in, a whole screen out, with no
-   routes and no environment of their own.
-4. **Templates** (`registry:block`, `meta.kind: "template"`) — the batteries-included
-   path: a page, its route handlers, environment keys, and the aec-auth glue,
-   mounting a block. `acc-auth-routes` is the shared kit underneath them.
+3. **Blocks** (`meta.kind: "block"`) — sections and surfaces built from those
+   components: sign-in cards, pickers, sidebars, browsers, drop zones. Sample data
+   in, callbacks out, no routes and no environment of their own.
+4. **Templates** (`registry:block`, `meta.kind: "template"`) — ready-to-deploy
+   pages: the route, its API handlers, environment keys, and the aec-auth glue in
+   one install. `acc-auth-routes` is the shared kit underneath them.
 
 Components are data-agnostic and style-agnostic: plain typed props in, callbacks
 out, no fetching, no token mechanics, built only on the consumer's own shadcn
@@ -72,7 +72,7 @@ exports, the files the install writes, and the environment it needs.
 
 ### Templates
 
-Wired pages — routes, environment keys, and provider calls already connected. One command installs a working screen.
+Ready-to-deploy pages: the route, its API handlers, environment keys, and the aec-auth glue in one install.
 
 | Item | Type | What it is | Reference |
 | --- | --- | --- | --- |
@@ -83,14 +83,18 @@ Wired pages — routes, environment keys, and provider calls already connected. 
 
 ### Blocks
 
-Page-sized compositions with no routes and no environment: props, endpoints, or callbacks in, a whole screen out.
+Sections and surfaces built from the components — sign-in cards, pickers, sidebars, browsers, drop zones — with sample data in and callbacks out.
 
 | Item | Type | What it is | Reference |
 | --- | --- | --- | --- |
+| `@cantera/sign-in-card` | block | A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback. | [references/sign-in-card.md](references/sign-in-card.md) |
+| `@cantera/scope-picker` | block | A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog. | [references/scope-picker.md](references/scope-picker.md) |
 | `@cantera/acc-connection-panel` | block | The live Autodesk connection panel: one ConnectionCard wired to a sign-out route and a consent restart, with disconnect and reconnect on the async-pending contract. | [references/acc-connection-panel.md](references/acc-connection-panel.md) |
 | `@cantera/connections-view` | block | The connections dashboard as a presentational block: providers and connections in, connect, reconnect, disconnect, and retry callbacks out — with the designed list, empty, loading, and error states, each exported. | [references/connections-view.md](references/connections-view.md) |
-| `@cantera/model-browser` | block | Hub sidebar, recursive finder, account controls, and a full-bleed Autodesk Viewer composed into one screen, with untranslated-model states. Points at your tree and viewer-token endpoints; model-viewer-page ships those routes. | [references/model-browser.md](references/model-browser.md) |
-| `@cantera/model-upload` | block | Drop zone with archive support, translation options and tracking with manifest diagnostics, a searchable model library, and a shareable full-bleed Viewer composed into one screen. Points at your upload and viewer-token endpoints; model-upload-page ships those routes. | [references/model-upload.md](references/model-upload.md) |
+| `@cantera/hub-browser` | block | A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics. | [references/hub-browser.md](references/hub-browser.md) |
+| `@cantera/finder` | block | Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives. | [references/finder.md](references/finder.md) |
+| `@cantera/hub-sidebar` | block | The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below. | [references/hub-sidebar.md](references/hub-sidebar.md) |
+| `@cantera/file-drop-zone` | block | A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract. | [references/file-drop-zone.md](references/file-drop-zone.md) |
 
 ### Components
 
@@ -99,23 +103,17 @@ Data-agnostic UI — plain typed props in, callbacks out, no fetching and no pro
 | Item | Type | What it is | Reference |
 | --- | --- | --- | --- |
 | `@cantera/provider-sign-in-button` | component | A sign-in button and link for a single OAuth provider: brand icon, label, loading state. ProviderSignInButton handles a click; ProviderSignInLink navigates to an auth route. | [references/provider-sign-in-button.md](references/provider-sign-in-button.md) |
-| `@cantera/sign-in-card` | component | A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback. | [references/sign-in-card.md](references/sign-in-card.md) |
-| `@cantera/scope-picker` | component | A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog. | [references/scope-picker.md](references/scope-picker.md) |
 | `@cantera/user-account-badge` | component | An avatar-and-name chip for a connected account, with optional provider mark. Server-safe. | [references/user-account-badge.md](references/user-account-badge.md) |
 | `@cantera/token-status` | component | Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe. | [references/token-status.md](references/token-status.md) |
 | `@cantera/connection-card` | component | A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions. | [references/connection-card.md](references/connection-card.md) |
 | `@cantera/hub-switcher` | component | The hub context switch: which ACC hub — or any Hub — the rest of the screen works against, with region context and a pending state for the switch itself. | [references/hub-switcher.md](references/hub-switcher.md) |
 | `@cantera/project-picker` | component | The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs. | [references/project-picker.md](references/project-picker.md) |
 | `@cantera/version-set-select` | component | Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake. | [references/version-set-select.md](references/version-set-select.md) |
-| `@cantera/hub-browser` | component | A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics. | [references/hub-browser.md](references/hub-browser.md) |
 | `@cantera/hub-tree` | component | A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation. | [references/hub-tree.md](references/hub-tree.md) |
-| `@cantera/finder` | component | Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives. | [references/finder.md](references/finder.md) |
-| `@cantera/hub-sidebar` | component | The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below. | [references/hub-sidebar.md](references/hub-sidebar.md) |
 | `@cantera/crew-avatar` | component | Deterministic construction-crew SVG avatars — monochrome disc, geometric figure, one accent for the trade on the hard hat — generated from a name with zero dependencies, boring-avatars style. | [references/crew-avatar.md](references/crew-avatar.md) |
 | `@cantera/file-picker-dialog` | component | Hub Browser inside a dialog, with tip-or-version selection and an explicit cancel action. | [references/file-picker-dialog.md](references/file-picker-dialog.md) |
 | `@cantera/aps-viewer` | component | A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar. | [references/aps-viewer.md](references/aps-viewer.md) |
 | `@cantera/model-status-card` | component | The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract. | [references/model-status-card.md](references/model-status-card.md) |
-| `@cantera/file-drop-zone` | component | A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract. | [references/file-drop-zone.md](references/file-drop-zone.md) |
 
 ### Foundations
 

@@ -2,7 +2,7 @@
 
 A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
 
-- Type: component
+- Type: block
 - Install: `npx shadcn@latest add @cantera/sign-in-card`
 - Docs: https://canteraui.vercel.app/components/sign-in-card
 - Registry item: https://canteraui.vercel.app/r/sign-in-card.json

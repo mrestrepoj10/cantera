@@ -16,6 +16,10 @@
       "type": "registry:ui"
     }
   ],
+  "meta": {
+    "kind": "block",
+    "iframeHeight": "520px"
+  },
   "categories": [
     "authentication",
     "login"

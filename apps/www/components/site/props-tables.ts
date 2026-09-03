@@ -1509,7 +1509,7 @@ export const apiTables: ApiTablesByItem = {
       ],
     },
   ],
-  'model-upload': [
+  'model-upload-page': [
     {
       caption: 'ModelUpload props',
       nameHeader: 'Prop',
@@ -1538,8 +1538,6 @@ export const apiTables: ApiTablesByItem = {
         },
       ],
     },
-  ],
-  'model-upload-page': [
     {
       caption: 'Upload route',
       nameHeader: 'Request',
@@ -1571,7 +1569,7 @@ export const apiTables: ApiTablesByItem = {
       ],
     },
   ],
-  'model-browser': [
+  'model-viewer-page': [
     {
       caption: 'ModelBrowser props',
       nameHeader: 'Prop',
@@ -1619,8 +1617,6 @@ export const apiTables: ApiTablesByItem = {
         },
       ],
     },
-  ],
-  'model-viewer-page': [
     {
       caption: 'Tree route',
       nameHeader: 'Query',
@@ -2388,10 +2384,10 @@ export const installNotes: InstallNotesByItem = {
     "APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance, viewCube, radius, toolbarPosition, and toolbarScale changes apply in place. toolbar=none uses the core Viewer3D without Autodesk's native toolbar; viewCube controls the cube independently.\n\nAPSViewerSettings renders an end-user settings panel as a viewer child: a trigger button appended to the SDK toolbar (a corner button when the native toolbar is off) opens a floating panel over the canvas, collapsed by default. It is controlled — hold an APSViewerSettingsValue in state, spread apsViewerPropsFor(value) onto APSViewer, and pass value/onValueChange to the panel. Extra sections compose through children; APSViewerSettingsTrigger is exported alone for custom panels.\n\nThe native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are not a published stable contract, so docking is best-effort and should be checked when changing the Viewer major version. Autodesk Viewer also renders third-party DOM that cantera cannot repair. The docs accessibility suite excludes only the subtree rooted inside the viewer canvas; controls you add around or over the viewer remain in scope. Audit the inherited Autodesk controls against your own product requirements.",
   'file-drop-zone':
     'The component never uploads: onDropFiles hands over validated File objects and the consumer drives the controlled files array as the transfer moves through queued, uploading, processing, complete, and error. The grid surface derives one phase from those files — magnetized during a drag, plotted bottom-up by aggregate progress, an ambient glow while providers translate, and a status tint when work settles. Ambient motion is confined to the surface and falls back to a static treatment under prefers-reduced-motion.\n\nValidation runs before any callback: accept (extension, MIME, and type/* wildcard grammar), maxSize per file, and maxFiles against the tracked list; refusals arrive at onReject with a reason. MODEL_FILE_ACCEPT from upload-types covers the common APS design formats. Retry follows the async-pending contract; remove doubles as cancel while a file is in flight.\n\nshowList false hides the built-in rows while files keep driving the grid; FileDropZoneItem is exported for rendering the same rows in your own layout.',
-  'model-browser':
-    'Fetches from treeEndpoint (default /api/models/tree) and viewerTokenEndpoint (default /api/viewer-token) — the routes @cantera/model-viewer-page ships. Point both at your own handlers to mount the screen without the template. initialNodes skips the first hub read when the server already has the tree; embedded drops the page chrome so the browser fits a docs or preview frame.',
-  'model-upload':
-    'Fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token) — the routes @cantera/model-upload-page ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame.',
+  'model-viewer-page':
+    'ModelBrowser fetches from treeEndpoint (default /api/models/tree) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. Point both at your own handlers to mount the screen elsewhere. initialNodes skips the first hub read when the server already has the tree; embedded drops the page chrome so the browser fits a docs or preview frame.',
+  'model-upload-page':
+    'ModelUpload fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame.',
   'connections-view':
     'Presentational only: providers and connections in, callbacks out. "ready" with nothing connected renders the empty state, and each state — ConnectionsList, ConnectionsEmpty, ConnectionsLoading, ConnectionsError — is exported so adapting the page keeps them. @cantera/connections-page ships ConnectionsManager, the wiring that points these callbacks at the acc-auth-routes handlers.',
   'acc-connection-panel':

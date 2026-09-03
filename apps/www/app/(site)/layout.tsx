@@ -43,6 +43,12 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
               Blocks
             </Link>
             <Link
+              href="/templates"
+              className="focus-ring rounded-md text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Templates
+            </Link>
+            <Link
               href="/demo"
               className="focus-ring rounded-md text-muted-foreground transition-colors hover:text-foreground"
             >

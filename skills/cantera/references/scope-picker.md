@@ -2,7 +2,7 @@
 
 A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog.
 
-- Type: component
+- Type: block
 - Install: `npx shadcn@latest add @cantera/scope-picker`
 - Docs: https://canteraui.vercel.app/components/scope-picker
 - Registry item: https://canteraui.vercel.app/r/scope-picker.json

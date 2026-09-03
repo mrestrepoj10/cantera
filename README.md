@@ -41,8 +41,8 @@ Agents: install the skill with `npx skills add mrestrepoj10/cantera` for the reg
 | `aps-oauth-preset` | lib | Autodesk (APS / ACC) preset: provider metadata, scope catalog, scope bundles, adapters. |
 | `status-tokens` | tokens | The semantic status palette as CSS variables, plus `statusCssVars` — the same twelve tokens typed, for inline styles and chart series. |
 | `provider-sign-in-button` | component | Sign-in button and link for one provider: brand icon, label, loading state. |
-| `sign-in-card` | component | Multi-provider sign-in chooser. Server-renderable via href template, or client-driven. |
-| `scope-picker` | component | Controlled scope picker: descriptions, one-click presets, required scopes pinned on. |
+| `sign-in-card` | block | Multi-provider sign-in chooser. Server-renderable via href template, or client-driven. |
+| `scope-picker` | block | Controlled scope picker: descriptions, one-click presets, required scopes pinned on. |
 | `user-account-badge` | component | Avatar-and-name chip for a connected account. Server-safe. |
 | `token-status` | component | Grant status line: connection state, token expiry, held scopes. Server-safe. |
 | `connection-card` | component | A provider connection at a glance, with disconnect / reconnect. |
@@ -56,24 +56,22 @@ Agents: install the skill with `npx skills add mrestrepoj10/cantera` for the reg
 | `hub-switcher` | component | Controlled hub selector for switching account-level project containers. |
 | `project-picker` | component | Searchable project picker with optional hub grouping. |
 | `version-set-select` | component | ACC Sheets issuance selector with locale-aware dates. |
-| `hub-browser` | component | Controlled hub-to-file browser with breadcrumbs, pagination, translation status, and on-demand version selection. |
+| `hub-browser` | block | Controlled hub-to-file browser with breadcrumbs, pagination, translation status, and on-demand version selection. |
 | `hub-tree` | component | Accessible lazy hub, project, folder, item, and version tree. |
-| `finder` | component | Search surface for loaded, recent, and remote files with path-aware results. |
-| `hub-sidebar` | component | Finder and project tree composed into a shadcn sidebar. |
+| `finder` | block | Search surface for loaded, recent, and remote files with path-aware results. |
+| `hub-sidebar` | block | Finder and project tree composed into a shadcn sidebar. |
 | `crew-avatar` | component | Deterministic monochrome construction-worker avatar generated from a name and role. |
 | `file-picker-dialog` | component | The hub browser in a dialog, returning an item tip or an exact version. |
 | `viewer-types` | lib | Structural types for the public Autodesk Viewer global runtime. |
 | `viewer-extension-types` | lib | Typed Autodesk Viewer extension catalog, options, and compatibility metadata. |
 | `aps-viewer` | component | Strict-Mode-safe Viewer host with native-toolbar docking and sizing, live theme changes, URN swaps, resize, and hooks. |
 | `model-status-card` | component | Translation status, progress, diagnostics, retry, and open actions. |
-| `model-browser` | block | Hub sidebar, recursive finder, and full-bleed Viewer in one screen, pointed at your tree and token endpoints. |
 | `model-viewer-page` | template | Signed-in ACC project tree, recursive finder, and full-bleed Autodesk Viewer page. |
-| `model-upload` | block | Drop zone, translation tracking, model library, and Viewer in one screen, pointed at your upload and token endpoints. |
 | `model-upload-page` | template | Two-legged OSS upload, translation tracking, model library, and Viewer page. |
 | `upload-types` | lib | Generic upload lifecycle types, accept matching, and localized byte formatting. |
-| `file-drop-zone` | component | Validated AEC drag-and-drop surface with progress, processing, retry, and removal states. |
+| `file-drop-zone` | block | Validated AEC drag-and-drop surface with progress, processing, retry, and removal states. |
 
-Items sit on four rungs. **Foundations** are the shared types, provider presets, status tokens, and the auth kit. **Components** are data-agnostic by design: they never fetch. **Blocks** are page-sized compositions of components with no routes and no environment — props, endpoints, or callbacks in, a whole screen out. **Templates** are the batteries-included path: a page, its route handlers, environment keys, and the aec-auth glue, mounting a block. In `registry.json` a block and a template are both `registry:block`; `meta.kind` tells them apart, and the site, the skill, and the llms artifacts group by it. The pattern every domain follows is **types + adapters + blocks + templates**. Issues, RFIs, and submittals are future domains; model viewing already follows the pattern above.
+Items sit on four rungs. **Foundations** are the shared types, provider presets, status tokens, and the auth kit. **Components** are data-agnostic by design: they never fetch. **Blocks** are the sections and surfaces built from them — sign-in cards, scope pickers, sidebars, browsers, drop zones — with sample data in and callbacks out, no routes and no environment. **Templates** are ready-to-deploy pages: the route, its API handlers, environment keys, and the aec-auth glue in one install. In `registry.json`, `meta.kind` carries the rung for blocks and templates; the site, the skill, and the llms artifacts group by it. The pattern every domain follows is **types + adapters + components + blocks + templates**. Issues, RFIs, and submittals are future domains; model viewing already follows the pattern above.
 
 Every item page carries a **Copy prompt** button: the install as an agent-runnable prompt — register the namespace, run the add, then read the keys and the Next list the CLI prints. Only templates and the kit print install notes; every other item keeps its notes on its docs page.
 
@@ -110,7 +108,7 @@ Point `ConnectionsView` at any backend — it never fetches.
 
 ## The model-upload-page template
 
-`npx shadcn@latest add @cantera/model-upload-page` installs `/upload`, its two-legged upload and Viewer token routes, and the `model-upload` block as the UI. Protect the routes with your application access control: they intentionally use application credentials rather than an end-user session.
+`npx shadcn@latest add @cantera/model-upload-page` installs `/upload`, its two-legged upload and Viewer token routes, and the upload UI. Protect the routes with your application access control: they intentionally use application credentials rather than an end-user session.
 
 | Variable | Meaning |
 | --- | --- |

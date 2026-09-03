@@ -18,6 +18,10 @@
       "type": "registry:ui"
     }
   ],
+  "meta": {
+    "kind": "block",
+    "iframeHeight": "640px"
+  },
   "categories": [
     "projects",
     "navigation"

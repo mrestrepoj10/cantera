@@ -14,6 +14,11 @@ interface SidebarGroup {
   items: SidebarItem[]
 }
 
+const catalogPages = [
+  { href: '/blocks', label: 'Blocks' },
+  { href: '/templates', label: 'Templates' },
+]
+
 const linkClass =
   'focus-ring flex min-h-8 items-center rounded-md px-2 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:font-medium aria-[current=page]:text-foreground'
 
@@ -37,21 +42,27 @@ function CatalogLinks({ groups, pathname }: { groups: SidebarGroup[]; pathname: 
         </Link>
       </div>
 
+      <div>
+        <p className="mb-2 font-medium text-muted-foreground text-xs">Catalog</p>
+        <ul>
+          {catalogPages.map((page) => (
+            <li key={page.href}>
+              <Link
+                href={page.href}
+                aria-current={pathname === page.href ? 'page' : undefined}
+                className={linkClass}
+              >
+                {page.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       {groups.map((group) => (
         <div key={group.id}>
           <p className="mb-2 font-medium text-muted-foreground text-xs">{group.title}</p>
           <ul>
-            {group.id === 'blocks' && (
-              <li>
-                <Link
-                  href="/blocks"
-                  aria-current={pathname === '/blocks' ? 'page' : undefined}
-                  className={linkClass}
-                >
-                  All blocks
-                </Link>
-              </li>
-            )}
             {group.items.map((item) => {
               const href = `/components/${item.name}`
               const isCurrent = pathname === href

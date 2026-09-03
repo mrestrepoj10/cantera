@@ -117,6 +117,10 @@
       "author": "MR <contact@bimframe.co>",
       "description": "A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.",
       "categories": ["authentication", "login"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "520px"
+      },
       "registryDependencies": ["card", "@cantera/provider-sign-in-button", "@cantera/oauth-types"],
       "files": [
         {
@@ -132,6 +136,10 @@
       "author": "MR <contact@bimframe.co>",
       "description": "A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog.",
       "categories": ["authentication", "permissions", "forms"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "640px"
+      },
       "dependencies": ["lucide-react"],
       "registryDependencies": [
         "badge",
@@ -472,6 +480,10 @@
       "author": "MR <contact@bimframe.co>",
       "description": "A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics.",
       "categories": ["projects", "files", "navigation", "autodesk"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "560px"
+      },
       "dependencies": ["lucide-react"],
       "registryDependencies": [
         "badge",
@@ -517,6 +529,10 @@
       "author": "MR <contact@bimframe.co>",
       "description": "Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives.",
       "categories": ["projects", "search"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "520px"
+      },
       "dependencies": ["lucide-react"],
       "registryDependencies": [
         "button",
@@ -538,6 +554,10 @@
       "author": "MR <contact@bimframe.co>",
       "description": "The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.",
       "categories": ["projects", "navigation"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "640px"
+      },
       "registryDependencies": [
         "avatar",
         "dropdown-menu",
@@ -703,47 +723,6 @@
       ]
     },
     {
-      "name": "model-browser",
-      "type": "registry:block",
-      "title": "Model Browser",
-      "author": "MR <contact@bimframe.co>",
-      "description": "Hub sidebar, recursive finder, account controls, and a full-bleed Autodesk Viewer composed into one screen, with untranslated-model states. Points at your tree and viewer-token endpoints; model-viewer-page ships those routes.",
-      "categories": ["projects", "files", "viewer", "autodesk"],
-      "meta": {
-        "kind": "block",
-        "iframeHeight": "720px"
-      },
-      "dependencies": ["lucide-react"],
-      "registryDependencies": [
-        "button",
-        "sidebar",
-        "@cantera/hub-sidebar",
-        "@cantera/hub-tree",
-        "@cantera/finder",
-        "@cantera/aps-viewer",
-        "@cantera/viewer-types",
-        "@cantera/viewer-extension-types",
-        "@cantera/project-types",
-        "@cantera/model-status-card",
-        "@cantera/token-status",
-        "@cantera/user-account-badge",
-        "@cantera/oauth-types",
-        "@cantera/status-tokens"
-      ],
-      "files": [
-        {
-          "path": "registry/blocks/model-browser/model-browser.tsx",
-          "type": "registry:component",
-          "target": "components/model-browser.tsx"
-        },
-        {
-          "path": "registry/blocks/model-browser/model-finder.ts",
-          "type": "registry:component",
-          "target": "components/model-finder.ts"
-        }
-      ]
-    },
-    {
       "name": "model-viewer-page",
       "type": "registry:block",
       "title": "Model Viewer Page",
@@ -756,11 +735,22 @@
       },
       "dependencies": ["aec-auth", "lucide-react"],
       "registryDependencies": [
-        "@cantera/model-browser",
+        "button",
+        "sidebar",
         "@cantera/acc-auth-routes",
         "@cantera/aps-data-preset",
         "@cantera/project-types",
-        "@cantera/oauth-types"
+        "@cantera/oauth-types",
+        "@cantera/hub-sidebar",
+        "@cantera/hub-tree",
+        "@cantera/finder",
+        "@cantera/aps-viewer",
+        "@cantera/viewer-types",
+        "@cantera/viewer-extension-types",
+        "@cantera/model-status-card",
+        "@cantera/token-status",
+        "@cantera/user-account-badge",
+        "@cantera/status-tokens"
       ],
       "files": [
         {
@@ -772,6 +762,16 @@
           "path": "registry/blocks/model-viewer-page/loading.tsx",
           "type": "registry:file",
           "target": "app/models/loading.tsx"
+        },
+        {
+          "path": "registry/blocks/model-viewer-page/components/model-browser.tsx",
+          "type": "registry:component",
+          "target": "components/model-browser.tsx"
+        },
+        {
+          "path": "registry/blocks/model-viewer-page/components/model-finder.ts",
+          "type": "registry:component",
+          "target": "components/model-finder.ts"
         },
         {
           "path": "registry/blocks/model-viewer-page/api/tree-route.ts",
@@ -791,46 +791,7 @@
         "APP_ORIGIN": "",
         "APS_AUTH_BASE_URL": ""
       },
-      "docs": "Installed at /models: the page, its loading UI, the lazy /api/models/tree route, and the two-legged /api/viewer-token route. The screen is @cantera/model-browser; signed out, /models renders ScopedAutodeskSignIn inline.\n\nNext:\n1. Fill the keys acc-auth-routes added to .env.local (see its notes above).\n2. Run next dev and open /models.\n\nThe cantera showcase emulator supplies a project tree but no geometry; store real derivative URNs on your item versions.\nReference: https://canteraui.vercel.app/components/model-viewer-page"
-    },
-    {
-      "name": "model-upload",
-      "type": "registry:block",
-      "title": "Model Upload",
-      "author": "MR <contact@bimframe.co>",
-      "description": "Drop zone with archive support, translation options and tracking with manifest diagnostics, a searchable model library, and a shareable full-bleed Viewer composed into one screen. Points at your upload and viewer-token endpoints; model-upload-page ships those routes.",
-      "categories": ["files", "upload", "viewer", "autodesk"],
-      "meta": {
-        "kind": "block",
-        "iframeHeight": "720px"
-      },
-      "dependencies": ["lucide-react"],
-      "registryDependencies": [
-        "button",
-        "checkbox",
-        "dialog",
-        "input",
-        "label",
-        "sidebar",
-        "@cantera/hub-sidebar",
-        "@cantera/hub-tree",
-        "@cantera/finder",
-        "@cantera/file-drop-zone",
-        "@cantera/aps-viewer",
-        "@cantera/viewer-types",
-        "@cantera/viewer-extension-types",
-        "@cantera/model-status-card",
-        "@cantera/upload-types",
-        "@cantera/project-types",
-        "@cantera/status-tokens"
-      ],
-      "files": [
-        {
-          "path": "registry/blocks/model-upload/model-upload.tsx",
-          "type": "registry:component",
-          "target": "components/model-upload.tsx"
-        }
-      ]
+      "docs": "Installed at /models: the page, its loading UI, the lazy /api/models/tree route, and the two-legged /api/viewer-token route. ModelBrowser is the screen; signed out, /models renders ScopedAutodeskSignIn inline.\n\nNext:\n1. Fill the keys acc-auth-routes added to .env.local (see its notes above).\n2. Run next dev and open /models.\n\nThe cantera showcase emulator supplies a project tree but no geometry; store real derivative URNs on your item versions.\nReference: https://canteraui.vercel.app/components/model-viewer-page"
     },
     {
       "name": "model-upload-page",
@@ -845,9 +806,23 @@
       },
       "dependencies": ["aec-auth", "lucide-react"],
       "registryDependencies": [
-        "@cantera/model-upload",
+        "button",
+        "checkbox",
+        "dialog",
+        "input",
+        "label",
+        "sidebar",
         "@cantera/upload-types",
-        "@cantera/project-types"
+        "@cantera/project-types",
+        "@cantera/hub-sidebar",
+        "@cantera/hub-tree",
+        "@cantera/finder",
+        "@cantera/file-drop-zone",
+        "@cantera/aps-viewer",
+        "@cantera/viewer-types",
+        "@cantera/viewer-extension-types",
+        "@cantera/model-status-card",
+        "@cantera/status-tokens"
       ],
       "files": [
         {
@@ -859,6 +834,11 @@
           "path": "registry/blocks/model-upload-page/loading.tsx",
           "type": "registry:file",
           "target": "app/upload/loading.tsx"
+        },
+        {
+          "path": "registry/blocks/model-upload-page/components/model-upload.tsx",
+          "type": "registry:component",
+          "target": "components/model-upload.tsx"
         },
         {
           "path": "registry/blocks/model-upload-page/api/upload-route.ts",
@@ -883,7 +863,7 @@
         "APP_ORIGIN": "",
         "APS_AUTH_BASE_URL": ""
       },
-      "docs": "Installed at /upload: the page, its loading UI, the two-legged /api/models/upload route (bucket bootstrap, signed S3 uploads, translation jobs, manifest status), and /api/viewer-token. The screen is @cantera/model-upload. No sign-in is installed: every route runs on the app's credentials, so add your own access control before shipping beyond a trusted team.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_BUCKET optional (derived from the client id); APP_ORIGIN in production.\n2. Run next dev and open /upload.\n\nFiles over 250 MB are rejected; raise PART_SIZE or MAX_PARTS in the route.\nReference: https://canteraui.vercel.app/components/model-upload-page"
+      "docs": "Installed at /upload: the page, its loading UI, the two-legged /api/models/upload route (bucket bootstrap, signed S3 uploads, translation jobs, manifest status), and /api/viewer-token. ModelUpload is the screen. No sign-in is installed: every route runs on the app's credentials, so add your own access control before shipping beyond a trusted team.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_BUCKET optional (derived from the client id); APP_ORIGIN in production.\n2. Run next dev and open /upload.\n\nFiles over 250 MB are rejected; raise PART_SIZE or MAX_PARTS in the route.\nReference: https://canteraui.vercel.app/components/model-upload-page"
     },
     {
       "name": "upload-types",
@@ -907,6 +887,10 @@
       "author": "MR <contact@bimframe.co>",
       "description": "A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract.",
       "categories": ["uploads", "files"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "560px"
+      },
       "dependencies": ["lucide-react"],
       "registryDependencies": [
         "button",

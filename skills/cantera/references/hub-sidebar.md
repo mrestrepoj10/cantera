@@ -2,7 +2,7 @@
 
 The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.
 
-- Type: component
+- Type: block
 - Install: `npx shadcn@latest add @cantera/hub-sidebar`
 - Docs: https://canteraui.vercel.app/components/hub-sidebar
 - Registry item: https://canteraui.vercel.app/r/hub-sidebar.json

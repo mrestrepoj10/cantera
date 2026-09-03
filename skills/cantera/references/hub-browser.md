@@ -2,7 +2,7 @@
 
 A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics.
 
-- Type: component
+- Type: block
 - Install: `npx shadcn@latest add @cantera/hub-browser`
 - Docs: https://canteraui.vercel.app/components/hub-browser
 - Registry item: https://canteraui.vercel.app/r/hub-browser.json

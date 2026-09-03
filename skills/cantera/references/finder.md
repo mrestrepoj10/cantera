@@ -2,7 +2,7 @@
 
 Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives.
 
-- Type: component
+- Type: block
 - Install: `npx shadcn@latest add @cantera/finder`
 - Docs: https://canteraui.vercel.app/components/finder
 - Registry item: https://canteraui.vercel.app/r/finder.json
