@@ -25,8 +25,8 @@ export default function TemplatesPage() {
         </h1>
         <p className="mt-4 max-w-2xl text-balance text-muted-foreground sm:text-lg">
           One command installs the page, its API routes, and its environment keys on aec-auth. Fill
-          the keys, run the app, open the URL — every template runs against the built-in emulator
-          until you add real credentials.
+          the keys with your APS app credentials, run the app, open the URL. The previews below run
+          against the showcase emulator; an installed template talks to real APS.
         </p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Button
