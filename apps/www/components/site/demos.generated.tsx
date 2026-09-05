@@ -85,7 +85,8 @@ const demos: Record<string, DemoComponent> = {
     default: (await import('@/components/examples/copy-field-demo')).CopyFieldDemo,
   })) as DemoComponent,
   'provisioning-notice': lazy(async () => ({
-    default: (await import('@/components/examples/provisioning-notice-demo')).ProvisioningNoticeDemo,
+    default: (await import('@/components/examples/provisioning-notice-demo'))
+      .ProvisioningNoticeDemo,
   })) as DemoComponent,
 }
 
