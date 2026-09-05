@@ -81,6 +81,12 @@ const demos: Record<string, DemoComponent> = {
   'file-drop-zone': lazy(async () => ({
     default: (await import('@/components/examples/file-drop-zone-demo')).FileDropZoneDemo,
   })) as DemoComponent,
+  'copy-field': lazy(async () => ({
+    default: (await import('@/components/examples/copy-field-demo')).CopyFieldDemo,
+  })) as DemoComponent,
+  'provisioning-notice': lazy(async () => ({
+    default: (await import('@/components/examples/provisioning-notice-demo')).ProvisioningNoticeDemo,
+  })) as DemoComponent,
 }
 
 export function getDemoComponent(name: string): DemoComponent | undefined {

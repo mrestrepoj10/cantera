@@ -95,6 +95,7 @@ Sections and surfaces built from the components — sign-in cards, pickers, side
 | `@cantera/finder` | block | Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives. | [references/finder.md](references/finder.md) |
 | `@cantera/hub-sidebar` | block | The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below. | [references/hub-sidebar.md](references/hub-sidebar.md) |
 | `@cantera/file-drop-zone` | block | A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract. | [references/file-drop-zone.md](references/file-drop-zone.md) |
+| `@cantera/provisioning-notice` | block | The empty state every ACC app hits: signed in, but no hubs until an account admin adds the client ID under Custom Integrations. Names the step, hands over the ID, and says what else an empty list can mean. | [references/provisioning-notice.md](references/provisioning-notice.md) |
 
 ### Components
 
@@ -114,6 +115,7 @@ Data-agnostic UI — plain typed props in, callbacks out, no fetching and no pro
 | `@cantera/file-picker-dialog` | component | Hub Browser inside a dialog, with tip-or-version selection and an explicit cancel action. | [references/file-picker-dialog.md](references/file-picker-dialog.md) |
 | `@cantera/aps-viewer` | component | A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar. | [references/aps-viewer.md](references/aps-viewer.md) |
 | `@cantera/model-status-card` | component | The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract. | [references/model-status-card.md](references/model-status-card.md) |
+| `@cantera/copy-field` | component | A value someone has to paste into another system — a client ID, a callback URL — shown in full and always selectable, with a copy button that confirms. | [references/copy-field.md](references/copy-field.md) |
 
 ### Foundations
 
@@ -130,6 +132,8 @@ The shared types, provider presets, design tokens, and auth wiring kit every oth
 | `@cantera/viewer-types` | types | Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks. | [references/viewer-types.md](references/viewer-types.md) |
 | `@cantera/viewer-extension-types` | types | A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source. | [references/viewer-extension-types.md](references/viewer-extension-types.md) |
 | `@cantera/upload-types` | types | Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting. | [references/upload-types.md](references/upload-types.md) |
+| `@cantera/photo-types` | types | Generic field-photo types for cantera components: categories, media kinds, the photo record with optional geolocation, and cursor pages. The lingua franca photo adapters translate into. | [references/photo-types.md](references/photo-types.md) |
+| `@cantera/acc-photos-preset` | preset | Autodesk Construction Cloud Photos API adapter into the generic photo types: origin-module and media-kind normalization, the markup and logo filter, and the Autodesk Build deep link. | [references/acc-photos-preset.md](references/acc-photos-preset.md) |
 
 ## Working examples
 
@@ -153,6 +157,8 @@ npx shadcn@latest add @cantera/file-picker-dialog-demo
 npx shadcn@latest add @cantera/aps-viewer-demo
 npx shadcn@latest add @cantera/model-status-card-demo
 npx shadcn@latest add @cantera/file-drop-zone-demo
+npx shadcn@latest add @cantera/copy-field-demo
+npx shadcn@latest add @cantera/provisioning-notice-demo
 ```
 
 ## More

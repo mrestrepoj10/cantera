@@ -113,6 +113,16 @@ const pieces = [
   },
 ]
 
+const builtOnTheStack = [
+  {
+    name: 'placed',
+    role: 'Photos, placed. A spatial viewer for ACC field photos.',
+    detail:
+      'Every geolocated photo in a Construction Cloud project on a map, streamed live and deep-linked back to Autodesk Build. cantera renders the sign-in card, the project picker in the map, and the connection card; aec-auth over Vercel Connect holds the tokens. Its photo normalization is where photo-types and acc-photos-preset come from.',
+    href: 'https://github.com/mrestrepoj10/placed',
+  },
+]
+
 const envVars = [
   {
     name: 'APS_CLIENT_ID / APS_CLIENT_SECRET',
@@ -226,6 +236,30 @@ export default function StackPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      </Section>
+
+      <Section id="built" title="Built on the stack">
+        <p className="text-muted-foreground text-sm">
+          Products that install cantera and run on aec-auth. Each one is also where the next
+          domain's types and adapters get proven before they land in the registry.
+        </p>
+        <div className="flex flex-col gap-3">
+          {builtOnTheStack.map((product) => (
+            <a
+              key={product.name}
+              href={product.href}
+              target="_blank"
+              rel="noreferrer"
+              className="focus-ring flex flex-col gap-1.5 rounded-lg border border-border p-5 transition-colors hover:border-foreground/25"
+            >
+              <span className="flex flex-wrap items-baseline gap-x-2">
+                <span className="font-mono text-code">{product.name}</span>
+                <span className="text-muted-foreground text-xs">{product.role}</span>
+              </span>
+              <span className="text-muted-foreground text-sm">{product.detail}</span>
+            </a>
+          ))}
         </div>
       </Section>
 

@@ -316,3 +316,39 @@ Description: A drafting-grid drop zone for heavy AEC files: the dot grid magneti
 Install: npx shadcn@latest add @cantera/file-drop-zone
 Docs: https://canteraui.vercel.app/components/file-drop-zone
 Item: https://canteraui.vercel.app/r/file-drop-zone.json
+
+### photo-types
+
+Title: Photo Types
+Type: types
+Description: Generic field-photo types for cantera components: categories, media kinds, the photo record with optional geolocation, and cursor pages. The lingua franca photo adapters translate into.
+Install: npx shadcn@latest add @cantera/photo-types
+Docs: https://canteraui.vercel.app/components/photo-types
+Item: https://canteraui.vercel.app/r/photo-types.json
+
+### acc-photos-preset
+
+Title: ACC Photos Preset
+Type: preset
+Description: Autodesk Construction Cloud Photos API adapter into the generic photo types: origin-module and media-kind normalization, the markup and logo filter, and the Autodesk Build deep link.
+Install: npx shadcn@latest add @cantera/acc-photos-preset
+Docs: https://canteraui.vercel.app/components/acc-photos-preset
+Item: https://canteraui.vercel.app/r/acc-photos-preset.json
+
+### copy-field
+
+Title: Copy Field
+Type: component
+Description: A value someone has to paste into another system — a client ID, a callback URL — shown in full and always selectable, with a copy button that confirms.
+Install: npx shadcn@latest add @cantera/copy-field
+Docs: https://canteraui.vercel.app/components/copy-field
+Item: https://canteraui.vercel.app/r/copy-field.json
+
+### provisioning-notice
+
+Title: Provisioning Notice
+Type: block
+Description: The empty state every ACC app hits: signed in, but no hubs until an account admin adds the client ID under Custom Integrations. Names the step, hands over the ID, and says what else an empty list can mean.
+Install: npx shadcn@latest add @cantera/provisioning-notice
+Docs: https://canteraui.vercel.app/components/provisioning-notice
+Item: https://canteraui.vercel.app/r/provisioning-notice.json

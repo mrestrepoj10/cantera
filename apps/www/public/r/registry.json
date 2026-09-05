@@ -909,6 +909,72 @@
       ]
     },
     {
+      "name": "photo-types",
+      "type": "registry:lib",
+      "title": "Photo Types",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Generic field-photo types for cantera components: categories, media kinds, the photo record with optional geolocation, and cursor pages. The lingua franca photo adapters translate into.",
+      "categories": ["photos", "types"],
+      "files": [
+        {
+          "path": "registry/lib/photo-types.ts",
+          "type": "registry:lib",
+          "target": "lib/photo-types.ts"
+        }
+      ]
+    },
+    {
+      "name": "acc-photos-preset",
+      "type": "registry:lib",
+      "title": "ACC Photos Preset",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Autodesk Construction Cloud Photos API adapter into the generic photo types: origin-module and media-kind normalization, the markup and logo filter, and the Autodesk Build deep link.",
+      "categories": ["photos", "autodesk"],
+      "registryDependencies": ["@cantera/photo-types"],
+      "files": [
+        {
+          "path": "registry/lib/acc-photos-preset.ts",
+          "type": "registry:lib",
+          "target": "lib/acc-photos-preset.ts"
+        }
+      ]
+    },
+    {
+      "name": "copy-field",
+      "type": "registry:component",
+      "title": "Copy Field",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A value someone has to paste into another system — a client ID, a callback URL — shown in full and always selectable, with a copy button that confirms.",
+      "categories": ["forms", "onboarding"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": ["button"],
+      "files": [
+        {
+          "path": "registry/ui/copy-field.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "provisioning-notice",
+      "type": "registry:component",
+      "title": "Provisioning Notice",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The empty state every ACC app hits: signed in, but no hubs until an account admin adds the client ID under Custom Integrations. Names the step, hands over the ID, and says what else an empty list can mean.",
+      "categories": ["projects", "onboarding"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "420px"
+      },
+      "registryDependencies": ["@cantera/copy-field"],
+      "files": [
+        {
+          "path": "registry/ui/provisioning-notice.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "status-tokens-demo",
       "type": "registry:example",
       "title": "Status Tokens Example",
@@ -1236,6 +1302,48 @@
           "path": "registry/examples/pages/file-drop-zone-demo-page.tsx",
           "type": "registry:page",
           "target": "app/examples/file-drop-zone/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "copy-field-demo",
+      "type": "registry:example",
+      "title": "Copy Field Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Copy Field, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["forms", "onboarding"],
+      "registryDependencies": ["@cantera/copy-field"],
+      "files": [
+        {
+          "path": "registry/examples/copy-field-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/copy-field-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/copy-field-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/copy-field/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "provisioning-notice-demo",
+      "type": "registry:example",
+      "title": "Provisioning Notice Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Provisioning Notice, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "onboarding"],
+      "registryDependencies": ["button", "@cantera/provisioning-notice"],
+      "files": [
+        {
+          "path": "registry/examples/provisioning-notice-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/provisioning-notice-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/provisioning-notice-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/provisioning-notice/page.tsx"
         }
       ]
     }

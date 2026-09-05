@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "acc-photos-preset",
+  "title": "ACC Photos Preset",
+  "author": "MR <contact@bimframe.co>",
+  "description": "Autodesk Construction Cloud Photos API adapter into the generic photo types: origin-module and media-kind normalization, the markup and logo filter, and the Autodesk Build deep link.",
+  "registryDependencies": [
+    "@cantera/photo-types"
+  ],
+  "files": [
+    {
+      "path": "registry/lib/acc-photos-preset.ts",
+      "content": "import type { FieldPhoto, PhotoCategory, PhotoMediaType } from '@/lib/photo-types'\n\n// Data translation, not a client — fetching and token handling belong to your\n// auth layer. The input interface is the structural subset the adapter reads\n// from the ACC Photos API (photos:filter and photos/{id}).\n\nexport interface AccPhotoDoc {\n  id: string\n  title?: string | null\n  type?: string\n  mediaType?: string\n  createdAt: string\n  takenAt?: string | null\n  deletedAt?: string | null\n  latitude?: number | null\n  longitude?: number | null\n}\n\n/** Origin types hidden by default — markups and logos are project artifacts,\n * not field photos. */\nexport const HIDDEN_ACC_PHOTO_TYPES: ReadonlySet<string> = new Set(['MARKUP', 'LOGO'])\n\nconst CATEGORY_BY_TYPE = new Map<string, PhotoCategory>([\n  ['FIELD-REPORT', 'field-report'],\n  ['ISSUE', 'issue'],\n  ['FORM', 'form'],\n  ['RFI', 'rfi'],\n  ['GALLERY', 'gallery'],\n  ['ASSET', 'asset'],\n  ['MEETING', 'meeting'],\n  ['SUBMITTAL', 'submittal'],\n])\n\nconst MEDIA_TYPE_BY_NAME = new Map<string, PhotoMediaType>([\n  ['NORMAL', 'photo'],\n  ['VIDEO', 'video'],\n  ['PHOTOSPHERE', 'photosphere'],\n  ['INFRARED', 'infrared'],\n])\n\n// Older clients vary case and separator (\"Field_Report\", \"field report\").\nfunction normalizedEnum(value: string | undefined): string {\n  return (\n    value\n      ?.trim()\n      .toUpperCase()\n      .replace(/[\\s_]+/g, '-') ?? ''\n  )\n}\n\n/** ACC omits `type` for media uploaded straight to the gallery, so a missing\n * type reads as \"gallery\" while an unknown one reads as \"other\". */\nexport function toPhotoCategory(type: string | undefined): PhotoCategory {\n  const normalized = normalizedEnum(type)\n  if (!normalized) return 'gallery'\n  return CATEGORY_BY_TYPE.get(normalized) ?? 'other'\n}\n\nexport function toPhotoMediaType(mediaType: string | undefined): PhotoMediaType {\n  return MEDIA_TYPE_BY_NAME.get(normalizedEnum(mediaType)) ?? 'photo'\n}\n\nexport function isVisibleAccPhoto(doc: AccPhotoDoc): boolean {\n  return !doc.deletedAt && !HIDDEN_ACC_PHOTO_TYPES.has(normalizedEnum(doc.type))\n}\n\n/** Deep link into the Autodesk Build photo gallery. Not a documented URL\n * shape — verified against ACC Build; degrade to the project gallery if it\n * drifts. */\nexport function accBuildPhotoUrl(projectId: string, photoId: string): string {\n  return `https://acc.autodesk.com/build/photos/projects/${projectId}?photoId=${photoId}`\n}\n\n/** Where the photo's bytes are served from. ACC's signed URLs expire in about\n * a minute, so the thumbnail is usually a proxy route of yours, resolved\n * per photo id. */\nexport interface AccPhotoLinks {\n  thumbnailUrl: (photoId: string) => string\n  /** Defaults to the Autodesk Build deep link. */\n  sourceUrl?: (photoId: string) => string | null\n}\n\nexport function fromAccPhoto(\n  doc: AccPhotoDoc,\n  projectId: string,\n  links: AccPhotoLinks,\n): FieldPhoto {\n  return {\n    id: doc.id,\n    title: doc.title?.trim() || null,\n    category: toPhotoCategory(doc.type),\n    mediaType: toPhotoMediaType(doc.mediaType),\n    takenAt: doc.takenAt ?? null,\n    createdAt: doc.createdAt,\n    latitude: doc.latitude ?? null,\n    longitude: doc.longitude ?? null,\n    thumbnailUrl: links.thumbnailUrl(doc.id),\n    sourceUrl: links.sourceUrl ? links.sourceUrl(doc.id) : accBuildPhotoUrl(projectId, doc.id),\n  }\n}\n",
+      "type": "registry:lib",
+      "target": "lib/acc-photos-preset.ts"
+    }
+  ],
+  "categories": [
+    "photos",
+    "autodesk"
+  ],
+  "type": "registry:lib"
+}
