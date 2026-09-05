@@ -44,6 +44,8 @@ const PAGE_WIDTH: PageWidthByExample = {
   'hub-browser': 'max-w-3xl',
   'file-picker-dialog': 'max-w-sm',
   'aps-viewer': 'max-w-6xl',
+  'copy-field': 'max-w-lg',
+  'provisioning-notice': 'max-w-xl',
 }
 
 const DEFAULT_PAGE_WIDTH = 'max-w-md'

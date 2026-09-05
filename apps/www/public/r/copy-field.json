@@ -1,0 +1,25 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "copy-field",
+  "title": "Copy Field",
+  "author": "MR <contact@bimframe.co>",
+  "description": "A value someone has to paste into another system — a client ID, a callback URL — shown in full and always selectable, with a copy button that confirms.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "button"
+  ],
+  "files": [
+    {
+      "path": "registry/ui/copy-field.tsx",
+      "content": "'use client'\n\nimport { CheckIcon, CopyIcon } from 'lucide-react'\nimport type * as React from 'react'\nimport { useEffect, useState } from 'react'\n\nimport { Button } from '@/components/ui/button'\nimport { cn } from '@/lib/utils'\n\ninterface CopyFieldProps extends Omit<React.ComponentProps<'div'>, 'children'> {\n  /** The value someone has to paste into another system. */\n  value: string\n  /** Names the value for the copy button's accessible name: \"Copy client ID\". */\n  label: string\n  /** How long the confirmation shows, in milliseconds. */\n  confirmMs?: number\n}\n\n/** The value stays fully visible and selectable: the Clipboard API is\n * unavailable on non-secure origins, so the button is the convenience, not\n * the only way out. */\nfunction CopyField({ value, label, confirmMs = 2000, className, ...props }: CopyFieldProps) {\n  const [copied, setCopied] = useState(false)\n\n  useEffect(() => {\n    if (!copied) return\n    const timer = window.setTimeout(() => setCopied(false), confirmMs)\n    return () => window.clearTimeout(timer)\n  }, [copied, confirmMs])\n\n  async function copy() {\n    try {\n      await navigator.clipboard.writeText(value)\n      setCopied(true)\n    } catch {\n      setCopied(false)\n    }\n  }\n\n  return (\n    <div\n      data-slot=\"copy-field\"\n      className={cn(\n        'flex items-center gap-3 rounded-md border border-border bg-muted/40 py-1.5 pr-1.5 pl-3',\n        className,\n      )}\n      {...props}\n    >\n      <code className=\"min-w-0 flex-1 select-all break-all font-mono text-xs\">{value}</code>\n      <Button\n        type=\"button\"\n        size=\"sm\"\n        variant=\"ghost\"\n        onClick={copy}\n        aria-label={`Copy ${label}`}\n        // The pseudo-element extends the hit area to the 44px floor.\n        className=\"relative shrink-0 after:absolute after:-inset-y-2 after:inset-x-0\"\n      >\n        {copied ? <CheckIcon className=\"size-3.5\" /> : <CopyIcon className=\"size-3.5\" />}\n        <span aria-live=\"polite\">{copied ? 'Copied' : 'Copy'}</span>\n      </Button>\n    </div>\n  )\n}\n\nexport { CopyField, type CopyFieldProps }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "categories": [
+    "forms",
+    "onboarding"
+  ],
+  "type": "registry:component"
+}

@@ -2230,6 +2230,175 @@ export const apiTables: ApiTablesByItem = {
       ],
     },
   ],
+  'photo-types': [
+    {
+      caption: 'Exports',
+      nameHeader: 'Export',
+      rows: [
+        {
+          name: 'FieldPhoto',
+          type: 'interface',
+          description:
+            'One photo: id, nullable title, category, media type, takenAt and createdAt as ISO strings, nullable latitude and longitude, a thumbnailUrl that always resolves, and a nullable sourceUrl deep link.',
+        },
+        {
+          name: 'PhotoCategory / PHOTO_CATEGORIES / PHOTO_CATEGORY_LABELS',
+          type: 'union, tuple, record',
+          description:
+            'The origin module a photo was added with — field report, issue, form, RFI, gallery, asset, meeting, submittal, other — with display labels.',
+        },
+        {
+          name: 'PhotoMediaType / PHOTO_MEDIA_TYPES',
+          type: 'union, tuple',
+          description: 'The capture kind: photo, video, photosphere, infrared.',
+        },
+        {
+          name: 'PhotoPage',
+          type: 'interface',
+          description:
+            'One page of a listing: photos plus an opaque nextCursor, null on the last page, for progressive loading over serial cursors.',
+        },
+        {
+          name: 'photoCapturedAt',
+          type: "(photo: Pick<FieldPhoto, 'takenAt' | 'createdAt'>) => number | null",
+          description:
+            'The moment a photo represents as epoch milliseconds: EXIF capture time when known, creation time otherwise, null when neither parses.',
+        },
+        {
+          name: 'hasLocation',
+          type: '(photo: FieldPhoto) => photo is LocatedPhoto',
+          description: 'Narrows to photos with both coordinates.',
+        },
+        {
+          name: 'photoCoverage',
+          type: '(photos: FieldPhoto[]) => PhotoCoverage',
+          description:
+            'The located and total counts a surface shows together, so the photos that cannot be placed are never silently dropped.',
+        },
+      ],
+    },
+  ],
+  'acc-photos-preset': [
+    {
+      caption: 'Exports',
+      nameHeader: 'Export',
+      rows: [
+        {
+          name: 'fromAccPhoto',
+          type: '(doc: AccPhotoDoc, projectId: string, links: AccPhotoLinks) => FieldPhoto',
+          description:
+            'Adapter from a Photos API media object. links.thumbnailUrl resolves each photo id to a URL that stays valid, usually your proxy route, since ACC signed URLs expire in about a minute; links.sourceUrl defaults to the Autodesk Build deep link.',
+        },
+        {
+          name: 'isVisibleAccPhoto',
+          type: '(doc: AccPhotoDoc) => boolean',
+          description:
+            'False for deleted media and for the MARKUP and LOGO origin types, which are project artifacts rather than field photos.',
+        },
+        {
+          name: 'toPhotoCategory',
+          type: '(type?: string) => PhotoCategory',
+          description:
+            'Normalizes the origin type across case and separator variants. A missing type reads as gallery — direct uploads carry none — and an unknown one as other.',
+        },
+        {
+          name: 'toPhotoMediaType',
+          type: '(mediaType?: string) => PhotoMediaType',
+          description:
+            'Normalizes NORMAL, VIDEO, PHOTOSPHERE, and INFRARED; anything else reads as photo.',
+        },
+        {
+          name: 'accBuildPhotoUrl',
+          type: '(projectId: string, photoId: string) => string',
+          description:
+            'Deep link into the Autodesk Build gallery. Not a documented URL shape; verified against ACC Build.',
+        },
+        {
+          name: 'AccPhotoDoc / AccPhotoLinks / HIDDEN_ACC_PHOTO_TYPES',
+          type: 'interface, interface, ReadonlySet<string>',
+          description:
+            'The structural subset of a Photos API media object the adapter reads, the link resolvers it takes, and the origin types it hides.',
+        },
+      ],
+    },
+  ],
+  'copy-field': [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'value',
+          type: 'string',
+          description:
+            'The value to hand over. Rendered in full, selectable, and breakable at any character so long identifiers never overflow.',
+        },
+        {
+          name: 'label',
+          type: 'string',
+          description:
+            'What the value is, for the button\'s accessible name: label "client ID" gives "Copy client ID".',
+        },
+        {
+          name: 'confirmMs',
+          type: 'number',
+          defaultValue: '2000',
+          description: 'How long the Copied confirmation shows before the button resets.',
+        },
+      ],
+    },
+  ],
+  'provisioning-notice': [
+    {
+      caption: 'Props',
+      nameHeader: 'Prop',
+      showDefault: true,
+      rows: [
+        {
+          name: 'clientId',
+          type: 'string',
+          description: 'The APS client ID the account admin adds. Rendered in a CopyField.',
+        },
+        {
+          name: 'appName',
+          type: 'string',
+          description:
+            "Your product's name as the admin will see it in the provider's admin console.",
+        },
+        {
+          name: 'containerNoun',
+          type: 'string',
+          defaultValue: "'hubs'",
+          description:
+            "The provider's account-level container, plural: hubs for ACC, companies for Procore.",
+        },
+        {
+          name: 'adminPath',
+          type: 'ReactNode',
+          defaultValue: "'Account Admin → Custom Integrations'",
+          description: 'Where the admin adds the app, as the provider labels it.',
+        },
+        {
+          name: 'title',
+          type: 'ReactNode',
+          defaultValue: "'No projects visible yet'",
+          description: 'The heading.',
+        },
+        {
+          name: 'titleAs',
+          type: "'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'div'",
+          defaultValue: "'h2'",
+          description: 'The heading level that fits the page outline, or div to opt out.',
+        },
+        {
+          name: 'footer',
+          type: 'ReactNode',
+          description: 'Rendered under the notice: a disconnect action, a support link.',
+        },
+      ],
+    },
+  ],
 }
 
 export interface LibUsage {
@@ -2294,6 +2463,37 @@ const projects: Project[] = [
 
 const entries: FolderEntry[] = [{ id: 'folder-1', name: 'Project Files', type: 'folder' }]
 const versions: ItemVersion[] = []`,
+  },
+  'photo-types': {
+    intro:
+      'The lingua franca for field photos — the record with its origin category, media kind, capture time, optional geolocation, and always-valid thumbnail — plus cursor pages for progressive loading. Components take these shapes as props and never fetch; adapters translate provider payloads into them.',
+    example: `import { hasLocation, photoCapturedAt, photoCoverage } from '@/lib/photo-types'
+import type { FieldPhoto } from '@/lib/photo-types'
+
+const photos: FieldPhoto[] = await loadPhotos()
+const { located, total } = photoCoverage(photos)
+
+const pins = photos.filter(hasLocation).map((photo) => ({
+  id: photo.id,
+  position: [photo.longitude, photo.latitude],
+  at: photoCapturedAt(photo),
+}))`,
+  },
+  'acc-photos-preset': {
+    intro:
+      'Everything ACC-Photos-specific in one data-only item: the adapter from a Photos API media object into a cantera FieldPhoto, the origin-type and media-kind normalizers, the markup and logo filter, and the Autodesk Build deep link. ACC signed URLs expire in about a minute, so the adapter takes a thumbnail resolver — usually a proxy route of yours — instead of copying a URL that will be dead by render time. Fetching and tokens stay in your auth layer.',
+    example: `import { fromAccPhoto, isVisibleAccPhoto } from '@/lib/acc-photos-preset'
+import type { PhotoPage } from '@/lib/photo-types'
+
+// POST /construction/photos/v1/projects/{projectId}/photos:filter, fetched by you.
+const page: PhotoPage = {
+  photos: response.results.filter(isVisibleAccPhoto).map((doc) =>
+    fromAccPhoto(doc, projectId, {
+      thumbnailUrl: (photoId) => \`/api/projects/\${projectId}/photos/\${photoId}/thumbnail\`,
+    }),
+  ),
+  nextCursor: response.pagination?.nextPost?.body?.cursorState ?? null,
+}`,
   },
   'aps-data-preset': {
     intro:
@@ -2390,6 +2590,10 @@ export const installNotes: InstallNotesByItem = {
     'ModelUpload fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame.',
   'connections-view':
     'Presentational only: providers and connections in, callbacks out. "ready" with nothing connected renders the empty state, and each state — ConnectionsList, ConnectionsEmpty, ConnectionsLoading, ConnectionsError — is exported so adapting the page keeps them. @cantera/connections-page ships ConnectionsManager, the wiring that points these callbacks at the acc-auth-routes handlers.',
+  'copy-field':
+    'The value is rendered in full and selectable, and the Clipboard API is only reached for on click, so the field works on non-secure origins where writeText is unavailable: the button simply fails quietly and the value stays there to select by hand. The confirmation is announced politely to screen readers.',
+  'provisioning-notice':
+    "Show it when the hub list comes back empty after a successful sign-in — the Data Management API reports an unprovisioned app as an empty list, not an error, so a picker's emptyMessage is the wrong place for these instructions. Pass the disconnect action as footer so a visitor who signed in with the wrong account has a way out; ProjectPicker and hub-switcher stay for the accounts that do have hubs.",
   'acc-connection-panel':
     'One ConnectionCard bound to two hrefs: signOutHref takes a POST that clears the grant and session, signInHref restarts consent. Disconnect settles by refreshing the server page, so the server view stays the truth; reconnect navigates. @cantera/acc-sign-in mounts it under a heading once a session exists.',
 }

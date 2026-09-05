@@ -1,0 +1,26 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "provisioning-notice",
+  "title": "Provisioning Notice",
+  "author": "MR <contact@bimframe.co>",
+  "description": "The empty state every ACC app hits: signed in, but no hubs until an account admin adds the client ID under Custom Integrations. Names the step, hands over the ID, and says what else an empty list can mean.",
+  "registryDependencies": [
+    "@cantera/copy-field"
+  ],
+  "files": [
+    {
+      "path": "registry/ui/provisioning-notice.tsx",
+      "content": "import type * as React from 'react'\n\nimport { CopyField } from '@/components/ui/copy-field'\nimport { cn } from '@/lib/utils'\n\ninterface ProvisioningNoticeProps extends Omit<React.ComponentProps<'section'>, 'title'> {\n  /** The APS client id the account admin has to add under Custom Integrations. */\n  clientId: string\n  /** Your product's name, as the admin will see it. */\n  appName: string\n  /** The provider's account-level container: \"hubs\" for ACC, \"companies\" for Procore. */\n  containerNoun?: string\n  /** Where the admin adds the app, as the provider labels it. */\n  adminPath?: React.ReactNode\n  title?: React.ReactNode\n  /** Pick the heading level that fits the page outline, or \"div\" to opt out. */\n  titleAs?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'div'\n  /** Rendered under the notice: a disconnect action, a support link. */\n  footer?: React.ReactNode\n}\n\n/** Signed in, but the provider returned no hubs. Almost always this means an\n * account admin has not provisioned the app yet — the API reports that as an\n * empty list, not an error, so this is where the instructions live. */\nfunction ProvisioningNotice({\n  clientId,\n  appName,\n  containerNoun = 'hubs',\n  adminPath = 'Account Admin → Custom Integrations',\n  title = 'No projects visible yet',\n  titleAs: TitleTag = 'h2',\n  footer,\n  className,\n  ...props\n}: ProvisioningNoticeProps) {\n  return (\n    <section\n      data-slot=\"provisioning-notice\"\n      className={cn(\n        'flex w-full flex-col gap-5 rounded-lg border border-border border-dashed p-6 sm:p-8',\n        className,\n      )}\n      {...props}\n    >\n      <div className=\"flex flex-col gap-2\">\n        <TitleTag className=\"font-semibold text-sm\">{title}</TitleTag>\n        <p className=\"text-muted-foreground text-sm leading-relaxed\">\n          You are signed in, but the provider is not showing {appName} any {containerNoun}. Usually\n          that means an account admin has not added {appName} under{' '}\n          <span className=\"text-foreground\">{adminPath}</span> yet. Send them this client ID — it is\n          a one-time step per account. Once it is in, reload this page.\n        </p>\n      </div>\n      <CopyField label=\"client ID\" value={clientId} />\n      <p className=\"text-muted-foreground text-xs\">\n        Already provisioned? Then the account has no projects, or your role cannot see them — the\n        same permissions apply as in the provider&rsquo;s own product.\n      </p>\n      {footer && <div className=\"flex flex-wrap items-center gap-2\">{footer}</div>}\n    </section>\n  )\n}\n\nexport { ProvisioningNotice, type ProvisioningNoticeProps }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "meta": {
+    "kind": "block",
+    "iframeHeight": "420px"
+  },
+  "categories": [
+    "projects",
+    "onboarding"
+  ],
+  "type": "registry:component"
+}

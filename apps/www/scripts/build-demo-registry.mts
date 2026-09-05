@@ -41,10 +41,18 @@ function pascalCase(name: string): string {
     .join('')
 }
 
+// Biome's 100-column limit: the generated file is checked, not formatted.
+const LINE_WIDTH = 100
+
 function lazyEntry(name: string, source: DemoSource): string {
   const key = /^[A-Za-z_$][\w$]*$/.test(name) ? name : `'${name}'`
+  const inline = `    default: (await import('${source.module}')).${source.component},`
+  const defaultLine =
+    inline.length <= LINE_WIDTH
+      ? inline
+      : `    default: (await import('${source.module}'))\n      .${source.component},`
   return `  ${key}: lazy(async () => ({
-    default: (await import('${source.module}')).${source.component},
+${defaultLine}
   })) as DemoComponent,`
 }
 

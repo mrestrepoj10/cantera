@@ -1252,3 +1252,137 @@ showList false hides the built-in rows while files keep driving the grid; FileDr
 
 - `FileDropZoneItem` (`component`) — The file row on its own, for laying rows out anywhere — a table, a sidebar, next to model-status-card — with identical styling. Pair with showList false.
 - `FILE_DROP_ZONE_CSS` (`string`) — The drafting-grid stylesheet the component hoists via React 19 style precedence — exported for custom surfaces that reuse the grid outside the zone.
+
+### Photo Types (`@cantera/photo-types`)
+
+Type: types
+Install: npx shadcn@latest add @cantera/photo-types
+Docs: https://canteraui.vercel.app/components/photo-types
+Item: https://canteraui.vercel.app/r/photo-types.json
+
+Generic field-photo types for cantera components: categories, media kinds, the photo record with optional geolocation, and cursor pages. The lingua franca photo adapters translate into.
+
+The lingua franca for field photos — the record with its origin category, media kind, capture time, optional geolocation, and always-valid thumbnail — plus cursor pages for progressive loading. Components take these shapes as props and never fetch; adapters translate provider payloads into them.
+
+```tsx
+import { hasLocation, photoCapturedAt, photoCoverage } from '@/lib/photo-types'
+import type { FieldPhoto } from '@/lib/photo-types'
+
+const photos: FieldPhoto[] = await loadPhotos()
+const { located, total } = photoCoverage(photos)
+
+const pins = photos.filter(hasLocation).map((photo) => ({
+  id: photo.id,
+  position: [photo.longitude, photo.latitude],
+  at: photoCapturedAt(photo),
+}))
+```
+
+Files written into the consumer project:
+
+- lib/photo-types.ts
+
+#### Exports
+
+- `FieldPhoto` (`interface`) — One photo: id, nullable title, category, media type, takenAt and createdAt as ISO strings, nullable latitude and longitude, a thumbnailUrl that always resolves, and a nullable sourceUrl deep link.
+- `PhotoCategory / PHOTO_CATEGORIES / PHOTO_CATEGORY_LABELS` (`union, tuple, record`) — The origin module a photo was added with — field report, issue, form, RFI, gallery, asset, meeting, submittal, other — with display labels.
+- `PhotoMediaType / PHOTO_MEDIA_TYPES` (`union, tuple`) — The capture kind: photo, video, photosphere, infrared.
+- `PhotoPage` (`interface`) — One page of a listing: photos plus an opaque nextCursor, null on the last page, for progressive loading over serial cursors.
+- `photoCapturedAt` (`(photo: Pick<FieldPhoto, 'takenAt' | 'createdAt'>) => number | null`) — The moment a photo represents as epoch milliseconds: EXIF capture time when known, creation time otherwise, null when neither parses.
+- `hasLocation` (`(photo: FieldPhoto) => photo is LocatedPhoto`) — Narrows to photos with both coordinates.
+- `photoCoverage` (`(photos: FieldPhoto[]) => PhotoCoverage`) — The located and total counts a surface shows together, so the photos that cannot be placed are never silently dropped.
+
+### ACC Photos Preset (`@cantera/acc-photos-preset`)
+
+Type: preset
+Install: npx shadcn@latest add @cantera/acc-photos-preset
+Docs: https://canteraui.vercel.app/components/acc-photos-preset
+Item: https://canteraui.vercel.app/r/acc-photos-preset.json
+Registry dependencies: @cantera/photo-types
+
+Autodesk Construction Cloud Photos API adapter into the generic photo types: origin-module and media-kind normalization, the markup and logo filter, and the Autodesk Build deep link.
+
+Everything ACC-Photos-specific in one data-only item: the adapter from a Photos API media object into a cantera FieldPhoto, the origin-type and media-kind normalizers, the markup and logo filter, and the Autodesk Build deep link. ACC signed URLs expire in about a minute, so the adapter takes a thumbnail resolver — usually a proxy route of yours — instead of copying a URL that will be dead by render time. Fetching and tokens stay in your auth layer.
+
+```tsx
+import { fromAccPhoto, isVisibleAccPhoto } from '@/lib/acc-photos-preset'
+import type { PhotoPage } from '@/lib/photo-types'
+
+// POST /construction/photos/v1/projects/{projectId}/photos:filter, fetched by you.
+const page: PhotoPage = {
+  photos: response.results.filter(isVisibleAccPhoto).map((doc) =>
+    fromAccPhoto(doc, projectId, {
+      thumbnailUrl: (photoId) => `/api/projects/${projectId}/photos/${photoId}/thumbnail`,
+    }),
+  ),
+  nextCursor: response.pagination?.nextPost?.body?.cursorState ?? null,
+}
+```
+
+Files written into the consumer project:
+
+- lib/acc-photos-preset.ts
+
+#### Exports
+
+- `fromAccPhoto` (`(doc: AccPhotoDoc, projectId: string, links: AccPhotoLinks) => FieldPhoto`) — Adapter from a Photos API media object. links.thumbnailUrl resolves each photo id to a URL that stays valid, usually your proxy route, since ACC signed URLs expire in about a minute; links.sourceUrl defaults to the Autodesk Build deep link.
+- `isVisibleAccPhoto` (`(doc: AccPhotoDoc) => boolean`) — False for deleted media and for the MARKUP and LOGO origin types, which are project artifacts rather than field photos.
+- `toPhotoCategory` (`(type?: string) => PhotoCategory`) — Normalizes the origin type across case and separator variants. A missing type reads as gallery — direct uploads carry none — and an unknown one as other.
+- `toPhotoMediaType` (`(mediaType?: string) => PhotoMediaType`) — Normalizes NORMAL, VIDEO, PHOTOSPHERE, and INFRARED; anything else reads as photo.
+- `accBuildPhotoUrl` (`(projectId: string, photoId: string) => string`) — Deep link into the Autodesk Build gallery. Not a documented URL shape; verified against ACC Build.
+- `AccPhotoDoc / AccPhotoLinks / HIDDEN_ACC_PHOTO_TYPES` (`interface, interface, ReadonlySet<string>`) — The structural subset of a Photos API media object the adapter reads, the link resolvers it takes, and the origin types it hides.
+
+### Copy Field (`@cantera/copy-field`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/copy-field
+Docs: https://canteraui.vercel.app/components/copy-field
+Item: https://canteraui.vercel.app/r/copy-field.json
+Working example page: npx shadcn@latest add @cantera/copy-field-demo
+Registry dependencies: button
+npm dependencies: lucide-react
+
+A value someone has to paste into another system — a client ID, a callback URL — shown in full and always selectable, with a copy button that confirms.
+
+Files written into the consumer project:
+
+- copy-field.tsx
+
+Notes:
+
+The value is rendered in full and selectable, and the Clipboard API is only reached for on click, so the field works on non-secure origins where writeText is unavailable: the button simply fails quietly and the value stays there to select by hand. The confirmation is announced politely to screen readers.
+
+#### Props
+
+- `value` (`string`) — The value to hand over. Rendered in full, selectable, and breakable at any character so long identifiers never overflow.
+- `label` (`string`) — What the value is, for the button's accessible name: label "client ID" gives "Copy client ID".
+- `confirmMs` (`number`, default `2000`) — How long the Copied confirmation shows before the button resets.
+
+### Provisioning Notice (`@cantera/provisioning-notice`)
+
+Type: block
+Install: npx shadcn@latest add @cantera/provisioning-notice
+Docs: https://canteraui.vercel.app/components/provisioning-notice
+Item: https://canteraui.vercel.app/r/provisioning-notice.json
+Working example page: npx shadcn@latest add @cantera/provisioning-notice-demo
+Registry dependencies: @cantera/copy-field
+
+The empty state every ACC app hits: signed in, but no hubs until an account admin adds the client ID under Custom Integrations. Names the step, hands over the ID, and says what else an empty list can mean.
+
+Files written into the consumer project:
+
+- provisioning-notice.tsx
+
+Notes:
+
+Show it when the hub list comes back empty after a successful sign-in — the Data Management API reports an unprovisioned app as an empty list, not an error, so a picker's emptyMessage is the wrong place for these instructions. Pass the disconnect action as footer so a visitor who signed in with the wrong account has a way out; ProjectPicker and hub-switcher stay for the accounts that do have hubs.
+
+#### Props
+
+- `clientId` (`string`) — The APS client ID the account admin adds. Rendered in a CopyField.
+- `appName` (`string`) — Your product's name as the admin will see it in the provider's admin console.
+- `containerNoun` (`string`, default `'hubs'`) — The provider's account-level container, plural: hubs for ACC, companies for Procore.
+- `adminPath` (`ReactNode`, default `'Account Admin → Custom Integrations'`) — Where the admin adds the app, as the provider labels it.
+- `title` (`ReactNode`, default `'No projects visible yet'`) — The heading.
+- `titleAs` (`'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'div'`, default `'h2'`) — The heading level that fits the page outline, or div to opt out.
+- `footer` (`ReactNode`) — Rendered under the notice: a disconnect action, a support link.
