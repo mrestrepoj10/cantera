@@ -1,0 +1,3 @@
+interface:
+  display_name: "APS Viewer"
+  short_description: "Autodesk Viewer v7 guidance for browser model loading, SVF/SVF2 init, tokens, extensions, events, and screenshots."

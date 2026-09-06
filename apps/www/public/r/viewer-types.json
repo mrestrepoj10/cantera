@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "viewer-types",
+  "title": "Viewer Types",
+  "author": "MR <contact@bimframe.co>",
+  "description": "Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks.",
+  "devDependencies": [
+    "@types/forge-viewer"
+  ],
+  "files": [
+    {
+      "path": "registry/lib/viewer-types.ts",
+      "content": "// The SDK's types come from `@types/forge-viewer` (a dev dependency of this\n// item), re-exported here under stable APS* names; the sibling\n// `forge-viewer.d.ts` declares the few members the official definitions miss.\n\nexport type Vec3 = { x: number; y: number; z: number }\n\nexport interface APSCameraState {\n  position: Vec3\n  target: Vec3\n  up: Vec3\n  isPerspective: boolean\n}\n\nexport interface APSProperty {\n  displayName: string\n  displayValue: string | number | boolean\n  displayCategory: string\n  units: string | null\n  hidden: boolean\n  type: number\n}\n\nexport interface APSPropertyResult {\n  dbId: number\n  name: string\n  externalId: string\n  properties: APSProperty[]\n}\n\nexport interface APSContextMenuItem {\n  title: string\n  target: (() => void) | APSContextMenuItem[]\n  icon?: string\n  divider?: boolean\n}\n\nexport interface APSContextMenuStatus {\n  /** dbIds under the cursor when the menu opened (empty over empty space) */\n  numSelected: number\n  hasSelected: boolean\n  canvasX: number\n  canvasY: number\n  [key: string]: unknown\n}\n\n// `Viewer3D` is the base class, so a `GuiViewer3D` is an `APSViewer3D` too.\nexport type APSViewer3D = Autodesk.Viewing.Viewer3D\nexport type APSModel = Autodesk.Viewing.Model\nexport type APSDocument = Autodesk.Viewing.Document\nexport type APSDocumentNode = Autodesk.Viewing.BubbleNode\nexport type APSViewerExtension = Autodesk.Viewing.Extension\nexport type APSViewerExtensionConstructor = new (\n  viewer: Autodesk.Viewing.GuiViewer3D,\n  options?: Record<string, unknown>,\n) => Autodesk.Viewing.Extension\nexport type APSViewingNamespace = typeof Autodesk.Viewing\nexport type AutodeskGlobal = typeof Autodesk\n\n/** Fetch the token from YOUR backend — never embed APS credentials in the\n * browser. The runtime re-calls the supplier before expiry. */\nexport type GetAccessToken = () => Promise<{\n  accessToken: string\n  /** seconds until expiry */\n  expiresInSeconds: number\n}>\n\nexport type APSViewerStatus = 'idle' | 'loading-runtime' | 'ready' | 'error'\n\n/** Deliberately accepts any string, so consumer-registered extensions need\n * nothing extra; the `viewer-extension-types` item types the public ids. */\nexport type APSExtensionRequest = string | { id: string; options?: Record<string, unknown> }\n\nexport type APSExtensionStatus = 'loading' | 'ready' | 'error'\n\nexport type APSViewerProfile = 'aec' | 'default' | 'fluent' | 'navis'\n",
+      "type": "registry:lib",
+      "target": "lib/viewer-types.ts"
+    },
+    {
+      "path": "registry/lib/forge-viewer.d.ts",
+      "content": "// Augments `@types/forge-viewer` with the members it misses. A .d.ts because\n// `namespace` merging — the only way to extend an ambient global namespace —\n// would trip `@typescript-eslint/no-namespace` in a .ts file.\n\ndeclare global {\n  /** The CDN script defines `window.Autodesk`; it is absent until the viewer\n   * loader has injected and awaited that script. */\n  interface Window {\n    Autodesk?: typeof Autodesk\n  }\n\n  namespace Autodesk {\n    namespace Viewing {\n      /** Missing from `@types/forge-viewer`: LMV 7.x settings profiles —\n       * `viewer.setProfile(new Profile(ProfileSettings.AEC))`. */\n      class Profile {\n        constructor(settings: unknown, name?: string)\n      }\n      const ProfileSettings: {\n        AEC: unknown\n        Default: unknown\n        Fluent: unknown\n        Navis: unknown\n      } & Record<string, unknown>\n      interface Viewer3D {\n        setProfile(profile: Profile, override?: boolean): boolean\n      }\n      interface ExtensionManager {\n        getExtensionClass?(extensionId: string): unknown\n      }\n    }\n  }\n}\n\nexport {}\n",
+      "type": "registry:lib",
+      "target": "lib/forge-viewer.d.ts"
+    }
+  ],
+  "categories": [
+    "viewer",
+    "types",
+    "autodesk"
+  ],
+  "type": "registry:lib"
+}

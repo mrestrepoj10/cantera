@@ -1,0 +1,358 @@
+# cantera registry
+
+> cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, page-sized blocks, and wired Autodesk (APS / ACC) templates for sign-in, connections, model viewing, and model upload. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
+
+Namespace: @cantera
+Registry item URL: https://canteraui.vercel.app/r/{name}.json
+Pro namespace: @cantera-pro (license-gated, bearer CANTERA_TOKEN; https://canteraui.vercel.app/pro)
+Pro item URL: https://canteraui.vercel.app/r-pro/{name}.json
+Docs: https://canteraui.vercel.app/components/{name}
+Installation guide: https://canteraui.vercel.app/installation
+Full reference for agents: https://canteraui.vercel.app/llms-full.txt
+
+One-time setup — add the namespace to components.json, then install items by name:
+
+```json
+{
+  "registries": {
+    "@cantera": "https://canteraui.vercel.app/r/{name}.json"
+  }
+}
+```
+
+## Items
+
+### oauth-types
+
+Title: OAuth Types
+Type: types
+Description: Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.
+Install: npx shadcn@latest add @cantera/oauth-types
+Docs: https://canteraui.vercel.app/components/oauth-types
+Item: https://canteraui.vercel.app/r/oauth-types.json
+
+### aps-oauth-preset
+
+Title: APS OAuth Preset
+Type: preset
+Description: Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.
+Install: npx shadcn@latest add @cantera/aps-oauth-preset
+Docs: https://canteraui.vercel.app/components/aps-oauth-preset
+Item: https://canteraui.vercel.app/r/aps-oauth-preset.json
+
+### status-tokens
+
+Title: Status Tokens
+Type: tokens (CSS variables plus a typed accessor)
+Description: Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.
+Install: npx shadcn@latest add @cantera/status-tokens
+Docs: https://canteraui.vercel.app/components/status-tokens
+Item: https://canteraui.vercel.app/r/status-tokens.json
+
+### provider-sign-in-button
+
+Title: Provider Sign-In Button
+Type: component
+Description: A sign-in button and link for a single OAuth provider: brand icon, label, loading state. ProviderSignInButton handles a click; ProviderSignInLink navigates to an auth route.
+Install: npx shadcn@latest add @cantera/provider-sign-in-button
+Docs: https://canteraui.vercel.app/components/provider-sign-in-button
+Item: https://canteraui.vercel.app/r/provider-sign-in-button.json
+
+### sign-in-card
+
+Title: Sign-In Card
+Type: block
+Description: A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
+Install: npx shadcn@latest add @cantera/sign-in-card
+Docs: https://canteraui.vercel.app/components/sign-in-card
+Item: https://canteraui.vercel.app/r/sign-in-card.json
+
+### scope-picker
+
+Title: Scope Picker
+Type: block
+Description: A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog.
+Install: npx shadcn@latest add @cantera/scope-picker
+Docs: https://canteraui.vercel.app/components/scope-picker
+Item: https://canteraui.vercel.app/r/scope-picker.json
+
+### user-account-badge
+
+Title: User Account Badge
+Type: component
+Description: An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.
+Install: npx shadcn@latest add @cantera/user-account-badge
+Docs: https://canteraui.vercel.app/components/user-account-badge
+Item: https://canteraui.vercel.app/r/user-account-badge.json
+
+### token-status
+
+Title: Token Status
+Type: component
+Description: Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.
+Install: npx shadcn@latest add @cantera/token-status
+Docs: https://canteraui.vercel.app/components/token-status
+Item: https://canteraui.vercel.app/r/token-status.json
+
+### connection-card
+
+Title: Connection Card
+Type: component
+Description: A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions.
+Install: npx shadcn@latest add @cantera/connection-card
+Docs: https://canteraui.vercel.app/components/connection-card
+Item: https://canteraui.vercel.app/r/connection-card.json
+
+### acc-auth-routes
+
+Title: ACC Auth Routes
+Type: kit
+Description: The headless half of Autodesk sign-in on aec-auth: consent start, code exchange, and sign-out route handlers, the signed session library, and the scoped sign-in component — no pages.
+Install: npx shadcn@latest add @cantera/acc-auth-routes
+Docs: https://canteraui.vercel.app/components/acc-auth-routes
+Item: https://canteraui.vercel.app/r/acc-auth-routes.json
+
+### acc-connection-panel
+
+Title: ACC Connection Panel
+Type: block
+Description: The live Autodesk connection panel: one ConnectionCard wired to a sign-out route and a consent restart, with disconnect and reconnect on the async-pending contract.
+Install: npx shadcn@latest add @cantera/acc-connection-panel
+Docs: https://canteraui.vercel.app/components/acc-connection-panel
+Item: https://canteraui.vercel.app/r/acc-connection-panel.json
+
+### acc-sign-in
+
+Title: ACC Sign-In
+Type: template
+Description: A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.
+Install: npx shadcn@latest add @cantera/acc-sign-in
+Docs: https://canteraui.vercel.app/components/acc-sign-in
+Item: https://canteraui.vercel.app/r/acc-sign-in.json
+
+### connections-view
+
+Title: Connections View
+Type: block
+Description: The connections dashboard as a presentational block: providers and connections in, connect, reconnect, disconnect, and retry callbacks out — with the designed list, empty, loading, and error states, each exported.
+Install: npx shadcn@latest add @cantera/connections-view
+Docs: https://canteraui.vercel.app/components/connections-view
+Item: https://canteraui.vercel.app/r/connections-view.json
+
+### connections-page
+
+Title: Connections Page
+Type: template
+Description: The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
+Install: npx shadcn@latest add @cantera/connections-page
+Docs: https://canteraui.vercel.app/components/connections-page
+Item: https://canteraui.vercel.app/r/connections-page.json
+
+### project-types
+
+Title: Project Types
+Type: types
+Description: Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into.
+Install: npx shadcn@latest add @cantera/project-types
+Docs: https://canteraui.vercel.app/components/project-types
+Item: https://canteraui.vercel.app/r/project-types.json
+
+### aps-data-preset
+
+Title: APS Data Preset
+Type: preset
+Description: Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.
+Install: npx shadcn@latest add @cantera/aps-data-preset
+Docs: https://canteraui.vercel.app/components/aps-data-preset
+Item: https://canteraui.vercel.app/r/aps-data-preset.json
+
+### hub-switcher
+
+Title: Hub Switcher
+Type: component
+Description: The hub context switch: which ACC hub — or any Hub — the rest of the screen works against, with region context and a pending state for the switch itself.
+Install: npx shadcn@latest add @cantera/hub-switcher
+Docs: https://canteraui.vercel.app/components/hub-switcher
+Item: https://canteraui.vercel.app/r/hub-switcher.json
+
+### project-picker
+
+Title: Project Picker
+Type: component
+Description: The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs.
+Install: npx shadcn@latest add @cantera/project-picker
+Docs: https://canteraui.vercel.app/components/project-picker
+Item: https://canteraui.vercel.app/r/project-picker.json
+
+### version-set-select
+
+Title: Version Set Select
+Type: component
+Description: Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake.
+Install: npx shadcn@latest add @cantera/version-set-select
+Docs: https://canteraui.vercel.app/components/version-set-select
+Item: https://canteraui.vercel.app/r/version-set-select.json
+
+### hub-browser
+
+Title: Hub Browser
+Type: block
+Description: A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics.
+Install: npx shadcn@latest add @cantera/hub-browser
+Docs: https://canteraui.vercel.app/components/hub-browser
+Item: https://canteraui.vercel.app/r/hub-browser.json
+
+### hub-tree
+
+Title: Hub Tree
+Type: component
+Description: A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation.
+Install: npx shadcn@latest add @cantera/hub-tree
+Docs: https://canteraui.vercel.app/components/hub-tree
+Item: https://canteraui.vercel.app/r/hub-tree.json
+
+### finder
+
+Title: Finder
+Type: block
+Description: Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives.
+Install: npx shadcn@latest add @cantera/finder
+Docs: https://canteraui.vercel.app/components/finder
+Item: https://canteraui.vercel.app/r/finder.json
+
+### hub-sidebar
+
+Title: Hub Sidebar
+Type: block
+Description: The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.
+Install: npx shadcn@latest add @cantera/hub-sidebar
+Docs: https://canteraui.vercel.app/components/hub-sidebar
+Item: https://canteraui.vercel.app/r/hub-sidebar.json
+
+### crew-avatar
+
+Title: Crew Avatar
+Type: component
+Description: Deterministic construction-crew SVG avatars — monochrome disc, geometric figure, one accent for the trade on the hard hat — generated from a name with zero dependencies, boring-avatars style.
+Install: npx shadcn@latest add @cantera/crew-avatar
+Docs: https://canteraui.vercel.app/components/crew-avatar
+Item: https://canteraui.vercel.app/r/crew-avatar.json
+
+### file-picker-dialog
+
+Title: File Picker Dialog
+Type: component
+Description: Hub Browser inside a dialog, with tip-or-version selection and an explicit cancel action.
+Install: npx shadcn@latest add @cantera/file-picker-dialog
+Docs: https://canteraui.vercel.app/components/file-picker-dialog
+Item: https://canteraui.vercel.app/r/file-picker-dialog.json
+
+### viewer-types
+
+Title: Viewer Types
+Type: types
+Description: Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks.
+Install: npx shadcn@latest add @cantera/viewer-types
+Docs: https://canteraui.vercel.app/components/viewer-types
+Item: https://canteraui.vercel.app/r/viewer-types.json
+
+### viewer-extension-types
+
+Title: Viewer Extension Types
+Type: types
+Description: A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.
+Install: npx shadcn@latest add @cantera/viewer-extension-types
+Docs: https://canteraui.vercel.app/components/viewer-extension-types
+Item: https://canteraui.vercel.app/r/viewer-extension-types.json
+
+### aps-viewer
+
+Title: APS Viewer
+Type: component
+Description: A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar.
+Install: npx shadcn@latest add @cantera/aps-viewer
+Docs: https://canteraui.vercel.app/components/aps-viewer
+Item: https://canteraui.vercel.app/r/aps-viewer.json
+
+### model-status-card
+
+Title: Model Status Card
+Type: component
+Description: The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract.
+Install: npx shadcn@latest add @cantera/model-status-card
+Docs: https://canteraui.vercel.app/components/model-status-card
+Item: https://canteraui.vercel.app/r/model-status-card.json
+
+### model-viewer-page
+
+Title: Model Viewer Page
+Type: template
+Description: A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.
+Install: npx shadcn@latest add @cantera-pro/model-viewer-page
+Docs: https://canteraui.vercel.app/components/model-viewer-page
+Item: https://canteraui.vercel.app/r-pro/model-viewer-page.json
+License: https://canteraui.vercel.app/pro
+
+### model-upload-page
+
+Title: Model Upload Page
+Type: template
+Description: A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.
+Install: npx shadcn@latest add @cantera-pro/model-upload-page
+Docs: https://canteraui.vercel.app/components/model-upload-page
+Item: https://canteraui.vercel.app/r-pro/model-upload-page.json
+License: https://canteraui.vercel.app/pro
+
+### upload-types
+
+Title: Upload Types
+Type: types
+Description: Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.
+Install: npx shadcn@latest add @cantera/upload-types
+Docs: https://canteraui.vercel.app/components/upload-types
+Item: https://canteraui.vercel.app/r/upload-types.json
+
+### file-drop-zone
+
+Title: File Drop Zone
+Type: block
+Description: A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract.
+Install: npx shadcn@latest add @cantera/file-drop-zone
+Docs: https://canteraui.vercel.app/components/file-drop-zone
+Item: https://canteraui.vercel.app/r/file-drop-zone.json
+
+### photo-types
+
+Title: Photo Types
+Type: types
+Description: Generic field-photo types for cantera components: categories, media kinds, the photo record with optional geolocation, and cursor pages. The lingua franca photo adapters translate into.
+Install: npx shadcn@latest add @cantera/photo-types
+Docs: https://canteraui.vercel.app/components/photo-types
+Item: https://canteraui.vercel.app/r/photo-types.json
+
+### acc-photos-preset
+
+Title: ACC Photos Preset
+Type: preset
+Description: Autodesk Construction Cloud Photos API adapter into the generic photo types: origin-module and media-kind normalization, the markup and logo filter, and the Autodesk Build deep link.
+Install: npx shadcn@latest add @cantera/acc-photos-preset
+Docs: https://canteraui.vercel.app/components/acc-photos-preset
+Item: https://canteraui.vercel.app/r/acc-photos-preset.json
+
+### copy-field
+
+Title: Copy Field
+Type: component
+Description: A value someone has to paste into another system — a client ID, a callback URL — shown in full and always selectable, with a copy button that confirms.
+Install: npx shadcn@latest add @cantera/copy-field
+Docs: https://canteraui.vercel.app/components/copy-field
+Item: https://canteraui.vercel.app/r/copy-field.json
+
+### provisioning-notice
+
+Title: Provisioning Notice
+Type: block
+Description: The empty state every ACC app hits: signed in, but no hubs until an account admin adds the client ID under Custom Integrations. Names the step, hands over the ID, and says what else an empty list can mean.
+Install: npx shadcn@latest add @cantera/provisioning-notice
+Docs: https://canteraui.vercel.app/components/provisioning-notice
+Item: https://canteraui.vercel.app/r/provisioning-notice.json

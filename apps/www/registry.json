@@ -1,0 +1,1208 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "cantera",
+  "homepage": "https://canteraui.vercel.app",
+  "author": "MR <contact@bimframe.co>",
+  "items": [
+    {
+      "name": "oauth-types",
+      "type": "registry:lib",
+      "title": "OAuth Types",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.",
+      "categories": ["authentication", "types"],
+      "files": [
+        {
+          "path": "registry/lib/oauth-types.ts",
+          "type": "registry:lib",
+          "target": "lib/oauth-types.ts"
+        }
+      ]
+    },
+    {
+      "name": "aps-oauth-preset",
+      "type": "registry:lib",
+      "title": "APS OAuth Preset",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.",
+      "categories": ["authentication", "providers", "autodesk"],
+      "registryDependencies": ["@cantera/oauth-types"],
+      "files": [
+        {
+          "path": "registry/lib/aps-oauth-preset.tsx",
+          "type": "registry:lib",
+          "target": "lib/aps-oauth-preset.tsx"
+        }
+      ]
+    },
+    {
+      "name": "status-tokens",
+      "type": "registry:item",
+      "title": "Status Tokens",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.",
+      "categories": ["theming", "status"],
+      "files": [
+        {
+          "path": "registry/lib/status-tokens.ts",
+          "type": "registry:lib",
+          "target": "lib/status-tokens.ts"
+        }
+      ],
+      "cssVars": {
+        "theme": {
+          "color-status-success": "var(--status-success, var(--foreground))",
+          "color-status-success-foreground": "var(--status-success-foreground, var(--background))",
+          "color-status-success-surface": "var(--status-success-surface, var(--muted))",
+          "color-status-warning": "var(--status-warning, var(--foreground))",
+          "color-status-warning-foreground": "var(--status-warning-foreground, var(--background))",
+          "color-status-warning-surface": "var(--status-warning-surface, var(--muted))",
+          "color-status-danger": "var(--status-danger, var(--destructive))",
+          "color-status-danger-foreground": "var(--status-danger-foreground, var(--background))",
+          "color-status-danger-surface": "var(--status-danger-surface, var(--muted))",
+          "color-status-neutral": "var(--status-neutral, var(--muted-foreground))",
+          "color-status-neutral-foreground": "var(--status-neutral-foreground, var(--background))",
+          "color-status-neutral-surface": "var(--status-neutral-surface, var(--muted))"
+        },
+        "light": {
+          "status-success": "oklch(0.5 0.13 150)",
+          "status-success-foreground": "oklch(0.985 0.01 150)",
+          "status-success-surface": "oklch(0.955 0.035 150)",
+          "status-warning": "oklch(0.52 0.11 72)",
+          "status-warning-foreground": "oklch(0.99 0.01 85)",
+          "status-warning-surface": "oklch(0.955 0.045 85)",
+          "status-danger": "oklch(0.52 0.2 27)",
+          "status-danger-foreground": "oklch(0.985 0.005 27)",
+          "status-danger-surface": "oklch(0.94 0.03 27)",
+          "status-neutral": "oklch(0.48 0 0)",
+          "status-neutral-foreground": "oklch(0.985 0 0)",
+          "status-neutral-surface": "oklch(0.955 0 0)"
+        },
+        "dark": {
+          "status-success": "oklch(0.78 0.15 150)",
+          "status-success-foreground": "oklch(0.19 0.04 150)",
+          "status-success-surface": "oklch(0.28 0.05 150)",
+          "status-warning": "oklch(0.8 0.14 80)",
+          "status-warning-foreground": "oklch(0.2 0.04 80)",
+          "status-warning-surface": "oklch(0.29 0.05 80)",
+          "status-danger": "oklch(0.72 0.16 25)",
+          "status-danger-foreground": "oklch(0.19 0.04 25)",
+          "status-danger-surface": "oklch(0.29 0.06 25)",
+          "status-neutral": "oklch(0.75 0 0)",
+          "status-neutral-foreground": "oklch(0.2 0 0)",
+          "status-neutral-surface": "oklch(0.29 0 0)"
+        }
+      }
+    },
+    {
+      "name": "provider-sign-in-button",
+      "type": "registry:component",
+      "title": "Provider Sign-In Button",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A sign-in button and link for a single OAuth provider: brand icon, label, loading state. ProviderSignInButton handles a click; ProviderSignInLink navigates to an auth route.",
+      "categories": ["authentication", "buttons"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": ["button", "@cantera/oauth-types"],
+      "files": [
+        {
+          "path": "registry/ui/provider-sign-in-button.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "sign-in-card",
+      "type": "registry:component",
+      "title": "Sign-In Card",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.",
+      "categories": ["authentication", "login"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "520px"
+      },
+      "registryDependencies": ["card", "@cantera/provider-sign-in-button", "@cantera/oauth-types"],
+      "files": [
+        {
+          "path": "registry/ui/sign-in-card.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "scope-picker",
+      "type": "registry:component",
+      "title": "Scope Picker",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog.",
+      "categories": ["authentication", "permissions", "forms"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "640px"
+      },
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "badge",
+        "button",
+        "checkbox",
+        "input",
+        "label",
+        "@cantera/oauth-types",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/scope-picker.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "user-account-badge",
+      "type": "registry:component",
+      "title": "User Account Badge",
+      "author": "MR <contact@bimframe.co>",
+      "description": "An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.",
+      "categories": ["authentication", "account"],
+      "registryDependencies": ["avatar", "@cantera/oauth-types", "@cantera/status-tokens"],
+      "files": [
+        {
+          "path": "registry/ui/user-account-badge.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "token-status",
+      "type": "registry:component",
+      "title": "Token Status",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.",
+      "categories": ["authentication", "status"],
+      "registryDependencies": ["badge", "@cantera/status-tokens", "@cantera/oauth-types"],
+      "files": [
+        {
+          "path": "registry/ui/token-status.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "connection-card",
+      "type": "registry:component",
+      "title": "Connection Card",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions.",
+      "categories": ["authentication", "connections"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "button",
+        "card",
+        "@cantera/user-account-badge",
+        "@cantera/token-status",
+        "@cantera/oauth-types"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/connection-card.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "acc-auth-routes",
+      "type": "registry:block",
+      "title": "ACC Auth Routes",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The headless half of Autodesk sign-in on aec-auth: consent start, code exchange, and sign-out route handlers, the signed session library, and the scoped sign-in component — no pages.",
+      "categories": ["authentication", "autodesk"],
+      "meta": {
+        "kind": "kit"
+      },
+      "dependencies": ["@upstash/redis", "aec-auth"],
+      "registryDependencies": [
+        "card",
+        "@cantera/provider-sign-in-button",
+        "@cantera/scope-picker",
+        "@cantera/aps-oauth-preset",
+        "@cantera/oauth-types"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/acc-auth-routes/lib/acc-auth.ts",
+          "type": "registry:lib",
+          "target": "lib/acc-auth.ts"
+        },
+        {
+          "path": "registry/blocks/acc-auth-routes/components/scoped-autodesk-sign-in.tsx",
+          "type": "registry:component",
+          "target": "components/scoped-autodesk-sign-in.tsx"
+        },
+        {
+          "path": "registry/blocks/acc-auth-routes/api/auth-start-route.ts",
+          "type": "registry:file",
+          "target": "app/api/auth/[provider]/route.ts"
+        },
+        {
+          "path": "registry/blocks/acc-auth-routes/api/auth-callback-route.ts",
+          "type": "registry:file",
+          "target": "app/api/auth/callback/[provider]/route.ts"
+        },
+        {
+          "path": "registry/blocks/acc-auth-routes/api/signout-route.ts",
+          "type": "registry:file",
+          "target": "app/api/auth/signout/route.ts"
+        }
+      ],
+      "envVars": {
+        "APS_CLIENT_ID": "",
+        "APS_CLIENT_SECRET": "",
+        "SESSION_SECRET": "",
+        "APP_ORIGIN": "",
+        "APS_AUTH_BASE_URL": "",
+        "UPSTASH_REDIS_REST_URL": "",
+        "UPSTASH_REDIS_REST_TOKEN": "",
+        "VAULT_KEY": ""
+      },
+      "docs": "Installed: the /api/auth/* route handlers, lib/acc-auth.ts (aec-auth vault wiring and the signed session cookie), and ScopedAutodeskSignIn. No page: pair with @cantera/acc-sign-in, or mount the component with a nextPath.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; SESSION_SECRET from `openssl rand -base64 32` (required in production); APP_ORIGIN, your canonical public origin (required in production); APS_AUTH_BASE_URL only for an emulator.\n2. Grants live in memory until UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN, and VAULT_KEY (`openssl rand -base64 32`) are set; then they persist in Upstash Redis, encrypted. Set all three before real users connect.\nReference: https://canteraui.vercel.app/components/acc-auth-routes"
+    },
+    {
+      "name": "acc-connection-panel",
+      "type": "registry:block",
+      "title": "ACC Connection Panel",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The live Autodesk connection panel: one ConnectionCard wired to a sign-out route and a consent restart, with disconnect and reconnect on the async-pending contract.",
+      "categories": ["authentication", "autodesk"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "420px"
+      },
+      "registryDependencies": ["@cantera/connection-card", "@cantera/oauth-types"],
+      "files": [
+        {
+          "path": "registry/blocks/acc-connection-panel/acc-connection-panel.tsx",
+          "type": "registry:component",
+          "target": "components/acc-connection-panel.tsx"
+        }
+      ]
+    },
+    {
+      "name": "acc-sign-in",
+      "type": "registry:block",
+      "title": "ACC Sign-In",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.",
+      "categories": ["authentication", "login", "autodesk"],
+      "meta": {
+        "kind": "template",
+        "iframeHeight": "520px"
+      },
+      "dependencies": ["aec-auth", "lucide-react"],
+      "registryDependencies": [
+        "@cantera/acc-auth-routes",
+        "@cantera/acc-connection-panel",
+        "@cantera/aps-oauth-preset",
+        "@cantera/oauth-types"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/acc-sign-in/page.tsx",
+          "type": "registry:page",
+          "target": "app/sign-in/page.tsx"
+        },
+        {
+          "path": "registry/blocks/acc-sign-in/loading.tsx",
+          "type": "registry:file",
+          "target": "app/sign-in/loading.tsx"
+        }
+      ],
+      "docs": "Installed at /sign-in: the page and its loading skeleton. Signed out, it renders ScopedAutodeskSignIn; /sign-in?next=/your-page returns there after the callback. Signed in, it shows AccConnectionPanel.\n\nNext:\n1. Fill the keys acc-auth-routes added to .env.local (see its notes above).\n2. Run next dev and open /sign-in.\n\nNever set ACC_AUTH_DEMO=1 where real accounts exist.\nReference: https://canteraui.vercel.app/components/acc-sign-in"
+    },
+    {
+      "name": "connections-view",
+      "type": "registry:block",
+      "title": "Connections View",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The connections dashboard as a presentational block: providers and connections in, connect, reconnect, disconnect, and retry callbacks out — with the designed list, empty, loading, and error states, each exported.",
+      "categories": ["authentication", "connections", "dashboard"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "640px"
+      },
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "button",
+        "@cantera/connection-card",
+        "@cantera/provider-sign-in-button",
+        "@cantera/token-status",
+        "@cantera/user-account-badge",
+        "@cantera/oauth-types",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/connections-view/connections-view.tsx",
+          "type": "registry:component",
+          "target": "components/connections-view.tsx"
+        }
+      ]
+    },
+    {
+      "name": "connections-page",
+      "type": "registry:block",
+      "title": "Connections Page",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.",
+      "categories": ["authentication", "connections", "dashboard", "autodesk"],
+      "meta": {
+        "kind": "template",
+        "iframeHeight": "640px"
+      },
+      "dependencies": ["aec-auth", "lucide-react"],
+      "registryDependencies": [
+        "@cantera/connections-view",
+        "@cantera/acc-auth-routes",
+        "@cantera/aps-oauth-preset",
+        "@cantera/oauth-types"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/connections-page/page.tsx",
+          "type": "registry:page",
+          "target": "app/connections/page.tsx"
+        },
+        {
+          "path": "registry/blocks/connections-page/loading.tsx",
+          "type": "registry:file",
+          "target": "app/connections/loading.tsx"
+        },
+        {
+          "path": "registry/blocks/connections-page/components/connections-manager.tsx",
+          "type": "registry:component",
+          "target": "components/connections-manager.tsx"
+        }
+      ],
+      "envVars": {
+        "APS_CLIENT_ID": "",
+        "APS_CLIENT_SECRET": "",
+        "SESSION_SECRET": "",
+        "APP_ORIGIN": "",
+        "APS_AUTH_BASE_URL": ""
+      },
+      "docs": "Installed at /connections: the page, its loading skeleton, and ConnectionsManager, the wiring over @cantera/connections-view. acc-auth-routes supplies the /api/auth/* routes; no /sign-in page is installed.\n\nNext:\n1. Fill the keys acc-auth-routes added to .env.local (see its notes above).\n2. Run next dev and open /connections.\n\nList a provider only after lib/acc-auth.ts knows it: an unwired Connect fails at the route on purpose.\nReference: https://canteraui.vercel.app/components/connections-page"
+    },
+    {
+      "name": "project-types",
+      "type": "registry:lib",
+      "title": "Project Types",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into.",
+      "categories": ["projects", "types"],
+      "files": [
+        {
+          "path": "registry/lib/project-types.ts",
+          "type": "registry:lib",
+          "target": "lib/project-types.ts"
+        }
+      ]
+    },
+    {
+      "name": "aps-data-preset",
+      "type": "registry:lib",
+      "title": "APS Data Preset",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.",
+      "categories": ["projects", "providers", "autodesk"],
+      "registryDependencies": ["@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/lib/aps-data-preset.ts",
+          "type": "registry:lib",
+          "target": "lib/aps-data-preset.ts"
+        }
+      ]
+    },
+    {
+      "name": "hub-switcher",
+      "type": "registry:component",
+      "title": "Hub Switcher",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The hub context switch: which ACC hub — or any Hub — the rest of the screen works against, with region context and a pending state for the switch itself.",
+      "categories": ["projects", "navigation"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": ["select", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/ui/hub-switcher.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "project-picker",
+      "type": "registry:component",
+      "title": "Project Picker",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs.",
+      "categories": ["projects", "navigation"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "button",
+        "command",
+        "popover",
+        "@cantera/project-types",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/project-picker.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "version-set-select",
+      "type": "registry:component",
+      "title": "Version Set Select",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake.",
+      "categories": ["projects", "sheets"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": ["select", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/ui/version-set-select.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "hub-browser",
+      "type": "registry:component",
+      "title": "Hub Browser",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics.",
+      "categories": ["projects", "files", "navigation", "autodesk"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "560px"
+      },
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "badge",
+        "breadcrumb",
+        "button",
+        "popover",
+        "scroll-area",
+        "skeleton",
+        "@cantera/project-types",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/hub-browser.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "hub-tree",
+      "type": "registry:component",
+      "title": "Hub Tree",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation.",
+      "categories": ["projects", "files", "navigation", "autodesk"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "@cantera/project-types",
+        "@cantera/status-tokens",
+        "@cantera/upload-types"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/hub-tree.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "finder",
+      "type": "registry:component",
+      "title": "Finder",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives.",
+      "categories": ["projects", "search"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "520px"
+      },
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "button",
+        "command",
+        "@cantera/project-types",
+        "@cantera/status-tokens"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/finder.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "hub-sidebar",
+      "type": "registry:component",
+      "title": "Hub Sidebar",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.",
+      "categories": ["projects", "navigation"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "640px"
+      },
+      "registryDependencies": [
+        "avatar",
+        "dropdown-menu",
+        "sidebar",
+        "@cantera/finder",
+        "@cantera/hub-tree"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/hub-sidebar.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "crew-avatar",
+      "type": "registry:component",
+      "title": "Crew Avatar",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Deterministic construction-crew SVG avatars — monochrome disc, geometric figure, one accent for the trade on the hard hat — generated from a name with zero dependencies, boring-avatars style.",
+      "categories": ["identity", "avatars"],
+      "files": [
+        {
+          "path": "registry/lib/crew-avatar-spec.ts",
+          "type": "registry:lib",
+          "target": "lib/crew-avatar-spec.ts"
+        },
+        {
+          "path": "registry/ui/crew-avatar.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "file-picker-dialog",
+      "type": "registry:component",
+      "title": "File Picker Dialog",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Hub Browser inside a dialog, with tip-or-version selection and an explicit cancel action.",
+      "categories": ["projects", "files", "dialogs", "autodesk"],
+      "registryDependencies": [
+        "button",
+        "dialog",
+        "@cantera/hub-browser",
+        "@cantera/project-types"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/file-picker-dialog.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "viewer-types",
+      "type": "registry:lib",
+      "title": "Viewer Types",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks.",
+      "categories": ["viewer", "types", "autodesk"],
+      "devDependencies": ["@types/forge-viewer"],
+      "files": [
+        {
+          "path": "registry/lib/viewer-types.ts",
+          "type": "registry:lib",
+          "target": "lib/viewer-types.ts"
+        },
+        {
+          "path": "registry/lib/forge-viewer.d.ts",
+          "type": "registry:lib",
+          "target": "lib/forge-viewer.d.ts"
+        }
+      ]
+    },
+    {
+      "name": "viewer-extension-types",
+      "type": "registry:lib",
+      "title": "Viewer Extension Types",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.",
+      "categories": ["viewer", "types", "autodesk"],
+      "files": [
+        {
+          "path": "registry/lib/viewer-extension-types.ts",
+          "type": "registry:lib",
+          "target": "lib/viewer-extension-types.ts"
+        }
+      ]
+    },
+    {
+      "name": "aps-viewer",
+      "type": "registry:component",
+      "title": "APS Viewer",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar.",
+      "categories": ["viewer", "models", "autodesk"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": ["button", "checkbox", "@cantera/viewer-types"],
+      "files": [
+        {
+          "path": "registry/ui/aps-viewer/aps-viewer.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/aps-viewer.tsx"
+        },
+        {
+          "path": "registry/ui/aps-viewer/context.ts",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/context.ts"
+        },
+        {
+          "path": "registry/ui/aps-viewer/hooks.ts",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/hooks.ts"
+        },
+        {
+          "path": "registry/ui/aps-viewer/loader.ts",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/loader.ts"
+        },
+        {
+          "path": "registry/ui/aps-viewer/store.ts",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/store.ts"
+        },
+        {
+          "path": "registry/ui/aps-viewer/toolbar.ts",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/toolbar.ts"
+        },
+        {
+          "path": "registry/ui/aps-viewer/settings.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/settings.tsx"
+        },
+        {
+          "path": "registry/ui/aps-viewer/index.ts",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "model-status-card",
+      "type": "registry:component",
+      "title": "Model Status Card",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract.",
+      "categories": ["projects", "status"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "badge",
+        "button",
+        "card",
+        "@cantera/token-status",
+        "@cantera/status-tokens",
+        "@cantera/project-types"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/model-status-card.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "upload-types",
+      "type": "registry:lib",
+      "title": "Upload Types",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.",
+      "categories": ["uploads", "types"],
+      "files": [
+        {
+          "path": "registry/lib/upload-types.ts",
+          "type": "registry:lib",
+          "target": "lib/upload-types.ts"
+        }
+      ]
+    },
+    {
+      "name": "file-drop-zone",
+      "type": "registry:component",
+      "title": "File Drop Zone",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract.",
+      "categories": ["uploads", "files"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "560px"
+      },
+      "dependencies": ["lucide-react"],
+      "registryDependencies": [
+        "button",
+        "@cantera/token-status",
+        "@cantera/status-tokens",
+        "@cantera/upload-types"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/file-drop-zone.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "photo-types",
+      "type": "registry:lib",
+      "title": "Photo Types",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Generic field-photo types for cantera components: categories, media kinds, the photo record with optional geolocation, and cursor pages. The lingua franca photo adapters translate into.",
+      "categories": ["photos", "types"],
+      "files": [
+        {
+          "path": "registry/lib/photo-types.ts",
+          "type": "registry:lib",
+          "target": "lib/photo-types.ts"
+        }
+      ]
+    },
+    {
+      "name": "acc-photos-preset",
+      "type": "registry:lib",
+      "title": "ACC Photos Preset",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Autodesk Construction Cloud Photos API adapter into the generic photo types: origin-module and media-kind normalization, the markup and logo filter, and the Autodesk Build deep link.",
+      "categories": ["photos", "autodesk"],
+      "registryDependencies": ["@cantera/photo-types"],
+      "files": [
+        {
+          "path": "registry/lib/acc-photos-preset.ts",
+          "type": "registry:lib",
+          "target": "lib/acc-photos-preset.ts"
+        }
+      ]
+    },
+    {
+      "name": "copy-field",
+      "type": "registry:component",
+      "title": "Copy Field",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A value someone has to paste into another system — a client ID, a callback URL — shown in full and always selectable, with a copy button that confirms.",
+      "categories": ["forms", "onboarding"],
+      "dependencies": ["lucide-react"],
+      "registryDependencies": ["button"],
+      "files": [
+        {
+          "path": "registry/ui/copy-field.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "provisioning-notice",
+      "type": "registry:component",
+      "title": "Provisioning Notice",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The empty state every ACC app hits: signed in, but no hubs until an account admin adds the client ID under Custom Integrations. Names the step, hands over the ID, and says what else an empty list can mean.",
+      "categories": ["projects", "onboarding"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "420px"
+      },
+      "registryDependencies": ["@cantera/copy-field"],
+      "files": [
+        {
+          "path": "registry/ui/provisioning-notice.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "status-tokens-demo",
+      "type": "registry:example",
+      "title": "Status Tokens Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Status Tokens, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["theming", "status"],
+      "registryDependencies": ["@cantera/status-tokens"],
+      "files": [
+        {
+          "path": "registry/examples/status-tokens-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/status-tokens-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/status-tokens-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/status-tokens/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "provider-sign-in-button-demo",
+      "type": "registry:example",
+      "title": "Provider Sign-In Button Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Provider Sign-In Button, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["authentication", "buttons"],
+      "registryDependencies": [
+        "@cantera/aps-oauth-preset",
+        "@cantera/oauth-types",
+        "@cantera/provider-sign-in-button"
+      ],
+      "files": [
+        {
+          "path": "registry/examples/provider-sign-in-button-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/provider-sign-in-button-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/provider-sign-in-button-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/provider-sign-in-button/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "sign-in-card-demo",
+      "type": "registry:example",
+      "title": "Sign-In Card Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Sign-In Card, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["authentication", "login"],
+      "registryDependencies": [
+        "@cantera/aps-oauth-preset",
+        "@cantera/oauth-types",
+        "@cantera/sign-in-card"
+      ],
+      "files": [
+        {
+          "path": "registry/examples/sign-in-card-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/sign-in-card-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/sign-in-card-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/sign-in-card/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "scope-picker-demo",
+      "type": "registry:example",
+      "title": "Scope Picker Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Scope Picker, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["authentication", "permissions", "forms"],
+      "registryDependencies": ["@cantera/aps-oauth-preset", "@cantera/scope-picker"],
+      "files": [
+        {
+          "path": "registry/examples/scope-picker-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/scope-picker-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/scope-picker-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/scope-picker/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "user-account-badge-demo",
+      "type": "registry:example",
+      "title": "User Account Badge Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering User Account Badge, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["authentication", "account"],
+      "registryDependencies": ["@cantera/aps-oauth-preset", "@cantera/user-account-badge"],
+      "files": [
+        {
+          "path": "registry/examples/user-account-badge-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/user-account-badge-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/user-account-badge-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/user-account-badge/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "token-status-demo",
+      "type": "registry:example",
+      "title": "Token Status Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Token Status, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["authentication", "status"],
+      "registryDependencies": [
+        "@cantera/aps-oauth-preset",
+        "@cantera/oauth-types",
+        "@cantera/token-status"
+      ],
+      "files": [
+        {
+          "path": "registry/examples/token-status-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/token-status-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/token-status-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/token-status/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "connection-card-demo",
+      "type": "registry:example",
+      "title": "Connection Card Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Connection Card, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["authentication", "connections"],
+      "registryDependencies": [
+        "@cantera/aps-oauth-preset",
+        "@cantera/connection-card",
+        "@cantera/oauth-types"
+      ],
+      "files": [
+        {
+          "path": "registry/examples/connection-card-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/connection-card-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/connection-card-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/connection-card/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "hub-switcher-demo",
+      "type": "registry:example",
+      "title": "Hub Switcher Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Hub Switcher, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "navigation"],
+      "registryDependencies": ["@cantera/hub-switcher", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/examples/hub-switcher-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/hub-switcher-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/hub-switcher-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/hub-switcher/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "project-picker-demo",
+      "type": "registry:example",
+      "title": "Project Picker Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Project Picker, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "navigation"],
+      "registryDependencies": ["@cantera/project-picker", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/examples/project-picker-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/project-picker-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/project-picker-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/project-picker/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "version-set-select-demo",
+      "type": "registry:example",
+      "title": "Version Set Select Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Version Set Select, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "sheets"],
+      "registryDependencies": ["@cantera/project-types", "@cantera/version-set-select"],
+      "files": [
+        {
+          "path": "registry/examples/version-set-select-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/version-set-select-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/version-set-select-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/version-set-select/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "hub-browser-demo",
+      "type": "registry:example",
+      "title": "Hub Browser Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Hub Browser, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "files", "navigation", "autodesk"],
+      "registryDependencies": ["@cantera/hub-browser", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/examples/hub-browser-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/hub-browser-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/hub-browser-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/hub-browser/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "file-picker-dialog-demo",
+      "type": "registry:example",
+      "title": "File Picker Dialog Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering File Picker Dialog, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "files", "dialogs", "autodesk"],
+      "registryDependencies": ["button", "@cantera/file-picker-dialog", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/examples/file-picker-dialog-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/file-picker-dialog-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/file-picker-dialog-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/file-picker-dialog/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "aps-viewer-demo",
+      "type": "registry:example",
+      "title": "APS Viewer Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering APS Viewer, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["viewer", "models", "autodesk"],
+      "registryDependencies": ["@cantera/aps-viewer", "@cantera/viewer-types"],
+      "files": [
+        {
+          "path": "registry/examples/aps-viewer-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/aps-viewer-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/aps-viewer-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/aps-viewer/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "model-status-card-demo",
+      "type": "registry:example",
+      "title": "Model Status Card Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Model Status Card, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "status"],
+      "registryDependencies": ["@cantera/model-status-card", "@cantera/project-types"],
+      "files": [
+        {
+          "path": "registry/examples/model-status-card-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/model-status-card-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/model-status-card-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/model-status-card/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "file-drop-zone-demo",
+      "type": "registry:example",
+      "title": "File Drop Zone Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering File Drop Zone, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["uploads", "files"],
+      "registryDependencies": ["@cantera/file-drop-zone", "@cantera/upload-types"],
+      "files": [
+        {
+          "path": "registry/examples/file-drop-zone-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/file-drop-zone-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/file-drop-zone-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/file-drop-zone/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "copy-field-demo",
+      "type": "registry:example",
+      "title": "Copy Field Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Copy Field, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["forms", "onboarding"],
+      "registryDependencies": ["@cantera/copy-field"],
+      "files": [
+        {
+          "path": "registry/examples/copy-field-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/copy-field-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/copy-field-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/copy-field/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "provisioning-notice-demo",
+      "type": "registry:example",
+      "title": "Provisioning Notice Example",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A full page rendering Provisioning Notice, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+      "categories": ["projects", "onboarding"],
+      "registryDependencies": ["button", "@cantera/provisioning-notice"],
+      "files": [
+        {
+          "path": "registry/examples/provisioning-notice-demo.tsx",
+          "type": "registry:component",
+          "target": "components/examples/provisioning-notice-demo.tsx"
+        },
+        {
+          "path": "registry/examples/pages/provisioning-notice-demo-page.tsx",
+          "type": "registry:page",
+          "target": "app/examples/provisioning-notice/page.tsx"
+        }
+      ]
+    }
+  ]
+}

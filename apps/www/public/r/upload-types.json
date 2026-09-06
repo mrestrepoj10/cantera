@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "upload-types",
+  "title": "Upload Types",
+  "author": "MR <contact@bimframe.co>",
+  "description": "Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.",
+  "files": [
+    {
+      "path": "registry/lib/upload-types.ts",
+      "content": "/** `processing` is the provider working after the bytes arrived — translation,\n * extraction — usually with no reliable progress signal. */\nexport type UploadPhase = 'queued' | 'uploading' | 'processing' | 'complete' | 'error'\n\nexport interface UploadFile {\n  /** Stable identifier for reconciliation — not the name, which can repeat. */\n  id: string\n  name: string\n  size?: number\n  phase: UploadPhase\n  /** Upload progress as a 0–1 fraction while `uploading`. */\n  progress?: number\n  processingLabel?: string\n  error?: string\n  /** A retryable error is a warning — a retry away; a terminal one is danger. */\n  retryable?: boolean\n}\n\nexport type UploadRejectionReason = 'file-type' | 'file-size' | 'file-count'\n\nexport interface UploadRejection {\n  file: File\n  reason: UploadRejectionReason\n}\n\n/** The design formats APS translates most often — a preset, not a limit. */\nexport const MODEL_FILE_ACCEPT = '.rvt,.ifc,.dwg,.dxf,.nwd,.nwc,.pdf'\n\nexport function matchesAccept(file: File, accept?: string): boolean {\n  if (!accept) return true\n  const name = file.name.toLowerCase()\n  const type = file.type.toLowerCase()\n  return accept.split(',').some((entry) => {\n    const rule = entry.trim().toLowerCase()\n    if (!rule) return false\n    if (rule.startsWith('.')) return name.endsWith(rule)\n    if (rule.endsWith('/*')) return type.startsWith(rule.slice(0, -1))\n    return type === rule\n  })\n}\n\nconst BYTE_UNITS = ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'terabyte'] as const\n\n// Decimal units, matching what storage providers and file managers report.\nexport function formatBytes(bytes: number, locale?: string): string {\n  let value = Math.max(0, bytes)\n  let unit: (typeof BYTE_UNITS)[number] = 'byte'\n  for (const next of BYTE_UNITS.slice(1)) {\n    if (value < 1000) break\n    value /= 1000\n    unit = next\n  }\n  return new Intl.NumberFormat(locale, {\n    style: 'unit',\n    unit,\n    unitDisplay: 'short',\n    maximumFractionDigits: unit !== 'byte' && value < 10 ? 1 : 0,\n  }).format(value)\n}\n",
+      "type": "registry:lib",
+      "target": "lib/upload-types.ts"
+    }
+  ],
+  "categories": [
+    "uploads",
+    "types"
+  ],
+  "type": "registry:lib"
+}

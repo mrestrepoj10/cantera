@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "oauth-types",
+  "title": "OAuth Types",
+  "author": "MR <contact@bimframe.co>",
+  "description": "Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.",
+  "files": [
+    {
+      "path": "registry/lib/oauth-types.ts",
+      "content": "import type { ReactNode } from 'react'\n\nexport interface OAuthProvider {\n  id: string\n  name: string\n  /** A mark carries its own default size (the presets ship `className=\"size-4\"`);\n   * a surface wanting another size wraps it in `[&_svg]:size-*`, which wins. */\n  icon?: ReactNode\n  docsUrl?: string\n}\n\nexport interface OAuthScope {\n  /** The literal scope string sent to the provider, e.g. \"data:read\". */\n  id: string\n  label: string\n  description?: string\n  /** Required scopes are always selected and cannot be deselected. */\n  required?: boolean\n}\n\nexport interface OAuthScopePreset {\n  id: string\n  label: string\n  description?: string\n  scopes: string[]\n}\n\nexport type OAuthConnectionStatus = 'connected' | 'expired' | 'error' | 'disconnected'\n\nexport interface OAuthAccount {\n  name?: string\n  email?: string\n  avatarUrl?: string\n}\n\nexport interface OAuthConnection {\n  provider: OAuthProvider\n  status: OAuthConnectionStatus\n  account?: OAuthAccount\n  scopes?: string[]\n  expiresAt?: Date | string | number\n  error?: string\n}\n\nexport function connectionExpiry(connection: OAuthConnection): Date | null {\n  if (connection.expiresAt == null) return null\n  const date = new Date(connection.expiresAt)\n  return Number.isNaN(date.getTime()) ? null : date\n}\n\nexport function isExpiringSoon(connection: OAuthConnection, withinMs = 5 * 60_000): boolean {\n  const expiry = connectionExpiry(connection)\n  if (!expiry) return false\n  return expiry.getTime() - Date.now() <= withinMs\n}\n\nconst EMAIL_DOMAIN = /@.*$/\nconst NAME_SEPARATORS = /[\\s._-]+/\n\nexport function accountInitials(account: OAuthAccount | undefined): string {\n  const source = account?.name ?? account?.email ?? ''\n  const parts = source.replace(EMAIL_DOMAIN, '').split(NAME_SEPARATORS).filter(Boolean)\n  if (parts.length === 0) return '?'\n  const first = parts[0][0] ?? ''\n  const last = parts.length > 1 ? (parts[parts.length - 1][0] ?? '') : ''\n  return `${first}${last}`.toUpperCase() || '?'\n}\n",
+      "type": "registry:lib",
+      "target": "lib/oauth-types.ts"
+    }
+  ],
+  "categories": [
+    "authentication",
+    "types"
+  ],
+  "type": "registry:lib"
+}

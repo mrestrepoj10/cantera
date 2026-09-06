@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "photo-types",
+  "title": "Photo Types",
+  "author": "MR <contact@bimframe.co>",
+  "description": "Generic field-photo types for cantera components: categories, media kinds, the photo record with optional geolocation, and cursor pages. The lingua franca photo adapters translate into.",
+  "files": [
+    {
+      "path": "registry/lib/photo-types.ts",
+      "content": "/** The origin module a photo was added with, normalized across providers. */\nexport const PHOTO_CATEGORIES = [\n  'field-report',\n  'issue',\n  'form',\n  'rfi',\n  'gallery',\n  'asset',\n  'meeting',\n  'submittal',\n  'other',\n] as const\n\nexport type PhotoCategory = (typeof PHOTO_CATEGORIES)[number]\n\nexport const PHOTO_CATEGORY_LABELS = {\n  'field-report': 'Field report',\n  issue: 'Issue',\n  form: 'Form',\n  rfi: 'RFI',\n  gallery: 'Gallery',\n  asset: 'Asset',\n  meeting: 'Meeting',\n  submittal: 'Submittal',\n  other: 'Other',\n} satisfies Record<PhotoCategory, string>\n\n/** The capture kind, normalized across providers. */\nexport const PHOTO_MEDIA_TYPES = ['photo', 'video', 'photosphere', 'infrared'] as const\n\nexport type PhotoMediaType = (typeof PHOTO_MEDIA_TYPES)[number]\n\nexport interface FieldPhoto {\n  id: string\n  title: string | null\n  category: PhotoCategory\n  mediaType: PhotoMediaType\n  /** ISO datetime the photo was captured (EXIF-derived), when known. */\n  takenAt: string | null\n  /** ISO datetime the record was created in the system of record. */\n  createdAt: string\n  /** WGS84 decimal degrees; null when the provider has no geolocation. */\n  latitude: number | null\n  longitude: number | null\n  /** A URL that resolves to a viewable thumbnail whenever it is read — a\n   * static asset, or a proxy route that refreshes short-lived signed URLs. */\n  thumbnailUrl: string\n  /** Deep link into the system of record; null when there is none. */\n  sourceUrl: string | null\n}\n\n/** One page of a photo listing, shaped for cursor-driven progressive loading. */\nexport interface PhotoPage {\n  photos: FieldPhoto[]\n  /** Opaque cursor for the next page; null on the last page. */\n  nextCursor: string | null\n}\n\n/** The moment a photo represents: EXIF capture time when the device recorded\n * one, the record's creation time otherwise. Null when neither parses, so\n * time-based views can drop the photo rather than date it to the epoch. */\nexport function photoCapturedAt(photo: Pick<FieldPhoto, 'takenAt' | 'createdAt'>): number | null {\n  const taken = photo.takenAt === null ? Number.NaN : Date.parse(photo.takenAt)\n  if (Number.isFinite(taken)) return taken\n  const created = Date.parse(photo.createdAt)\n  return Number.isFinite(created) ? created : null\n}\n\nexport type LocatedPhoto = FieldPhoto & { latitude: number; longitude: number }\n\nexport function hasLocation(photo: FieldPhoto): photo is LocatedPhoto {\n  return photo.latitude !== null && photo.longitude !== null\n}\n\nexport interface PhotoCoverage {\n  located: number\n  total: number\n}\n\n/** How many photos can be placed on a map. Surfaces show both numbers: the\n * honest count is the one that says how many cannot. */\nexport function photoCoverage(photos: FieldPhoto[]): PhotoCoverage {\n  let located = 0\n  for (const photo of photos) {\n    if (hasLocation(photo)) located += 1\n  }\n  return { located, total: photos.length }\n}\n",
+      "type": "registry:lib",
+      "target": "lib/photo-types.ts"
+    }
+  ],
+  "categories": [
+    "photos",
+    "types"
+  ],
+  "type": "registry:lib"
+}

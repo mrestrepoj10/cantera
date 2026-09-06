@@ -1,0 +1,42 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "acc-sign-in",
+  "title": "ACC Sign-In",
+  "author": "MR <contact@bimframe.co>",
+  "description": "A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.",
+  "dependencies": [
+    "aec-auth",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "@cantera/acc-auth-routes",
+    "@cantera/acc-connection-panel",
+    "@cantera/aps-oauth-preset",
+    "@cantera/oauth-types"
+  ],
+  "files": [
+    {
+      "path": "registry/blocks/acc-sign-in/page.tsx",
+      "content": "import { TokenError } from 'aec-auth'\nimport { cookies, headers } from 'next/headers'\nimport { redirect } from 'next/navigation'\n\nimport { AccConnectionPanel } from '@/components/acc-connection-panel'\nimport { ScopedAutodeskSignIn } from '@/components/scoped-autodesk-sign-in'\nimport {\n  APS_PROVIDER_ID,\n  appOrigin,\n  getSessionToken,\n  openSession,\n  SESSION_COOKIE,\n  safeNext,\n} from '@/lib/acc-auth'\nimport { apsProvider } from '@/lib/aps-oauth-preset'\nimport type { OAuthConnection } from '@/lib/oauth-types'\n\n/** Render <AccSignIn nextPath=\"/your-page\" /> from any server page; the\n * default export is a ready-made /sign-in page. */\nasync function requestOrigin(): Promise<string> {\n  const headerList = await headers()\n  const host = headerList.get('x-forwarded-host') ?? headerList.get('host') ?? 'localhost:3000'\n  const proto = headerList.get('x-forwarded-proto') ?? 'http'\n  return appOrigin(`${proto}://${host}`)\n}\n\nexport async function AccSignIn({\n  nextPath = '/sign-in',\n  headingLevel = 'h1',\n}: {\n  nextPath?: string\n  /** Heading level for the block's title. Drop to h2 when embedding under one. */\n  headingLevel?: 'h1' | 'h2' | 'h3'\n}) {\n  const Heading = headingLevel\n  const cookieStore = await cookies()\n  const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)\n  const signInHref = `/api/auth/${APS_PROVIDER_ID}?next=${encodeURIComponent(nextPath)}`\n\n  if (!session) {\n    return (\n      <ScopedAutodeskSignIn\n        nextPath={nextPath}\n        title=\"Sign in\"\n        titleAs={headingLevel}\n        description=\"Choose the access to grant, then continue with Autodesk.\"\n      />\n    )\n  }\n\n  const account = { name: session.name, email: session.email, avatarUrl: session.avatarUrl }\n  let connection: OAuthConnection\n  try {\n    const origin = await requestOrigin()\n    const token = await getSessionToken(origin, session)\n    connection = {\n      provider: apsProvider,\n      status: 'connected',\n      account,\n      scopes: token.scopes ? [...token.scopes] : session.scopes,\n      expiresAt: token.expiresAt,\n    }\n  } catch (error) {\n    connection = {\n      provider: apsProvider,\n      status:\n        error instanceof TokenError && error.code === 'consent_required' ? 'expired' : 'error',\n      account,\n      scopes: session.scopes,\n      error:\n        error instanceof TokenError && error.code === 'consent_required'\n          ? 'Grant lost — reconnect to continue.'\n          : 'Could not refresh the token.',\n    }\n  }\n\n  return (\n    <div className=\"flex w-full max-w-sm flex-col gap-4\">\n      <Heading className=\"font-heading font-medium text-2xl tracking-tight\">\n        Autodesk connection\n      </Heading>\n      <AccConnectionPanel\n        connection={connection}\n        signOutHref={`/api/auth/signout?next=${encodeURIComponent(nextPath)}`}\n        signInHref={signInHref}\n      />\n    </div>\n  )\n}\n\nexport default async function SignInPage({\n  searchParams,\n}: {\n  searchParams: Promise<{ next?: string | string[] }>\n}) {\n  // A repeated ?next= arrives as an array; treat it as absent rather than\n  // guessing which destination was meant.\n  const { next } = await searchParams\n  const nextPath = safeNext(typeof next === 'string' ? next : undefined, '/sign-in')\n  if (nextPath !== '/sign-in') {\n    // ?next= means the same thing signed in or out: an already-signed-in\n    // visitor continues to the destination instead of stalling on the panel.\n    const cookieStore = await cookies()\n    const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)\n    if (session) redirect(nextPath)\n  }\n  return (\n    <main className=\"flex flex-1 items-center justify-center p-6\">\n      <AccSignIn nextPath={nextPath} />\n    </main>\n  )\n}\n",
+      "type": "registry:page",
+      "target": "app/sign-in/page.tsx"
+    },
+    {
+      "path": "registry/blocks/acc-sign-in/loading.tsx",
+      "content": "import { LoaderCircleIcon } from 'lucide-react'\n\n/** Deliberately still: skeleton rows at the panel's own geometry, no shimmer;\n * the one spinner carries the announcement. */\nexport default function SignInLoading() {\n  return (\n    <main className=\"flex flex-1 items-center justify-center p-6\">\n      <div className=\"flex w-full max-w-sm flex-col gap-4\">\n        <output className=\"flex items-center gap-2 text-muted-foreground text-sm\">\n          {/* The spin lives on a wrapper: transform animations on the <svg>\n              itself skip the compositor in some engines. */}\n          <span aria-hidden className=\"grid size-3.5 shrink-0 animate-spin place-items-center\">\n            <LoaderCircleIcon className=\"size-3.5\" />\n          </span>\n          Checking your Autodesk connection\n        </output>\n        {/* Same box as Card: rounded-xl, ring-1, py-(--card-spacing) at 4. */}\n        <div aria-hidden className=\"rounded-xl bg-card py-4 ring-1 ring-foreground/10\">\n          <div className=\"flex flex-col gap-3 px-4\">\n            <div className=\"flex items-center gap-3\">\n              <div className=\"size-5 shrink-0 rounded bg-muted\" />\n              <div className=\"h-4 w-28 rounded bg-muted\" />\n              <div className=\"ml-auto h-7 w-24 shrink-0 rounded-lg bg-muted\" />\n            </div>\n            <div className=\"flex items-center gap-2\">\n              <div className=\"size-7 shrink-0 rounded-full bg-muted\" />\n              <div className=\"flex flex-col gap-1\">\n                <div className=\"h-3.5 w-24 rounded bg-muted\" />\n                <div className=\"h-3.5 w-40 rounded bg-muted\" />\n              </div>\n            </div>\n            <div className=\"flex items-center gap-2\">\n              <div className=\"h-6 w-24 shrink-0 rounded-md bg-muted\" />\n              <div className=\"h-3 w-20 rounded bg-muted\" />\n            </div>\n          </div>\n        </div>\n      </div>\n    </main>\n  )\n}\n",
+      "type": "registry:file",
+      "target": "app/sign-in/loading.tsx"
+    }
+  ],
+  "meta": {
+    "kind": "template",
+    "iframeHeight": "520px"
+  },
+  "docs": "Installed at /sign-in: the page and its loading skeleton. Signed out, it renders ScopedAutodeskSignIn; /sign-in?next=/your-page returns there after the callback. Signed in, it shows AccConnectionPanel.\n\nNext:\n1. Fill the keys acc-auth-routes added to .env.local (see its notes above).\n2. Run next dev and open /sign-in.\n\nNever set ACC_AUTH_DEMO=1 where real accounts exist.\nReference: https://canteraui.vercel.app/components/acc-sign-in",
+  "categories": [
+    "authentication",
+    "login",
+    "autodesk"
+  ],
+  "type": "registry:block"
+}

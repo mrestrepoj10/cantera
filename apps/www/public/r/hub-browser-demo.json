@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "hub-browser-demo",
+  "title": "Hub Browser Example",
+  "author": "MR <contact@bimframe.co>",
+  "description": "A full page rendering Hub Browser, with its own sample data — what \"Open in v0\" hands over, and what to copy when wiring the component into a real screen.",
+  "registryDependencies": [
+    "@cantera/hub-browser",
+    "@cantera/project-types"
+  ],
+  "files": [
+    {
+      "path": "registry/examples/hub-browser-demo.tsx",
+      "content": "'use client'\n\nimport { useState } from 'react'\n\nimport {\n  HubBrowser,\n  type HubBrowserVersions,\n  ROOT_BROWSE_SEGMENT,\n} from '@/components/ui/hub-browser'\nimport type {\n  BrowsePathSegment,\n  Folder,\n  FolderEntry,\n  Hub,\n  Item,\n  ItemVersion,\n  Project,\n} from '@/lib/project-types'\n\nconst hub: Hub = { id: 'b.ridgeline-us', name: 'Ridgeline Builders', region: 'US' }\nconst projects: Project[] = [\n  { id: 'b.summit-tower', name: 'Summit Tower', hubId: hub.id },\n  { id: 'b.cedar-mill', name: 'Cedar Mill Campus', hubId: hub.id },\n]\nconst projectFiles: Folder = {\n  id: 'folder-project-files',\n  name: 'Project Files',\n  type: 'folder',\n  objectCount: 3,\n  lastModifiedTime: '2026-08-21T14:20:00.000Z',\n  modifiedBy: 'Maya Chen',\n}\nconst designFolder: Folder = {\n  id: 'folder-design',\n  name: 'Design',\n  type: 'folder',\n  objectCount: 2,\n  lastModifiedTime: '2026-08-21T13:10:00.000Z',\n  modifiedBy: 'Luis Romero',\n}\n\nconst modelVersions: ItemVersion[] = [\n  {\n    id: 'version-model-7',\n    versionNumber: 7,\n    displayName: 'Summit Tower Coordination.rvt',\n    createTime: '2026-08-21T13:10:00.000Z',\n    createdBy: 'Luis Romero',\n    storageSize: 184_200_000,\n    derivativeUrn: 'dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZlcnNpb24tbW9kZWwtNw',\n  },\n  {\n    id: 'version-model-6',\n    versionNumber: 6,\n    displayName: 'Summit Tower Coordination.rvt',\n    createTime: '2026-08-18T16:40:00.000Z',\n    createdBy: 'Luis Romero',\n    storageSize: 181_900_000,\n    derivativeUrn: 'dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZlcnNpb24tbW9kZWwtNg',\n  },\n  {\n    id: 'version-model-5',\n    versionNumber: 5,\n    displayName: 'Summit Tower Coordination.rvt',\n    createTime: '2026-08-14T11:25:00.000Z',\n    createdBy: 'Luis Romero',\n    storageSize: 179_600_000,\n    derivativeUrn: null,\n  },\n]\n\nconst model: Item = {\n  id: 'item-model',\n  name: 'Summit Tower Coordination.rvt',\n  type: 'item',\n  lastModifiedTime: modelVersions[0]?.createTime,\n  modifiedBy: modelVersions[0]?.createdBy,\n  tip: modelVersions[0],\n  translationStatus: 'success',\n}\nconst logistics: Item = {\n  id: 'item-logistics',\n  name: 'Site Logistics Plan.pdf',\n  type: 'item',\n  lastModifiedTime: '2026-08-20T18:05:00.000Z',\n  modifiedBy: 'Maya Chen',\n  tip: {\n    id: 'version-logistics-3',\n    versionNumber: 3,\n    displayName: 'Site Logistics Plan.pdf',\n    createTime: '2026-08-20T18:05:00.000Z',\n    createdBy: 'Maya Chen',\n    storageSize: 8_450_000,\n    derivativeUrn: null,\n  },\n  translationStatus: 'pending',\n}\n\nconst hubSegment: BrowsePathSegment = { id: hub.id, name: hub.name, type: 'hub' }\nconst projectSegment: BrowsePathSegment = {\n  id: projects[0]?.id ?? '',\n  name: projects[0]?.name ?? '',\n  type: 'project',\n}\nconst filesSegment: BrowsePathSegment = {\n  id: projectFiles.id,\n  name: projectFiles.name,\n  type: 'folder',\n}\nconst designSegment: BrowsePathSegment = {\n  id: designFolder.id,\n  name: designFolder.name,\n  type: 'folder',\n}\n\nfunction wait(ms = 650): Promise<void> {\n  return new Promise((resolve) => window.setTimeout(resolve, ms))\n}\n\nexport function HubBrowserDemo() {\n  const [path, setPath] = useState<BrowsePathSegment[]>([hubSegment, projectSegment, filesSegment])\n  const [entries, setEntries] = useState<FolderEntry[]>([designFolder, logistics])\n  const [versions, setVersions] = useState<HubBrowserVersions>()\n  const [opened, setOpened] = useState('Nothing opened yet.')\n\n  async function navigate(segment: BrowsePathSegment): Promise<void> {\n    await wait()\n    if (segment.id === ROOT_BROWSE_SEGMENT.id) {\n      setPath([])\n      setEntries([hub])\n      return\n    }\n    if (segment.type === 'hub') {\n      setPath([hubSegment])\n      setEntries(projects)\n      return\n    }\n    if (segment.type === 'project') {\n      setPath([hubSegment, { ...segment, type: 'project' }])\n      setEntries([projectFiles])\n      return\n    }\n    if (segment.id === projectFiles.id) {\n      setPath([hubSegment, projectSegment, filesSegment])\n      setEntries([designFolder, logistics])\n      return\n    }\n    setPath([hubSegment, projectSegment, filesSegment, designSegment])\n    setEntries([model])\n  }\n\n  return (\n    <div className=\"flex w-full flex-col gap-3\">\n      <HubBrowser\n        path={path}\n        entries={entries}\n        title=\"Summit Tower files\"\n        titleAs=\"h3\"\n        versions={versions}\n        onNavigate={navigate}\n        onRequestVersions={async (itemId) => {\n          setVersions({ itemId, status: 'loading', versions: [] })\n          await wait()\n          setVersions({\n            itemId,\n            status: 'ready',\n            versions: itemId === model.id ? modelVersions : [logistics.tip as ItemVersion],\n          })\n        }}\n        onItemOpen={async (item, version) => {\n          await wait()\n          setOpened(`${item.name} — ${version ? `version ${version.versionNumber}` : 'tip'}`)\n        }}\n      />\n      <output className=\"text-muted-foreground text-xs\">{opened}</output>\n    </div>\n  )\n}\n",
+      "type": "registry:component",
+      "target": "components/examples/hub-browser-demo.tsx"
+    },
+    {
+      "path": "registry/examples/pages/hub-browser-demo-page.tsx",
+      "content": "// Generated by scripts/build-examples.mts. Edit the demo, not this file.\nimport { HubBrowserDemo } from '@/components/examples/hub-browser-demo'\n\nexport default function Page() {\n  return (\n    <main className=\"flex min-h-svh items-center justify-center p-6 md:p-10\">\n      <div className=\"w-full max-w-3xl\">\n        <HubBrowserDemo />\n      </div>\n    </main>\n  )\n}\n",
+      "type": "registry:page",
+      "target": "app/examples/hub-browser/page.tsx"
+    }
+  ],
+  "categories": [
+    "projects",
+    "files",
+    "navigation",
+    "autodesk"
+  ],
+  "type": "registry:example"
+}

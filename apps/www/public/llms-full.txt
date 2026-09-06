@@ -1,0 +1,1406 @@
+# cantera — full reference
+
+> cantera is a shadcn registry for construction (AEC) interfaces: OAuth sign-in, scope, and connection components, page-sized blocks, and wired Autodesk (APS / ACC) templates for sign-in, connections, model viewing, and model upload. It is not an npm package — the shadcn CLI copies the source into the consumer project, where it renders on that project's own shadcn primitives and theme.
+
+Site: https://canteraui.vercel.app
+Installation guide: https://canteraui.vercel.app/installation
+
+## Setup
+
+Add the namespace to components.json once:
+
+```json
+{
+  "registries": {
+    "@cantera": "https://canteraui.vercel.app/r/{name}.json"
+  }
+}
+```
+
+Then install by name, e.g. `npx shadcn@latest add @cantera/connection-card`. The CLI resolves shadcn primitives from the consumer's own base and style, and cantera dependencies from this registry. The installed code belongs to the consumer — it is copied in, not linked.
+
+Pro items (marked below) install from the @cantera-pro namespace, which sends a license as a bearer token. Register both namespaces and set CANTERA_TOKEN in the environment before running the CLI; the license comes from https://canteraui.vercel.app/pro:
+
+```json
+{
+  "registries": {
+    "@cantera": "https://canteraui.vercel.app/r/{name}.json",
+    "@cantera-pro": {
+      "url": "https://canteraui.vercel.app/r-pro/{name}.json",
+      "headers": {
+        "Authorization": "Bearer ${CANTERA_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+## Design contracts
+
+These are the semantics behind the props. A component that is wired against them behaves the way the rest of the registry does.
+
+### Status vocabulary
+
+Every status renders from the `@cantera/status-tokens` variables: `--status-success`, `--status-warning`, `--status-danger`, `--status-neutral`, each with a `-foreground` companion (ink on the solid fill) and a `-surface` companion (soft background, which always carries `text-status-*` ink, never the `-foreground` ink). One color, one meaning: success is healthy, warning is recoverable and needs attention, danger is a failure the user must act on, neutral is absence. Recoverable states — expired, expiring soon — are warning, not danger: a refresh away, not a failure. Never substitute a generic badge variant for a status: `secondary` reads as gray nothing, and `destructive` collapses "expired" and "broken" into one color. Status uses solid fills, not low-alpha tints. `statusCssVars` (from `lib/status-tokens.ts`) gives the same twelve tokens as typed `var()` strings for inline styles, chart series, and canvas fills — never hand-type a variable name.
+
+### Async pending
+
+Every component with an async callback exposes a pending state, and pending means disabled-with-spinner-while-keeping-the-label — never a label swapped for "Loading…", never a collapsed control. A pressed control is never unmounted and never changes element type mid-action. Pending is both a prop the consumer drives (`loading`, `disconnectPending`, `reconnectPending`, `loadingProvider` — for server actions, where no promise comes back) and an internal state: a callback that returns a promise drives it automatically. Disabled controls render `aria-disabled`, not the native attribute, so they stay focusable and a screen reader user can still find them.
+
+### Field density and a11y
+
+This UI is used with gloves, on a tablet, on site. Primary actions carry a 44px minimum touch target; comfortable density is the default and compact is opt-in. 12px is the text floor — there is no `text-[10px]` anywhere in the registry. Focus indicators are 3:1 against their surroundings (`focus-visible:border-ring` plus a full-alpha ring). Every block ships a real heading, every description is wired with `aria-describedby`, and `Intl` formatting is locale-neutral (`Intl.RelativeTimeFormat(undefined, ...)`, with an optional `locale` prop).
+
+### Installed specifiers
+
+Distributed files import what the install produces: `@/components/ui/connection-card`, `@/lib/oauth-types`. Never `@/registry/...` — that path exists only in the cantera repo and installs broken.
+
+### Icon sizing
+
+Preset provider marks carry their own `className="size-4"`, so one renders correctly wherever it is dropped. A `[&_svg]:size-*` wrapper still wins on specificity where a surface wants another size — use the wrapper, not a rewritten mark, and keep `aria-hidden` on decorative marks.
+
+## Items
+
+### OAuth Types (`@cantera/oauth-types`)
+
+Type: types
+Install: npx shadcn@latest add @cantera/oauth-types
+Docs: https://canteraui.vercel.app/components/oauth-types
+Item: https://canteraui.vercel.app/r/oauth-types.json
+
+Generic OAuth types for cantera components: providers, scopes, connections, accounts. The lingua franca adapters translate into.
+
+The lingua franca every cantera component speaks. Components take these shapes as props and never fetch data themselves — adapters translate provider payloads into them, so Autodesk, Procore, or your own provider all render with the same components.
+
+```tsx
+import type { OAuthConnection, OAuthProvider } from '@/lib/oauth-types'
+
+const fieldlink: OAuthProvider = {
+  id: 'fieldlink',
+  name: 'FieldLink',
+}
+
+const connection: OAuthConnection = {
+  provider: fieldlink,
+  status: 'connected',
+  account: { name: 'Dana Alvarez', email: 'dana@ridgelinebuilders.com' },
+  scopes: ['rfis:read', 'submittals:read'],
+  expiresAt: Date.now() + 55 * 60_000,
+}
+```
+
+Files written into the consumer project:
+
+- lib/oauth-types.ts
+
+#### Exports
+
+- `OAuthProvider` (`interface`) — A provider identity: id, name, optional icon and docsUrl. Marks carry their own default size, so one renders correctly wherever it is dropped; a [&_svg]:size-* wrapper still wins.
+- `OAuthScope` (`interface`) — One grantable scope: id (the literal scope string), label, description, required.
+- `OAuthScopePreset` (`interface`) — A named bundle of scope ids for a common task, e.g. "Viewer".
+- `OAuthConnectionStatus` (`type`) — 'connected' | 'expired' | 'error' | 'disconnected'.
+- `OAuthAccount` (`interface`) — The human behind a grant: name, email, avatarUrl — all optional.
+- `OAuthConnection` (`interface`) — A provider grant: provider, status, and optional account, scopes, expiresAt, error.
+- `connectionExpiry` (`(connection: OAuthConnection) => Date | null`) — Normalizes expiresAt (Date, string, or number) into a Date, or null when absent.
+- `isExpiringSoon` (`(connection: OAuthConnection, withinMs?: number) => boolean`) — True when the connection expires within withinMs — five minutes by default.
+- `accountInitials` (`(account?: OAuthAccount) => string`) — Initials for avatar fallbacks: "Dana Alvarez" becomes "DA".
+
+### APS OAuth Preset (`@cantera/aps-oauth-preset`)
+
+Type: preset
+Install: npx shadcn@latest add @cantera/aps-oauth-preset
+Docs: https://canteraui.vercel.app/components/aps-oauth-preset
+Item: https://canteraui.vercel.app/r/aps-oauth-preset.json
+Registry dependencies: @cantera/oauth-types
+
+Autodesk Platform Services (ACC) preset: provider metadata, scope catalog, scope bundles, and adapters into cantera's oauth types.
+
+Everything Autodesk-specific in one data-only item: provider metadata, the APS scope catalog with human explanations, the scope bundles aec-auth uses, and an adapter from the APS userinfo payload. Drop it into any component that takes oauth types — no client, no fetching, no tokens.
+
+```tsx
+import { apsProvider, apsScopeCatalog, apsScopePresets } from '@/lib/aps-oauth-preset'
+import { ScopePicker, withRequiredScopes } from '@/components/ui/scope-picker'
+import { SignInCard } from '@/components/ui/sign-in-card'
+
+<SignInCard providers={[apsProvider]} hrefTemplate="/api/auth/{provider}" />
+
+<ScopePicker
+  scopes={apsScopeCatalog}
+  presets={apsScopePresets}
+  value={selected}
+  onChange={setSelected}
+  allowCustomScopes
+/>
+
+// Required scopes are unioned in where the value is used, never on mount.
+const scope = withRequiredScopes(apsScopeCatalog, selected).join(' ')
+```
+
+Files written into the consumer project:
+
+- lib/aps-oauth-preset.tsx
+
+#### Exports
+
+- `apsProvider` (`OAuthProvider`) — Autodesk provider metadata: id "aps", name, brand mark, OAuth docs link.
+- `apsScopeCatalog` (`OAuthScope[]`) — The APS scope catalog — data, viewables, buckets, account admin, OpenID — with human explanations.
+- `apsScopePresets` (`OAuthScopePreset[]`) — Common bundles mirrored from aec-auth's apsScopes recipes: viewer, data-read, data-write, account-admin.
+- `ApsUserInfo` (`interface`) — The subset of the APS userinfo response the adapter reads.
+- `fromApsUserInfo` (`(userInfo: ApsUserInfo) => OAuthAccount`) — Adapter from an APS userinfo payload into a cantera OAuthAccount.
+
+### Status Tokens (`@cantera/status-tokens`)
+
+Type: tokens (CSS variables plus a typed accessor)
+Install: npx shadcn@latest add @cantera/status-tokens
+Docs: https://canteraui.vercel.app/components/status-tokens
+Item: https://canteraui.vercel.app/r/status-tokens.json
+Working example page: npx shadcn@latest add @cantera/status-tokens-demo
+
+Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.
+
+Files written into the consumer project:
+
+- lib/status-tokens.ts
+
+Notes:
+
+The solid pairs (bg-status-* with text-status-*-foreground) are the default treatment; the -surface companions are for soft rows and callouts and must always carry text-status-* ink. If your theme redefines :root without these variables, the utilities fall back to foreground / destructive / muted so nothing renders invisible. lib/status-tokens.ts ships the same twelve tokens as typed var() strings (statusCssVars) for the places a class cannot reach: inline styles, chart series, canvas fills.
+
+#### Tokens
+
+- `--status-success` (`bg-status-success · text-status-success`) — Healthy. A live grant, a passing check, a connection that needs nothing.
+- `--status-warning` (`bg-status-warning · text-status-warning`) — Recoverable and needs attention. Expiring soon and expired both live here — a refresh away, not a failure.
+- `--status-danger` (`bg-status-danger · text-status-danger`) — A failure the user must act on: a revoked grant, a rejected scope.
+- `--status-neutral` (`bg-status-neutral · text-status-neutral`) — Absence. Never connected, nothing to report — not an error.
+- `-foreground` (`text-status-*-foreground`) — Ink for text sitting on the solid fill. Every pair clears 4.5:1 in both appearances.
+- `-surface` (`bg-status-*-surface`) — Soft background for rows and callouts. Always carries text-status-* ink, never the -foreground ink.
+
+#### Exports
+
+- `statusCssVars` (`Record<StatusCssVar, string>`) — The twelve tokens as typed var() strings — success, successForeground, successSurface, and the same three for warning, danger, and neutral. For the places a class cannot reach: an inline style, a chart series color, a canvas fill. Each value carries the same fallback chain the utilities use, so an unthemed project degrades instead of rendering invisible.
+- `StatusCssVar` (`type`) — The twelve token names, for a Record keyed by token or a prop that takes one.
+
+### Provider Sign-In Button (`@cantera/provider-sign-in-button`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/provider-sign-in-button
+Docs: https://canteraui.vercel.app/components/provider-sign-in-button
+Item: https://canteraui.vercel.app/r/provider-sign-in-button.json
+Working example page: npx shadcn@latest add @cantera/provider-sign-in-button-demo
+Registry dependencies: button, @cantera/oauth-types
+npm dependencies: lucide-react
+
+A sign-in button and link for a single OAuth provider: brand icon, label, loading state. ProviderSignInButton handles a click; ProviderSignInLink navigates to an auth route.
+
+Files written into the consumer project:
+
+- provider-sign-in-button.tsx
+
+#### ProviderSignInButton props
+
+- `provider` (`OAuthProvider`) — The provider to render: id, name, and an optional brand icon.
+- `onSignIn` (`() => void | Promise<void>`) — Called with no arguments on click. A returned promise drives the pending state for you. For navigation to an auth route, use ProviderSignInLink instead.
+- `loading` (`boolean`, default `false`) — Pending: the label stays, the icon crossfades to a spinner over 150ms, and activation is blocked via aria-disabled so focus is never dropped.
+- `disabled` (`boolean`, default `false`) — Rendered as aria-disabled, never the native attribute, so the control keeps focus and a screen reader user can still find it.
+- `variant` (`'default' | 'outline' | 'secondary' | 'ghost'`, default `'outline'`) — Button variant, forwarded to the shadcn button styles.
+- `size` (`'default' | 'sm' | 'lg'`, default `'lg'`) — Button size. Everything but sm carries the 44px minimum touch target; sm is the opt-in compact escape hatch.
+- `children` (`ReactNode`, default `'Continue with {provider.name}'`) — Custom label replacing the default text.
+- `...props` (`ComponentProps<'button'>`) — Remaining props go to the button element and are typed for it.
+
+#### ProviderSignInLink props
+
+- `provider` (`OAuthProvider`) — The provider to render: id, name, and an optional brand icon.
+- `href` (`string`) — The provider auth route to navigate to. Always renders an anchor — loading included — so the browser semantics of a link are never lost.
+- `loading` (`boolean`, default `false`) — Pending: the label stays, the icon crossfades to a spinner over 150ms, and navigation is blocked via aria-disabled so focus is never dropped.
+- `disabled` (`boolean`, default `false`) — Rendered as aria-disabled, never the native attribute, so the control keeps focus and a screen reader user can still find it.
+- `variant` (`'default' | 'outline' | 'secondary' | 'ghost'`, default `'outline'`) — Button variant, forwarded to the shadcn button styles.
+- `size` (`'default' | 'sm' | 'lg'`, default `'lg'`) — Button size. Everything but sm carries the 44px minimum touch target; sm is the opt-in compact escape hatch.
+- `children` (`ReactNode`, default `'Continue with {provider.name}'`) — Custom label replacing the default text.
+- `...props` (`ComponentProps<'a'>`) — Remaining props go to the anchor element and are typed for it.
+
+### Sign-In Card (`@cantera/sign-in-card`)
+
+Type: block
+Install: npx shadcn@latest add @cantera/sign-in-card
+Docs: https://canteraui.vercel.app/components/sign-in-card
+Item: https://canteraui.vercel.app/r/sign-in-card.json
+Working example page: npx shadcn@latest add @cantera/sign-in-card-demo
+Registry dependencies: card, @cantera/provider-sign-in-button, @cantera/oauth-types
+
+A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
+
+Files written into the consumer project:
+
+- sign-in-card.tsx
+
+#### Props
+
+- `providers` (`OAuthProvider[]`) — Providers to offer, rendered as one ProviderSignInLink (with hrefTemplate) or ProviderSignInButton each.
+- `hrefTemplate` (`string`) — Href for a provider auth route; "{provider}" is replaced with the provider id, e.g. "/api/auth/{provider}". Serializable, so the card can be rendered from a server component.
+- `onSignIn` (`(providerId: string) => void | Promise<void>`) — Click handler alternative to hrefTemplate, for client-side flows. A returned promise drives the pending state for that provider.
+- `loadingProvider` (`string`) — Id of the provider currently authenticating, to show its spinner. While one provider is pending its siblings lock — one OAuth flow at a time, since a second redirect would race the first.
+- `title` (`ReactNode`, default `'Sign in'`) — Card title.
+- `titleAs` (`'h1' | … | 'h6' | 'div'`, default `'h2'`) — Heading element for the title — a card dropped onto a page needs a real heading. Pick the level that fits the page outline, or pass "div" when the surrounding page already provides one.
+- `description` (`ReactNode`) — Optional text under the title.
+- `footer` (`ReactNode`) — Optional muted footer content.
+- `...props` (`ComponentProps<typeof Card>`) — Remaining props are spread onto the underlying Card.
+
+### Scope Picker (`@cantera/scope-picker`)
+
+Type: block
+Install: npx shadcn@latest add @cantera/scope-picker
+Docs: https://canteraui.vercel.app/components/scope-picker
+Item: https://canteraui.vercel.app/r/scope-picker.json
+Working example page: npx shadcn@latest add @cantera/scope-picker-demo
+Registry dependencies: badge, button, checkbox, input, label, @cantera/oauth-types, @cantera/status-tokens
+npm dependencies: lucide-react
+
+A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog.
+
+Files written into the consumer project:
+
+- scope-picker.tsx
+
+#### Props
+
+- `scopes` (`OAuthScope[]`) — The scope catalog to render. Scopes marked required render checked and cannot be deselected — they stay focusable via aria-disabled and announce why.
+- `value` (`string[]`) — Selected scope ids. Controlled and taken literally: the picker never calls onChange on mount to backfill required scopes. Union them in where the value is used with withRequiredScopes.
+- `onChange` (`(value: string[]) => void`) — Called with the next selection on every change — catalog order first, custom scopes trailing in insertion order.
+- `presets` (`OAuthScopePreset[]`) — Named bundles rendered as toggle buttons above the list, each showing its label and description, with aria-pressed reflecting whether the current selection matches the bundle.
+- `presetsLabel` (`string`, default `'Presets'`) — Legend for the preset group. Use a task-oriented label such as “Access level” when presets represent user-facing permission tiers.
+- `collapsibleScopes` (`boolean`, default `false`) — Keeps presets prominent while placing the individual scope controls in a native disclosure. The summary reports the selected scope count.
+- `scopeListLabel` (`string`, default `'Advanced permissions'`) — Summary label for the scope disclosure when collapsibleScopes is enabled.
+- `allowCustomScopes` (`boolean`, default `false`) — Adds a field for scopes outside the catalog — granular resource scopes like data:read:<urn>, or anything the provider added since. Custom scopes render with a "custom" badge and round-trip through value / onChange like any other.
+- `customScopeLabel` (`string`, default `'Add a scope'`) — Label for the custom-scope field.
+- `disabled` (`boolean`, default `false`) — Disables the presets, every checkbox, and the custom-scope field.
+- `...props` (`ComponentProps<'div'>`) — Remaining props are spread onto the wrapping div.
+
+#### Exports
+
+- `withRequiredScopes` (`(scopes: OAuthScope[], value: string[]) => string[]`) — The required scopes of the catalog, unioned into a picker value, in catalog order with custom scopes appended. Call it at submit time, or when building the authorize URL, so required scopes are never silently dropped.
+
+### User Account Badge (`@cantera/user-account-badge`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/user-account-badge
+Docs: https://canteraui.vercel.app/components/user-account-badge
+Item: https://canteraui.vercel.app/r/user-account-badge.json
+Working example page: npx shadcn@latest add @cantera/user-account-badge-demo
+Registry dependencies: avatar, @cantera/oauth-types, @cantera/status-tokens
+
+An avatar-and-name chip for a connected account, with optional provider mark. Server-safe.
+
+Files written into the consumer project:
+
+- user-account-badge.tsx
+
+#### Props
+
+- `account` (`OAuthAccount`) — The account to show. Falls back from name to email; the avatar falls back to initials.
+- `provider` (`OAuthProvider`) — When set, the provider mark is shown at the end of the chip.
+- `size` (`'sm' | 'default'`, default `'default'`) — Compact or regular sizing. Text never drops below 12px in either.
+- `...props` (`ComponentProps<'div'>`) — Remaining props are spread onto the wrapping div.
+
+### Token Status (`@cantera/token-status`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/token-status
+Docs: https://canteraui.vercel.app/components/token-status
+Item: https://canteraui.vercel.app/r/token-status.json
+Working example page: npx shadcn@latest add @cantera/token-status-demo
+Registry dependencies: badge, @cantera/status-tokens, @cantera/oauth-types
+
+Status line for an OAuth grant: connection state, token expiry, and held scopes. Server-safe.
+
+Files written into the consumer project:
+
+- token-status.tsx
+
+#### Props
+
+- `connection` (`OAuthConnection`) — The grant to summarize: status badge, expiry, error text, scopes.
+- `showExpiry` (`boolean`, default `true`) — Show a relative expiry while connected. Expiry is recoverable, so it takes the warning tone — never danger — as the deadline approaches.
+- `showScopes` (`boolean`, default `false`) — Render each held scope as an outline badge.
+- `locale` (`string | string[]`, default `runtime locale`) — BCP 47 locale(s) for the relative expiry. Left undefined, Intl resolves the runtime locale — nothing is hardcoded to English.
+- `expiringSoonMs` (`number`, default `300000`) — How far ahead counts as "expiring soon", in milliseconds. Five minutes by default.
+- `...props` (`ComponentProps<'div'>`) — Remaining props are spread onto the wrapping div.
+
+#### Exports
+
+- `StatusTone` (`'success' | 'warning' | 'danger' | 'neutral'`) — The four semantic tones. One color, one meaning — reuse this type instead of inventing a parallel vocabulary.
+- `statusToneClasses` (`Record<StatusTone, string>`) — Solid fill plus its ink, e.g. "bg-status-success text-status-success-foreground". Solid, not a low-alpha tint, so it survives direct sunlight.
+- `statusInkClasses` (`Record<StatusTone, string>`) — The same tones as text color, for ink on the page or on a -surface companion.
+
+#### Data attributes
+
+- `data-status` (`'connected' | 'expired' | 'error' | 'disconnected'`) — The raw connection status, for styling or querying from the outside.
+- `data-tone` (`'success' | 'warning' | 'danger' | 'neutral'`) — The tone actually rendered — connected but expiring soon resolves to warning, not success.
+
+### Connection Card (`@cantera/connection-card`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/connection-card
+Docs: https://canteraui.vercel.app/components/connection-card
+Item: https://canteraui.vercel.app/r/connection-card.json
+Working example page: npx shadcn@latest add @cantera/connection-card-demo
+Registry dependencies: button, card, @cantera/user-account-badge, @cantera/token-status, @cantera/oauth-types
+npm dependencies: lucide-react
+
+A provider connection at a glance: account, grant status, scopes, and disconnect / reconnect actions.
+
+Files written into the consumer project:
+
+- connection-card.tsx
+
+#### Props
+
+- `connection` (`OAuthConnection`) — The provider grant to show: provider, account, status, scopes, expiry.
+- `onDisconnect` (`() => void | Promise<void>`) — When set, a Disconnect button is shown while the connection is connected. Disconnecting revokes a grant, so it renders destructive. A returned promise drives the pending state.
+- `onReconnect` (`() => void | Promise<void>`) — When set, a Connect / Reconnect button is shown while expired, errored, or disconnected. A returned promise drives the pending state.
+- `disconnectPending` (`boolean`, default `false`) — Consumer-driven pending for the disconnect action — for a server action, where no promise comes back. The button stays mounted, keeps its label, and shows a spinner.
+- `reconnectPending` (`boolean`, default `false`) — Consumer-driven pending for the connect / reconnect action.
+- `showScopes` (`boolean`, default `true`) — Forwarded to the embedded TokenStatus.
+- `...props` (`ComponentProps<typeof Card>`) — Remaining props are spread onto the underlying Card.
+
+### ACC Auth Routes (`@cantera/acc-auth-routes`)
+
+Type: kit
+Install: npx shadcn@latest add @cantera/acc-auth-routes
+Docs: https://canteraui.vercel.app/components/acc-auth-routes
+Item: https://canteraui.vercel.app/r/acc-auth-routes.json
+Registry dependencies: card, @cantera/provider-sign-in-button, @cantera/scope-picker, @cantera/aps-oauth-preset, @cantera/oauth-types
+npm dependencies: @upstash/redis, aec-auth
+
+The headless half of Autodesk sign-in on aec-auth: consent start, code exchange, and sign-out route handlers, the signed session library, and the scoped sign-in component — no pages.
+
+Files written into the consumer project:
+
+- lib/acc-auth.ts
+- components/scoped-autodesk-sign-in.tsx
+- app/api/auth/[provider]/route.ts
+- app/api/auth/callback/[provider]/route.ts
+- app/api/auth/signout/route.ts
+
+Install notes:
+
+Installed: the /api/auth/* route handlers, lib/acc-auth.ts (aec-auth vault wiring and the signed session cookie), and ScopedAutodeskSignIn. No page: pair with @cantera/acc-sign-in, or mount the component with a nextPath.
+
+Next:
+1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; SESSION_SECRET from `openssl rand -base64 32` (required in production); APP_ORIGIN, your canonical public origin (required in production); APS_AUTH_BASE_URL only for an emulator.
+2. Grants live in memory until UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN, and VAULT_KEY (`openssl rand -base64 32`) are set; then they persist in Upstash Redis, encrypted. Set all three before real users connect.
+Reference: https://canteraui.vercel.app/components/acc-auth-routes
+
+### ACC Connection Panel (`@cantera/acc-connection-panel`)
+
+Type: block
+Install: npx shadcn@latest add @cantera/acc-connection-panel
+Docs: https://canteraui.vercel.app/components/acc-connection-panel
+Item: https://canteraui.vercel.app/r/acc-connection-panel.json
+Registry dependencies: @cantera/connection-card, @cantera/oauth-types
+
+The live Autodesk connection panel: one ConnectionCard wired to a sign-out route and a consent restart, with disconnect and reconnect on the async-pending contract.
+
+Files written into the consumer project:
+
+- components/acc-connection-panel.tsx
+
+Notes:
+
+One ConnectionCard bound to two hrefs: signOutHref takes a POST that clears the grant and session, signInHref restarts consent. Disconnect settles by refreshing the server page, so the server view stays the truth; reconnect navigates. @cantera/acc-sign-in mounts it under a heading once a session exists.
+
+#### AccConnectionPanel props
+
+- `connection` (`OAuthConnection`) — The Autodesk grant to render — status, account, scopes, expiry.
+- `signOutHref` (`string`) — POST target that clears the grant and session, e.g. "/api/auth/signout?next=/sign-in". Disconnect settles by refreshing the server page.
+- `signInHref` (`string`) — GET target that restarts consent, e.g. "/api/auth/aps?next=/sign-in". Reconnect navigates there and keeps its spinner until the page changes.
+
+### ACC Sign-In (`@cantera/acc-sign-in`)
+
+Type: template
+Install: npx shadcn@latest add @cantera/acc-sign-in
+Docs: https://canteraui.vercel.app/components/acc-sign-in
+Item: https://canteraui.vercel.app/r/acc-sign-in.json
+Registry dependencies: @cantera/acc-auth-routes, @cantera/acc-connection-panel, @cantera/aps-oauth-preset, @cantera/oauth-types
+npm dependencies: aec-auth, lucide-react
+
+A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.
+
+Files written into the consumer project:
+
+- app/sign-in/page.tsx
+- app/sign-in/loading.tsx
+
+Install notes:
+
+Installed at /sign-in: the page and its loading skeleton. Signed out, it renders ScopedAutodeskSignIn; /sign-in?next=/your-page returns there after the callback. Signed in, it shows AccConnectionPanel.
+
+Next:
+1. Fill the keys acc-auth-routes added to .env.local (see its notes above).
+2. Run next dev and open /sign-in.
+
+Never set ACC_AUTH_DEMO=1 where real accounts exist.
+Reference: https://canteraui.vercel.app/components/acc-sign-in
+
+### Connections View (`@cantera/connections-view`)
+
+Type: block
+Install: npx shadcn@latest add @cantera/connections-view
+Docs: https://canteraui.vercel.app/components/connections-view
+Item: https://canteraui.vercel.app/r/connections-view.json
+Registry dependencies: button, @cantera/connection-card, @cantera/provider-sign-in-button, @cantera/token-status, @cantera/user-account-badge, @cantera/oauth-types, @cantera/status-tokens
+npm dependencies: lucide-react
+
+The connections dashboard as a presentational block: providers and connections in, connect, reconnect, disconnect, and retry callbacks out — with the designed list, empty, loading, and error states, each exported.
+
+Files written into the consumer project:
+
+- components/connections-view.tsx
+
+Notes:
+
+Presentational only: providers and connections in, callbacks out. "ready" with nothing connected renders the empty state, and each state — ConnectionsList, ConnectionsEmpty, ConnectionsLoading, ConnectionsError — is exported so adapting the page keeps them. @cantera/connections-page ships ConnectionsManager, the wiring that points these callbacks at the acc-auth-routes handlers.
+
+#### ConnectionsView props
+
+- `providers` (`OAuthProvider[]`) — Every provider this app can connect to, in display order. A provider with no grant renders as a "not connected" row, and a page where none of them has a grant renders the empty state.
+- `connections` (`OAuthConnection[]`) — The grants that exist, matched to providers by connection.provider.id. A grant for a provider outside the catalog is appended rather than dropped, so a removed provider never vanishes silently.
+- `status` (`'ready' | 'loading' | 'error'`, default `'ready'`) — The fetch state. Loading and error replace the list while the heading stays put — the page never shifts under a resolve. A single provider that failed is not this state: that is a row with status "error", which keeps its healthy siblings visible.
+- `error` (`string`) — Page-level failure detail, shown with the retry when status is "error". Wired to the retry button with aria-describedby.
+- `account` (`OAuthAccount`) — Who these grants belong to. Rendered as a UserAccountBadge beside the heading when set.
+- `onConnect` (`(providerId: string) => void | Promise<void>`) — Starts consent for one provider. Connect and reconnect are the same act, so one callback serves the empty-state chooser and every row button. A returned promise drives that row's pending state.
+- `onDisconnect` (`(providerId: string) => void | Promise<void>`) — Revokes one grant. A returned promise drives the pending state on that card's Disconnect button.
+- `onRetry` (`() => void | Promise<void>`) — Retries the whole fetch. Shown only in the error state.
+- `pending` (`{ connecting?: string; disconnecting?: string; retrying?: boolean }`) — Consumer-driven pending, for wiring where no promise comes back — a server action, or a navigation that never resolves. One provider id, not a set: a second consent redirect would race the first.
+- `title` (`ReactNode`, default `'Connections'`) — Page heading text.
+- `titleAs` (`'h1' | 'h2' | 'h3'`, default `'h1'`) — Heading element for the title — a block ships a real heading, not a styled div. Drop to h2 when embedding under one.
+- `description` (`ReactNode`, default `'The accounts this app can read from…'`) — Sentence under the heading. Pass null to drop it.
+- `showScopes` (`boolean`, default `true`) — Forwarded to every ConnectionCard, and through it to TokenStatus.
+- `...props` (`ComponentProps<'section'>`) — Remaining props are spread onto the page section.
+
+#### Exports
+
+- `ConnectionsView` (`component`) — The presentational page: heading, summary, and whichever of the four states applies. Data in, callbacks out, no fetching.
+- `ConnectionsList` (`component`) — The ready state — one ConnectionCard per row, where the whole status vocabulary shows up at once.
+- `ConnectionsEmpty` (`component`) — The empty state: the provider chooser itself, with one sentence on what a connection buys. No illustration — the system is monochrome.
+- `ConnectionsLoading` (`component`) — The loading state: static skeleton rows built from the ConnectionCard box model, so nothing shifts on resolve, plus one spinner in a live region.
+- `ConnectionsError` (`component`) — The page-level failure: message in danger ink plus a retry on the async-pending contract, wired with aria-describedby.
+- `resolveConnections` (`(providers, connections?) => OAuthConnection[]`) — The data model: one row per provider in catalog order, a disconnected placeholder where no grant exists, and unknown grants appended.
+- `ConnectionsManager` (`component`) — The client wiring: connect navigates to the consent route, disconnect posts to the revoke route, and both settle by re-rendering the server page. Swap it for your own backend and ConnectionsView does not change.
+- `AccConnections` (`async component`) — The wired server component, on the lib and routes the acc-sign-in block installs. Render it from any server page; the default export is a ready-made /connections page with a streamed loading.tsx beside it.
+
+#### Data attributes
+
+- `data-slot` (`connections-view · connections-list · connections-empty · connections-loading · connections-error`) — Which state is on the page, for styling and for tests.
+- `data-status` (`ready · loading · error`) — On the page section: the fetch state it was rendered with.
+
+### Connections Page (`@cantera/connections-page`)
+
+Type: template
+Install: npx shadcn@latest add @cantera/connections-page
+Docs: https://canteraui.vercel.app/components/connections-page
+Item: https://canteraui.vercel.app/r/connections-page.json
+Registry dependencies: @cantera/connections-view, @cantera/acc-auth-routes, @cantera/aps-oauth-preset, @cantera/oauth-types
+npm dependencies: aec-auth, lucide-react
+
+The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
+
+Files written into the consumer project:
+
+- app/connections/page.tsx
+- app/connections/loading.tsx
+- components/connections-manager.tsx
+
+Install notes:
+
+Installed at /connections: the page, its loading skeleton, and ConnectionsManager, the wiring over @cantera/connections-view. acc-auth-routes supplies the /api/auth/* routes; no /sign-in page is installed.
+
+Next:
+1. Fill the keys acc-auth-routes added to .env.local (see its notes above).
+2. Run next dev and open /connections.
+
+List a provider only after lib/acc-auth.ts knows it: an unwired Connect fails at the route on purpose.
+Reference: https://canteraui.vercel.app/components/connections-page
+
+#### AccConnections props
+
+- `providers` (`OAuthProvider[]`, default `[apsProvider]`) — Providers to list. Autodesk is the wired one; an extra entry renders as "not connected" and its Connect button hits /api/auth/<id>, which 404s until lib/acc-auth.ts knows that provider.
+- `nextPath` (`string`, default `'/connections'`) — Where the consent flow returns to.
+- `headingLevel` (`'h1' | 'h2' | 'h3'`, default `'h1'`) — Heading level for the block title, forwarded to ConnectionsView.
+
+### Project Types (`@cantera/project-types`)
+
+Type: types
+Install: npx shadcn@latest add @cantera/project-types
+Docs: https://canteraui.vercel.app/components/project-types
+Item: https://canteraui.vercel.app/r/project-types.json
+
+Generic project-context types for cantera components: hubs, projects, folders, items, versions, model translations, and sheet version sets. The lingua franca adapters translate into.
+
+The lingua franca for project context — hubs, projects, browsable folders and items, immutable versions, model translations, and sheet version sets. Components take these shapes as props and never fetch; adapters translate provider payloads into them.
+
+```tsx
+import type { FolderEntry, Hub, ItemVersion, Project } from '@/lib/project-types'
+
+const hub: Hub = { id: 'b.ridgeline-us', name: 'Ridgeline Builders', region: 'US' }
+
+const projects: Project[] = [
+  { id: 'b.summit-tower', name: 'Summit Tower', hubId: hub.id },
+  { id: 'b.cedar-mill', name: 'Cedar Mill Campus', hubId: hub.id },
+]
+
+const entries: FolderEntry[] = [{ id: 'folder-1', name: 'Project Files', type: 'folder' }]
+const versions: ItemVersion[] = []
+```
+
+Files written into the consumer project:
+
+- lib/project-types.ts
+
+#### Exports
+
+- `Hub` (`interface`) — An account-level container of projects — an ACC hub, a Procore company: id, name, optional region.
+- `Project` (`interface`) — One project: id, name, and the hubId pickers group by when present.
+- `BrowsePathSegment` (`interface`) — One controlled breadcrumb level: id, name, and type 'hub' | 'project' | 'folder'.
+- `Folder / Item / FolderEntry` (`interface / union`) — Folder-like navigation rows and file-like item rows. FolderEntry is their rendering union; Hub and Project are structurally compatible with Folder.
+- `ItemVersion` (`interface`) — An immutable file version: id, version number, display name, creator/time, storage size, and nullable derivative URN.
+- `isItem` (`(entry: FolderEntry) => entry is Item`) — Narrows a browser row to its file-like Item shape.
+- `normalizeSearchText` (`(value: string) => string`) — Case-folds and strips diacritics for consistent client and server search.
+- `ModelTranslationStatus` (`type`) — 'pending' | 'inprogress' | 'success' | 'failed' | 'timeout'.
+- `ModelTranslation` (`interface`) — The translation state of one design: urn, status, and optional name, progress, outputs, error.
+- `SheetVersionSet` (`interface`) — A named issuance of construction sheets: id, name, and when it was issued.
+- `versionSetIssuance` (`(versionSet: SheetVersionSet) => Date | null`) — Normalizes issuanceDate (Date, string, or number) into a Date, or null when absent.
+- `groupProjectsByHub` (`(hubs: Hub[], projects: Project[]) => { hub: Hub | null; projects: Project[] }[]`) — Projects grouped in hub catalog order; projects referencing no known hub land in a trailing hub: null group rather than being dropped.
+
+### APS Data Preset (`@cantera/aps-data-preset`)
+
+Type: preset
+Install: npx shadcn@latest add @cantera/aps-data-preset
+Docs: https://canteraui.vercel.app/components/aps-data-preset
+Item: https://canteraui.vercel.app/r/aps-data-preset.json
+Registry dependencies: @cantera/project-types
+
+Autodesk Platform Services (ACC) data preset: adapters from Data Management hubs, projects, folders, items, and versions plus Model Derivative and ACC Sheets payloads into cantera's project types.
+
+Everything ACC-data-specific in one data-only item: adapters from the Data Management, Model Derivative, and ACC Sheets payloads into cantera project types. Each input interface is the structural subset the adapter actually reads, so any payload with those fields adapts — the APS emulator included. Fetching and tokens stay in your auth layer.
+
+```tsx
+import { fromApsFolder, fromApsHub, fromApsItem, fromApsProject } from '@/lib/aps-data-preset'
+import { ProjectPicker } from '@/components/ui/project-picker'
+
+// GET /project/v1/hubs and /project/v1/hubs/{hub}/projects, fetched by you.
+const hubs = hubsResponse.data.map(fromApsHub)
+const projects = projectsResponse.data.map(fromApsProject)
+const folders = topFoldersResponse.data.map(fromApsFolder)
+const items = contentsResponse.data.map((item) => fromApsItem(item, includedTips.get(item.id)))
+
+<ProjectPicker hubs={hubs} projects={projects} onValueChange={setProjectId} />
+```
+
+Files written into the consumer project:
+
+- lib/aps-data-preset.ts
+
+#### Exports
+
+- `fromApsHub` (`(doc: ApsHubDoc) => Hub`) — Adapter from a Data Management hub resource into a cantera Hub.
+- `fromApsProject` (`(doc: ApsProjectDoc) => Project`) — Adapter from a Data Management project resource into a cantera Project, hub relationship included.
+- `fromApsFolder` (`(doc: ApsFolderDoc) => Folder`) — Adapter from a Data Management folder resource, including modified metadata and object count.
+- `fromApsItem` (`(doc: ApsItemDoc, tip?: ApsVersionDoc) => Item`) — Adapter from an item resource plus its optional JSON:API included tip version.
+- `fromApsVersion` (`(doc: ApsVersionDoc) => ItemVersion`) — Adapter from a version resource, reading the nullable Model Derivative URN from the derivatives relationship.
+- `fromApsManifest` (`(doc: ApsManifestDoc) => ModelTranslation`) — Adapter from a Model Derivative manifest: normalizes status, reads the design name from the first named derivative, lists outputs once each.
+- `toTranslationStatus` (`(status?: string) => ModelTranslationStatus`) — Normalizes a manifest status string; unknown strings read as "pending", the one state that promises nothing.
+- `fromAccVersionSet` (`(doc: AccVersionSetDoc) => SheetVersionSet`) — Adapter from an ACC Sheets version set into a cantera SheetVersionSet.
+- `ApsHubDoc / ApsProjectDoc / ApsFolderDoc / ApsItemDoc / ApsVersionDoc / ApsManifestDoc / AccVersionSetDoc` (`interface`) — The structural subsets of the API responses each adapter reads — any payload with these fields adapts, the APS emulator included.
+
+### Hub Switcher (`@cantera/hub-switcher`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/hub-switcher
+Docs: https://canteraui.vercel.app/components/hub-switcher
+Item: https://canteraui.vercel.app/r/hub-switcher.json
+Working example page: npx shadcn@latest add @cantera/hub-switcher-demo
+Registry dependencies: select, @cantera/project-types
+npm dependencies: lucide-react
+
+The hub context switch: which ACC hub — or any Hub — the rest of the screen works against, with region context and a pending state for the switch itself.
+
+Files written into the consumer project:
+
+- hub-switcher.tsx
+
+#### Props
+
+- `hubs` (`Hub[]`) — The hubs to offer, in the order they render.
+- `value` (`string`) — Selected hub id (controlled). Leave undefined to let the switcher own it.
+- `defaultValue` (`string`) — Initially selected hub id (uncontrolled).
+- `onValueChange` (`(hubId: string) => void | Promise<void>`) — Called with the chosen hub id. Return a promise and the switcher drives its own pending state for the duration.
+- `pending` (`boolean`, default `false`) — The trigger keeps showing the current hub, crossfades in a spinner, and goes read-only — still focusable, never unmounted.
+- `disabled` (`boolean`, default `false`) — Disables the whole select.
+- `placeholder` (`string`, default `'Select hub'`) — Shown while no hub is selected.
+- `emptyMessage` (`string`, default `'No hubs available.'`) — Shown inside the open list when there are no hubs at all.
+- `'aria-label'` (`string`, default `'Hub'`) — Accessible name for the trigger. A combobox never takes its name from its content, so without one the control announces its value but not what it is.
+
+### Project Picker (`@cantera/project-picker`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/project-picker
+Docs: https://canteraui.vercel.app/components/project-picker
+Item: https://canteraui.vercel.app/r/project-picker.json
+Working example page: npx shadcn@latest add @cantera/project-picker-demo
+Registry dependencies: button, command, popover, @cantera/project-types, @cantera/status-tokens
+npm dependencies: lucide-react
+
+The project choice every ACC screen starts from: a searchable combobox grouped by hub, with the loading, error, and empty states a real fetch needs.
+
+Files written into the consumer project:
+
+- project-picker.tsx
+
+#### Props
+
+- `projects` (`Project[]`) — The projects to offer. Search matches their visible names.
+- `hubs` (`Hub[]`) — Hubs to group by, in catalog order. Omit for a flat list; projects referencing no known hub still render, never silently dropped.
+- `value` (`string`) — Selected project id (controlled).
+- `defaultValue` (`string`) — Initially selected project id (uncontrolled).
+- `onValueChange` (`(projectId: string) => void | Promise<void>`) — Called with the chosen project id. Return a promise and the picker drives its own pending state.
+- `status` (`'ready' | 'loading' | 'error'`, default `'ready'`) — Where the project list stands. Loading renders a still skeleton, error the message wired to a retry — both inside the open picker, so the trigger never unmounts.
+- `error` (`string`) — Human-readable fetch failure, shown when status is "error".
+- `onRetry` (`() => void | Promise<void>`) — Retry for the failed fetch, rendered on the async-pending contract at the 44px floor.
+- `retryPending` (`boolean`, default `false`) — Pending state for the retry action, drivable from outside.
+- `pending` (`boolean`, default `false`) — The trigger keeps its label, crossfades in a spinner, and stays focusable while a selection lands.
+- `emptyMessage` (`string`, default `'No projects yet.'`) — Shown when the list is ready but holds no projects at all.
+- `'aria-label'` (`string`, default `'Project'`) — Accessible name for the trigger. A combobox never takes its name from its content, so without one the control announces its value but not what it is.
+
+### Version Set Select (`@cantera/version-set-select`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/version-set-select
+Docs: https://canteraui.vercel.app/components/version-set-select
+Item: https://canteraui.vercel.app/r/version-set-select.json
+Working example page: npx shadcn@latest add @cantera/version-set-select-demo
+Registry dependencies: select, @cantera/project-types
+npm dependencies: lucide-react
+
+Which issuance of the construction sheets to read from, every option carrying its issuance date — building from a superseded set is an expensive mistake.
+
+Files written into the consumer project:
+
+- version-set-select.tsx
+
+#### Props
+
+- `versionSets` (`SheetVersionSet[]`) — The issuances to offer, in the order they render — each option carries its issuance date.
+- `value` (`string`) — Selected version set id (controlled).
+- `defaultValue` (`string`) — Initially selected version set id (uncontrolled).
+- `onValueChange` (`(versionSetId: string) => void | Promise<void>`) — Called with the chosen version set id. Return a promise and the select drives its own pending state.
+- `pending` (`boolean`, default `false`) — The trigger keeps showing the current set, crossfades in a spinner, and goes read-only — still focusable, never unmounted.
+- `disabled` (`boolean`, default `false`) — Disables the whole select.
+- `locale` (`string | string[]`, default `runtime locale`) — BCP 47 locale(s) for the issuance dates. Left undefined, Intl resolves the runtime locale — nothing is hardcoded to English.
+- `emptyMessage` (`string`, default `'No version sets published yet.'`) — Shown inside the open list when there are no version sets at all.
+- `'aria-label'` (`string`, default `'Version set'`) — Accessible name for the trigger. A combobox never takes its name from its content, so without one the control announces its value but not what it is.
+
+### Hub Browser (`@cantera/hub-browser`)
+
+Type: block
+Install: npx shadcn@latest add @cantera/hub-browser
+Docs: https://canteraui.vercel.app/components/hub-browser
+Item: https://canteraui.vercel.app/r/hub-browser.json
+Working example page: npx shadcn@latest add @cantera/hub-browser-demo
+Registry dependencies: badge, breadcrumb, button, popover, scroll-area, skeleton, @cantera/project-types, @cantera/status-tokens
+npm dependencies: lucide-react
+
+A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics.
+
+Files written into the consumer project:
+
+- hub-browser.tsx
+
+Notes:
+
+HubBrowser is fully controlled and never fetches. An empty path renders the hub list; each callback advances or rewinds the consumer-owned path and entries. Activating the Hubs breadcrumb passes ROOT_BROWSE_SEGMENT — the exported empty-id sentinel — to onNavigate.
+
+Version history is on demand: onRequestVersions receives one item id, and the consumer feeds the single-item versions prop back. Picking a row calls onItemOpen(item); picking history calls onItemOpen(item, version). Status badges use @cantera/status-tokens.
+
+#### Props
+
+- `path` (`BrowsePathSegment[]`) — Controlled hub → project → folder breadcrumb. An empty array is the hub list.
+- `entries` (`FolderEntry[]`) — Rows at the current level. Hub and Project arrays fit structurally at their levels.
+- `status` (`'ready' | 'loading' | 'error'`, default `'ready'`) — Loading keeps a still row skeleton and one announced spinner; error renders the supplied message.
+- `error` (`string`) — Human-readable current-level failure, shown when status is error.
+- `onNavigate` (`(segment: BrowsePathSegment) => void | Promise<void>`) — Folder-row and breadcrumb navigation. The Hubs crumb passes ROOT_BROWSE_SEGMENT, whose id is empty.
+- `onItemOpen` (`(item: Item, version?: ItemVersion) => void | Promise<void>`) — Opens the tip when version is absent, or the exact version picked from history.
+- `pending` (`{ navigatingTo?: string; openingItem?: string; loadingMore?: boolean }`) — Consumer-driven pending, including pagination for handlers that return void (a server action or a transition). Controls stay mounted, keep their labels, spin, and remain focusable.
+- `versions` (`{ itemId: string; status: 'loading' | 'ready' | 'error'; versions: ItemVersion[] }`) — The one item whose on-demand history is currently loaded. A single-item shape prevents stale histories from crossing rows.
+- `onRequestVersions` (`(itemId: string) => void | Promise<void>`) — Called when a row version affordance opens; feed the result back through versions.
+- `hasMore / onLoadMore` (`boolean / () => void | Promise<void>`, default `false / undefined`) — Controlled pagination rendered as a final Load more row.
+- `locale` (`string`, default `runtime locale`) — BCP 47 locale for relative modified times. Undefined delegates to Intl — nothing is hardcoded to English.
+- `title / titleAs` (`string / 'h2' | 'h3' | 'h4'`, default `'Browse files' / 'h2'`) — Visible real heading and the level it occupies in the surrounding outline.
+
+### Hub Tree (`@cantera/hub-tree`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/hub-tree
+Docs: https://canteraui.vercel.app/components/hub-tree
+Item: https://canteraui.vercel.app/r/hub-tree.json
+Registry dependencies: @cantera/project-types, @cantera/status-tokens, @cantera/upload-types
+npm dependencies: lucide-react
+
+A controlled, fetch-free APS-style tree for hubs, projects, folders, items, and versions, with lazy expansion callbacks and complete keyboard navigation.
+
+Files written into the consumer project:
+
+- hub-tree.tsx
+
+Notes:
+
+HubTree is fully controlled and never fetches. Give every node a stable, globally unique tree id and preserve the provider-normalized Hub, Project, Folder, Item, or ItemVersion in its value field. Expanding calls onExpand; feed the loaded children back through nodes and include the id in expandedIds. Items open their tip through onItemOpen(item); version rows call onItemOpen(item, version). The comfortable default uses 44px rows; compact is an explicit opt-in.
+
+#### Props
+
+- `nodes` (`HubTreeNode[]`) — Controlled hub → project → folder → item → version tree. Each node keeps a globally unique tree id and its typed domain object in value.
+- `expandedIds` (`string[]`) — Controlled ids of branches whose children are visible.
+- `selectedId` (`string`) — Tree id of the selected item or version.
+- `pendingId` (`string`) — Branch currently loading children. Its label stays mounted while the disclosure icon crossfades to a spinner.
+- `pendingIds` (`string[]`) — Branches concurrently loading children. Each keeps its own mounted label and spinner.
+- `density` (`'comfortable' | 'compact'`, default `'comfortable'`) — Row density. Comfortable keeps the 44px field target; compact is the explicit desktop escape hatch.
+- `empty` (`ReactNode`) — Rendered instead of the default "No projects found." when nodes is empty — the place for loading, error, and reconnect states.
+- `onExpand / onCollapse` (`(node: HubTreeBranchNode) => void | Promise<void>`) — Controlled disclosure callbacks. Fetch children in onExpand, then feed the updated nodes and expandedIds back.
+- `onItemOpen` (`(item: Item, version?: ItemVersion) => void | Promise<void>`) — Opens the item tip when version is absent, or the exact immutable version activated below it.
+
+#### Node types
+
+- `HubTreeNode` (`HubTreeHubNode | HubTreeProjectNode | HubTreeFolderNode | HubTreeItemNode | HubTreeVersionNode`) — Discriminated by type. Branches may receive children and hasChildren; versions are always leaves.
+
+### Finder (`@cantera/finder`)
+
+Type: block
+Install: npx shadcn@latest add @cantera/finder
+Docs: https://canteraui.vercel.app/components/finder
+Item: https://canteraui.vercel.app/r/finder.json
+Registry dependencies: button, command, @cantera/project-types, @cantera/status-tokens
+npm dependencies: lucide-react
+
+Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives.
+
+Files written into the consumer project:
+
+- finder.tsx
+
+Notes:
+
+Fully controlled and data-agnostic: query out through onQueryChange, groups in as props; the consumer owns fetching, debouncing, and persistence. APS has no cross-hub search API, so label each group after the scope actually searched (folders/{id}/search is recursive within one project) and pass the scoped project's name as scope — it renders as a persistent "Searching in" notice under the input, wired to it with aria-describedby. Entries carry path: BrowsePathSegment[] — onReveal hands it back so a hub-tree (expandedIds + selectedId) or hub-browser (a location change) unfolds to the entry. Three surfaces share the contract: Finder renders inline, FinderDialog is the ⌘K palette (shortcut built in, closes on select or reveal), and FinderTrigger is the input-shaped button that opens it.
+
+#### Props
+
+- `query / onQueryChange` (`string / (query: string) => void`) — Controlled query. The finder never fetches: the consumer owns the search call, the debounce, and the scope.
+- `groups` (`FinderGroup[]`) — Result groups in render order — recents, pins, the current level, an async deep search. Each carries id, label, status (ready | loading | error), error, and entries; loading keeps existing entries visible under a spinner-labeled heading, and error renders in warning ink because retyping retries.
+- `entries (FinderEntry)` (`{ item: Item; version?: ItemVersion; path?: BrowsePathSegment[]; caption?: string }`) — Entries carry their address: path renders as the location line and powers onReveal; caption replaces it for recents ("opened 5 minutes ago").
+- `onItemOpen` (`(entry: FinderEntry) => void | Promise<void>`) — Open the entry (tip, or the carried version). A returned promise drives the per-row pending spinner; the row keeps its label and never unmounts.
+- `onReveal` (`(entry: FinderEntry) => void`) — Show the entry where it lives. Map entry.path to a hub-tree (expandedIds + selectedId) or a hub-browser location in one state update. The affordance renders only when the entry has a path.
+- `pending` (`{ openingId?: string }`) — Consumer-driven pending for server actions, keyed by finderEntryKey(entry). Promise-returning callbacks drive it automatically.
+- `placeholder / label / emptyLabel` (`string`, default `'Find a file' / 'Find a file' / 'No matches.'`) — Input placeholder, the accessible name of the query box, and the no-matches line shown once a query has no entries anywhere.
+- `scope` (`string`) — Name of what a search reaches (the scoped project). Renders as a persistent "Searching in" notice under the input, wired to it with aria-describedby, so the reach stays visible while typing.
+
+#### Exports
+
+- `FinderDialog` (`FinderProps & { open; onOpenChange; shortcut?; title?; description? }`) — The ⌘K palette over the same controlled surface. shortcut (default true) binds ⌘K / Ctrl+K to toggle; selecting or revealing an entry closes it — the palette is a jump, not a workspace.
+- `FinderTrigger` (`ComponentProps<'button'> & { placeholder?; showShortcut? }`) — Input-shaped button that opens the palette — the visible, tappable entry point with the shortcut as decoration. Compacts to an icon inside a sidebar collapsed to icon mode.
+- `finderEntryKey` (`(entry: FinderEntry) => string`) — Stable key for an entry — item id, plus the version id when the entry means a specific version. Use it for pending.openingId and list keys.
+- `FinderEntry / FinderGroup / FinderGroupStatus / FinderPending` (`types`) — The full controlled surface, importable for consumer wiring.
+
+### Hub Sidebar (`@cantera/hub-sidebar`)
+
+Type: block
+Install: npx shadcn@latest add @cantera/hub-sidebar
+Docs: https://canteraui.vercel.app/components/hub-sidebar
+Item: https://canteraui.vercel.app/r/hub-sidebar.json
+Registry dependencies: avatar, dropdown-menu, sidebar, @cantera/finder, @cantera/hub-tree
+
+The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.
+
+Files written into the consumer project:
+
+- hub-sidebar.tsx
+
+Notes:
+
+Render inside your own SidebarProvider with page content in SidebarInset — HubSidebar is the sidebar, not the app shell. The header stacks an identity row (avatar + name with the collapse toggle inline — the toggle stays reachable in the icon rail) above a FinderTrigger opening the ⌘K FinderDialog (fed by the finder prop); the tree fills the content slot. Give user.actions and the identity row becomes the account menu's trigger — typed items with icons, optional separators, and a destructive variant for sign-out, anchored beside the rail on desktop and below the row on mobile; with no actions the row stays a plain label. It forwards grouped props to its two controlled halves and adds no state of its own; wire reveal by mapping a finder entry's path to the tree's expandedIds and selectedId in one update.
+
+#### Props
+
+- `finder` (`Omit<FinderProps, 'className'>`) — Powers the ⌘K FinderDialog; the header renders a FinderTrigger reusing its placeholder. The fast paths — query, recents, deep search — sit above the tree on purpose.
+- `tree` (`HubTreeProps`) — Forwarded to the HubTree in the content slot. Reveal wiring stays in the consumer: a finder entry path becomes expandedIds + selectedId in one update.
+- `user` (`{ name: string; detail?: string; avatar?: ReactNode; actions?: HubSidebarUserAction[] }`) — Identity row pinned at the very top — avatar (initials fallback) plus name and detail, with the collapse toggle inline on its right; the toggle stays reachable when the rail collapses to icon mode.
+- `user.actions` (`{ id, label, icon?, onSelect, destructive?, separatorBefore?, disabled? }[]`) — Account menu items. With any, the identity row becomes the menu trigger (chevron affordance, menu anchored beside the rail — below it on mobile) and repeats the identity as the menu header; with none the row stays a plain label. separatorBefore opens a group; destructive carries the sign-out ink.
+- `treeLabel` (`ReactNode`) — Names the tree group ("Models · 4"); renders as the sidebar group label above the tree.
+- `treeAction` (`ReactElement`) — One quiet control beside the group label — an icon button element with an aria-label, positioned as the sidebar group action.
+- `header / footer` (`ReactNode`) — Rendered between the identity row and the finder trigger, and in the sidebar footer.
+- `...props` (`ComponentProps<typeof Sidebar>`) — Remaining props reach the shadcn Sidebar — side, variant, collapsible (the trigger compacts to an icon in icon mode). Render inside your own SidebarProvider with page content in SidebarInset.
+
+### Crew Avatar (`@cantera/crew-avatar`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/crew-avatar
+Docs: https://canteraui.vercel.app/components/crew-avatar
+Item: https://canteraui.vercel.app/r/crew-avatar.json
+
+Deterministic construction-crew SVG avatars — monochrome disc, geometric figure, one accent for the trade on the hard hat — generated from a name with zero dependencies, boring-avatars style.
+
+Files written into the consumer project:
+
+- lib/crew-avatar-spec.ts
+- crew-avatar.tsx
+
+Notes:
+
+The same name always renders the same worker — a salted FNV-1a hash drives every trait, so avatars are SSR-safe and hydration-identical with no randomness at render time. The mark is monochrome by construction: a near-black or near-white canvas, the figure drawn in whichever end the canvas is not, and exactly one chroma — the hard hat, whose color codes the trade and is repeated as text on spec.role, so nothing depends on reading the color alone. The disc needs no theme awareness: it carries a hairline ring one step off its own canvas, so a light disc keeps its edge on a light page. Pass title for a meaningful image (role=img); omit it next to a visible name and the mark stays decorative (aria-hidden). crewAvatarSvg(name) returns standalone markup for non-React surfaces; colors overrides the canvas palette. Not a photo component: when a person has a real picture, compose shadcn's Avatar/AvatarImage/AvatarFallback instead — crew-avatar is for the names that don't.
+
+#### Props
+
+- `name` (`string`) — The seed. Casing and surrounding whitespace are normalized, so the same person always gets the same worker.
+- `size` (`number`, default `32`) — Rendered square in pixels. Shapes are tuned to stay legible down to 24px.
+- `colors` (`string[]`) — Canvas palette override. The defaults are the two ends of the neutral scale, never the middle; the figure is drawn in whichever end the canvas is not, so an override of mid-tones owns its own contrast.
+- `title` (`string`) — Accessible name — renders role="img" with a <title>. Omit next to a visible name and the mark stays decorative (aria-hidden).
+
+#### Library exports
+
+- `crewAvatarSvg` (`(name, { size?, colors?, title? }) => string`) — Standalone <svg> markup for non-React surfaces — emails, canvases, OG images.
+- `crewAvatarSpec / crewAvatarShapes` (`functions`) — The resolved trait spec — headwear, vest, eyewear, tones, and role, the trade the hat color codes for — plus the renderer-neutral shape tree both renderers share, for custom rendering.
+
+### File Picker Dialog (`@cantera/file-picker-dialog`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/file-picker-dialog
+Docs: https://canteraui.vercel.app/components/file-picker-dialog
+Item: https://canteraui.vercel.app/r/file-picker-dialog.json
+Working example page: npx shadcn@latest add @cantera/file-picker-dialog-demo
+Registry dependencies: button, dialog, @cantera/hub-browser, @cantera/project-types
+
+Hub Browser inside a dialog, with tip-or-version selection and an explicit cancel action.
+
+Files written into the consumer project:
+
+- file-picker-dialog.tsx
+
+#### Props
+
+- `...HubBrowserProps` (`HubBrowserProps`) — The same controlled path, entries, status, pending, pagination, and version-history props.
+- `open / defaultOpen / onOpenChange` (`boolean / boolean / (open: boolean) => void`) — Controlled or uncontrolled dialog visibility.
+- `trigger` (`ReactElement`) — Optional element enhanced as the dialog trigger without an extra wrapper.
+- `onSelect` (`(item: Item, version?: ItemVersion) => void | Promise<void>`) — Selection callback for the tip or exact version.
+- `onCancel` (`() => void`) — Called from the explicit Cancel action.
+- `title / description` (`string / string`, default `'Choose a file' / browser guidance`) — Accessible dialog title and description.
+
+### Viewer Types (`@cantera/viewer-types`)
+
+Type: types
+Install: npx shadcn@latest add @cantera/viewer-types
+Docs: https://canteraui.vercel.app/components/viewer-types
+Item: https://canteraui.vercel.app/r/viewer-types.json
+
+Typed surface for the Autodesk Viewer global runtime — Autodesk's official @types/forge-viewer definitions re-exported under stable APS* names, plus domain types for cameras, properties, extensions, and promise-based token callbacks.
+
+The Autodesk Viewer ships as a browser global rather than an ESM package. These types re-export Autodesk's official @types/forge-viewer definitions (a dev dependency — the full Autodesk.Viewing namespace, typed) under stable APS* names, plus cantera's domain types for cameras, properties, and token callbacks.
+
+```tsx
+import type { GetAccessToken } from '@/lib/viewer-types'
+
+const getAccessToken: GetAccessToken = async () => {
+  const response = await fetch('/api/viewer-token')
+  if (!response.ok) throw new Error('Viewer token unavailable')
+  return response.json()
+}
+```
+
+Files written into the consumer project:
+
+- lib/viewer-types.ts
+- lib/forge-viewer.d.ts
+
+Notes:
+
+Types come from Autodesk's official @types/forge-viewer package (installed as a dev dependency), which declares the global Autodesk namespace plus a bundled minimal THREE namespace. lib/forge-viewer.d.ts adds the few members the official definitions miss (Profile, ProfileSettings, setProfile). If your tsconfig sets an explicit "types" array, add "forge-viewer" to it.
+
+#### Exports
+
+- `GetAccessToken` (`() => Promise<{ accessToken: string; expiresInSeconds: number }>`) — Promise-based backend token supplier adapted by APSViewer to the Autodesk callback contract.
+- `APSViewer3D / APSModel / APSDocument` (`interface`) — Structural subsets of the Viewer global objects used by the component and hooks.
+- `APSViewerExtension / APSViewingNamespace / AutodeskGlobal` (`interface`) — Public extension and global-runtime surfaces, including the extension manager and toolbar lifecycle.
+- `APSCameraState / APSPropertyResult / APSContextMenuItem` (`interface`) — Typed values returned by the camera, property, and context-menu hooks.
+
+### Viewer Extension Types (`@cantera/viewer-extension-types`)
+
+Type: types
+Install: npx shadcn@latest add @cantera/viewer-extension-types
+Docs: https://canteraui.vercel.app/components/viewer-extension-types
+Item: https://canteraui.vercel.app/r/viewer-extension-types.json
+
+A typed catalog of the Autodesk Viewer's public extensions: every loadExtension id, the options each one actually reads, and the flags that decide whether loading it can work — verified against the shipped viewer source.
+
+The Autodesk Viewer grows real capability through extensions, but the SDK leaves their ids as bare strings and their options as untyped bags — and ids circulating in old blog posts include extensions that no longer exist. This catalog types both, verified against the shipped viewer source, so a wrong id or option is a compile error instead of a silent runtime 404.
+
+```tsx
+import { viewerExtension } from '@/lib/viewer-extension-types'
+import { APSViewer } from '@/components/ui/aps-viewer'
+
+<APSViewer
+  urn={urn}
+  getAccessToken={getAccessToken}
+  profile="aec"
+  extensions={[
+    viewerExtension('Autodesk.AEC.LevelsExtension', { ifcLevelsEnabled: true }),
+    viewerExtension('Autodesk.Viewing.MarkupsGui'),
+    'MyProject.CustomExtension',
+  ]}
+/>
+```
+
+Files written into the consumer project:
+
+- lib/viewer-extension-types.ts
+
+Notes:
+
+Pure types and data — no runtime dependency on the viewer. Pair with @cantera/aps-viewer: pass viewerExtension(...) entries to the extensions prop, or use AEC_STARTER_EXTENSIONS as a field-tested default for AEC models. Entries marked deprecated or removedIn should not ship in new code.
+
+#### Exports
+
+- `VIEWER_EXTENSIONS` (`Record<KnownViewerExtensionId, ViewerExtensionInfo>`) — The catalog: every public extension id with what it adds, whether GuiViewer3D auto-loads it, toolbar and 2D/3D flags, AEC-model-data requirements, and deprecated/removedIn markers.
+- `viewerExtension(id, options?)` (`ViewerExtensionEntry`) — Typed entry builder for the APSViewer extensions prop: the id is checked against the catalog and the options against that extension’s interface.
+- `ViewerExtensionOptionsMap` (`interface`) — Extension id to the options loadExtension actually reads — MeasureExtensionOptions, LevelsExtensionOptions, DocumentBrowserExtensionOptions, and the rest.
+- `AEC_STARTER_EXTENSIONS` (`readonly ViewerExtensionEntry[]`) — A field-tested starter set for AEC models: levels, measurement, markup, and the sheet browser, ordered so options can reach auto-loaded dependencies.
+- `KnownViewerExtensionId / ViewerExtensionInfo / ViewerExtensionEntry` (`types`) — The catalog’s id union, per-extension metadata shape, and the { id, options } entry shape the viewer accepts.
+
+### APS Viewer (`@cantera/aps-viewer`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/aps-viewer
+Docs: https://canteraui.vercel.app/components/aps-viewer
+Item: https://canteraui.vercel.app/r/aps-viewer.json
+Working example page: npx shadcn@latest add @cantera/aps-viewer-demo
+Registry dependencies: button, checkbox, @cantera/viewer-types
+npm dependencies: lucide-react
+
+A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar.
+
+Files written into the consumer project:
+
+- components/ui/aps-viewer/aps-viewer.tsx
+- components/ui/aps-viewer/context.ts
+- components/ui/aps-viewer/hooks.ts
+- components/ui/aps-viewer/loader.ts
+- components/ui/aps-viewer/store.ts
+- components/ui/aps-viewer/toolbar.ts
+- components/ui/aps-viewer/settings.tsx
+- components/ui/aps-viewer/index.ts
+
+Notes:
+
+APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance, viewCube, radius, toolbarPosition, and toolbarScale changes apply in place. toolbar=none uses the core Viewer3D without Autodesk's native toolbar; viewCube controls the cube independently.
+
+APSViewerSettings renders an end-user settings panel as a viewer child: a trigger button appended to the SDK toolbar (a corner button when the native toolbar is off) opens a floating panel over the canvas, collapsed by default. It is controlled — hold an APSViewerSettingsValue in state, spread apsViewerPropsFor(value) onto APSViewer, and pass value/onValueChange to the panel. Extra sections compose through children; APSViewerSettingsTrigger is exported alone for custom panels.
+
+The native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are not a published stable contract, so docking is best-effort and should be checked when changing the Viewer major version. Autodesk Viewer also renders third-party DOM that cantera cannot repair. The docs accessibility suite excludes only the subtree rooted inside the viewer canvas; controls you add around or over the viewer remain in scope. Audit the inherited Autodesk controls against your own product requirements.
+
+#### Props
+
+- `urn` (`string`) — Model Derivative URN with or without the urn: prefix. Changes reuse the live WebGL viewer.
+- `getAccessToken` (`GetAccessToken`) — Fetches a short-lived token from your backend. APS credentials must never enter the browser.
+- `toolbar` (`'native' | 'none'`, default `'native'`) — Chooses the GuiViewer3D native toolbar or the core Viewer3D; ViewCube remains independently controllable.
+- `toolbarPosition` (`'bottom' | 'top' | 'left' | 'right'`, default `'bottom'`) — Docks the native toolbar to an edge. Left and right derive a vertical layout; changes apply live.
+- `toolbarScale` (`'sm' | 'md' | 'lg' | number`, default `'md'`) — Native-toolbar button box: compact 36px, comfortable 44px, gloved 52px, or an exact number clamped to 32–64. Changes apply live.
+- `viewCube` (`boolean`, default `true`) — Shows Autodesk's ViewCube and companion controls. Changes apply live without recreating the viewer.
+- `radius` (`number`) — Clips the viewer frame to a pixel radius clamped to 0–32. Omit to leave frame styling to the consumer.
+- `theme` (`'light' | 'dark'`, default `app appearance`) — Optional forced appearance. Undefined follows the document class and system preference live.
+- `autoResize` (`boolean`, default `true`) — ResizeObserver keeps the WebGL canvas matched to its container.
+- `version / env / api` (`string`, default `'7.*' / 'AutodeskProduction2' / 'streamingV2'`) — Viewer CDN and Initializer settings. The first mounted runtime consumer wins.
+- `extensions / viewerConfig` (`readonly APSExtensionRequest[] / Record<string, unknown>`) — Extensions to load — bare ids or { id, options } entries — and extra constructor configuration, captured when the viewer mounts. Load progress is observable via useAPSExtensions(); viewer-extension-types catalogs the public ids and types their options.
+- `profile` (`'aec' | 'default' | 'fluent' | 'navis'`) — Named Autodesk settings profile applied at creation. 'aec' is the Construction (AEC) tuning: reversed zoom, edge rendering, AEC light preset.
+- `shutdownOnUnmount` (`boolean`, default `false`) — Shuts down the global SDK only after its last consumer releases; false keeps it warm across routes.
+- `onViewerReady / onModelLoaded / onError / onExtensionError` (`callbacks`) — Lifecycle callbacks. Inline functions do not recreate the viewer. onExtensionError reports a failed extension load without tearing the viewer down.
+- `children` (`ReactNode`) — Overlay UI inside the viewer context. Descendants can use every exported APS hook.
+
+#### Hooks and runtime exports
+
+- `useAPSViewer / useAPSModelLoaded` (`hooks`) — Live viewer identity and model-geometry readiness.
+- `useAPSSelection / useAPSCamera / useAPSProperties` (`hooks`) — Event-driven selection, camera, and cancellable property state.
+- `useAPSViewerEvent / useAPSContextMenu` (`hooks`) — Raw event and context-menu escape hatches.
+- `useAPSExtension / useAPSExtensions` (`hooks`) — Per-extension load with status, instance, and setOptions re-application on option change; and the load lifecycle of every extension requested through the extensions prop.
+- `acquireViewerRuntime / releaseViewerRuntime / loadViewerScript` (`functions`) — Deduplicated CDN and Initializer lifecycle, exposed for advanced imperative composition.
+
+#### APSViewerSettings props
+
+- `value` (`APSViewerSettingsValue`) — Controlled settings: toolbar on/off, toolbarPosition, toolbarScale (a preset or an exact pixel box the density slider drives across 32–64), viewCube, and theme. Spread apsViewerPropsFor(value) onto APSViewer to apply them.
+- `onValueChange` (`(value: APSViewerSettingsValue) => void`) — Called with the next settings object when the user changes a control.
+- `open / onOpenChange / defaultOpen` (`boolean / callback / boolean`, default `false`) — Panel visibility, controlled or uncontrolled. The panel starts collapsed; the trigger sits in the SDK toolbar, or a corner button when the native toolbar is off.
+- `label` (`string`, default `'Viewer settings'`) — Names the trigger, its tooltip, and the panel heading.
+- `children` (`ReactNode`) — Extra sections appended below the built-in controls.
+- `APSViewerSettingsTrigger` (`component`) — The toolbar-mounted trigger alone — our control group appended to the SDK toolbar after a divider, inheriting toolbar position and scale — for wiring a custom panel.
+- `DEFAULT_APS_VIEWER_SETTINGS / apsViewerPropsFor` (`constant / function`) — The starting settings object, and the mapping from a settings object to APSViewer props.
+
+### Model Status Card (`@cantera/model-status-card`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/model-status-card
+Docs: https://canteraui.vercel.app/components/model-status-card
+Item: https://canteraui.vercel.app/r/model-status-card.json
+Working example page: npx shadcn@latest add @cantera/model-status-card-demo
+Registry dependencies: badge, button, card, @cantera/token-status, @cantera/status-tokens, @cantera/project-types
+npm dependencies: lucide-react
+
+The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract.
+
+Files written into the consumer project:
+
+- model-status-card.tsx
+
+#### Props
+
+- `translation` (`ModelTranslation`) — The design to summarize: name (or URN fallback), status badge, progress, outputs, error text.
+- `onRetry` (`() => void | Promise<void>`) — Retry for a failed or timed-out translation. Promise-returning handlers drive the pending state; the button keeps its label, spins, and stays put.
+- `retryPending` (`boolean`, default `false`) — Pending state for the retry action, drivable from outside.
+- `showOutputs` (`boolean`, default `true`) — Render each produced output format as an outline badge while ready.
+- `...props` (`ComponentProps<typeof Card>`) — Everything else lands on the root Card.
+
+### Model Viewer Page (`@cantera-pro/model-viewer-page`)
+
+Type: template (pro, license required)
+Install: npx shadcn@latest add @cantera-pro/model-viewer-page
+Docs: https://canteraui.vercel.app/components/model-viewer-page
+Item: https://canteraui.vercel.app/r-pro/model-viewer-page.json
+License: https://canteraui.vercel.app/pro
+Registry dependencies: button, sidebar, @cantera/acc-auth-routes, @cantera/aps-data-preset, @cantera/project-types, @cantera/oauth-types, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/finder, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/model-status-card, @cantera/token-status, @cantera/user-account-badge, @cantera/status-tokens
+npm dependencies: aec-auth, lucide-react
+
+A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.
+
+Files written into the consumer project:
+
+- app/models/page.tsx
+- app/models/loading.tsx
+- components/model-browser.tsx
+- components/model-finder.ts
+- app/api/models/tree/route.ts
+- app/api/viewer-token/route.ts
+
+Install notes:
+
+Installed at /models: the page, its loading UI, the lazy /api/models/tree route, and the two-legged /api/viewer-token route. ModelBrowser is the screen; signed out, /models renders ScopedAutodeskSignIn inline.
+
+Next:
+1. Fill the keys acc-auth-routes added to .env.local (see its notes above).
+2. Run next dev and open /models.
+
+The cantera showcase emulator supplies a project tree but no geometry; store real derivative URNs on your item versions.
+Reference: https://canteraui.vercel.app/components/model-viewer-page
+
+Notes:
+
+ModelBrowser fetches from treeEndpoint (default /api/models/tree) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. Point both at your own handlers to mount the screen elsewhere. initialNodes skips the first hub read when the server already has the tree; embedded drops the page chrome so the browser fits a docs or preview frame.
+
+#### ModelBrowser props
+
+- `account` (`OAuthAccount`) — Signed-in account shown in the fixed top-right account control.
+- `initialNodes` (`HubTreeNode[]`, default `[]`) — Optional normalized roots. When empty, the client starts by requesting hubs from treeEndpoint.
+- `treeEndpoint` (`string`, default `'/api/models/tree'`) — Session-backed lazy Data Management route implementing the shared kind and id query contract.
+- `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Separate two-legged viewer token route, scoped to viewables:read. Three-legged Data Management tokens never cross into the viewer.
+- `signOutHref` (`string`, default `'/api/auth/signout?next=/sign-in'`) — POST route used by the account control to revoke the grant and clear the session.
+- `embedded` (`boolean`, default `false`) — Constrains the desktop sidebar and shell height to the nearest positioned preview container. Leave false for the full-page route.
+
+#### Tree route
+
+- `kind=hubs` (`no ids`) — Loads the signed-in account’s hubs.
+- `kind=projects` (`hubId`) — Loads projects under one hub.
+- `kind=top-folders` (`hubId, projectId`) — Loads a project’s top folders.
+- `kind=folder-contents` (`projectId, folderId`) — Loads folders and items under one folder.
+- `kind=versions` (`projectId, itemId`) — Loads immutable versions under one item.
+- `kind=search` (`projectId, folderId, q`) — Recursively searches unopened descendants of one folder and returns matching tip versions for the scoped finder.
+- `kind=path` (`projectId, itemId, topFolderId`) — Walks a found item’s parent folders up to the searched top folder and returns the intermediate segments, so picking a search result can expand and select it in the tree.
+
+### Model Upload Page (`@cantera-pro/model-upload-page`)
+
+Type: template (pro, license required)
+Install: npx shadcn@latest add @cantera-pro/model-upload-page
+Docs: https://canteraui.vercel.app/components/model-upload-page
+Item: https://canteraui.vercel.app/r-pro/model-upload-page.json
+License: https://canteraui.vercel.app/pro
+Registry dependencies: button, checkbox, dialog, input, label, sidebar, @cantera/upload-types, @cantera/project-types, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/finder, @cantera/file-drop-zone, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/model-status-card, @cantera/status-tokens
+npm dependencies: aec-auth, lucide-react
+
+A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.
+
+Files written into the consumer project:
+
+- app/upload/page.tsx
+- app/upload/loading.tsx
+- components/model-upload.tsx
+- app/api/models/upload/route.ts
+- app/api/models/upload/upload-request.ts
+- app/api/viewer-token/route.ts
+
+Install notes:
+
+Installed at /upload: the page, its loading UI, the two-legged /api/models/upload route (bucket bootstrap, signed S3 uploads, translation jobs, manifest status), and /api/viewer-token. ModelUpload is the screen. No sign-in is installed: every route runs on the app's credentials, so add your own access control before shipping beyond a trusted team.
+
+Next:
+1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_BUCKET optional (derived from the client id); APP_ORIGIN in production.
+2. Run next dev and open /upload.
+
+Files over 250 MB are rejected; raise PART_SIZE or MAX_PARTS in the route.
+Reference: https://canteraui.vercel.app/components/model-upload-page
+
+Notes:
+
+ModelUpload fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame.
+
+#### ModelUpload props
+
+- `uploadEndpoint` (`string`, default `'/api/models/upload'`) — Two-legged route implementing the models, start, finish, and status contract over the app bucket.
+- `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Separate two-legged viewer token route, scoped to viewables:read. Upload-scoped tokens never cross into the viewer.
+- `embedded` (`boolean`, default `false`) — Constrains the desktop sidebar and shell height to the nearest positioned preview container, and skips writing ?urn= to the URL. Leave false for the full-page route.
+
+#### Upload route
+
+- `kind=models` (`GET`) — Ensures the app bucket exists and lists its objects as { name, urn, size } models.
+- `kind=start` (`POST · name, size`) — Returns signed S3 part URLs for the object the browser uploads to directly.
+- `kind=finish` (`POST · objectId, uploadKey, views, masterViews, zipEntrypoint`) — Completes the signed upload and submits the svf2 job — compressed with the archive root when zipEntrypoint is set.
+- `kind=status` (`GET · urn`) — Reads the Model Derivative manifest into the translation status vocabulary, with the derivative diagnostic messages.
+
+### Upload Types (`@cantera/upload-types`)
+
+Type: types
+Install: npx shadcn@latest add @cantera/upload-types
+Docs: https://canteraui.vercel.app/components/upload-types
+Item: https://canteraui.vercel.app/r/upload-types.json
+
+Generic upload lifecycle types for cantera components: files moving through queued, uploading, processing, complete, and error, plus rejection reasons, an accept matcher, and locale-neutral byte formatting.
+
+The lifecycle of a file on its way into a project. Construction files are heavy and "uploaded" is not "done" — providers translate a design after the bytes land. Components render these shapes and never upload; adapters drive the phases and report back through them.
+
+```tsx
+import { formatBytes, MODEL_FILE_ACCEPT, type UploadFile } from '@/lib/upload-types'
+
+const files: UploadFile[] = [
+  { id: 'v1', name: 'summit-tower.rvt', size: 248_000_000, phase: 'complete' },
+  { id: 'v2', name: 'cedar-mill-site.nwd', size: 612_000_000, phase: 'uploading', progress: 0.42 },
+  {
+    id: 'v3',
+    name: 'dockside-mep.ifc',
+    phase: 'processing',
+    processingLabel: 'Translating model',
+  },
+]
+
+const caption = `${MODEL_FILE_ACCEPT} · up to ${formatBytes(800_000_000)}`
+```
+
+Files written into the consumer project:
+
+- lib/upload-types.ts
+
+#### Exports
+
+- `UploadPhase` (`type`) — 'queued' | 'uploading' | 'processing' | 'complete' | 'error'. Processing is the provider working after the bytes arrived — translation, extraction — usually without a progress signal.
+- `UploadFile` (`interface`) — One tracked file: stable id, name, optional byte size, phase, 0–1 progress while uploading, a processingLabel, and error text with a retryable flag that decides warning versus danger.
+- `UploadRejection / UploadRejectionReason` (`interface / type`) — A refused browser File plus the rule it broke: 'file-type', 'file-size', or 'file-count'.
+- `MODEL_FILE_ACCEPT` (`string`) — Accept preset for the design formats APS translates most often: .rvt, .ifc, .dwg, .dxf, .nwd, .nwc, .pdf.
+- `matchesAccept` (`(file: File, accept?: string) => boolean`) — Whether a File satisfies an accept string — extensions, exact MIME types, and type/* wildcards, the native file-input grammar.
+- `formatBytes` (`(bytes: number, locale?: string) => string`) — Bytes as a localized short unit string, e.g. 248 MB. Locale-neutral Intl by default; decimal units, matching what storage providers report.
+
+### File Drop Zone (`@cantera/file-drop-zone`)
+
+Type: block
+Install: npx shadcn@latest add @cantera/file-drop-zone
+Docs: https://canteraui.vercel.app/components/file-drop-zone
+Item: https://canteraui.vercel.app/r/file-drop-zone.json
+Working example page: npx shadcn@latest add @cantera/file-drop-zone-demo
+Registry dependencies: button, @cantera/token-status, @cantera/status-tokens, @cantera/upload-types
+npm dependencies: lucide-react
+
+A drafting-grid drop zone for heavy AEC files: the dot grid magnetizes under a dragged file, plots upward as bytes land, and glows while the provider translates — with per-file rows on the async-pending contract.
+
+Files written into the consumer project:
+
+- file-drop-zone.tsx
+
+Notes:
+
+The component never uploads: onDropFiles hands over validated File objects and the consumer drives the controlled files array as the transfer moves through queued, uploading, processing, complete, and error. The grid surface derives one phase from those files — magnetized during a drag, plotted bottom-up by aggregate progress, an ambient glow while providers translate, and a status tint when work settles. Ambient motion is confined to the surface and falls back to a static treatment under prefers-reduced-motion.
+
+Validation runs before any callback: accept (extension, MIME, and type/* wildcard grammar), maxSize per file, and maxFiles against the tracked list; refusals arrive at onReject with a reason. MODEL_FILE_ACCEPT from upload-types covers the common APS design formats. Retry follows the async-pending contract; remove doubles as cancel while a file is in flight.
+
+showList false hides the built-in rows while files keep driving the grid; FileDropZoneItem is exported for rendering the same rows in your own layout.
+
+#### Props
+
+- `files` (`UploadFile[]`, default `[]`) — The tracked files, controlled by the consumer. The grid surface derives its phase from them: uploading plots the grid, processing starts the ambient glow, settled files tint it.
+- `onDropFiles` (`(files: File[]) => void | Promise<void>`) — Files that passed validation, from a drop or the picker. The component never uploads — start the transfer here and drive files as it moves.
+- `onReject` (`(rejections: UploadRejection[]) => void`) — Files refused before any upload started, with the rule each broke.
+- `onRetry` (`(file: UploadFile) => void | Promise<void>`) — Retry for a failed file. Promise-returning handlers drive the pending state; the button keeps its label, spins, and stays put.
+- `onRemove` (`(file: UploadFile) => void`) — Remove a file's row. While the file is queued or uploading the same control reads as cancel.
+- `accept` (`string`) — Native accept grammar: extensions, MIME types, type/* wildcards. MODEL_FILE_ACCEPT covers the common APS design formats.
+- `maxFiles` (`number`) — Cap on tracked files; extras reject as file-count.
+- `maxSize` (`number`) — Per-file byte ceiling; larger files reject as file-size.
+- `multiple` (`boolean`, default `true`) — Accept several files per gesture. Drops usually batch.
+- `disabled` (`boolean`, default `false`) — Ignores drops and the picker while keeping the zone focusable.
+- `label` (`string`, default `'Drag files here or browse'`) — Idle headline. The zone swaps it for phase copy while work is running.
+- `hint` (`string`) — Caption under the headline. Defaults to a summary of the accept and size rules.
+- `showList` (`boolean`, default `true`) — Render the built-in file rows. Files keep driving the grid either way; turn this off to lay rows out yourself with FileDropZoneItem.
+- `density` (`'comfortable' | 'compact'`, default `'comfortable'`) — Comfortable keeps the 44px field target on rows; compact is the explicit desktop escape hatch.
+- `locale` (`string`) — BCP 47 tag for sizes and percentages. Defaults locale-neutral.
+- `...props` (`ComponentProps<'div'>`) — Everything else lands on the root element.
+
+#### Data attributes
+
+- `data-phase` (`'idle' | 'dragover' | 'uploading' | 'processing' | 'complete' | 'error'`) — The derived surface phase, on the root and each file row (rows carry their own file phase).
+- `data-tone` (`'success' | 'warning' | 'danger'`) — Present once work settles: success on complete; a retryable-only failure is warning, a terminal one danger.
+- `data-density` (`'comfortable' | 'compact'`) — The active density, for consumer styling hooks.
+
+#### FileDropZoneItem props
+
+- `file` (`UploadFile`) — The file to render: name, format and size chip, and the phase treatment — progressbar, shimmer label, check, or error with retry.
+- `onRetry` (`(file: UploadFile) => void | Promise<void>`) — Retry for a failed file. Promise-returning handlers drive the pending state; the button keeps its label, spins, and stays put.
+- `retryPending` (`boolean`, default `false`) — Pending state for the retry action, drivable from outside.
+- `onRemove` (`(file: UploadFile) => void`) — Remove the row — cancel in flight, clear it after it settled.
+- `density` (`'comfortable' | 'compact'`, default `'comfortable'`) — Comfortable keeps the 44px field target; compact is the escape hatch.
+- `locale` (`string`) — BCP 47 tag for sizes and percentages. Defaults locale-neutral.
+- `...props` (`ComponentProps<'li'>`) — Everything else lands on the root li.
+
+#### Exports
+
+- `FileDropZoneItem` (`component`) — The file row on its own, for laying rows out anywhere — a table, a sidebar, next to model-status-card — with identical styling. Pair with showList false.
+- `FILE_DROP_ZONE_CSS` (`string`) — The drafting-grid stylesheet the component hoists via React 19 style precedence — exported for custom surfaces that reuse the grid outside the zone.
+
+### Photo Types (`@cantera/photo-types`)
+
+Type: types
+Install: npx shadcn@latest add @cantera/photo-types
+Docs: https://canteraui.vercel.app/components/photo-types
+Item: https://canteraui.vercel.app/r/photo-types.json
+
+Generic field-photo types for cantera components: categories, media kinds, the photo record with optional geolocation, and cursor pages. The lingua franca photo adapters translate into.
+
+The lingua franca for field photos — the record with its origin category, media kind, capture time, optional geolocation, and always-valid thumbnail — plus cursor pages for progressive loading. Components take these shapes as props and never fetch; adapters translate provider payloads into them.
+
+```tsx
+import { hasLocation, photoCapturedAt, photoCoverage } from '@/lib/photo-types'
+import type { FieldPhoto } from '@/lib/photo-types'
+
+const photos: FieldPhoto[] = await loadPhotos()
+const { located, total } = photoCoverage(photos)
+
+const pins = photos.filter(hasLocation).map((photo) => ({
+  id: photo.id,
+  position: [photo.longitude, photo.latitude],
+  at: photoCapturedAt(photo),
+}))
+```
+
+Files written into the consumer project:
+
+- lib/photo-types.ts
+
+#### Exports
+
+- `FieldPhoto` (`interface`) — One photo: id, nullable title, category, media type, takenAt and createdAt as ISO strings, nullable latitude and longitude, a thumbnailUrl that always resolves, and a nullable sourceUrl deep link.
+- `PhotoCategory / PHOTO_CATEGORIES / PHOTO_CATEGORY_LABELS` (`union, tuple, record`) — The origin module a photo was added with — field report, issue, form, RFI, gallery, asset, meeting, submittal, other — with display labels.
+- `PhotoMediaType / PHOTO_MEDIA_TYPES` (`union, tuple`) — The capture kind: photo, video, photosphere, infrared.
+- `PhotoPage` (`interface`) — One page of a listing: photos plus an opaque nextCursor, null on the last page, for progressive loading over serial cursors.
+- `photoCapturedAt` (`(photo: Pick<FieldPhoto, 'takenAt' | 'createdAt'>) => number | null`) — The moment a photo represents as epoch milliseconds: EXIF capture time when known, creation time otherwise, null when neither parses.
+- `hasLocation` (`(photo: FieldPhoto) => photo is LocatedPhoto`) — Narrows to photos with both coordinates.
+- `photoCoverage` (`(photos: FieldPhoto[]) => PhotoCoverage`) — The located and total counts a surface shows together, so the photos that cannot be placed are never silently dropped.
+
+### ACC Photos Preset (`@cantera/acc-photos-preset`)
+
+Type: preset
+Install: npx shadcn@latest add @cantera/acc-photos-preset
+Docs: https://canteraui.vercel.app/components/acc-photos-preset
+Item: https://canteraui.vercel.app/r/acc-photos-preset.json
+Registry dependencies: @cantera/photo-types
+
+Autodesk Construction Cloud Photos API adapter into the generic photo types: origin-module and media-kind normalization, the markup and logo filter, and the Autodesk Build deep link.
+
+Everything ACC-Photos-specific in one data-only item: the adapter from a Photos API media object into a cantera FieldPhoto, the origin-type and media-kind normalizers, the markup and logo filter, and the Autodesk Build deep link. ACC signed URLs expire in about a minute, so the adapter takes a thumbnail resolver — usually a proxy route of yours — instead of copying a URL that will be dead by render time. Fetching and tokens stay in your auth layer.
+
+```tsx
+import { fromAccPhoto, isVisibleAccPhoto } from '@/lib/acc-photos-preset'
+import type { PhotoPage } from '@/lib/photo-types'
+
+// POST /construction/photos/v1/projects/{projectId}/photos:filter, fetched by you.
+const page: PhotoPage = {
+  photos: response.results.filter(isVisibleAccPhoto).map((doc) =>
+    fromAccPhoto(doc, projectId, {
+      thumbnailUrl: (photoId) => `/api/projects/${projectId}/photos/${photoId}/thumbnail`,
+    }),
+  ),
+  nextCursor: response.pagination?.nextPost?.body?.cursorState ?? null,
+}
+```
+
+Files written into the consumer project:
+
+- lib/acc-photos-preset.ts
+
+#### Exports
+
+- `fromAccPhoto` (`(doc: AccPhotoDoc, projectId: string, links: AccPhotoLinks) => FieldPhoto`) — Adapter from a Photos API media object. links.thumbnailUrl resolves each photo id to a URL that stays valid, usually your proxy route, since ACC signed URLs expire in about a minute; links.sourceUrl defaults to the Autodesk Build deep link.
+- `isVisibleAccPhoto` (`(doc: AccPhotoDoc) => boolean`) — False for deleted media and for the MARKUP and LOGO origin types, which are project artifacts rather than field photos.
+- `toPhotoCategory` (`(type?: string) => PhotoCategory`) — Normalizes the origin type across case and separator variants. A missing type reads as gallery — direct uploads carry none — and an unknown one as other.
+- `toPhotoMediaType` (`(mediaType?: string) => PhotoMediaType`) — Normalizes NORMAL, VIDEO, PHOTOSPHERE, and INFRARED; anything else reads as photo.
+- `accBuildPhotoUrl` (`(projectId: string, photoId: string) => string`) — Deep link into the Autodesk Build gallery. Not a documented URL shape; verified against ACC Build.
+- `AccPhotoDoc / AccPhotoLinks / HIDDEN_ACC_PHOTO_TYPES` (`interface, interface, ReadonlySet<string>`) — The structural subset of a Photos API media object the adapter reads, the link resolvers it takes, and the origin types it hides.
+
+### Copy Field (`@cantera/copy-field`)
+
+Type: component
+Install: npx shadcn@latest add @cantera/copy-field
+Docs: https://canteraui.vercel.app/components/copy-field
+Item: https://canteraui.vercel.app/r/copy-field.json
+Working example page: npx shadcn@latest add @cantera/copy-field-demo
+Registry dependencies: button
+npm dependencies: lucide-react
+
+A value someone has to paste into another system — a client ID, a callback URL — shown in full and always selectable, with a copy button that confirms.
+
+Files written into the consumer project:
+
+- copy-field.tsx
+
+Notes:
+
+The value is rendered in full and selectable, and the Clipboard API is only reached for on click, so the field works on non-secure origins where writeText is unavailable: the button simply fails quietly and the value stays there to select by hand. The confirmation is announced politely to screen readers.
+
+#### Props
+
+- `value` (`string`) — The value to hand over. Rendered in full, selectable, and breakable at any character so long identifiers never overflow.
+- `label` (`string`) — What the value is, for the button's accessible name: label "client ID" gives "Copy client ID".
+- `confirmMs` (`number`, default `2000`) — How long the Copied confirmation shows before the button resets.
+
+### Provisioning Notice (`@cantera/provisioning-notice`)
+
+Type: block
+Install: npx shadcn@latest add @cantera/provisioning-notice
+Docs: https://canteraui.vercel.app/components/provisioning-notice
+Item: https://canteraui.vercel.app/r/provisioning-notice.json
+Working example page: npx shadcn@latest add @cantera/provisioning-notice-demo
+Registry dependencies: @cantera/copy-field
+
+The empty state every ACC app hits: signed in, but no hubs until an account admin adds the client ID under Custom Integrations. Names the step, hands over the ID, and says what else an empty list can mean.
+
+Files written into the consumer project:
+
+- provisioning-notice.tsx
+
+Notes:
+
+Show it when the hub list comes back empty after a successful sign-in — the Data Management API reports an unprovisioned app as an empty list, not an error, so a picker's emptyMessage is the wrong place for these instructions. Pass the disconnect action as footer so a visitor who signed in with the wrong account has a way out; ProjectPicker and hub-switcher stay for the accounts that do have hubs.
+
+#### Props
+
+- `clientId` (`string`) — The APS client ID the account admin adds. Rendered in a CopyField.
+- `appName` (`string`) — Your product's name as the admin will see it in the provider's admin console.
+- `containerNoun` (`string`, default `'hubs'`) — The provider's account-level container, plural: hubs for ACC, companies for Procore.
+- `adminPath` (`ReactNode`, default `'Account Admin → Custom Integrations'`) — Where the admin adds the app, as the provider labels it.
+- `title` (`ReactNode`, default `'No projects visible yet'`) — The heading.
+- `titleAs` (`'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'div'`, default `'h2'`) — The heading level that fits the page outline, or div to opt out.
+- `footer` (`ReactNode`) — Rendered under the notice: a disconnect action, a support link.

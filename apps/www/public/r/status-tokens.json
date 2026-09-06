@@ -1,0 +1,64 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "status-tokens",
+  "title": "Status Tokens",
+  "author": "MR <contact@bimframe.co>",
+  "description": "Semantic status colors — success, warning, danger, neutral — each with a foreground and a surface companion, contrast-verified in light and dark. The palette every cantera status surface renders from.",
+  "files": [
+    {
+      "path": "registry/lib/status-tokens.ts",
+      "content": "// For the places a Tailwind class cannot reach — inline style, chart series,\n// canvas fill. Every value carries the same fallback chain the @theme mappings\n// use, so a theme without the variables degrades instead of rendering invisible.\nexport const statusCssVars = {\n  success: 'var(--status-success, var(--foreground))',\n  successForeground: 'var(--status-success-foreground, var(--background))',\n  successSurface: 'var(--status-success-surface, var(--muted))',\n  warning: 'var(--status-warning, var(--foreground))',\n  warningForeground: 'var(--status-warning-foreground, var(--background))',\n  warningSurface: 'var(--status-warning-surface, var(--muted))',\n  danger: 'var(--status-danger, var(--destructive))',\n  dangerForeground: 'var(--status-danger-foreground, var(--background))',\n  dangerSurface: 'var(--status-danger-surface, var(--muted))',\n  neutral: 'var(--status-neutral, var(--muted-foreground))',\n  neutralForeground: 'var(--status-neutral-foreground, var(--background))',\n  neutralSurface: 'var(--status-neutral-surface, var(--muted))',\n} as const\n\nexport type StatusCssVar = keyof typeof statusCssVars\n",
+      "type": "registry:lib",
+      "target": "lib/status-tokens.ts"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "color-status-success": "var(--status-success, var(--foreground))",
+      "color-status-success-foreground": "var(--status-success-foreground, var(--background))",
+      "color-status-success-surface": "var(--status-success-surface, var(--muted))",
+      "color-status-warning": "var(--status-warning, var(--foreground))",
+      "color-status-warning-foreground": "var(--status-warning-foreground, var(--background))",
+      "color-status-warning-surface": "var(--status-warning-surface, var(--muted))",
+      "color-status-danger": "var(--status-danger, var(--destructive))",
+      "color-status-danger-foreground": "var(--status-danger-foreground, var(--background))",
+      "color-status-danger-surface": "var(--status-danger-surface, var(--muted))",
+      "color-status-neutral": "var(--status-neutral, var(--muted-foreground))",
+      "color-status-neutral-foreground": "var(--status-neutral-foreground, var(--background))",
+      "color-status-neutral-surface": "var(--status-neutral-surface, var(--muted))"
+    },
+    "light": {
+      "status-success": "oklch(0.5 0.13 150)",
+      "status-success-foreground": "oklch(0.985 0.01 150)",
+      "status-success-surface": "oklch(0.955 0.035 150)",
+      "status-warning": "oklch(0.52 0.11 72)",
+      "status-warning-foreground": "oklch(0.99 0.01 85)",
+      "status-warning-surface": "oklch(0.955 0.045 85)",
+      "status-danger": "oklch(0.52 0.2 27)",
+      "status-danger-foreground": "oklch(0.985 0.005 27)",
+      "status-danger-surface": "oklch(0.94 0.03 27)",
+      "status-neutral": "oklch(0.48 0 0)",
+      "status-neutral-foreground": "oklch(0.985 0 0)",
+      "status-neutral-surface": "oklch(0.955 0 0)"
+    },
+    "dark": {
+      "status-success": "oklch(0.78 0.15 150)",
+      "status-success-foreground": "oklch(0.19 0.04 150)",
+      "status-success-surface": "oklch(0.28 0.05 150)",
+      "status-warning": "oklch(0.8 0.14 80)",
+      "status-warning-foreground": "oklch(0.2 0.04 80)",
+      "status-warning-surface": "oklch(0.29 0.05 80)",
+      "status-danger": "oklch(0.72 0.16 25)",
+      "status-danger-foreground": "oklch(0.19 0.04 25)",
+      "status-danger-surface": "oklch(0.29 0.06 25)",
+      "status-neutral": "oklch(0.75 0 0)",
+      "status-neutral-foreground": "oklch(0.2 0 0)",
+      "status-neutral-surface": "oklch(0.29 0 0)"
+    }
+  },
+  "categories": [
+    "theming",
+    "status"
+  ],
+  "type": "registry:item"
+}

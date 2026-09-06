@@ -1,0 +1,28 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "acc-connection-panel",
+  "title": "ACC Connection Panel",
+  "author": "MR <contact@bimframe.co>",
+  "description": "The live Autodesk connection panel: one ConnectionCard wired to a sign-out route and a consent restart, with disconnect and reconnect on the async-pending contract.",
+  "registryDependencies": [
+    "@cantera/connection-card",
+    "@cantera/oauth-types"
+  ],
+  "files": [
+    {
+      "path": "registry/blocks/acc-connection-panel/acc-connection-panel.tsx",
+      "content": "'use client'\n\nimport { useRouter } from 'next/navigation'\nimport { useState, useTransition } from 'react'\n\nimport { ConnectionCard } from '@/components/ui/connection-card'\nimport type { OAuthConnection } from '@/lib/oauth-types'\n\ninterface AccConnectionPanelProps {\n  connection: OAuthConnection\n  /** POST target that clears the grant and session, e.g. \"/api/auth/signout?next=/sign-in\". */\n  signOutHref: string\n  /** GET target that restarts consent, e.g. \"/api/auth/aps?next=/sign-in\". */\n  signInHref: string\n}\n\nfunction AccConnectionPanel({ connection, signOutHref, signInHref }: AccConnectionPanelProps) {\n  const router = useRouter()\n  const [disconnecting, setDisconnecting] = useState(false)\n  const [reconnecting, setReconnecting] = useState(false)\n  const [, startRefresh] = useTransition()\n\n  async function disconnect() {\n    setDisconnecting(true)\n    try {\n      await fetch(signOutHref, { method: 'POST', redirect: 'manual' })\n    } finally {\n      // Pending clears inside the transition so the button keeps its spinner\n      // until the re-rendered server page commits; refresh runs on failure too.\n      startRefresh(() => {\n        router.refresh()\n        setDisconnecting(false)\n      })\n    }\n  }\n\n  return (\n    <ConnectionCard\n      connection={connection}\n      // The handler is always passed: pending is a prop, never an absent\n      // callback, so the pressed button stays mounted through the request.\n      onDisconnect={disconnect}\n      disconnectPending={disconnecting}\n      onReconnect={() => {\n        setReconnecting(true)\n        window.location.href = signInHref\n      }}\n      reconnectPending={reconnecting}\n    />\n  )\n}\n\nexport { AccConnectionPanel, type AccConnectionPanelProps }\n",
+      "type": "registry:component",
+      "target": "components/acc-connection-panel.tsx"
+    }
+  ],
+  "meta": {
+    "kind": "block",
+    "iframeHeight": "420px"
+  },
+  "categories": [
+    "authentication",
+    "autodesk"
+  ],
+  "type": "registry:block"
+}

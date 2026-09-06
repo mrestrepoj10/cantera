@@ -1,0 +1,56 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "connections-page",
+  "title": "Connections Page",
+  "author": "MR <contact@bimframe.co>",
+  "description": "The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.",
+  "dependencies": [
+    "aec-auth",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "@cantera/connections-view",
+    "@cantera/acc-auth-routes",
+    "@cantera/aps-oauth-preset",
+    "@cantera/oauth-types"
+  ],
+  "files": [
+    {
+      "path": "registry/blocks/connections-page/page.tsx",
+      "content": "import { TokenError } from 'aec-auth'\nimport { cookies, headers } from 'next/headers'\n\nimport { ConnectionsManager } from '@/components/connections-manager'\nimport {\n  APS_PROVIDER_ID,\n  appOrigin,\n  getTokenSource,\n  openSession,\n  SESSION_COOKIE,\n} from '@/lib/acc-auth'\nimport { apsProvider } from '@/lib/aps-oauth-preset'\nimport type { OAuthAccount, OAuthConnection, OAuthProvider } from '@/lib/oauth-types'\n\n/**\n * Render <AccConnections /> from any server page; the default export is a\n * ready-made /connections page. Extra entries in `providers` render as \"not\n * connected\", and their Connect button 404s until `lib/acc-auth.ts` knows the\n * provider — deliberate, so an unwired provider fails loudly at the route.\n */\n\nasync function requestOrigin(): Promise<string> {\n  const headerList = await headers()\n  const host = headerList.get('x-forwarded-host') ?? headerList.get('host') ?? 'localhost:3000'\n  const proto = headerList.get('x-forwarded-proto') ?? 'http'\n  return appOrigin(`${proto}://${host}`)\n}\n\n/** Row-level failures stay on the row; only a backend that cannot answer at\n * all rethrows to the page-level error state. */\nfunction connectionFromError(\n  error: unknown,\n  account: OAuthAccount,\n  scopes: string[] | undefined,\n): OAuthConnection {\n  if (error instanceof TokenError && error.code === 'not_configured') throw error\n\n  // Recoverable states are warning, not danger: a lost or revoked grant is one\n  // consent away. Only a provider that actually failed takes the error status.\n  const recoverable =\n    error instanceof TokenError &&\n    (error.code === 'consent_required' || error.code === 'grant_invalid')\n\n  return {\n    provider: apsProvider,\n    status: recoverable ? 'expired' : 'error',\n    account,\n    scopes,\n    error: recoverable ? undefined : 'Could not refresh the token.',\n  }\n}\n\nexport async function AccConnections({\n  providers = [apsProvider],\n  nextPath = '/connections',\n  headingLevel = 'h1',\n}: {\n  /** Providers to list. Autodesk is the wired one. */\n  providers?: OAuthProvider[]\n  nextPath?: string\n  /** Heading level for the block's title. Drop to h2 when embedding under one. */\n  headingLevel?: 'h1' | 'h2' | 'h3'\n}) {\n  const cookieStore = await cookies()\n  const session = await openSession(cookieStore.get(SESSION_COOKIE)?.value)\n  const account = session\n    ? { name: session.name, email: session.email, avatarUrl: session.avatarUrl }\n    : undefined\n\n  let connections: OAuthConnection[] = []\n  let error: string | undefined\n\n  if (session && account) {\n    try {\n      const origin = await requestOrigin()\n      try {\n        const token = await getTokenSource(origin).getToken({\n          provider: APS_PROVIDER_ID,\n          subject: { type: 'user', id: session.userId },\n          scopes: session.scopes,\n        })\n        connections = [\n          {\n            provider: apsProvider,\n            status: 'connected',\n            account,\n            scopes: token.scopes ? [...token.scopes] : session.scopes,\n            expiresAt: token.expiresAt,\n          },\n        ]\n      } catch (tokenError) {\n        connections = [connectionFromError(tokenError, account, session.scopes)]\n      }\n    } catch (fatal) {\n      error = fatal instanceof Error ? fatal.message : 'The connection service is unavailable.'\n    }\n  }\n\n  const next = encodeURIComponent(nextPath)\n\n  return (\n    <ConnectionsManager\n      providers={providers}\n      connections={connections}\n      account={account}\n      status={error ? 'error' : 'ready'}\n      error={error}\n      titleAs={headingLevel}\n      connectHrefTemplate={`/api/auth/{provider}?next=${next}`}\n      disconnectHrefTemplate={`/api/auth/signout?next=${next}`}\n    />\n  )\n}\n\nexport default function ConnectionsPage() {\n  return (\n    <main className=\"mx-auto flex w-full max-w-2xl flex-1 flex-col p-6 sm:py-12\">\n      <AccConnections />\n    </main>\n  )\n}\n",
+      "type": "registry:page",
+      "target": "app/connections/page.tsx"
+    },
+    {
+      "path": "registry/blocks/connections-page/loading.tsx",
+      "content": "import { ConnectionsView } from '@/components/connections-view'\n\n/** The same ConnectionsView renders this, so nothing above the list moves\n * when the data lands. Retitle the page and retitle this too. */\nexport default function ConnectionsLoadingPage() {\n  return (\n    <main className=\"mx-auto flex w-full max-w-2xl flex-1 flex-col p-6 sm:py-12\">\n      <ConnectionsView providers={[]} status=\"loading\" />\n    </main>\n  )\n}\n",
+      "type": "registry:file",
+      "target": "app/connections/loading.tsx"
+    },
+    {
+      "path": "registry/blocks/connections-page/components/connections-manager.tsx",
+      "content": "'use client'\n\nimport { useRouter } from 'next/navigation'\nimport { useState, useTransition } from 'react'\n\nimport { ConnectionsView, type ConnectionsViewProps } from '@/components/connections-view'\n\ninterface ConnectionsManagerProps\n  extends Omit<ConnectionsViewProps, 'onConnect' | 'onDisconnect' | 'onRetry' | 'pending' | 'ref'> {\n  /**\n   * GET target that starts consent for one provider. \"{provider}\" is replaced\n   * with the provider id, e.g. \"/api/auth/{provider}?next=/connections\".\n   */\n  connectHrefTemplate: string\n  /**\n   * POST target that revokes a grant. \"{provider}\" is replaced with the\n   * provider id when the template carries it — the acc-auth-routes signout route\n   * takes no provider, so the default template is a plain path.\n   */\n  disconnectHrefTemplate: string\n}\n\n/** Point the templates at your own routes, or replace this file entirely —\n * ConnectionsView does not change. Both actions settle by re-rendering the\n * server page: the server view is the truth, never local optimistic state. */\nfunction ConnectionsManager({\n  connectHrefTemplate,\n  disconnectHrefTemplate,\n  ...viewProps\n}: ConnectionsManagerProps) {\n  const router = useRouter()\n  const [connecting, setConnecting] = useState<string>()\n  const [disconnecting, setDisconnecting] = useState<string>()\n  const [retrying, startRefresh] = useTransition()\n\n  function connect(providerId: string) {\n    // Never cleared: this page is navigating away to the consent screen.\n    setConnecting(providerId)\n    window.location.href = connectHrefTemplate.replaceAll('{provider}', providerId)\n  }\n\n  async function disconnect(providerId: string) {\n    setDisconnecting(providerId)\n    try {\n      await fetch(disconnectHrefTemplate.replaceAll('{provider}', providerId), {\n        method: 'POST',\n        redirect: 'manual',\n      })\n    } finally {\n      // Pending clears inside the transition so the button keeps its spinner\n      // until the re-rendered server page commits; refresh runs on failure too.\n      startRefresh(() => {\n        router.refresh()\n        setDisconnecting(undefined)\n      })\n    }\n  }\n\n  return (\n    <ConnectionsView\n      {...viewProps}\n      // The handlers are always passed: pending is a prop, never an absent\n      // callback, so a pressed button stays mounted through the request.\n      onConnect={connect}\n      onDisconnect={disconnect}\n      onRetry={() =>\n        startRefresh(() => {\n          router.refresh()\n        })\n      }\n      pending={{ connecting, disconnecting, retrying }}\n    />\n  )\n}\n\nexport { ConnectionsManager, type ConnectionsManagerProps }\n",
+      "type": "registry:component",
+      "target": "components/connections-manager.tsx"
+    }
+  ],
+  "envVars": {
+    "APS_CLIENT_ID": "",
+    "APS_CLIENT_SECRET": "",
+    "SESSION_SECRET": "",
+    "APP_ORIGIN": "",
+    "APS_AUTH_BASE_URL": ""
+  },
+  "meta": {
+    "kind": "template",
+    "iframeHeight": "640px"
+  },
+  "docs": "Installed at /connections: the page, its loading skeleton, and ConnectionsManager, the wiring over @cantera/connections-view. acc-auth-routes supplies the /api/auth/* routes; no /sign-in page is installed.\n\nNext:\n1. Fill the keys acc-auth-routes added to .env.local (see its notes above).\n2. Run next dev and open /connections.\n\nList a provider only after lib/acc-auth.ts knows it: an unwired Connect fails at the route on purpose.\nReference: https://canteraui.vercel.app/components/connections-page",
+  "categories": [
+    "authentication",
+    "connections",
+    "dashboard",
+    "autodesk"
+  ],
+  "type": "registry:block"
+}
