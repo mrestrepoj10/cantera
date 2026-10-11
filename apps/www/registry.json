@@ -574,6 +574,60 @@
       ]
     },
     {
+      "name": "fx-terminal",
+      "type": "registry:component",
+      "title": "fx Terminal",
+      "author": "MR <contact@bimframe.co>",
+      "description": "The fx coding agent as a terminal next to a model viewer: libfx's WebAssembly terminal in xterm.js, model traffic through a same-origin gateway proxy, and a sandboxed bash workspace whose viewer command runs the typed viewer tool catalog.",
+      "categories": ["agents", "viewer", "terminal"],
+      "meta": {
+        "kind": "block",
+        "iframeHeight": "640px"
+      },
+      "dependencies": [
+        "libfx@0.0.13",
+        "@xterm/xterm",
+        "@xterm/addon-fit",
+        "just-bash",
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "button",
+        "@cantera/libfx-types",
+        "@cantera/agent-types",
+        "@cantera/viewer-agent-tools",
+        "@cantera/status-tokens",
+        "@cantera/token-status"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/fx-terminal/fx-terminal.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/fx-terminal/fx-terminal.tsx"
+        },
+        {
+          "path": "registry/ui/fx-terminal/runtime.ts",
+          "type": "registry:ui",
+          "target": "components/ui/fx-terminal/runtime.ts"
+        },
+        {
+          "path": "registry/ui/fx-terminal/workspace.ts",
+          "type": "registry:ui",
+          "target": "components/ui/fx-terminal/workspace.ts"
+        },
+        {
+          "path": "registry/ui/fx-terminal/images.ts",
+          "type": "registry:ui",
+          "target": "components/ui/fx-terminal/images.ts"
+        },
+        {
+          "path": "registry/ui/fx-terminal/index.ts",
+          "type": "registry:ui",
+          "target": "components/ui/fx-terminal/index.ts"
+        }
+      ]
+    },
+    {
       "name": "crew-avatar",
       "type": "registry:component",
       "title": "Crew Avatar",
@@ -645,6 +699,78 @@
           "path": "registry/lib/viewer-extension-types.ts",
           "type": "registry:lib",
           "target": "lib/viewer-extension-types.ts"
+        }
+      ]
+    },
+    {
+      "name": "agent-types",
+      "type": "registry:lib",
+      "title": "Agent Types",
+      "author": "MR <contact@bimframe.co>",
+      "description": "Provider-neutral types for AI agents in cantera surfaces: ordered message parts, tool actions with undo and outcome states, named element sets, runtime and turn status, unavailable-state notices, and the runtime-agnostic tool contract.",
+      "categories": ["agents", "types"],
+      "files": [
+        {
+          "path": "registry/lib/agent-types.ts",
+          "type": "registry:lib",
+          "target": "lib/agent-types.ts"
+        }
+      ]
+    },
+    {
+      "name": "viewer-agent-tools",
+      "type": "registry:lib",
+      "title": "Viewer Agent Tools",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A typed tool catalog that lets an AI agent drive a live Autodesk Viewer: find and search elements into named sets, read properties, isolate, colour, section, frame, measure, screenshot, switch views, and query the property database in a sandboxed worker — with undo snapshots for every display change.",
+      "categories": ["agents", "viewer", "autodesk"],
+      "registryDependencies": ["@cantera/agent-types", "@cantera/viewer-types"],
+      "devDependencies": ["@types/forge-viewer"],
+      "files": [
+        {
+          "path": "registry/lib/viewer-agent-tools.ts",
+          "type": "registry:lib",
+          "target": "lib/viewer-agent-tools.ts"
+        },
+        {
+          "path": "registry/lib/viewer-agent-core.ts",
+          "type": "registry:lib",
+          "target": "lib/viewer-agent-core.ts"
+        },
+        {
+          "path": "registry/lib/viewer-agent-state.ts",
+          "type": "registry:lib",
+          "target": "lib/viewer-agent-state.ts"
+        },
+        {
+          "path": "registry/lib/viewer-agent-inspect.ts",
+          "type": "registry:lib",
+          "target": "lib/viewer-agent-inspect.ts"
+        },
+        {
+          "path": "registry/lib/viewer-agent-display.ts",
+          "type": "registry:lib",
+          "target": "lib/viewer-agent-display.ts"
+        },
+        {
+          "path": "registry/lib/viewer-agent-query.ts",
+          "type": "registry:lib",
+          "target": "lib/viewer-agent-query.ts"
+        }
+      ]
+    },
+    {
+      "name": "libfx-types",
+      "type": "registry:lib",
+      "title": "libfx Types",
+      "author": "MR <contact@bimframe.co>",
+      "description": "TypeScript declarations for libfx 0.0.13's browser entry, which ships none: the agent (createFxAgent, turns, events, usage, host tools with image results), listModels, and the terminal (createFxTerminal, xtermAdapter, terminal, workspace, and store adapters).",
+      "categories": ["agents", "types"],
+      "files": [
+        {
+          "path": "registry/lib/libfx-browser.d.ts",
+          "type": "registry:lib",
+          "target": "lib/libfx-browser.d.ts"
         }
       ]
     },
@@ -732,6 +858,66 @@
           "type": "registry:ui"
         }
       ]
+    },
+    {
+      "name": "model-agent-page",
+      "type": "registry:block",
+      "title": "Model Agent Page",
+      "author": "MR <contact@bimframe.co>",
+      "description": "An already-translated model in a full-bleed Autodesk Viewer next to the fx coding agent as a terminal that drives it: libfx running in the browser, a sandboxed bash workspace whose viewer command runs a typed viewer tool catalog, model traffic through a same-origin AI Gateway proxy, and a colour legend for what the agent paints.",
+      "categories": ["viewer", "autodesk", "ai"],
+      "meta": {
+        "kind": "template",
+        "iframeHeight": "720px"
+      },
+      "dependencies": ["aec-auth", "lucide-react", "libfx@0.0.13"],
+      "registryDependencies": [
+        "button",
+        "sheet",
+        "@cantera/aps-viewer",
+        "@cantera/viewer-types",
+        "@cantera/viewer-extension-types",
+        "@cantera/viewer-agent-tools",
+        "@cantera/agent-types",
+        "@cantera/libfx-types",
+        "@cantera/fx-terminal",
+        "@cantera/status-tokens",
+        "@cantera/token-status"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/model-agent-page/page.tsx",
+          "type": "registry:page",
+          "target": "app/agent/page.tsx"
+        },
+        {
+          "path": "registry/blocks/model-agent-page/loading.tsx",
+          "type": "registry:file",
+          "target": "app/agent/loading.tsx"
+        },
+        {
+          "path": "registry/blocks/model-agent-page/components/model-agent.tsx",
+          "type": "registry:component",
+          "target": "components/model-agent.tsx"
+        },
+        {
+          "path": "registry/blocks/model-viewer-page/api/viewer-token-route.ts",
+          "type": "registry:file",
+          "target": "app/api/viewer-token/route.ts"
+        },
+        {
+          "path": "registry/blocks/model-agent-page/api/gateway-route.ts",
+          "type": "registry:file",
+          "target": "app/api/agent/gateway/[...path]/route.ts"
+        }
+      ],
+      "envVars": {
+        "APS_CLIENT_ID": "",
+        "APS_CLIENT_SECRET": "",
+        "APS_MODEL_URN": "",
+        "AI_GATEWAY_API_KEY": ""
+      },
+      "docs": "Installed at /agent: the page, its loading UI, the two-legged /api/viewer-token route, and /api/agent/gateway, the proxy that holds AI_GATEWAY_API_KEY and lets only anthropic/claude-haiku-5.5 through. ModelAgent mounts the fx terminal beside the viewer; fx runs in the browser on libfx (WebAssembly with JSPI: Chrome or Edge 137+, Safari 27+) and drives the model through a viewer command. No sign-in is installed: add your own access control before shipping beyond a trusted team.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_MODEL_URN, the base64 URN of a translated model; AI_GATEWAY_API_KEY from Vercel AI Gateway.\n2. Run next dev and open /agent.\n\nReference: https://canteraui.vercel.app/components/model-agent-page"
     },
     {
       "name": "upload-types",

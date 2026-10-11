@@ -229,6 +229,15 @@ Install: npx shadcn@latest add @cantera/hub-sidebar
 Docs: https://canteraui.vercel.app/components/hub-sidebar
 Item: https://canteraui.vercel.app/r/hub-sidebar.json
 
+### fx-terminal
+
+Title: fx Terminal
+Type: block
+Description: The fx coding agent as a terminal next to a model viewer: libfx's WebAssembly terminal in xterm.js, model traffic through a same-origin gateway proxy, and a sandboxed bash workspace whose viewer command runs the typed viewer tool catalog.
+Install: npx shadcn@latest add @cantera/fx-terminal
+Docs: https://canteraui.vercel.app/components/fx-terminal
+Item: https://canteraui.vercel.app/r/fx-terminal.json
+
 ### crew-avatar
 
 Title: Crew Avatar
@@ -264,6 +273,33 @@ Description: A typed catalog of the Autodesk Viewer's public extensions: every l
 Install: npx shadcn@latest add @cantera/viewer-extension-types
 Docs: https://canteraui.vercel.app/components/viewer-extension-types
 Item: https://canteraui.vercel.app/r/viewer-extension-types.json
+
+### agent-types
+
+Title: Agent Types
+Type: types
+Description: Provider-neutral types for AI agents in cantera surfaces: ordered message parts, tool actions with undo and outcome states, named element sets, runtime and turn status, unavailable-state notices, and the runtime-agnostic tool contract.
+Install: npx shadcn@latest add @cantera/agent-types
+Docs: https://canteraui.vercel.app/components/agent-types
+Item: https://canteraui.vercel.app/r/agent-types.json
+
+### viewer-agent-tools
+
+Title: Viewer Agent Tools
+Type: preset
+Description: A typed tool catalog that lets an AI agent drive a live Autodesk Viewer: find and search elements into named sets, read properties, isolate, colour, section, frame, measure, screenshot, switch views, and query the property database in a sandboxed worker — with undo snapshots for every display change.
+Install: npx shadcn@latest add @cantera/viewer-agent-tools
+Docs: https://canteraui.vercel.app/components/viewer-agent-tools
+Item: https://canteraui.vercel.app/r/viewer-agent-tools.json
+
+### libfx-types
+
+Title: libfx Types
+Type: types
+Description: TypeScript declarations for libfx 0.0.13's browser entry, which ships none: the agent (createFxAgent, turns, events, usage, host tools with image results), listModels, and the terminal (createFxTerminal, xtermAdapter, terminal, workspace, and store adapters).
+Install: npx shadcn@latest add @cantera/libfx-types
+Docs: https://canteraui.vercel.app/components/libfx-types
+Item: https://canteraui.vercel.app/r/libfx-types.json
 
 ### aps-viewer
 
@@ -302,6 +338,15 @@ Install: npx shadcn@latest add @cantera-pro/model-upload-page
 Docs: https://canteraui.vercel.app/components/model-upload-page
 Item: https://canteraui.vercel.app/r-pro/model-upload-page.json
 License: https://canteraui.vercel.app/pro
+
+### model-agent-page
+
+Title: Model Agent Page
+Type: template
+Description: An already-translated model in a full-bleed Autodesk Viewer next to the fx coding agent as a terminal that drives it: libfx running in the browser, a sandboxed bash workspace whose viewer command runs a typed viewer tool catalog, model traffic through a same-origin AI Gateway proxy, and a colour legend for what the agent paints.
+Install: npx shadcn@latest add @cantera/model-agent-page
+Docs: https://canteraui.vercel.app/components/model-agent-page
+Item: https://canteraui.vercel.app/r/model-agent-page.json
 
 ### upload-types
 
