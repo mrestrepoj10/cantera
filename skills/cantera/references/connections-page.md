@@ -2,7 +2,7 @@
 
 The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
 
-- Type: template
+- Type: block
 - Install: `npx shadcn@latest add @cantera/connections-page`
 - Docs: https://canteraui.vercel.app/components/connections-page
 - Registry item: https://canteraui.vercel.app/r/connections-page.json
@@ -23,16 +23,9 @@ Environment variables added to `.env.local`:
 - `APP_ORIGIN`
 - `APS_AUTH_BASE_URL`
 
-## Install notes
+## Notes
 
-Installed at /connections: the page, its loading skeleton, and ConnectionsManager, the wiring over @cantera/connections-view. acc-auth-routes supplies the /api/auth/* routes; no /sign-in page is installed.
-
-Next:
-1. Fill the keys acc-auth-routes added to .env.local (see its notes above).
-2. Run next dev and open /connections.
-
-List a provider only after lib/acc-auth.ts knows it: an unwired Connect fails at the route on purpose.
-Reference: https://canteraui.vercel.app/components/connections-page
+Installs a /connections page, its loading skeleton, and ConnectionsManager, the wiring over connections-view. acc-auth-routes supplies the /api/auth/* routes and the keys in .env.local; no /sign-in page is installed. List a provider only after lib/acc-auth.ts knows it: an unwired Connect fails at the route on purpose.
 
 ## AccConnections props
 

@@ -52,9 +52,9 @@ Agents: install the skill with `npx skills add mrestrepoj10/cantera` for the reg
 | `connection-card` | component | A provider connection at a glance, with disconnect / reconnect. |
 | `acc-auth-routes` | kit | Headless Autodesk OAuth routes, vault wiring, and a signed application session. |
 | `acc-connection-panel` | block | The live Autodesk connection panel: one connection card wired to sign-out and consent restart. |
-| `acc-sign-in` | template | Complete Autodesk sign-in flow on [aec-auth](https://github.com/mrestrepoj10/aec-auth): consent redirect, code exchange, vault-managed single-use refresh, signed session, live connection panel. |
+| `acc-sign-in` | block | Complete Autodesk sign-in flow on [aec-auth](https://github.com/mrestrepoj10/aec-auth): consent redirect, code exchange, vault-managed single-use refresh, signed session, live connection panel. |
 | `connections-view` | block | The connections dashboard, presentational: providers and connections in, callbacks out, with the list, empty, loading, and error states. |
-| `connections-page` | template | The manage-grants page: one card per provider connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states. |
+| `connections-page` | block | The manage-grants page: one card per provider connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states. |
 | `project-types` | lib | Generic hubs, projects, folders, items, immutable versions, model translations, and sheet issuances. |
 | `aps-data-preset` | lib | Data Management, Model Derivative, and ACC Sheets adapters into the generic project types. |
 | `hub-switcher` | component | Controlled hub selector for switching account-level project containers. |
@@ -81,7 +81,7 @@ Agents: install the skill with `npx skills add mrestrepoj10/cantera` for the reg
 
 **Primitive dialect.** The registry is authored against shadcn's `base-nova` style (Base UI), so component sources use Base UI's `render` prop and `focusableWhenDisabled`. On a Radix-based style, adapt the installed copies once: `render={<a />}` becomes `asChild` with the child element, `disabled` plus `focusableWhenDisabled` becomes `aria-disabled` with a guarded handler, and the popover width var is `--radix-popover-trigger-width`. [placed](https://github.com/mrestrepoj10/placed) carries those adaptations for `project-picker`, `provider-sign-in-button`, and `connection-card`.
 
-Items sit on four rungs. **Foundations** are the shared types, provider presets, status tokens, and the auth kit. **Components** are data-agnostic by design: they never fetch. **Blocks** are the sections and surfaces built from them — sign-in cards, scope pickers, sidebars, browsers, drop zones — with sample data in and callbacks out, no routes and no environment. **Templates** are ready-to-deploy pages: the route, its API handlers, environment keys, and the aec-auth glue in one install. In `registry.json`, `meta.kind` carries the rung for blocks and templates; the site, the skill, and the llms artifacts group by it. The pattern every domain follows is **types + adapters + components + blocks + templates**. Issues, RFIs, and submittals are future domains; model viewing already follows the pattern above, and photos have the first two rungs (`photo-types`, `acc-photos-preset`).
+Items sit on four rungs. **Foundations** are the shared types, provider presets, status tokens, and the auth kit. **Components** are data-agnostic by design: they never fetch. **Blocks** are the sections and surfaces built from them — sign-in cards, scope pickers, sidebars, browsers, drop zones — with sample data in and callbacks out and no route handlers; `acc-sign-in` and `connections-page` each add one page on the auth kit's routes. **Templates** are ready-to-deploy pages: the route, its API handlers, environment keys, and the aec-auth glue in one install. In `registry.json`, `meta.kind` carries the rung for blocks and templates; the site, the skill, and the llms artifacts group by it. The pattern every domain follows is **types + adapters + components + blocks + templates**. Issues, RFIs, and submittals are future domains; model viewing already follows the pattern above, and photos have the first two rungs (`photo-types`, `acc-photos-preset`).
 
 ## Built on the stack
 
@@ -119,11 +119,11 @@ Licenses are JWTs signed by [Vercel KMS](https://vercel.com/changelog/sign-jwts-
 
 ## Templates on Vercel
 
-Every template also exists as a whole Next.js app under [`templates/`](templates/), generated from the registry by `pnpm registry:build`. The **Deploy to Vercel** button on each free template's page clones that directory into your account and prompts for the keys that have no default: `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, and, where a session is involved, `SESSION_SECRET`. `APP_ORIGIN` defaults to Vercel's production URL. Register `<your-deployment-url>/api/auth/callback/aps` on your APS app for the templates that sign users in. Pro templates are generated too but carry no deploy button.
+Every template also exists as a whole Next.js app under [`templates/`](templates/), generated from the registry by `pnpm registry:build`. A free template's page carries a **Deploy to Vercel** button that clones that directory into your account and prompts for the keys that have no default: `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, and, where a session is involved, `SESSION_SECRET`. `APP_ORIGIN` defaults to Vercel's production URL. Register `<your-deployment-url>/api/auth/callback/aps` on your APS app for the templates that sign users in. Pro templates are generated too but carry no deploy button; today every template is pro.
 
-## The acc-sign-in template
+## The acc-sign-in block
 
-`npx shadcn@latest add @cantera/acc-sign-in` installs a working `/sign-in` page, `/api/auth/*` route handlers, and the auth wiring on aec-auth's vault. Configure with environment variables:
+`npx shadcn@latest add @cantera/acc-sign-in` installs a working `/sign-in` page plus, through the `acc-auth-routes` kit, the `/api/auth/*` route handlers and the auth wiring on aec-auth's vault. Configure with environment variables:
 
 | Variable | Meaning |
 | --- | --- |
@@ -135,7 +135,7 @@ Every template also exists as a whole Next.js app under [`templates/`](templates
 
 The default vault store is in-memory. For production, swap in a durable `VaultStore` (Upstash Redis + encryption) — two lines, see the [aec-auth README](https://github.com/mrestrepoj10/aec-auth).
 
-## The connections-page template
+## The connections-page block
 
 `npx shadcn@latest add @cantera/connections-page` installs a `/connections` page, its streamed `loading.tsx`, and `ConnectionsManager` (the wiring) over the `connections-view` block (presentational — providers and connections in, callbacks out). It depends on `acc-auth-routes` for the routes and the aec-auth glue, so the same environment variables above configure both.
 

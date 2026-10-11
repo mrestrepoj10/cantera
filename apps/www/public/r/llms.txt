@@ -124,7 +124,7 @@ Item: https://canteraui.vercel.app/r/acc-connection-panel.json
 ### acc-sign-in
 
 Title: ACC Sign-In
-Type: template
+Type: block
 Description: A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.
 Install: npx shadcn@latest add @cantera/acc-sign-in
 Docs: https://canteraui.vercel.app/components/acc-sign-in
@@ -142,7 +142,7 @@ Item: https://canteraui.vercel.app/r/connections-view.json
 ### connections-page
 
 Title: Connections Page
-Type: template
+Type: block
 Description: The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
 Install: npx shadcn@latest add @cantera/connections-page
 Docs: https://canteraui.vercel.app/components/connections-page

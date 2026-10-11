@@ -16,8 +16,6 @@
 
 Ready-to-deploy pages: the route, its API handlers, environment keys, and the aec-auth glue in one install.
 
-- [ACC Sign-In](https://canteraui.vercel.app/components/acc-sign-in): A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.
-- [Connections Page](https://canteraui.vercel.app/components/connections-page): The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
 - [Model Viewer Page](https://canteraui.vercel.app/components/model-viewer-page): A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states.
 - [Model Upload Page](https://canteraui.vercel.app/components/model-upload-page): A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer.
 
@@ -28,7 +26,9 @@ Sections and surfaces built from the components — sign-in cards, pickers, side
 - [Sign-In Card](https://canteraui.vercel.app/components/sign-in-card): A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback.
 - [Scope Picker](https://canteraui.vercel.app/components/scope-picker): A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog.
 - [ACC Connection Panel](https://canteraui.vercel.app/components/acc-connection-panel): The live Autodesk connection panel: one ConnectionCard wired to a sign-out route and a consent restart, with disconnect and reconnect on the async-pending contract.
+- [ACC Sign-In](https://canteraui.vercel.app/components/acc-sign-in): A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected.
 - [Connections View](https://canteraui.vercel.app/components/connections-view): The connections dashboard as a presentational block: providers and connections in, connect, reconnect, disconnect, and retry callbacks out — with the designed list, empty, loading, and error states, each exported.
+- [Connections Page](https://canteraui.vercel.app/components/connections-page): The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs.
 - [Hub Browser](https://canteraui.vercel.app/components/hub-browser): A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics.
 - [Finder](https://canteraui.vercel.app/components/finder): Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives.
 - [Hub Sidebar](https://canteraui.vercel.app/components/hub-sidebar): The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below.

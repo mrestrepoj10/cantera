@@ -58,7 +58,8 @@ Every domain follows the same layers, and new work stays inside them:
    scope catalog, scope bundles, and a `fromApsUserInfo` adapter.
 3. **Blocks** (`meta.kind: "block"`) — sections and surfaces built from those
    components: sign-in cards, pickers, sidebars, browsers, drop zones. Sample data
-   in, callbacks out, no routes and no environment of their own.
+   in, callbacks out, no route handlers. A block may ship one page that mounts it
+   on the `acc-auth-routes` kit, as `acc-sign-in` and `connections-page` do.
 4. **Templates** (`registry:block`, `meta.kind: "template"`) — ready-to-deploy
    pages: the route, its API handlers, environment keys, and the aec-auth glue in
    one install. `acc-auth-routes` is the shared kit underneath them.
@@ -94,8 +95,6 @@ Ready-to-deploy pages: the route, its API handlers, environment keys, and the ae
 
 | Item | Type | What it is | Reference |
 | --- | --- | --- | --- |
-| `@cantera/acc-sign-in` | template | A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected. | [references/acc-sign-in.md](references/acc-sign-in.md) |
-| `@cantera/connections-page` | template | The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs. | [references/connections-page.md](references/connections-page.md) |
 | `@cantera-pro/model-viewer-page` | template (pro) | A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states. | [references/model-viewer-page.md](references/model-viewer-page.md) |
 | `@cantera-pro/model-upload-page` | template (pro) | A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer. | [references/model-upload-page.md](references/model-upload-page.md) |
 
@@ -108,7 +107,9 @@ Sections and surfaces built from the components — sign-in cards, pickers, side
 | `@cantera/sign-in-card` | block | A multi-provider sign-in chooser card. Server-renderable via an href template, or client-driven via a callback. | [references/sign-in-card.md](references/sign-in-card.md) |
 | `@cantera/scope-picker` | block | A controlled OAuth scope picker: task-oriented presets, an optional advanced-permissions disclosure, required scopes pinned on, and an escape hatch for scopes outside the catalog. | [references/scope-picker.md](references/scope-picker.md) |
 | `@cantera/acc-connection-panel` | block | The live Autodesk connection panel: one ConnectionCard wired to a sign-out route and a consent restart, with disconnect and reconnect on the async-pending contract. | [references/acc-connection-panel.md](references/acc-connection-panel.md) |
+| `@cantera/acc-sign-in` | block | A ready-made /sign-in page on acc-auth-routes: the scoped sign-in when signed out, and a live connection panel — account, token expiry, held scopes — once connected. | [references/acc-sign-in.md](references/acc-sign-in.md) |
 | `@cantera/connections-view` | block | The connections dashboard as a presentational block: providers and connections in, connect, reconnect, disconnect, and retry callbacks out — with the designed list, empty, loading, and error states, each exported. | [references/connections-view.md](references/connections-view.md) |
+| `@cantera/connections-page` | block | The page that manages every provider grant: one card per connection, with connect, reconnect, and disconnect — plus the designed empty, loading, and error states a real fetch needs. | [references/connections-page.md](references/connections-page.md) |
 | `@cantera/hub-browser` | block | A controlled APS-style hub, project, folder, item, and version browser — breadcrumb navigation in, open callbacks out, with no fetching or token mechanics. | [references/hub-browser.md](references/hub-browser.md) |
 | `@cantera/finder` | block | Query box over consumer-supplied result groups — recents, pins, the current level, an async deep search — with entries that carry their location so finding can reveal where a file lives. | [references/finder.md](references/finder.md) |
 | `@cantera/hub-sidebar` | block | The finder composed above the hub tree in a shadcn sidebar: fast paths (query, recents, deep search) on top, the explorable tree below. | [references/hub-sidebar.md](references/hub-sidebar.md) |
