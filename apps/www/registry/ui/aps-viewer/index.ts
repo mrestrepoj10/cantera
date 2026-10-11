@@ -6,6 +6,14 @@ export {
   useAPSViewerStore,
 } from '@/components/ui/aps-viewer/context'
 export {
+  APSViewerExtensionChip,
+  APSViewerExtensionLoader,
+  APSViewerExtensionPicker,
+  type APSViewerExtensionPickerProps,
+  type APSViewerExtensionStatus,
+  extensionLabel,
+} from '@/components/ui/aps-viewer/extensions'
+export {
   type APSCamera,
   type APSExtensionResult,
   type APSPropertiesResult,

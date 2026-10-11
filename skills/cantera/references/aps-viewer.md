@@ -6,7 +6,7 @@ A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime 
 - Install: `npx shadcn@latest add @cantera/aps-viewer`
 - Docs: https://canteraui.vercel.app/components/aps-viewer
 - Registry item: https://canteraui.vercel.app/r/aps-viewer.json
-- Registry dependencies: button, checkbox, @cantera/viewer-types
+- Registry dependencies: button, checkbox, @cantera/viewer-types, @cantera/viewer-extension-types
 - npm dependencies: lucide-react
 - Working example page: `npx shadcn@latest add @cantera/aps-viewer-demo` — installs app/examples/aps-viewer/page.tsx
 
@@ -18,6 +18,7 @@ Files written into the consumer project:
 - `components/ui/aps-viewer/loader.ts`
 - `components/ui/aps-viewer/store.ts`
 - `components/ui/aps-viewer/toolbar.ts`
+- `components/ui/aps-viewer/extensions.tsx`
 - `components/ui/aps-viewer/settings.tsx`
 - `components/ui/aps-viewer/index.ts`
 
@@ -25,7 +26,7 @@ Files written into the consumer project:
 
 APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance, viewCube, radius, toolbarPosition, and toolbarScale changes apply in place. toolbar=none uses the core Viewer3D without Autodesk's native toolbar; viewCube controls the cube independently.
 
-APSViewerSettings renders an end-user settings panel as a viewer child: a trigger button appended to the SDK toolbar (a corner button when the native toolbar is off) opens a floating panel over the canvas, collapsed by default. It is controlled — hold an APSViewerSettingsValue in state, spread apsViewerPropsFor(value) onto APSViewer, and pass value/onValueChange to the panel. Extra sections compose through children; APSViewerSettingsTrigger is exported alone for custom panels.
+APSViewerSettings renders an end-user settings panel as a viewer child: a trigger button appended to the SDK toolbar (a corner button when the native toolbar is off) opens a floating panel over the canvas, collapsed by default. It is controlled — hold an APSViewerSettingsValue in state, spread apsViewerPropsFor(value) onto APSViewer, and pass value/onValueChange to the panel. It has two tabs. Setup holds the toolbar, view cube, position, density, radius, and appearance. Extensions loads and unloads catalog extensions live, with no viewer restart, and reports load failures with a Retry. The panel loads value.extensions itself, so keep it mounted while the viewer is; to make starter extensions removable, put them in the initial value instead of APSViewer's extensions prop. Extra controls compose through children; APSViewerSettingsTrigger is exported alone for custom panels.
 
 The native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are not a published stable contract, so docking is best-effort and should be checked when changing the Viewer major version. Autodesk Viewer also renders third-party DOM that cantera cannot repair. The docs accessibility suite excludes only the subtree rooted inside the viewer canvas; controls you add around or over the viewer remain in scope. Audit the inherited Autodesk controls against your own product requirements.
 
@@ -57,10 +58,12 @@ The native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are 
 
 ## APSViewerSettings props
 
-- `value` (`APSViewerSettingsValue`) — Controlled settings: toolbar on/off, toolbarPosition, toolbarScale (a preset or an exact pixel box the density slider drives across 32–64), viewCube, and theme. Spread apsViewerPropsFor(value) onto APSViewer to apply them.
+- `value` (`APSViewerSettingsValue`) — Controlled settings: toolbar on/off, toolbarPosition, toolbarScale (a preset or an exact pixel box the density slider drives across 32–64), viewCube, theme, radius (0–32), and extensions (ids, in load order). Spread apsViewerPropsFor(value) onto APSViewer to apply the display fields; the panel itself loads the extensions.
 - `onValueChange` (`(value: APSViewerSettingsValue) => void`) — Called with the next settings object when the user changes a control.
+- `resetValue` (`APSViewerSettingsValue`, default `DEFAULT_APS_VIEWER_SETTINGS`) — What the footer Reset restores. Pass your own starting settings, such as a starter extension set.
 - `open / onOpenChange / defaultOpen` (`boolean / callback / boolean`, default `false`) — Panel visibility, controlled or uncontrolled. The panel starts collapsed; the trigger sits in the SDK toolbar, or a corner button when the native toolbar is off.
 - `label` (`string`, default `'Viewer settings'`) — Names the trigger, its tooltip, and the panel heading.
-- `children` (`ReactNode`) — Extra sections appended below the built-in controls.
+- `children` (`ReactNode`) — Extra controls appended to the Setup tab.
 - `APSViewerSettingsTrigger` (`component`) — The toolbar-mounted trigger alone — our control group appended to the SDK toolbar after a divider, inheriting toolbar position and scale — for wiring a custom panel.
+- `APSViewerExtensionPicker / Chip / Loader` (`components`) — The Extensions tab in parts: the searchable catalog grouped by job, a removable chip with load state, and a loader that holds one extension while mounted inside APSViewer.
 - `DEFAULT_APS_VIEWER_SETTINGS / apsViewerPropsFor` (`constant / function`) — The starting settings object, and the mapping from a settings object to APSViewer props.

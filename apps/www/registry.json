@@ -656,7 +656,12 @@
       "description": "A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar.",
       "categories": ["viewer", "models", "autodesk"],
       "dependencies": ["lucide-react"],
-      "registryDependencies": ["button", "checkbox", "@cantera/viewer-types"],
+      "registryDependencies": [
+        "button",
+        "checkbox",
+        "@cantera/viewer-types",
+        "@cantera/viewer-extension-types"
+      ],
       "files": [
         {
           "path": "registry/ui/aps-viewer/aps-viewer.tsx",
@@ -687,6 +692,11 @@
           "path": "registry/ui/aps-viewer/toolbar.ts",
           "type": "registry:ui",
           "target": "components/ui/aps-viewer/toolbar.ts"
+        },
+        {
+          "path": "registry/ui/aps-viewer/extensions.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/extensions.tsx"
         },
         {
           "path": "registry/ui/aps-viewer/settings.tsx",
