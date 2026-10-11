@@ -360,6 +360,53 @@ export function APSViewer({
     extension?.setOptions({ position: toolbarPosition, scale: toolbarScale })
   }, [status, toolbar, toolbarPosition, toolbarScale, viewerEpoch])
 
+  // Switching viewables (the document browser, a sheet link) tears the viewer
+  // down, and LMV unloads every extension it did not load itself. Load ours
+  // again once the next model is in; the ones still loading are left alone.
+  useEffect(() => {
+    if (viewerEpoch === 0 || status !== 'ready') return
+    const viewer = viewerRef.current
+    const viewing = typeof window === 'undefined' ? undefined : window.Autodesk?.Viewing
+    if (!viewer || !viewing) return
+    const restoring = new Set<string>()
+    const restore = (
+      id: string,
+      options: Record<string, unknown> | undefined,
+      onLoaded?: (extension: unknown) => void,
+    ) => {
+      if (restoring.has(id) || viewer.getExtension(id)) return
+      restoring.add(id)
+      viewer
+        .loadExtension(id, options)
+        .then((extension) => onLoaded?.(extension))
+        .catch((error) => {
+          const wrapped =
+            error instanceof Error
+              ? error
+              : new Error(`cantera aps-viewer: failed to reload extension "${id}"`)
+          console.error(`cantera aps-viewer: failed to reload extension "${id}"`, error)
+          callbacksRef.current.onExtensionError?.(id, wrapped)
+        })
+        .finally(() => restoring.delete(id))
+    }
+    const onModelAdded = () => {
+      if (toolbar === 'native') {
+        restore(APS_VIEWER_TOOLBAR_EXTENSION_ID, toolbarOptionsRef.current, (extension) =>
+          (extension as APSViewerToolbarExtension | undefined)?.setOptions(
+            toolbarOptionsRef.current,
+          ),
+        )
+      }
+      const statuses = store.getExtensionStatuses()
+      for (const request of callbacksRef.current.extensions ?? []) {
+        const { id, options } = toExtensionEntry(request)
+        if (statuses[id] === 'ready') restore(id, options)
+      }
+    }
+    viewer.addEventListener(viewing.MODEL_ADDED_EVENT, onModelAdded)
+    return () => viewer.removeEventListener(viewing.MODEL_ADDED_EVENT, onModelAdded)
+  }, [status, toolbar, viewerEpoch, store])
+
   // The SDK's token callback cannot reject, so the loader broadcasts token
   // failures instead: without this the viewer would sit at "loading" forever
   // with nothing reported to the consumer.

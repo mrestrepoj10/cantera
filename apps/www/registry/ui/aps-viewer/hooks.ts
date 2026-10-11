@@ -264,9 +264,12 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
   const { viewer } = useAPSViewer()
   // Written only from async callbacks; `idle` (no viewer) and `loading`
   // derive during render by comparing against the last settled load.
+  const [generation, setGeneration] = useState(0)
+  const readyRef = useRef(false)
   const [settled, setSettled] = useState<{
     viewer: APSViewer3D
     id: string
+    generation: number
     status: 'ready' | 'error'
     extension: unknown
     error: Error | null
@@ -282,14 +285,17 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
   useEffect(() => {
     if (!viewer) return
     let cancelled = false
+    readyRef.current = false
     appliedOptionsRef.current = optionsRef.current
     viewer
       .loadExtension(id, optionsRef.current)
       .then((extension) => {
         if (cancelled) return
+        readyRef.current = true
         setSettled({
           viewer,
           id,
+          generation,
           status: 'ready',
           extension: extension ?? viewer.getExtension(id),
           error: null,
@@ -301,6 +307,7 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
         setSettled({
           viewer,
           id,
+          generation,
           status: 'error',
           extension: null,
           error: error instanceof Error ? error : new Error(String(error)),
@@ -314,15 +321,32 @@ export function useAPSExtension(id: string, options?: Record<string, unknown>): 
         // viewer may already be finished
       }
     }
+  }, [viewer, id, generation])
+
+  // Switching viewables tears the viewer down, and LMV unloads every extension
+  // it did not load itself; load this one again once the next model is in.
+  useEffect(() => {
+    const viewing = typeof window === 'undefined' ? undefined : window.Autodesk?.Viewing
+    if (!viewer || !viewing) return
+    const onModelAdded = () => {
+      if (readyRef.current && !viewer.getExtension(id)) setGeneration((current) => current + 1)
+    }
+    viewer.addEventListener(viewing.MODEL_ADDED_EVENT, onModelAdded)
+    return () => viewer.removeEventListener(viewing.MODEL_ADDED_EVENT, onModelAdded)
   }, [viewer, id])
 
   const result = useMemo<APSExtensionResult>(() => {
     if (!viewer) return IDLE_EXTENSION
-    if (settled && settled.viewer === viewer && settled.id === id) {
+    if (
+      settled &&
+      settled.viewer === viewer &&
+      settled.id === id &&
+      settled.generation === generation
+    ) {
       return { status: settled.status, extension: settled.extension, error: settled.error }
     }
     return { status: 'loading', extension: null, error: null }
-  }, [viewer, id, settled])
+  }, [viewer, id, generation, settled])
 
   const { status, extension } = result
   // Keyed on the fields it reads, not the whole result object, so an

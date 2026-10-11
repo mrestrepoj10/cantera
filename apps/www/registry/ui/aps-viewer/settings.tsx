@@ -144,7 +144,7 @@ export function APSViewerSettingsTrigger({
 
     const mount = () => {
       const toolbar = viewer.toolbar
-      if (!toolbar || toolbar.getControl(GROUP_ID) || buttonRef.current) return
+      if (!toolbar || toolbar.getControl(GROUP_ID)) return
       const button = new viewing.UI.Button(BUTTON_ID) as ToolbarButton
       button.setToolTip(labelRef.current)
       button.icon.innerHTML = SETTINGS_ICON_SVG
@@ -172,9 +172,13 @@ export function APSViewerSettingsTrigger({
     }
 
     mount()
+    // A viewable switch rebuilds the toolbar's controls without a new
+    // TOOLBAR_CREATED_EVENT, so check again when the next model arrives.
     viewer.addEventListener(viewing.TOOLBAR_CREATED_EVENT, mount)
+    viewer.addEventListener(viewing.MODEL_ADDED_EVENT, mount)
     return () => {
       viewer.removeEventListener(viewing.TOOLBAR_CREATED_EVENT, mount)
+      viewer.removeEventListener(viewing.MODEL_ADDED_EVENT, mount)
       buttonRef.current = null
       try {
         viewer.toolbar?.removeControl(GROUP_ID)
