@@ -7,7 +7,7 @@ A two-legged upload and viewing page over the app's own OSS bucket: drag-and-dro
 - Docs: https://canteraui.vercel.app/components/model-upload-page
 - Registry item: https://canteraui.vercel.app/r-pro/model-upload-page.json
 - License: https://canteraui.vercel.app/pro
-- Registry dependencies: button, checkbox, dialog, input, label, sidebar, @cantera/upload-types, @cantera/project-types, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/finder, @cantera/file-drop-zone, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/model-status-card, @cantera/status-tokens
+- Registry dependencies: button, checkbox, dialog, input, label, sidebar, @cantera/upload-types, @cantera/project-types, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/finder, @cantera/file-drop-zone, @cantera/copy-field, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/model-status-card, @cantera/status-tokens
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
