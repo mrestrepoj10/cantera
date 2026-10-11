@@ -7,7 +7,7 @@ A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, l
 - Docs: https://canteraui.vercel.app/components/model-viewer-page
 - Registry item: https://canteraui.vercel.app/r-pro/model-viewer-page.json
 - License: https://canteraui.vercel.app/pro
-- Registry dependencies: button, sidebar, @cantera/acc-auth-routes, @cantera/aps-data-preset, @cantera/project-types, @cantera/oauth-types, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/finder, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/model-status-card, @cantera/token-status, @cantera/user-account-badge, @cantera/status-tokens
+- Registry dependencies: button, sidebar, @cantera/acc-auth-routes, @cantera/aps-data-preset, @cantera/project-types, @cantera/oauth-types, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/finder, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/model-status-card, @cantera/token-status, @cantera/status-tokens
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
