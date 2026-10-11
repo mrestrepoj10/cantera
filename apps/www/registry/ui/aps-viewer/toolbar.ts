@@ -61,6 +61,8 @@ const APS_VIEWER_TOOLBAR_CSS = `
 .adsk-toolbar.cantera-toolbar--bottom > .adsk-control-group,
 .adsk-toolbar.cantera-toolbar--left > .adsk-control-group,
 .adsk-toolbar.cantera-toolbar--right > .adsk-control-group {
+  /* Inline-block groups otherwise leave a baseline gap under the toolbar. */
+  vertical-align: top;
   margin: 0 !important;
   border-radius: 0;
   box-shadow: none;
@@ -139,8 +141,22 @@ const APS_VIEWER_TOOLBAR_CSS = `
   height: calc(var(--cantera-toolbar-size, 42px) - 14px);
 }
 
+/* LMV stretches the icon box to the whole button and sets its glyph at the
+ * top, and the document browser draws a background at 80% of that box: both
+ * drift as the button grows. Center one icon-sized mark instead. */
 .adsk-toolbar.cantera-toolbar--sized .adsk-button .adsk-button-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
   font-size: var(--cantera-toolbar-icon-size, 20px);
+  /* LMV marks some icon backgrounds !important (document browser: 80% auto). */
+  background-position: center !important;
+  background-size: var(--cantera-toolbar-icon-size, 20px) auto !important;
 }
 
 .adsk-toolbar.cantera-toolbar--sized .adsk-button-arrow > .adsk-button-icon {
