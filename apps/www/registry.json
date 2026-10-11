@@ -862,9 +862,9 @@
     {
       "name": "model-agent-page",
       "type": "registry:block",
-      "title": "Model Agent Page",
+      "title": "canterafx",
       "author": "MR <contact@bimframe.co>",
-      "description": "An already-translated model in a full-bleed Autodesk Viewer next to the fx coding agent as a terminal that drives it: libfx running in the browser, a sandboxed bash workspace whose viewer command runs a typed viewer tool catalog, model traffic through a same-origin AI Gateway proxy, and a colour legend for what the agent paints.",
+      "description": "An already-translated model in a full-bleed Autodesk Viewer with the fx coding agent docked beside it as a terminal. libfx runs in the browser, a sandboxed bash workspace gives fx a viewer command over a typed tool catalog, model traffic goes through a same-origin AI Gateway proxy, and a colour legend explains what the agent paints.",
       "categories": ["viewer", "autodesk", "ai"],
       "meta": {
         "kind": "template",
@@ -917,7 +917,7 @@
         "APS_MODEL_URN": "",
         "AI_GATEWAY_API_KEY": ""
       },
-      "docs": "Installed at /agent: the page, its loading UI, the two-legged /api/viewer-token route, and /api/agent/gateway, the proxy that holds AI_GATEWAY_API_KEY and lets only anthropic/claude-haiku-5.5 through. ModelAgent mounts the fx terminal beside the viewer; fx runs in the browser on libfx (WebAssembly with JSPI: Chrome or Edge 137+, Safari 27+) and drives the model through a viewer command. No sign-in is installed: add your own access control before shipping beyond a trusted team.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_MODEL_URN, the base64 URN of a translated model; AI_GATEWAY_API_KEY from Vercel AI Gateway.\n2. Run next dev and open /agent.\n\nReference: https://canteraui.vercel.app/components/model-agent-page"
+      "docs": "Installed at /agent: the canterafx page, its loading UI, the two-legged /api/viewer-token route, and /api/agent/gateway, the proxy that holds AI_GATEWAY_API_KEY and lets only anthropic/claude-haiku-5.5 through. ModelAgent docks the fx terminal beside the viewer; fx runs in the browser on libfx (WebAssembly with JSPI: Chrome or Edge 137+, Safari 27+) and drives the model through a viewer command. No sign-in is installed: add your own access control before shipping beyond a trusted team.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_MODEL_URN, the base64 URN of a translated model; AI_GATEWAY_API_KEY from Vercel AI Gateway.\n2. Run next dev and open /agent.\n\nReference: https://canteraui.vercel.app/components/model-agent-page"
     },
     {
       "name": "upload-types",

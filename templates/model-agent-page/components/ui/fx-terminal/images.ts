@@ -1,7 +1,7 @@
 export const SHOTS_DIR = '/model/shots'
 export const IMAGE_MAX_BYTES = 3.75 * 1024 * 1024
 export const DESCRIBE_QUESTION = 'Describe what this image of a building model shows, briefly.'
-export const DESCRIBE_MAX_OUTPUT_TOKENS = 300
+export const DESCRIBE_MAX_OUTPUT_TOKENS = 1024
 export const DESCRIBE_TIMEOUT_MS = 60_000
 
 const EXTENSIONS = new Map([
@@ -132,7 +132,20 @@ export function describeText(body: unknown): string {
   const content = body && typeof body === 'object' && 'content' in body ? body.content : null
   if (!Array.isArray(content)) throw new ImageError('the model response has no content')
   const text = content.map(textOf).join('').trim()
-  if (!text) throw new ImageError('the model returned no text')
+  if (!text) {
+    const reason =
+      typeof body === 'object' &&
+      body !== null &&
+      'finishReason' in body &&
+      typeof body.finishReason === 'string'
+        ? body.finishReason
+        : null
+    throw new ImageError(
+      reason
+        ? `the model returned no text (finish reason: ${reason})`
+        : 'the model returned no text',
+    )
+  }
   return text
 }
 

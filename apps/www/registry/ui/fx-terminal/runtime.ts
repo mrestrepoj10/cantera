@@ -245,19 +245,18 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // The browser terminal reads no effort from env or args, and fx cannot save
 // /model to its settings file there (it prints an error), so effort is chosen
-// through /model and the screen is reset with /clear before it is shown.
+// through /model and the screen is reset with /clear before it is shown. fx's
+// /clear wipes the scrollback itself; clearing xterm as well races its renderer.
 async function applyEffort(
   runtime: TerminalRuntime,
   options: FxTerminalStartOptions,
   saved: Promise<void>,
-  clearScrollback: () => void,
 ) {
   runtime.write(`/model ${options.model} ${options.effort}`)
   await sleep(150)
   runtime.write('\r')
   await Promise.race([saved, sleep(3000)])
   await sleep(150)
-  clearScrollback()
   runtime.write('/clear')
   await sleep(150)
   runtime.write('\r')
@@ -355,7 +354,7 @@ export async function startFxTerminal(
       'The agent did not start in time. Try again.',
     )
     throwIfAborted(options.signal)
-    await applyEffort(runtime, options, saved, () => terminal.clear())
+    await applyEffort(runtime, options, saved)
     throwIfAborted(options.signal)
   } catch (error) {
     dispose()

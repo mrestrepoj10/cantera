@@ -28,7 +28,7 @@ import type { AgentRuntimeStatus } from '@/lib/agent-types'
 import { cn } from '@/lib/utils'
 import { type ColorLedger, createViewerAgentTools } from '@/lib/viewer-agent-tools'
 import { AEC_STARTER_EXTENSIONS } from '@/lib/viewer-extension-types'
-import type { APSDocument, GetAccessToken } from '@/lib/viewer-types'
+import type { GetAccessToken } from '@/lib/viewer-types'
 
 export interface ModelAgentProps {
   /** Model Derivative URN (base64) of a translated model, with or without the `urn:` prefix. */
@@ -157,14 +157,6 @@ function ViewerStoreBridge({ source }: { source: ViewerSource }) {
   return null
 }
 
-function sourceFileName(doc: APSDocument): string | null {
-  try {
-    return doc.getRoot().search({ type: 'folder', role: 'viewable' })[0]?.name() || null
-  } catch {
-    return null
-  }
-}
-
 function ColorLegend({ colors, className }: { colors: ColorLedger; className?: string }) {
   const legend = useSyncExternalStore(colors.subscribe, colors.legend, colors.legend)
   if (legend.length === 0) return null
@@ -283,7 +275,6 @@ function ModelAgent({
   const compact = useCompactLayout()
   const [dockOpen, setDockOpen] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [modelName, setModelName] = useState<string | null>(null)
   const [viewerError, setViewerError] = useState<string | null>(null)
   const [terminalReady, setTerminalReady] = useState(false)
   const [viewerSettings, setViewerSettings] = usePersistedViewerSettings()
@@ -331,14 +322,9 @@ function ModelAgent({
       )}
     >
       <header className="flex h-14 shrink-0 items-center gap-2 border-border border-b ps-4 pe-2 sm:gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <span aria-hidden className="size-4 shrink-0 rounded-sm bg-primary" />
-          <h1 className="shrink-0 font-semibold text-sm max-sm:sr-only">Model agent</h1>
-          <span aria-hidden className="h-4 w-px shrink-0 bg-border max-sm:hidden" />
-          <span className="min-w-0 truncate font-mono text-muted-foreground text-xs">
-            {modelName ?? 'Loading model…'}
-          </span>
-        </div>
+        <h1 className="min-w-0 flex-1 truncate font-medium font-mono text-sm lowercase">
+          canterafx
+        </h1>
         <Button
           type="button"
           variant={open ? 'default' : 'outline'}
@@ -359,10 +345,7 @@ function ModelAgent({
             profile="aec"
             {...apsViewerPropsFor(viewerSettings)}
             className="size-full"
-            onModelLoaded={(_model, doc) => {
-              setModelName(sourceFileName(doc))
-              setViewerError(null)
-            }}
+            onModelLoaded={() => setViewerError(null)}
             onError={(error) => setViewerError(error.message)}
           >
             <ViewerStoreBridge source={viewerSource} />

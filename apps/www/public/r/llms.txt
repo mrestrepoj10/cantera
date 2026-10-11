@@ -341,9 +341,9 @@ License: https://canteraui.vercel.app/pro
 
 ### model-agent-page
 
-Title: Model Agent Page
+Title: canterafx
 Type: template
-Description: An already-translated model in a full-bleed Autodesk Viewer next to the fx coding agent as a terminal that drives it: libfx running in the browser, a sandboxed bash workspace whose viewer command runs a typed viewer tool catalog, model traffic through a same-origin AI Gateway proxy, and a colour legend for what the agent paints.
+Description: An already-translated model in a full-bleed Autodesk Viewer with the fx coding agent docked beside it as a terminal. libfx runs in the browser, a sandboxed bash workspace gives fx a viewer command over a typed tool catalog, model traffic goes through a same-origin AI Gateway proxy, and a colour legend explains what the agent paints.
 Install: npx shadcn@latest add @cantera/model-agent-page
 Docs: https://canteraui.vercel.app/components/model-agent-page
 Item: https://canteraui.vercel.app/r/model-agent-page.json

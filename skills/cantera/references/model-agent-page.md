@@ -1,6 +1,6 @@
-# Model Agent Page (`@cantera/model-agent-page`)
+# canterafx (`@cantera/model-agent-page`)
 
-An already-translated model in a full-bleed Autodesk Viewer next to the fx coding agent as a terminal that drives it: libfx running in the browser, a sandboxed bash workspace whose viewer command runs a typed viewer tool catalog, model traffic through a same-origin AI Gateway proxy, and a colour legend for what the agent paints.
+An already-translated model in a full-bleed Autodesk Viewer with the fx coding agent docked beside it as a terminal. libfx runs in the browser, a sandboxed bash workspace gives fx a viewer command over a typed tool catalog, model traffic goes through a same-origin AI Gateway proxy, and a colour legend explains what the agent paints.
 
 - Type: template
 - Install: `npx shadcn@latest add @cantera/model-agent-page`
@@ -26,7 +26,7 @@ Environment variables added to `.env.local`:
 
 ## Install notes
 
-Installed at /agent: the page, its loading UI, the two-legged /api/viewer-token route, and /api/agent/gateway, the proxy that holds AI_GATEWAY_API_KEY and lets only anthropic/claude-haiku-5.5 through. ModelAgent mounts the fx terminal beside the viewer; fx runs in the browser on libfx (WebAssembly with JSPI: Chrome or Edge 137+, Safari 27+) and drives the model through a viewer command. No sign-in is installed: add your own access control before shipping beyond a trusted team.
+Installed at /agent: the canterafx page, its loading UI, the two-legged /api/viewer-token route, and /api/agent/gateway, the proxy that holds AI_GATEWAY_API_KEY and lets only anthropic/claude-haiku-5.5 through. ModelAgent docks the fx terminal beside the viewer; fx runs in the browser on libfx (WebAssembly with JSPI: Chrome or Edge 137+, Safari 27+) and drives the model through a viewer command. No sign-in is installed: add your own access control before shipping beyond a trusted team.
 
 Next:
 1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_MODEL_URN, the base64 URN of a translated model; AI_GATEWAY_API_KEY from Vercel AI Gateway.
@@ -36,7 +36,7 @@ Reference: https://canteraui.vercel.app/components/model-agent-page
 
 ## Notes
 
-ModelAgent fetches from viewerTokenEndpoint (default /api/viewer-token) and sends every model request to gatewayBase (default /api/agent/gateway), the two routes this template ships; the browser never sees AI_GATEWAY_API_KEY. The page mounts the fx terminal: docked beside the viewer with a resize handle, a bottom sheet below 768px, opened and closed by the header's Agent button. Closing it ends the fx session and reopening starts a new one, but the viewer tool catalog is created once, so element sets and colours carry over; the colour legend over the viewer reads the catalog's colour ledger. fx keeps its model choice and prompt history in localStorage under cantera.fx.*, the viewer settings live under cantera:model-agent-page:viewer-settings, and the docked width under cantera:model-agent-page:panel-width. The routes run on the app’s credentials with no sign-in, so add your own access control before exposing them.
+ModelAgent fetches from viewerTokenEndpoint (default /api/viewer-token) and sends every model request to gatewayBase (default /api/agent/gateway), the two routes this template ships; the browser never sees AI_GATEWAY_API_KEY. The header carries only the canterafx wordmark and the Agent button; it never shows the model's name. The page mounts the fx terminal: docked beside the viewer with a resize handle, a bottom sheet below 768px, opened and closed by the Agent button. Closing it ends the fx session and reopening starts a new one, but the viewer tool catalog is created once, so element sets and colours carry over; the colour legend over the viewer reads the catalog's colour ledger. fx keeps its model choice and prompt history in localStorage under cantera.fx.*, the viewer settings live under cantera:model-agent-page:viewer-settings, and the docked width under cantera:model-agent-page:panel-width. The routes run on the app’s credentials with no sign-in, so add your own access control before exposing them.
 
 ## ModelAgent props
 

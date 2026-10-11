@@ -7,7 +7,7 @@ export default function ModelAgentLoading() {
         <span aria-hidden className="grid size-4 animate-spin place-items-center">
           <LoaderCircleIcon className="size-4" />
         </span>
-        Loading the model agent
+        Loading canterafx
       </output>
     </main>
   )

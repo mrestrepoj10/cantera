@@ -97,7 +97,7 @@ Ready-to-deploy pages: the route, its API handlers, environment keys, and the ae
 | --- | --- | --- | --- |
 | `@cantera-pro/model-viewer-page` | template (pro) | A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, lazy 3-legged Data Management browsing, recursive project and folder search, a full-bleed native viewer, account controls, and untranslated-model states. | [references/model-viewer-page.md](references/model-viewer-page.md) |
 | `@cantera-pro/model-upload-page` | template (pro) | A two-legged upload and viewing page over the app's own OSS bucket: drag-and-drop signed S3 uploads with archive support, translation options and tracking with manifest diagnostics, a sidebar model list with search, and a shareable full-bleed viewer. | [references/model-upload-page.md](references/model-upload-page.md) |
-| `@cantera/model-agent-page` | template | An already-translated model in a full-bleed Autodesk Viewer next to the fx coding agent as a terminal that drives it: libfx running in the browser, a sandboxed bash workspace whose viewer command runs a typed viewer tool catalog, model traffic through a same-origin AI Gateway proxy, and a colour legend for what the agent paints. | [references/model-agent-page.md](references/model-agent-page.md) |
+| `@cantera/model-agent-page` | template | An already-translated model in a full-bleed Autodesk Viewer with the fx coding agent docked beside it as a terminal. libfx runs in the browser, a sandboxed bash workspace gives fx a viewer command over a typed tool catalog, model traffic goes through a same-origin AI Gateway proxy, and a colour legend explains what the agent paints. | [references/model-agent-page.md](references/model-agent-page.md) |
 
 ### Blocks
 
