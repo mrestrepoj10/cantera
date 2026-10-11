@@ -7,7 +7,7 @@ A two-legged upload and viewing page over the app's own OSS bucket: drag-and-dro
 - Docs: https://canteraui.vercel.app/components/model-upload-page
 - Registry item: https://canteraui.vercel.app/r-pro/model-upload-page.json
 - License: https://canteraui.vercel.app/pro
-- Registry dependencies: button, checkbox, dialog, input, label, sidebar, @cantera/upload-types, @cantera/project-types, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/finder, @cantera/file-drop-zone, @cantera/copy-field, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/model-status-card, @cantera/status-tokens
+- Registry dependencies: button, checkbox, dialog, input, label, sidebar, @cantera/upload-types, @cantera/project-types, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/finder, @cantera/file-drop-zone, @cantera/copy-field, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/token-status, @cantera/model-status-card, @cantera/status-tokens
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
@@ -40,7 +40,7 @@ Reference: https://canteraui.vercel.app/components/model-upload-page
 
 ## Notes
 
-ModelUpload fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame. The viewer settings panel saves its choices in this browser’s localStorage under cantera:model-upload-page:viewer-settings; Reset returns to the starter set and clears the saved copy.
+ModelUpload fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame. The viewer settings panel saves its choices in this browser’s localStorage under cantera:model-upload-page:viewer-settings; Reset returns to the starter set and clears the saved copy. The sidebar lists the bucket as a folder of models; the selected model’s Details button opens its storage and translation facts (route kind=details), the translated thumbnail (kind=thumbnail), and a five-minute signed download of the original file (kind=download).
 
 ## ModelUpload props
 
