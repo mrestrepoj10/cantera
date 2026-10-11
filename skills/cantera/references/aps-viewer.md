@@ -66,4 +66,5 @@ The native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are 
 - `children` (`ReactNode`) — Extra controls appended to the Setup tab.
 - `APSViewerSettingsTrigger` (`component`) — The toolbar-mounted trigger alone — our control group appended to the SDK toolbar after a divider, inheriting toolbar position and scale — for wiring a custom panel.
 - `APSViewerExtensionPicker / Chip / Loader` (`components`) — The Extensions tab in parts: the searchable catalog grouped by job, a removable chip with load state, and a loader that holds one extension while mounted inside APSViewer.
+- `parseAPSViewerSettings` (`(input: unknown, fallback?) => APSViewerSettingsValue`) — Reads settings from outside the app — storage, a URL, an API. Invalid or missing fields take the fallback value and unknown extension ids are dropped, so a stale or edited copy cannot break the viewer.
 - `DEFAULT_APS_VIEWER_SETTINGS / apsViewerPropsFor` (`constant / function`) — The starting settings object, and the mapping from a settings object to APSViewer props.

@@ -49,6 +49,7 @@ export {
   type APSViewerSettingsValue,
   apsViewerPropsFor,
   DEFAULT_APS_VIEWER_SETTINGS,
+  parseAPSViewerSettings,
 } from '@/components/ui/aps-viewer/settings'
 export { ViewerStore } from '@/components/ui/aps-viewer/store'
 export type {

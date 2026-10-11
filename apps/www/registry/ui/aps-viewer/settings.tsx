@@ -26,6 +26,7 @@ import type {
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
+import { VIEWER_EXTENSIONS } from '@/lib/viewer-extension-types'
 
 export type APSViewerSettingsTheme = 'system' | 'light' | 'dark'
 export type APSViewerSettingsScale = APSViewerToolbarScale
@@ -66,6 +67,64 @@ export function apsViewerPropsFor(
     viewCube: value.viewCube,
     theme: value.theme === 'system' ? undefined : value.theme,
     radius: value.radius,
+  }
+}
+
+const POSITIONS: readonly APSViewerToolbarPosition[] = ['bottom', 'top', 'left', 'right']
+const SCALE_PRESETS: readonly APSViewerSettingsScale[] = ['sm', 'md', 'lg']
+const THEMES: readonly APSViewerSettingsTheme[] = ['system', 'light', 'dark']
+
+/** Settings as they arrive from outside: every field still unchecked. */
+interface UncheckedViewerSettings {
+  toolbar?: unknown
+  toolbarPosition?: unknown
+  toolbarScale?: unknown
+  viewCube?: unknown
+  theme?: unknown
+  radius?: unknown
+  extensions?: unknown
+}
+
+function isUncheckedSettings(input: unknown): input is UncheckedViewerSettings {
+  return typeof input === 'object' && input !== null && !Array.isArray(input)
+}
+
+function oneOf<T>(options: readonly T[], value: unknown, fallback: T): T {
+  return options.find((option) => option === value) ?? fallback
+}
+
+/** Reads settings that came from outside the app (storage, a URL, an API):
+ * each invalid or missing field takes `fallback`'s value, and extension ids
+ * outside the catalog are dropped, so an old or edited copy never breaks the
+ * viewer. */
+export function parseAPSViewerSettings(
+  input: unknown,
+  fallback: APSViewerSettingsValue = DEFAULT_APS_VIEWER_SETTINGS,
+): APSViewerSettingsValue {
+  if (!isUncheckedSettings(input)) return fallback
+  const { toolbar, viewCube, toolbarScale: scale, radius, extensions } = input
+  return {
+    toolbar: typeof toolbar === 'boolean' ? toolbar : fallback.toolbar,
+    toolbarPosition: oneOf(POSITIONS, input.toolbarPosition, fallback.toolbarPosition),
+    toolbarScale:
+      typeof scale === 'number' && Number.isFinite(scale)
+        ? Math.min(64, Math.max(32, scale))
+        : oneOf(SCALE_PRESETS, scale, fallback.toolbarScale),
+    viewCube: typeof viewCube === 'boolean' ? viewCube : fallback.viewCube,
+    theme: oneOf(THEMES, input.theme, fallback.theme),
+    radius:
+      typeof radius === 'number' && Number.isFinite(radius)
+        ? Math.min(32, Math.max(0, Math.round(radius)))
+        : fallback.radius,
+    extensions: Array.isArray(extensions)
+      ? [
+          ...new Set(
+            extensions.filter(
+              (id): id is string => typeof id === 'string' && Object.hasOwn(VIEWER_EXTENSIONS, id),
+            ),
+          ),
+        ]
+      : fallback.extensions,
   }
 }
 
@@ -528,7 +587,7 @@ export function APSViewerSettings({
                   onClick={() => setTab(entry.id)}
                   onKeyDown={(event) => onTabKeyDown(event, index)}
                 >
-                  {entry.label}
+                  {entry.label}{' '}
                   {entry.id === 'extensions' && loadedCount > 0 && (
                     <span className="ms-1 text-muted-foreground tabular-nums">{loadedCount}</span>
                   )}

@@ -40,7 +40,7 @@ Reference: https://canteraui.vercel.app/components/model-upload-page
 
 ## Notes
 
-ModelUpload fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame.
+ModelUpload fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame. The viewer settings panel saves its choices in this browser’s localStorage under cantera:model-upload-page:viewer-settings; Reset returns to the starter set and clears the saved copy.
 
 ## ModelUpload props
 

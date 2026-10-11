@@ -40,7 +40,7 @@ Reference: https://canteraui.vercel.app/components/model-viewer-page
 
 ## Notes
 
-ModelBrowser fetches from treeEndpoint (default /api/models/tree) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. Point both at your own handlers to mount the screen elsewhere. initialNodes skips the first hub read when the server already has the tree; embedded drops the page chrome so the browser fits a docs or preview frame.
+ModelBrowser fetches from treeEndpoint (default /api/models/tree) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. Point both at your own handlers to mount the screen elsewhere. initialNodes skips the first hub read when the server already has the tree; embedded drops the page chrome so the browser fits a docs or preview frame. The viewer settings panel saves its choices in this browser’s localStorage under cantera:model-viewer-page:viewer-settings; Reset returns to the starter set and clears the saved copy.
 
 ## ModelBrowser props
 

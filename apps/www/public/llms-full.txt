@@ -1025,6 +1025,7 @@ The native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are 
 - `children` (`ReactNode`) — Extra controls appended to the Setup tab.
 - `APSViewerSettingsTrigger` (`component`) — The toolbar-mounted trigger alone — our control group appended to the SDK toolbar after a divider, inheriting toolbar position and scale — for wiring a custom panel.
 - `APSViewerExtensionPicker / Chip / Loader` (`components`) — The Extensions tab in parts: the searchable catalog grouped by job, a removable chip with load state, and a loader that holds one extension while mounted inside APSViewer.
+- `parseAPSViewerSettings` (`(input: unknown, fallback?) => APSViewerSettingsValue`) — Reads settings from outside the app — storage, a URL, an API. Invalid or missing fields take the fallback value and unknown extension ids are dropped, so a stale or edited copy cannot break the viewer.
 - `DEFAULT_APS_VIEWER_SETTINGS / apsViewerPropsFor` (`constant / function`) — The starting settings object, and the mapping from a settings object to APSViewer props.
 
 ### Model Status Card (`@cantera/model-status-card`)
@@ -1085,7 +1086,7 @@ Reference: https://canteraui.vercel.app/components/model-viewer-page
 
 Notes:
 
-ModelBrowser fetches from treeEndpoint (default /api/models/tree) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. Point both at your own handlers to mount the screen elsewhere. initialNodes skips the first hub read when the server already has the tree; embedded drops the page chrome so the browser fits a docs or preview frame.
+ModelBrowser fetches from treeEndpoint (default /api/models/tree) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. Point both at your own handlers to mount the screen elsewhere. initialNodes skips the first hub read when the server already has the tree; embedded drops the page chrome so the browser fits a docs or preview frame. The viewer settings panel saves its choices in this browser’s localStorage under cantera:model-viewer-page:viewer-settings; Reset returns to the starter set and clears the saved copy.
 
 #### ModelBrowser props
 
@@ -1140,7 +1141,7 @@ Reference: https://canteraui.vercel.app/components/model-upload-page
 
 Notes:
 
-ModelUpload fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame.
+ModelUpload fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame. The viewer settings panel saves its choices in this browser’s localStorage under cantera:model-upload-page:viewer-settings; Reset returns to the starter set and clears the saved copy.
 
 #### ModelUpload props
 
