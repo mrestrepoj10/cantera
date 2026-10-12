@@ -1,16 +1,16 @@
-# canterafx
+# Viewer Agent
 
-![canterafx](docs/hero.png)
+![Viewer Agent](docs/hero.png)
 
 An already-translated model in a full-bleed Autodesk Viewer with the fx coding agent docked beside it as a terminal. libfx runs in the browser, a sandboxed bash workspace gives fx a viewer command over a typed tool catalog, model traffic goes through a same-origin AI Gateway proxy, and a colour legend explains what the agent paints.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fmrestrepoj10%2Fcantera%2Ftree%2Fmain%2Ftemplates%2Fmodel-agent-page&project-name=cantera-model-agent-page&repository-name=cantera-model-agent-page&env=APS_CLIENT_ID%2CAPS_CLIENT_SECRET%2CAPS_MODEL_URN%2CAI_GATEWAY_API_KEY&envDescription=The+keys+this+template+needs.+The+README+explains+each+one.&envLink=https%3A%2F%2Fcanteraui.vercel.app%2Fcomponents%2Fmodel-agent-page)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fmrestrepoj10%2Fcantera%2Ftree%2Fmain%2Ftemplates%2Fviewer-agent&project-name=cantera-viewer-agent&repository-name=cantera-viewer-agent&env=APS_CLIENT_ID%2CAPS_CLIENT_SECRET%2CAPS_MODEL_URN%2CAI_GATEWAY_API_KEY&envDescription=The+keys+this+template+needs.+The+README+explains+each+one.&envLink=https%3A%2F%2Fcanteraui.vercel.app%2Fcomponents%2Fviewer-agent)
 
 The deploy prompts for the keys marked required below.
 
 ## See it work
 
-![A recorded canterafx session](docs/session.gif)
+![A recorded Viewer Agent session](docs/session.gif)
 
 [Watch the full-resolution recording](docs/session.webm).
 
@@ -44,7 +44,6 @@ Routes and handlers:
 
 Components and libraries:
 
-- `components/model-agent.tsx`
 - `components/theme-provider.tsx`
 - `components/ui/aps-viewer/aps-viewer.tsx`
 - `components/ui/aps-viewer/context.ts`
@@ -66,6 +65,7 @@ Components and libraries:
 - `components/ui/sheet.tsx`
 - `components/ui/theme-toggle.tsx`
 - `components/ui/token-status.tsx`
+- `components/viewer-agent.tsx`
 - `lib/agent-types.ts`
 - `lib/forge-viewer.d.ts`
 - `lib/libfx-browser.d.ts`
@@ -85,4 +85,4 @@ Components and libraries:
 
 This directory is generated from the cantera registry by `pnpm registry:build`; edit the
 registry sources, not these files. The same code installs into an existing app with
-`npx shadcn@latest add @cantera/model-agent-page`. Reference: https://canteraui.vercel.app/components/model-agent-page
+`npx shadcn@latest add @cantera/viewer-agent`. Reference: https://canteraui.vercel.app/components/viewer-agent

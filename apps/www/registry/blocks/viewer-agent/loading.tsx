@@ -1,6 +1,6 @@
 import { LoaderCircleIcon } from 'lucide-react'
 
-export default function ModelAgentLoading() {
+export default function ViewerAgentLoading() {
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-3 bg-background p-6">
       <output className="flex items-center gap-2 text-muted-foreground text-sm">

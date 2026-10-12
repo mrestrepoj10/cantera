@@ -1,11 +1,11 @@
-# canterafx (`@cantera/model-agent-page`)
+# Viewer Agent (`@cantera/viewer-agent`)
 
 An already-translated model in a full-bleed Autodesk Viewer with the fx coding agent docked beside it as a terminal. libfx runs in the browser, a sandboxed bash workspace gives fx a viewer command over a typed tool catalog, model traffic goes through a same-origin AI Gateway proxy, and a colour legend explains what the agent paints.
 
 - Type: template
-- Install: `npx shadcn@latest add @cantera/model-agent-page`
-- Docs: https://canteraui.vercel.app/components/model-agent-page
-- Registry item: https://canteraui.vercel.app/r/model-agent-page.json
+- Install: `npx shadcn@latest add @cantera/viewer-agent`
+- Docs: https://canteraui.vercel.app/components/viewer-agent
+- Registry item: https://canteraui.vercel.app/r/viewer-agent.json
 - Registry dependencies: button, sheet, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/viewer-agent-tools, @cantera/agent-types, @cantera/libfx-types, @cantera/fx-terminal, @cantera/status-tokens, @cantera/token-status, @cantera/theme-toggle
 - npm dependencies: aec-auth, lucide-react, libfx@0.0.13
 
@@ -13,7 +13,7 @@ Files written into the consumer project:
 
 - `app/agent/page.tsx`
 - `app/agent/loading.tsx`
-- `components/model-agent.tsx`
+- `components/viewer-agent.tsx`
 - `app/api/viewer-token/route.ts`
 - `app/api/agent/gateway/[...path]/route.ts`
 
@@ -26,20 +26,20 @@ Environment variables added to `.env.local`:
 
 ## Install notes
 
-Installed at /agent: the canterafx page, its loading UI, the two-legged /api/viewer-token route, and /api/agent/gateway, the proxy that holds AI_GATEWAY_API_KEY and lets only anthropic/claude-haiku-5.5 through. ModelAgent docks the fx terminal beside the viewer; fx runs in the browser on libfx (WebAssembly with JSPI: Chrome or Edge 137+, Safari 27+) and drives the model through a viewer command. No sign-in is installed: add your own access control before shipping beyond a trusted team.
+Installed at /agent: the canterafx page, its loading UI, the two-legged /api/viewer-token route, and /api/agent/gateway, the proxy that holds AI_GATEWAY_API_KEY and lets only anthropic/claude-haiku-5.5 through. ViewerAgent docks the fx terminal beside the viewer; fx runs in the browser on libfx (WebAssembly with JSPI: Chrome or Edge 137+, Safari 27+) and drives the model through a viewer command. No sign-in is installed: add your own access control before shipping beyond a trusted team.
 
 Next:
 1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_MODEL_URN, the base64 URN of a translated model; AI_GATEWAY_API_KEY from Vercel AI Gateway.
 2. Wrap children in app/layout.tsx with ThemeProvider from components/theme-provider.tsx (see theme-toggle).
 3. Run next dev and open /agent.
 
-Reference: https://canteraui.vercel.app/components/model-agent-page
+Reference: https://canteraui.vercel.app/components/viewer-agent
 
 ## Notes
 
-ModelAgent fetches from viewerTokenEndpoint (default /api/viewer-token) and sends every model request to gatewayBase (default /api/agent/gateway), the two routes this template ships; the browser never sees AI_GATEWAY_API_KEY. The header carries only the canterafx wordmark, a theme toggle, and the Agent button; it never shows the model's name. The terminal follows the .dark class on <html>, recolouring live: a bordered light surface on a light page, flush dark on a dark one. The page mounts the fx terminal: docked beside the viewer with a resize handle, a bottom sheet below 768px, opened and closed by the Agent button. Closing it ends the fx session and reopening starts a new one, but the viewer tool catalog is created once, so element sets and colours carry over; the colour legend over the viewer reads the catalog's colour ledger. fx keeps its model choice and prompt history in localStorage under cantera.fx.*, the viewer settings live under cantera:model-agent-page:viewer-settings, and the docked width under cantera:model-agent-page:panel-width. The routes run on the app’s credentials with no sign-in, so add your own access control before exposing them.
+ViewerAgent fetches from viewerTokenEndpoint (default /api/viewer-token) and sends every model request to gatewayBase (default /api/agent/gateway), the two routes this template ships; the browser never sees AI_GATEWAY_API_KEY. The header carries only the canterafx wordmark, a theme toggle, and the Agent button; it never shows the model's name. The terminal follows the .dark class on <html>, recolouring live: a bordered light surface on a light page, flush dark on a dark one. The page mounts the fx terminal: docked beside the viewer with a resize handle, a bottom sheet below 768px, opened and closed by the Agent button. Closing it ends the fx session and reopening starts a new one, but the viewer tool catalog is created once, so element sets and colours carry over; the colour legend over the viewer reads the catalog's colour ledger. fx keeps its model choice and prompt history in localStorage under cantera.fx.*, the viewer settings live under cantera:viewer-agent:viewer-settings, and the docked width under cantera:viewer-agent:panel-width. The routes run on the app’s credentials with no sign-in, so add your own access control before exposing them.
 
-## ModelAgent props
+## ViewerAgent props
 
 - `urn` (`string`) — Base64 Model Derivative URN of an already translated model, with or without the urn: prefix. The page reads it from APS_MODEL_URN.
 - `viewerTokenEndpoint` (`string`, default `'/api/viewer-token'`) — Two-legged viewer token route, scoped to viewables:read.

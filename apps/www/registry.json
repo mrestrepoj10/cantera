@@ -860,9 +860,9 @@
       ]
     },
     {
-      "name": "model-agent-page",
+      "name": "viewer-agent",
       "type": "registry:block",
-      "title": "canterafx",
+      "title": "Viewer Agent",
       "author": "MR <contact@bimframe.co>",
       "description": "An already-translated model in a full-bleed Autodesk Viewer with the fx coding agent docked beside it as a terminal. libfx runs in the browser, a sandboxed bash workspace gives fx a viewer command over a typed tool catalog, model traffic goes through a same-origin AI Gateway proxy, and a colour legend explains what the agent paints.",
       "categories": ["viewer", "autodesk", "ai"],
@@ -887,19 +887,19 @@
       ],
       "files": [
         {
-          "path": "registry/blocks/model-agent-page/page.tsx",
+          "path": "registry/blocks/viewer-agent/page.tsx",
           "type": "registry:page",
           "target": "app/agent/page.tsx"
         },
         {
-          "path": "registry/blocks/model-agent-page/loading.tsx",
+          "path": "registry/blocks/viewer-agent/loading.tsx",
           "type": "registry:file",
           "target": "app/agent/loading.tsx"
         },
         {
-          "path": "registry/blocks/model-agent-page/components/model-agent.tsx",
+          "path": "registry/blocks/viewer-agent/components/viewer-agent.tsx",
           "type": "registry:component",
-          "target": "components/model-agent.tsx"
+          "target": "components/viewer-agent.tsx"
         },
         {
           "path": "registry/blocks/model-viewer-page/api/viewer-token-route.ts",
@@ -907,7 +907,7 @@
           "target": "app/api/viewer-token/route.ts"
         },
         {
-          "path": "registry/blocks/model-agent-page/api/gateway-route.ts",
+          "path": "registry/blocks/viewer-agent/api/gateway-route.ts",
           "type": "registry:file",
           "target": "app/api/agent/gateway/[...path]/route.ts"
         }
@@ -918,7 +918,7 @@
         "APS_MODEL_URN": "",
         "AI_GATEWAY_API_KEY": ""
       },
-      "docs": "Installed at /agent: the canterafx page, its loading UI, the two-legged /api/viewer-token route, and /api/agent/gateway, the proxy that holds AI_GATEWAY_API_KEY and lets only anthropic/claude-haiku-5.5 through. ModelAgent docks the fx terminal beside the viewer; fx runs in the browser on libfx (WebAssembly with JSPI: Chrome or Edge 137+, Safari 27+) and drives the model through a viewer command. No sign-in is installed: add your own access control before shipping beyond a trusted team.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_MODEL_URN, the base64 URN of a translated model; AI_GATEWAY_API_KEY from Vercel AI Gateway.\n2. Wrap children in app/layout.tsx with ThemeProvider from components/theme-provider.tsx (see theme-toggle).\n3. Run next dev and open /agent.\n\nReference: https://canteraui.vercel.app/components/model-agent-page"
+      "docs": "Installed at /agent: the canterafx page, its loading UI, the two-legged /api/viewer-token route, and /api/agent/gateway, the proxy that holds AI_GATEWAY_API_KEY and lets only anthropic/claude-haiku-5.5 through. ViewerAgent docks the fx terminal beside the viewer; fx runs in the browser on libfx (WebAssembly with JSPI: Chrome or Edge 137+, Safari 27+) and drives the model through a viewer command. No sign-in is installed: add your own access control before shipping beyond a trusted team.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_MODEL_URN, the base64 URN of a translated model; AI_GATEWAY_API_KEY from Vercel AI Gateway.\n2. Wrap children in app/layout.tsx with ThemeProvider from components/theme-provider.tsx (see theme-toggle).\n3. Run next dev and open /agent.\n\nReference: https://canteraui.vercel.app/components/viewer-agent"
     },
     {
       "name": "upload-types",

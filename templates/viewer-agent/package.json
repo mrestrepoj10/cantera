@@ -1,5 +1,5 @@
 {
-  "name": "cantera-model-agent-page",
+  "name": "cantera-viewer-agent",
   "version": "0.1.0",
   "private": true,
   "scripts": {

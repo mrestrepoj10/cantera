@@ -31,7 +31,7 @@ import { type ColorLedger, createViewerAgentTools } from '@/lib/viewer-agent-too
 import { AEC_STARTER_EXTENSIONS } from '@/lib/viewer-extension-types'
 import type { GetAccessToken } from '@/lib/viewer-types'
 
-export interface ModelAgentProps {
+export interface ViewerAgentProps {
   /** Model Derivative URN (base64) of a translated model, with or without the `urn:` prefix. */
   urn: string
   viewerTokenEndpoint?: string
@@ -44,8 +44,8 @@ const STARTER_VIEWER_SETTINGS: APSViewerSettingsValue = {
   ...DEFAULT_APS_VIEWER_SETTINGS,
   extensions: AEC_STARTER_EXTENSIONS.map((entry) => entry.id),
 }
-const VIEWER_SETTINGS_KEY = 'cantera:model-agent-page:viewer-settings'
-const PANEL_WIDTH_KEY = 'cantera:model-agent-page:panel-width'
+const VIEWER_SETTINGS_KEY = 'cantera:viewer-agent:viewer-settings'
+const PANEL_WIDTH_KEY = 'cantera:viewer-agent:panel-width'
 const COMPACT_QUERY = '(max-width: 767px)'
 const DEFAULT_PANEL_WIDTH = 400
 const MIN_PANEL_WIDTH = 360
@@ -245,11 +245,11 @@ function DockResizeHandle({
   )
 }
 
-function ModelAgentSetupNotice({ className }: { className?: string }) {
+function ViewerAgentSetupNotice({ className }: { className?: string }) {
   return (
     <div
       role="status"
-      data-slot="model-agent-setup"
+      data-slot="viewer-agent-setup"
       className={cn('flex max-w-md flex-col items-center gap-3 text-center', className)}
     >
       <span
@@ -266,13 +266,13 @@ function ModelAgentSetupNotice({ className }: { className?: string }) {
   )
 }
 
-function ModelAgent({
+function ViewerAgent({
   urn,
   viewerTokenEndpoint = '/api/viewer-token',
   gatewayBase = '/api/agent/gateway',
   embedded = false,
   className,
-}: ModelAgentProps) {
+}: ViewerAgentProps) {
   const compact = useCompactLayout()
   const [dockOpen, setDockOpen] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -314,7 +314,7 @@ function ModelAgent({
 
   return (
     <Root
-      data-slot="model-agent"
+      data-slot="viewer-agent"
       className={cn(
         'flex h-svh min-h-[32rem] w-full min-w-0 flex-col overflow-hidden bg-background text-foreground',
         embedded && 'relative',
@@ -428,4 +428,4 @@ function ModelAgent({
   )
 }
 
-export { ModelAgent, ModelAgentSetupNotice }
+export { ViewerAgent, ViewerAgentSetupNotice }

@@ -72,7 +72,7 @@ Agents: install the skill with `npx skills add mrestrepoj10/cantera` for the reg
 | `model-status-card` | component | Translation status, progress, diagnostics, retry, and open actions. |
 | `model-viewer-page` | template (pro) | Signed-in ACC project tree, recursive finder, and full-bleed Autodesk Viewer page. |
 | `model-upload-page` | template (pro) | Two-legged OSS upload, translation tracking, model library, and Viewer page. |
-| `model-agent-page` | template | canterafx: an already-translated model in the Viewer next to the fx agent as a terminal that drives it. |
+| `viewer-agent` | template | canterafx: an already-translated model in the Viewer next to the fx agent as a terminal that drives it. |
 | `agent-types` | lib | Provider-neutral agent types: ordered message parts, undoable tool actions, named element sets, runtime and turn status, unavailable-state notices. |
 | `viewer-agent-tools` | lib | Typed tool catalog that drives a live Autodesk Viewer: find, isolate, colour, section, measure, screenshot, query — with undo snapshots. |
 | `libfx-types` | lib | TypeScript declarations for libfx 0.0.13's browser entry, which ships none. |
@@ -124,7 +124,7 @@ Licenses are JWTs signed by [Vercel KMS](https://vercel.com/changelog/sign-jwts-
 
 ## Templates on Vercel
 
-Every template also exists as a whole Next.js app under [`templates/`](templates/), generated from the registry by `pnpm registry:build`. A free template's page carries a **Deploy to Vercel** button that clones that directory into your account and prompts for the keys that have no default: `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, and, where a session is involved, `SESSION_SECRET`, plus a template's own keys such as `APS_MODEL_URN` and `AI_GATEWAY_API_KEY`. `APP_ORIGIN` defaults to Vercel's production URL. Register `<your-deployment-url>/api/auth/callback/aps` on your APS app for the templates that sign users in. Pro templates are generated too but carry no deploy button; `model-agent-page` is the free one today.
+Every template also exists as a whole Next.js app under [`templates/`](templates/), generated from the registry by `pnpm registry:build`. A free template's page carries a **Deploy to Vercel** button that clones that directory into your account and prompts for the keys that have no default: `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, and, where a session is involved, `SESSION_SECRET`, plus a template's own keys such as `APS_MODEL_URN` and `AI_GATEWAY_API_KEY`. `APP_ORIGIN` defaults to Vercel's production URL. Register `<your-deployment-url>/api/auth/callback/aps` on your APS app for the templates that sign users in. Pro templates are generated too but carry no deploy button; `viewer-agent` is the free one today.
 
 ## The acc-sign-in block
 
@@ -168,9 +168,9 @@ Point `ConnectionsView` at any backend — it never fetches.
 
 Files are uploaded under server-issued object keys and translation/status requests are restricted to that bucket. The default limit is 250 MiB per file.
 
-## canterafx (the model-agent-page template)
+## Viewer Agent (canterafx)
 
-`npx shadcn@latest add @cantera/model-agent-page` installs canterafx: the `/agent` page, the two-legged Viewer token route, `/api/agent/gateway` (the AI Gateway proxy), and `ModelAgent`, which composes the full-bleed Viewer, a colour legend, and the agent. The agent is [libfx](https://www.npmjs.com/package/libfx) 0.0.13 running in the browser as WebAssembly with JSPI (Chrome or Edge 137+, Safari 27+); the page mounts `fx-terminal` beside the Viewer, docked and resizable on desktop and a bottom sheet on phones, and fx drives the Viewer through the `viewer` command over `viewer-agent-tools`. The whole app is also generated under [`templates/model-agent-page`](templates/model-agent-page) with a Deploy to Vercel button. Like the upload page it has no sign-in: add your own access control before exposing it.
+`npx shadcn@latest add @cantera/viewer-agent` installs canterafx: the `/agent` page, the two-legged Viewer token route, `/api/agent/gateway` (the AI Gateway proxy), and `ViewerAgent`, which composes the full-bleed Viewer, a colour legend, and the agent. The agent is [libfx](https://www.npmjs.com/package/libfx) 0.0.13 running in the browser as WebAssembly with JSPI (Chrome or Edge 137+, Safari 27+); the page mounts `fx-terminal` beside the Viewer, docked and resizable on desktop and a bottom sheet on phones, and fx drives the Viewer through the `viewer` command over `viewer-agent-tools`. The whole app is also generated under [`templates/viewer-agent`](templates/viewer-agent) with a Deploy to Vercel button. Like the upload page it has no sign-in: add your own access control before exposing it.
 
 | Variable | Meaning |
 | --- | --- |
