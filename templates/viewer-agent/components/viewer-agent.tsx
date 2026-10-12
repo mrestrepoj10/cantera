@@ -5,11 +5,14 @@ import {
   type RefObject,
   useCallback,
   useEffect,
+  useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   useSyncExternalStore,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { APSViewer } from '@/components/ui/aps-viewer/aps-viewer'
 import { useAPSViewerStore } from '@/components/ui/aps-viewer/context'
 import {
@@ -21,7 +24,7 @@ import {
 } from '@/components/ui/aps-viewer/settings'
 import type { ViewerStore } from '@/components/ui/aps-viewer/store'
 import { Button } from '@/components/ui/button'
-import { FxTerminal } from '@/components/ui/fx-terminal/fx-terminal'
+import { FxTerminal, type FxTerminalHandle } from '@/components/ui/fx-terminal/fx-terminal'
 import { Sheet, SheetClose, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { statusInkClasses, statusToneClasses } from '@/components/ui/token-status'
@@ -126,6 +129,18 @@ function subscribeCompact(onChange: () => void): () => void {
   const list = window.matchMedia(COMPACT_QUERY)
   list.addEventListener('change', onChange)
   return () => list.removeEventListener('change', onChange)
+}
+
+function subscribeNothing(): () => void {
+  return () => {}
+}
+
+function useHydrated(): boolean {
+  return useSyncExternalStore(
+    subscribeNothing,
+    () => true,
+    () => false,
+  )
 }
 
 function useCompactLayout(): boolean {
@@ -245,6 +260,13 @@ function DockResizeHandle({
   )
 }
 
+function createTerminalHost(): HTMLDivElement | null {
+  if (typeof document === 'undefined') return null
+  const host = document.createElement('div')
+  host.className = 'flex min-h-0 flex-1 flex-col'
+  return host
+}
+
 function ViewerAgentSetupNotice({ className }: { className?: string }) {
   return (
     <div
@@ -274,6 +296,7 @@ function ViewerAgent({
   className,
 }: ViewerAgentProps) {
   const compact = useCompactLayout()
+  const hydrated = useHydrated()
   const [dockOpen, setDockOpen] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [viewerError, setViewerError] = useState<string | null>(null)
@@ -282,7 +305,17 @@ function ViewerAgent({
   const [panelWidth, setPanelWidth] = usePersistedPanelWidth()
   const [viewerSource] = useState(createViewerSource)
   const [tools] = useState(() => createViewerAgentTools(viewerSource.getViewer))
+  const [terminalHost] = useState(createTerminalHost)
+  const [parkingSlot, setParkingSlot] = useState<HTMLDivElement | null>(null)
+  const [dockSlot, setDockSlot] = useState<HTMLElement | null>(null)
+  const [sheetSlot, setSheetSlot] = useState<HTMLDivElement | null>(null)
   const dockRef = useRef<HTMLElement>(null)
+  const terminalRef = useRef<FxTerminalHandle>(null)
+  const dockId = useId()
+  const attachDock = useCallback((node: HTMLElement | null) => {
+    dockRef.current = node
+    setDockSlot(node)
+  }, [])
 
   useEffect(() => () => tools.dispose(), [tools])
 
@@ -294,21 +327,34 @@ function ViewerAgent({
 
   const open = compact ? sheetOpen : dockOpen
   const setOpen = (next: boolean) => {
-    if (!next) setTerminalReady(false)
     if (compact) setSheetOpen(next)
     else setDockOpen(next)
   }
 
-  const runtimeStatus: AgentRuntimeStatus = terminalReady ? 'ready' : 'starting'
+  const [terminalWanted, setTerminalWanted] = useState(false)
+  if (hydrated && open && !terminalWanted) setTerminalWanted(true)
 
-  const terminal = (
-    <FxTerminal
-      tools={tools}
-      gatewayBase={gatewayBase}
-      onReady={() => setTerminalReady(true)}
-      className="min-h-0 flex-1"
-    />
-  )
+  const slot = (compact ? sheetSlot : dockSlot) ?? parkingSlot
+
+  // The fx session lives in one detached host node that moves between the dock, the sheet, and a
+  // hidden parking slot; moving a portal's container instead would remount fx and end the session.
+  useLayoutEffect(() => {
+    if (!terminalHost || !slot || terminalHost.parentElement === slot) return
+    slot.append(terminalHost)
+    const frame = requestAnimationFrame(() => terminalRef.current?.fit())
+    return () => cancelAnimationFrame(frame)
+  }, [terminalHost, slot])
+
+  useEffect(() => {
+    if (!open) return
+    const frame = requestAnimationFrame(() => {
+      terminalRef.current?.fit()
+      terminalRef.current?.focus()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [open])
+
+  const runtimeStatus: AgentRuntimeStatus = terminalReady ? 'ready' : 'starting'
 
   const Root = embedded ? 'div' : 'main'
 
@@ -329,7 +375,8 @@ function ViewerAgent({
         <Button
           type="button"
           variant={open ? 'default' : 'outline'}
-          aria-pressed={open}
+          aria-expanded={open}
+          aria-controls={compact ? undefined : dockId}
           className="h-11 min-w-11 gap-2 px-3 max-sm:px-0"
           onClick={() => setOpen(!open)}
         >
@@ -375,7 +422,32 @@ function ViewerAgent({
         </section>
 
         <div className="contents" data-agent-runtime-status={runtimeStatus}>
-          {compact ? (
+          {!compact && (
+            <aside
+              ref={attachDock}
+              id={dockId}
+              aria-label="Agent"
+              hidden={!open}
+              inert={!open}
+              style={{
+                width: panelWidth,
+                minWidth: MIN_PANEL_WIDTH,
+                maxWidth: `${MAX_PANEL_RATIO * 100}%`,
+              }}
+              className={cn(
+                'relative h-full shrink-0 flex-col border-border border-s bg-background',
+                open ? 'flex' : 'hidden',
+              )}
+            >
+              <DockResizeHandle
+                label="Resize agent panel"
+                width={panelWidth}
+                onWidthChange={setPanelWidth}
+                target={dockRef}
+              />
+            </aside>
+          )}
+          {compact && (
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetContent
                 side="bottom"
@@ -397,32 +469,24 @@ function ViewerAgent({
                     <XIcon aria-hidden />
                   </SheetClose>
                 </div>
-                {terminal}
+                <div ref={setSheetSlot} className="flex min-h-0 flex-1 flex-col" />
               </SheetContent>
             </Sheet>
-          ) : (
-            open && (
-              <aside
-                ref={dockRef}
-                aria-label="Agent"
-                style={{
-                  width: panelWidth,
-                  minWidth: MIN_PANEL_WIDTH,
-                  maxWidth: `${MAX_PANEL_RATIO * 100}%`,
-                }}
-                className="relative flex h-full shrink-0 flex-col border-border border-s bg-background"
-              >
-                <DockResizeHandle
-                  label="Resize agent panel"
-                  width={panelWidth}
-                  onWidthChange={setPanelWidth}
-                  target={dockRef}
-                />
-                {terminal}
-              </aside>
-            )
           )}
+          <div ref={setParkingSlot} hidden inert />
         </div>
+        {terminalHost &&
+          terminalWanted &&
+          createPortal(
+            <FxTerminal
+              ref={terminalRef}
+              tools={tools}
+              gatewayBase={gatewayBase}
+              onReady={() => setTerminalReady(true)}
+              className="min-h-0 flex-1"
+            />,
+            terminalHost,
+          )}
       </div>
     </Root>
   )
