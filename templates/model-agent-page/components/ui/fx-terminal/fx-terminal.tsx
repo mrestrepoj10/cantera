@@ -239,11 +239,13 @@ function FxTerminal({
         </div>
       )}
 
-      <div className="relative flex min-h-0 flex-1 flex-col p-3 dark:p-0">
+      <div className={cn('relative flex min-h-0 flex-1 flex-col', scheme === 'light' && 'p-3')}>
         <div
           className={cn(
-            'flex min-h-0 flex-1 flex-col rounded-lg py-3 ps-3.5 dark:rounded-none dark:py-2 dark:ps-4',
-            scheme === 'light' && 'border border-border dark:border-0',
+            'flex min-h-0 flex-1 flex-col',
+            scheme === 'light'
+              ? 'rounded-lg border border-border py-3 ps-3.5'
+              : 'rounded-none py-2 ps-4',
             status.kind !== 'ready' && 'invisible',
           )}
           style={{ background }}

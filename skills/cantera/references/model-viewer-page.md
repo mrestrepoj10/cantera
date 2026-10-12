@@ -7,7 +7,7 @@ A complete APS project-tree and Autodesk Viewer page: scoped Autodesk sign-in, l
 - Docs: https://canteraui.vercel.app/components/model-viewer-page
 - Registry item: https://canteraui.vercel.app/r-pro/model-viewer-page.json
 - License: https://canteraui.vercel.app/pro
-- Registry dependencies: button, sidebar, @cantera/acc-auth-routes, @cantera/aps-data-preset, @cantera/project-types, @cantera/oauth-types, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/finder, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/model-status-card, @cantera/token-status, @cantera/status-tokens
+- Registry dependencies: button, sidebar, @cantera/acc-auth-routes, @cantera/aps-data-preset, @cantera/project-types, @cantera/oauth-types, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/finder, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/model-status-card, @cantera/token-status, @cantera/status-tokens, @cantera/theme-toggle
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
@@ -33,14 +33,15 @@ Installed at /models: the page, its loading UI, the lazy /api/models/tree route,
 
 Next:
 1. Fill the keys acc-auth-routes added to .env.local (see its notes above).
-2. Run next dev and open /models.
+2. Wrap children in app/layout.tsx with ThemeProvider from components/theme-provider.tsx (see theme-toggle).
+3. Run next dev and open /models.
 
 The cantera showcase emulator supplies a project tree but no geometry; store real derivative URNs on your item versions.
 Reference: https://canteraui.vercel.app/components/model-viewer-page
 
 ## Notes
 
-ModelBrowser fetches from treeEndpoint (default /api/models/tree) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. Point both at your own handlers to mount the screen elsewhere. initialNodes skips the first hub read when the server already has the tree; embedded drops the page chrome so the browser fits a docs or preview frame. The viewer settings panel saves its choices in this browser’s localStorage under cantera:model-viewer-page:viewer-settings; Reset returns to the starter set and clears the saved copy.
+ModelBrowser fetches from treeEndpoint (default /api/models/tree) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. Point both at your own handlers to mount the screen elsewhere. initialNodes skips the first hub read when the server already has the tree; embedded drops the page chrome so the browser fits a docs or preview frame. A theme toggle sits in the sidebar’s identity row, beside the collapse toggle; it needs ThemeProvider mounted in your root layout. The viewer settings panel saves its choices in this browser’s localStorage under cantera:model-viewer-page:viewer-settings; Reset returns to the starter set and clears the saved copy.
 
 ## ModelBrowser props
 

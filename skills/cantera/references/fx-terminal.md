@@ -31,7 +31,7 @@ The shell cannot hand pixels to the model, so viewer take_screenshot saves the i
 - `gatewayBase` (`string`, default `'/api/agent/gateway'`) — Same-origin proxy that holds AI_GATEWAY_API_KEY. Requests fx makes to https://ai-gateway.vercel.sh are rewritten under it; every other origin is refused locally.
 - `model` (`string`, default `'anthropic/claude-haiku-5.5'`) — Passed as FX_MODEL. A model saved by an earlier /model choice is ignored unless it matches, since the proxy refuses other models.
 - `effort` (`string`, default `'low'`) — Reasoning effort, applied with /model before the terminal is shown; fx's own status line shows it with the model.
-- `colorScheme` (`'light' | 'dark'`) — Omit to follow the .dark class on the document. A change recolours the running terminal without restarting it. The frame follows the page: an inset rounded block on a light page, flush to its container on a dark one.
+- `colorScheme` (`'light' | 'dark'`) — Omit to follow the .dark class on the document. A change recolours the running terminal without restarting it. The frame follows the scheme: a bordered, rounded light surface inset in its container when light, flush to its container when dark.
 - `onExec` (`(event: { command: string; exitCode: number; ms: number }) => void`) — Every shell command the agent ran, after it finished — for a trace.
 - `onReady` (`() => void`) — fx reached its input loop.
 - `ref` (`Ref<{ focus(): void; fit(): void }>`) — Focus the terminal, or refit it after its container changes size outside a resize the component can observe.

@@ -54,6 +54,7 @@ Data-agnostic UI — plain typed props in, callbacks out, no fetching and no pro
 - [APS Viewer](https://canteraui.vercel.app/components/aps-viewer): A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar.
 - [Model Status Card](https://canteraui.vercel.app/components/model-status-card): The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract.
 - [Copy Field](https://canteraui.vercel.app/components/copy-field): A value someone has to paste into another system — a client ID, a callback URL — shown in full and always selectable, with a copy button that confirms.
+- [Theme Toggle](https://canteraui.vercel.app/components/theme-toggle): A light and dark switch on next-themes whose icon and name follow the .dark class in CSS, so it renders correctly before hydration, plus the ThemeProvider to mount it under.
 
 ## Foundations
 

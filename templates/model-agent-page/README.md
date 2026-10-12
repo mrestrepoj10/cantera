@@ -45,6 +45,7 @@ Routes and handlers:
 Components and libraries:
 
 - `components/model-agent.tsx`
+- `components/theme-provider.tsx`
 - `components/ui/aps-viewer/aps-viewer.tsx`
 - `components/ui/aps-viewer/context.ts`
 - `components/ui/aps-viewer/extensions.tsx`
@@ -63,6 +64,7 @@ Components and libraries:
 - `components/ui/fx-terminal/runtime.ts`
 - `components/ui/fx-terminal/workspace.ts`
 - `components/ui/sheet.tsx`
+- `components/ui/theme-toggle.tsx`
 - `components/ui/token-status.tsx`
 - `lib/agent-types.ts`
 - `lib/forge-viewer.d.ts`

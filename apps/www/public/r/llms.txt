@@ -393,6 +393,15 @@ Install: npx shadcn@latest add @cantera/copy-field
 Docs: https://canteraui.vercel.app/components/copy-field
 Item: https://canteraui.vercel.app/r/copy-field.json
 
+### theme-toggle
+
+Title: Theme Toggle
+Type: component
+Description: A light and dark switch on next-themes whose icon and name follow the .dark class in CSS, so it renders correctly before hydration, plus the ThemeProvider to mount it under.
+Install: npx shadcn@latest add @cantera/theme-toggle
+Docs: https://canteraui.vercel.app/components/theme-toggle
+Item: https://canteraui.vercel.app/r/theme-toggle.json
+
 ### provisioning-notice
 
 Title: Provisioning Notice

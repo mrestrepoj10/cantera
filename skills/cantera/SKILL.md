@@ -137,6 +137,7 @@ Data-agnostic UI — plain typed props in, callbacks out, no fetching and no pro
 | `@cantera/aps-viewer` | component | A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar. | [references/aps-viewer.md](references/aps-viewer.md) |
 | `@cantera/model-status-card` | component | The translation state of one design: whether the model is viewable yet, how far along it is, and what failed — with a retry on the async-pending contract. | [references/model-status-card.md](references/model-status-card.md) |
 | `@cantera/copy-field` | component | A value someone has to paste into another system — a client ID, a callback URL — shown in full and always selectable, with a copy button that confirms. | [references/copy-field.md](references/copy-field.md) |
+| `@cantera/theme-toggle` | component | A light and dark switch on next-themes whose icon and name follow the .dark class in CSS, so it renders correctly before hydration, plus the ThemeProvider to mount it under. | [references/theme-toggle.md](references/theme-toggle.md) |
 
 ### Foundations
 

@@ -23,6 +23,7 @@ import type { ViewerStore } from '@/components/ui/aps-viewer/store'
 import { Button } from '@/components/ui/button'
 import { FxTerminal } from '@/components/ui/fx-terminal/fx-terminal'
 import { Sheet, SheetClose, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { statusInkClasses, statusToneClasses } from '@/components/ui/token-status'
 import type { AgentRuntimeStatus } from '@/lib/agent-types'
 import { cn } from '@/lib/utils'
@@ -304,7 +305,6 @@ function ModelAgent({
     <FxTerminal
       tools={tools}
       gatewayBase={gatewayBase}
-      colorScheme="dark"
       onReady={() => setTerminalReady(true)}
       className="min-h-0 flex-1"
     />
@@ -325,6 +325,7 @@ function ModelAgent({
         <h1 className="min-w-0 flex-1 truncate font-medium font-mono text-sm lowercase">
           canterafx
         </h1>
+        <ThemeToggle />
         <Button
           type="button"
           variant={open ? 'default' : 'outline'}
@@ -379,7 +380,7 @@ function ModelAgent({
               <SheetContent
                 side="bottom"
                 showCloseButton={false}
-                className="gap-0 rounded-t-2xl p-0 data-[side=bottom]:h-[min(85dvh,44rem)]"
+                className="gap-0 rounded-t-2xl bg-background p-0 data-[side=bottom]:h-[min(85dvh,44rem)]"
               >
                 <div className="flex h-12 shrink-0 items-center justify-between ps-4 pe-1">
                   <SheetTitle className="text-sm">Agent</SheetTitle>

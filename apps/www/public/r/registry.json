@@ -882,7 +882,8 @@
         "@cantera/libfx-types",
         "@cantera/fx-terminal",
         "@cantera/status-tokens",
-        "@cantera/token-status"
+        "@cantera/token-status",
+        "@cantera/theme-toggle"
       ],
       "files": [
         {
@@ -917,7 +918,7 @@
         "APS_MODEL_URN": "",
         "AI_GATEWAY_API_KEY": ""
       },
-      "docs": "Installed at /agent: the canterafx page, its loading UI, the two-legged /api/viewer-token route, and /api/agent/gateway, the proxy that holds AI_GATEWAY_API_KEY and lets only anthropic/claude-haiku-5.5 through. ModelAgent docks the fx terminal beside the viewer; fx runs in the browser on libfx (WebAssembly with JSPI: Chrome or Edge 137+, Safari 27+) and drives the model through a viewer command. No sign-in is installed: add your own access control before shipping beyond a trusted team.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_MODEL_URN, the base64 URN of a translated model; AI_GATEWAY_API_KEY from Vercel AI Gateway.\n2. Run next dev and open /agent.\n\nReference: https://canteraui.vercel.app/components/model-agent-page"
+      "docs": "Installed at /agent: the canterafx page, its loading UI, the two-legged /api/viewer-token route, and /api/agent/gateway, the proxy that holds AI_GATEWAY_API_KEY and lets only anthropic/claude-haiku-5.5 through. ModelAgent docks the fx terminal beside the viewer; fx runs in the browser on libfx (WebAssembly with JSPI: Chrome or Edge 137+, Safari 27+) and drives the model through a viewer command. No sign-in is installed: add your own access control before shipping beyond a trusted team.\n\nNext:\n1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_MODEL_URN, the base64 URN of a translated model; AI_GATEWAY_API_KEY from Vercel AI Gateway.\n2. Wrap children in app/layout.tsx with ThemeProvider from components/theme-provider.tsx (see theme-toggle).\n3. Run next dev and open /agent.\n\nReference: https://canteraui.vercel.app/components/model-agent-page"
     },
     {
       "name": "upload-types",
@@ -1003,6 +1004,27 @@
         {
           "path": "registry/ui/copy-field.tsx",
           "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "theme-toggle",
+      "type": "registry:component",
+      "title": "Theme Toggle",
+      "author": "MR <contact@bimframe.co>",
+      "description": "A light and dark switch on next-themes whose icon and name follow the .dark class in CSS, so it renders correctly before hydration, plus the ThemeProvider to mount it under.",
+      "categories": ["theming", "navigation"],
+      "dependencies": ["next-themes", "lucide-react"],
+      "registryDependencies": ["button"],
+      "files": [
+        {
+          "path": "registry/ui/theme-toggle.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "registry/ui/theme-provider.tsx",
+          "type": "registry:component",
+          "target": "components/theme-provider.tsx"
         }
       ]
     },

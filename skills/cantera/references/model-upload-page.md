@@ -7,7 +7,7 @@ A two-legged upload and viewing page over the app's own OSS bucket: drag-and-dro
 - Docs: https://canteraui.vercel.app/components/model-upload-page
 - Registry item: https://canteraui.vercel.app/r-pro/model-upload-page.json
 - License: https://canteraui.vercel.app/pro
-- Registry dependencies: button, checkbox, dialog, input, label, sidebar, @cantera/upload-types, @cantera/project-types, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/finder, @cantera/file-drop-zone, @cantera/copy-field, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/token-status, @cantera/model-status-card, @cantera/status-tokens
+- Registry dependencies: button, checkbox, dialog, input, label, sidebar, @cantera/upload-types, @cantera/project-types, @cantera/hub-sidebar, @cantera/hub-tree, @cantera/finder, @cantera/file-drop-zone, @cantera/copy-field, @cantera/aps-viewer, @cantera/viewer-types, @cantera/viewer-extension-types, @cantera/token-status, @cantera/model-status-card, @cantera/status-tokens, @cantera/theme-toggle
 - npm dependencies: aec-auth, lucide-react
 
 Files written into the consumer project:
@@ -33,14 +33,15 @@ Installed at /upload: the page, its loading UI, the two-legged /api/models/uploa
 
 Next:
 1. Fill .env.local: APS_CLIENT_ID and APS_CLIENT_SECRET from aps.autodesk.com; APS_BUCKET optional (derived from the client id); APP_ORIGIN in production.
-2. Run next dev and open /upload.
+2. Wrap children in app/layout.tsx with ThemeProvider from components/theme-provider.tsx (see theme-toggle).
+3. Run next dev and open /upload.
 
 Files over 250 MB are rejected; raise PART_SIZE or MAX_PARTS in the route.
 Reference: https://canteraui.vercel.app/components/model-upload-page
 
 ## Notes
 
-ModelUpload fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame. The viewer settings panel saves its choices in this browser’s localStorage under cantera:model-upload-page:viewer-settings; Reset returns to the starter set and clears the saved copy. The sidebar lists the bucket as a folder of models; the selected model’s Details button opens its storage and translation facts (route kind=details), the translated thumbnail (kind=thumbnail), and a five-minute signed download of the original file (kind=download).
+ModelUpload fetches from uploadEndpoint (default /api/models/upload) and viewerTokenEndpoint (default /api/viewer-token), the routes this template ships. The upload protocol is start, signed part URLs, finish, then status polling with manifest diagnostics; any handler that speaks it works. embedded drops the page chrome so the screen fits a docs or preview frame. A theme toggle sits in the sidebar’s identity row, beside the collapse toggle; it needs ThemeProvider mounted in your root layout. The viewer settings panel saves its choices in this browser’s localStorage under cantera:model-upload-page:viewer-settings; Reset returns to the starter set and clears the saved copy. The sidebar lists the bucket as a folder of models; the selected model’s Details button opens its storage and translation facts (route kind=details), the translated thumbnail (kind=thumbnail), and a five-minute signed download of the original file (kind=download).
 
 ## ModelUpload props
 

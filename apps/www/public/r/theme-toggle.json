@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "theme-toggle",
+  "title": "Theme Toggle",
+  "author": "MR <contact@bimframe.co>",
+  "description": "A light and dark switch on next-themes whose icon and name follow the .dark class in CSS, so it renders correctly before hydration, plus the ThemeProvider to mount it under.",
+  "dependencies": [
+    "next-themes",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "button"
+  ],
+  "files": [
+    {
+      "path": "registry/ui/theme-toggle.tsx",
+      "content": "'use client'\n\nimport { MoonIcon, SunIcon } from 'lucide-react'\nimport { useTheme } from 'next-themes'\nimport type * as React from 'react'\n\nimport { Button } from '@/components/ui/button'\nimport { cn } from '@/lib/utils'\n\ntype ThemeToggleProps = Omit<React.ComponentProps<typeof Button>, 'children' | 'onClick'>\n\n// Icon and accessible name follow the `.dark` class in CSS, not React state, so\n// server and client markup match and the button is right on the first paint.\nfunction ThemeToggle({ className, variant = 'ghost', ...props }: ThemeToggleProps) {\n  const { resolvedTheme, setTheme } = useTheme()\n\n  return (\n    <Button\n      type=\"button\"\n      variant={variant}\n      size=\"icon\"\n      data-slot=\"theme-toggle\"\n      className={cn('size-10 text-muted-foreground hover:text-foreground', className)}\n      onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}\n      {...props}\n    >\n      <span aria-hidden className=\"grid size-4 place-items-center\">\n        <MoonIcon className=\"col-start-1 row-start-1 size-4 dark:hidden\" />\n        <SunIcon className=\"col-start-1 row-start-1 hidden size-4 dark:block\" />\n      </span>\n      <span className=\"sr-only dark:hidden\">Switch to dark theme</span>\n      <span className=\"sr-only hidden dark:inline\">Switch to light theme</span>\n    </Button>\n  )\n}\n\nexport { ThemeToggle, type ThemeToggleProps }\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/ui/theme-provider.tsx",
+      "content": "'use client'\n\nimport { ThemeProvider as NextThemesProvider } from 'next-themes'\nimport type * as React from 'react'\n\nfunction ThemeProvider({ children, ...props }: React.ComponentProps<typeof NextThemesProvider>) {\n  return <NextThemesProvider {...props}>{children}</NextThemesProvider>\n}\n\nexport { ThemeProvider }\n",
+      "type": "registry:component",
+      "target": "components/theme-provider.tsx"
+    }
+  ],
+  "categories": [
+    "theming",
+    "navigation"
+  ],
+  "type": "registry:component"
+}

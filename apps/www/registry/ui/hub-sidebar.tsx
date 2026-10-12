@@ -50,6 +50,9 @@ export interface HubSidebarUser {
   /** With any, the identity row becomes the account menu's trigger; with none
    * it stays a plain, non-interactive label. */
   actions?: HubSidebarUserAction[]
+  /** App-level controls (a theme toggle) inline before the collapse toggle;
+   * size them for the icon rail too. */
+  controls?: ReactNode
 }
 
 export interface HubSidebarProps extends ComponentProps<typeof Sidebar> {
@@ -161,6 +164,7 @@ function UserRow({ user }: { user: HubSidebarUser }) {
             <UserIdentity user={user} collapsible />
           </div>
         )}
+        {user.controls}
         {/* Never hidden with the text: collapsed to the icon rail, the toggle
             is how you get back. */}
         <SidebarTrigger className="size-8 shrink-0" />
