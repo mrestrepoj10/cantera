@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import type {
   FxColorScheme,
   FxGatewayRefusal,
+  FxSpeed,
   FxTerminalSession,
 } from '@/components/ui/fx-terminal/runtime'
 import type { FxExecEvent } from '@/components/ui/fx-terminal/workspace'
@@ -33,6 +34,7 @@ interface FxTerminalProps {
   gatewayBase?: string
   model?: string
   effort?: string
+  speed?: FxSpeed
   /** Omit to follow the `.dark` class on the document, live. */
   colorScheme?: FxColorScheme
   onExec?: (event: FxExecEvent) => void
@@ -94,6 +96,7 @@ function FxTerminal({
   gatewayBase = '/api/agent/gateway',
   model = 'anthropic/claude-haiku-5.5',
   effort = 'low',
+  speed = 'normal',
   colorScheme,
   onExec,
   onReady,
@@ -140,6 +143,7 @@ function FxTerminal({
           gatewayBase,
           model,
           effort,
+          speed,
           colorScheme: initialScheme(),
           signal: aborter.signal,
           onExec: handleExec,
@@ -181,7 +185,7 @@ function FxTerminal({
       current?.dispose()
       setSession(null)
     }
-  }, [container, tools, gatewayBase, model, effort])
+  }, [container, tools, gatewayBase, model, effort, speed])
 
   const retry = () => {
     setStatus({ kind: 'starting' })
