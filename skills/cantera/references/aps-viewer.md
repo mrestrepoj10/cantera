@@ -1,6 +1,6 @@
 # APS Viewer (`@cantera/aps-viewer`)
 
-A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar.
+A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, a Hide others toolbar toggle, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar.
 
 - Type: component
 - Install: `npx shadcn@latest add @cantera/aps-viewer`
@@ -18,6 +18,7 @@ Files written into the consumer project:
 - `components/ui/aps-viewer/loader.ts`
 - `components/ui/aps-viewer/store.ts`
 - `components/ui/aps-viewer/toolbar.ts`
+- `components/ui/aps-viewer/hide-others.ts`
 - `components/ui/aps-viewer/extensions.tsx`
 - `components/ui/aps-viewer/settings.tsx`
 - `components/ui/aps-viewer/index.ts`
@@ -25,6 +26,8 @@ Files written into the consumer project:
 ## Notes
 
 APSViewer is client-only but SSR-safe: Autodesk's global script is not touched until an effect mounts. Supply getAccessToken from your own backend and keep APS credentials off the client. Changing urn unloads and loads the model without recreating the WebGL context; app appearance, viewCube, radius, toolbarPosition, and toolbarScale changes apply in place. toolbar=none uses the core Viewer3D without Autodesk's native toolbar; viewCube controls the cube independently.
+
+Hide others is built in: a toolbar toggle (hideOthers, default true) that keeps the current selection, or the current isolation when nothing is selected, and fully hides everything else instead of ghosting it. While pressed it re-isolates to each new selection, keeps the last set when the selection clears, and ends when anything shows all; releasing it shows everything and restores the ghosting preference, keeping the selection. Pressed with nothing selected, it waits for the next selection. useAPSHideOthers drives the same mode from your own UI, and code that holds only the viewer reaches it as the Cantera.HideOthers extension.
 
 APSViewerSettings renders an end-user settings panel as a viewer child: a trigger button appended to the SDK toolbar (a corner button when the native toolbar is off) opens a floating panel over the canvas, collapsed by default. It is controlled — hold an APSViewerSettingsValue in state, spread apsViewerPropsFor(value) onto APSViewer, and pass value/onValueChange to the panel. It has two tabs. Setup holds the toolbar, view cube, position, density, radius, and appearance. Extensions loads and unloads catalog extensions live, with no viewer restart, and reports load failures with a Retry. The panel loads value.extensions itself, so keep it mounted while the viewer is; to make starter extensions removable, put them in the initial value instead of APSViewer's extensions prop. Extra controls compose through children; APSViewerSettingsTrigger is exported alone for custom panels.
 
@@ -38,6 +41,7 @@ The native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are 
 - `toolbarPosition` (`'bottom' | 'top' | 'left' | 'right'`, default `'bottom'`) — Docks the native toolbar to an edge. Left and right derive a vertical layout; changes apply live.
 - `toolbarScale` (`'sm' | 'md' | 'lg' | number`, default `'md'`) — Native-toolbar button box: compact 36px, comfortable 44px, gloved 52px, or an exact number clamped to 32–64. Changes apply live.
 - `viewCube` (`boolean`, default `true`) — Shows Autodesk's ViewCube and companion controls. Changes apply live without recreating the viewer.
+- `hideOthers` (`boolean`, default `true`) — Shows the Hide others toggle in the native toolbar: it keeps the selection and fully hides everything else, following each new selection until released. Changes apply live; useAPSHideOthers drives the mode either way.
 - `radius` (`number`) — Clips the viewer frame to a pixel radius clamped to 0–32. Omit to leave frame styling to the consumer.
 - `theme` (`'light' | 'dark'`, default `app appearance`) — Optional forced appearance. Undefined follows the document class and system preference live.
 - `autoResize` (`boolean`, default `true`) — ResizeObserver keeps the WebGL canvas matched to its container.
@@ -52,13 +56,14 @@ The native-toolbar positioning uses Autodesk LMV 7.* DOM class names, which are 
 
 - `useAPSViewer / useAPSModelLoaded` (`hooks`) — Live viewer identity and model-geometry readiness.
 - `useAPSSelection / useAPSCamera / useAPSProperties` (`hooks`) — Event-driven selection, camera, and cancellable property state.
+- `useAPSHideOthers` (`hook`) — The Hide others mode as { active, ids, toggle, set }: set(true, ids?) keeps ids, else the selection, else the current isolation; set(false) shows everything and restores ghosting.
 - `useAPSViewerEvent / useAPSContextMenu` (`hooks`) — Raw event and context-menu escape hatches.
 - `useAPSExtension / useAPSExtensions` (`hooks`) — Per-extension load with status, instance, and setOptions re-application on option change; and the load lifecycle of every extension requested through the extensions prop.
 - `acquireViewerRuntime / releaseViewerRuntime / loadViewerScript` (`functions`) — Deduplicated CDN and Initializer lifecycle, exposed for advanced imperative composition.
 
 ## APSViewerSettings props
 
-- `value` (`APSViewerSettingsValue`) — Controlled settings: toolbar on/off, toolbarPosition, toolbarScale (a preset or an exact pixel box the density slider drives across 32–64), viewCube, theme, radius (0–32), and extensions (ids, in load order). Spread apsViewerPropsFor(value) onto APSViewer to apply the display fields; the panel itself loads the extensions.
+- `value` (`APSViewerSettingsValue`) — Controlled settings: toolbar on/off, toolbarPosition, toolbarScale (a preset or an exact pixel box the density slider drives across 32–64), viewCube, hideOthers, theme, radius (0–32), and extensions (ids, in load order). Spread apsViewerPropsFor(value) onto APSViewer to apply the display fields; the panel itself loads the extensions.
 - `onValueChange` (`(value: APSViewerSettingsValue) => void`) — Called with the next settings object when the user changes a control.
 - `resetValue` (`APSViewerSettingsValue`, default `DEFAULT_APS_VIEWER_SETTINGS`) — What the footer Reset restores. Pass your own starting settings, such as a starter extension set.
 - `open / onOpenChange / defaultOpen` (`boolean / callback / boolean`, default `false`) — Panel visibility, controlled or uncontrolled. The panel starts collapsed; the trigger sits in the SDK toolbar, or a corner button when the native toolbar is off.

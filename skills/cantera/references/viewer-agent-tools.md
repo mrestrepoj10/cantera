@@ -59,7 +59,7 @@ const sets = useSyncExternalStore(agentTools.sets.subscribe, agentTools.sets.lis
 - `get_model_info / list_levels / list_categories` (`read`) — Orientation: units, counts, bounding box; levels with authored elevation and viewer z range; categories by count.
 - `find_elements / search_text / get_selection / list_sets` (`read`) — Save matches as a named set and return a sample. Every tool that takes ids also takes setId, and setId "selection" is the live selection.
 - `get_properties / measure_bbox / take_screenshot / run_query` (`read`) — Properties by name, bounding-box sizes and distances in model units and metres, an image of at most 1024 px the model can see, and JavaScript over the property database in a time-boxed worker.
-- `select_elements / isolate_elements / hide_elements / show_all` (`mutates`) — Visibility and selection, each recorded for undo.
+- `select_elements / isolate_elements / hide_elements / show_all` (`mutates`) — Visibility and selection, each recorded for undo. isolate_elements ghosts the rest, or with hideOthers: true fully hides it through the viewer’s Hide others mode, which the toolbar button then shows pressed.
 - `color_elements / clear_colors` (`mutates`) — Theming colours tracked in the ledger that feeds the legend.
 - `fit_to_view / set_camera / set_section / clear_section` (`mutates`) — Framing, camera presets and look-at, and one section plane by level or by axis and position.
 - `list_views / open_view / save_view_state / restore_view_state` (`read / mutates`) — Switch between the document’s 3D views and sheets, and name and return to viewer states.

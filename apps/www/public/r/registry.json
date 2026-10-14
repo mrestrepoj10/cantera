@@ -779,7 +779,7 @@
       "type": "registry:component",
       "title": "APS Viewer",
       "author": "MR <contact@bimframe.co>",
-      "description": "A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar.",
+      "description": "A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, a Hide others toolbar toggle, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar.",
       "categories": ["viewer", "models", "autodesk"],
       "dependencies": ["lucide-react"],
       "registryDependencies": [
@@ -818,6 +818,11 @@
           "path": "registry/ui/aps-viewer/toolbar.ts",
           "type": "registry:ui",
           "target": "components/ui/aps-viewer/toolbar.ts"
+        },
+        {
+          "path": "registry/ui/aps-viewer/hide-others.ts",
+          "type": "registry:ui",
+          "target": "components/ui/aps-viewer/hide-others.ts"
         },
         {
           "path": "registry/ui/aps-viewer/extensions.tsx",

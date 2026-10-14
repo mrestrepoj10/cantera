@@ -48,6 +48,7 @@ Components and libraries:
 - `components/ui/aps-viewer/aps-viewer.tsx`
 - `components/ui/aps-viewer/context.ts`
 - `components/ui/aps-viewer/extensions.tsx`
+- `components/ui/aps-viewer/hide-others.ts`
 - `components/ui/aps-viewer/hooks.ts`
 - `components/ui/aps-viewer/index.ts`
 - `components/ui/aps-viewer/loader.ts`

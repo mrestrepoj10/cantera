@@ -305,7 +305,7 @@ Item: https://canteraui.vercel.app/r/libfx-types.json
 
 Title: APS Viewer
 Type: component
-Description: A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar.
+Description: A Strict-Mode-safe React host for Autodesk Viewer 7.* with deduplicated runtime loading, live native-toolbar controls, a Hide others toolbar toggle, theme and ViewCube controls, frame radius, URN swaps, automatic resize, composable hooks, and a floating settings panel triggered from the native toolbar.
 Install: npx shadcn@latest add @cantera/aps-viewer
 Docs: https://canteraui.vercel.app/components/aps-viewer
 Item: https://canteraui.vercel.app/r/aps-viewer.json
